@@ -495,8 +495,16 @@ components:
             details:
               type: object
               description: Optional object for detailed validation errors
+      example:
+        error:
+          code: "VALIDATION_ERROR"
+          message: "Validation failed: name is required"
+          details:
+            field: "name"
+            issue: "required"
     # Enums
     CampaignStatus:
+      description: Current status of a campaign
       type: string
       enum:
         - draft
@@ -506,6 +514,7 @@ components:
         - cancelled
       example: "active"
     PageType:
+      description: Type of landing page in the conversion funnel
       type: string
       enum:
         - direct
@@ -514,6 +523,7 @@ components:
         - thank_you
       example: "squeeze"
     ConversionType:
+      description: Type of conversion event being tracked
       type: string
       enum:
         - lead
@@ -523,6 +533,7 @@ components:
         - signup
       example: "sale"
     CostModel:
+      description: Cost model for campaign billing (CPA=Cost Per Action, CPC=Cost Per Click, CPM=Cost Per Mille)
       type: string
       enum:
         - CPA
@@ -533,6 +544,7 @@ components:
 # CAMPAIGN MANAGEMENT SCHEMAS
 # ============================================================================
     CampaignResource:
+      description: Complete campaign configuration and status information
       type: object
       properties:
         id:
@@ -569,7 +581,30 @@ components:
         - urls
         - createdAt
         - updatedAt
+      example:
+        id: "camp_123"
+        name: "Summer Sale Campaign"
+        description: "High-converting summer promotion"
+        status: "active"
+        schedule:
+          startDate: "2024-06-01T00:00:00Z"
+          endDate: "2024-08-31T23:59:59Z"
+        urls:
+          trackingUrl: "https://example.com/track"
+          successUrl: "https://example.com/success"
+          failureUrl: "https://example.com/failure"
+        financial:
+          payout: {"amount": 2.50, "currency": "USD"}
+          dailyBudget: {"amount": 100.00, "currency": "USD"}
+          totalBudget: {"amount": 5000.00, "currency": "USD"}
+        performance:
+          clicks: 5000
+          conversions: 150
+          revenue: {"amount": 7500.00, "currency": "USD"}
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-01T00:00:00Z"
     CampaignSchedule:
+      description: Campaign scheduling information including start and end dates
       type: object
       properties:
         startDate:
@@ -578,7 +613,11 @@ components:
         endDate:
           type: string
           format: date-time
+      example:
+        startDate: "2024-06-01T00:00:00Z"
+        endDate: "2024-08-31T23:59:59Z"
     CampaignURLs:
+      description: URLs for campaign landing pages and offers
       type: object
       properties:
         safePage:
@@ -592,7 +631,11 @@ components:
       required:
         - safePage
         - offerPage
+      example:
+        safePage: "https://example.com/safe-landing"
+        offerPage: "https://example.com/offer"
     CampaignFinancial:
+      description: Financial configuration and spending information for a campaign
       type: object
       properties:
         costModel:
@@ -609,7 +652,14 @@ components:
         - costModel
         - payout
         - spent
+      example:
+        costModel: "CPA"
+        payout: {"amount": 2.50, "currency": "USD"}
+        dailyBudget: {"amount": 100.00, "currency": "USD"}
+        totalBudget: {"amount": 5000.00, "currency": "USD"}
+        spent: {"amount": 1250.00, "currency": "USD"}
     CampaignPerformance:
+      description: Key performance metrics and KPIs for a campaign
       type: object
       properties:
         clicks:
@@ -641,7 +691,15 @@ components:
         - cr
         - epc
         - roi
+      example:
+        clicks: 1250
+        conversions: 45
+        ctr: 0.032
+        cr: 0.036
+        epc: {"amount": 2.50, "currency": "USD"}
+        roi: 2.45
     CampaignLinks:
+      description: HATEOAS links for campaign-related resources
       type: object
       properties:
         self:
@@ -659,7 +717,14 @@ components:
         analytics:
           type: string
           example: "/api/v1/campaigns/camp_123/analytics"
+      example:
+        self: "/api/v1/campaigns/camp_123"
+        landingPages: "/api/v1/campaigns/camp_123/landing-pages"
+        offers: "/api/v1/campaigns/camp_123/offers"
+        targeting: "/api/v1/campaigns/camp_123/targeting"
+        analytics: "/api/v1/campaigns/camp_123/analytics"
     CampaignCollection:
+      description: Collection of campaign summaries with pagination
       type: object
       properties:
         campaigns:
@@ -671,7 +736,22 @@ components:
       required:
         - campaigns
         - pagination
+      example:
+        campaigns:
+          - id: "camp_123"
+            name: "Summer Sale Campaign"
+            status: "active"
+            clicks: 1250
+            conversions: 45
+        pagination:
+          page: 1
+          pageSize: 20
+          totalItems: 5
+          totalPages: 1
+          hasNext: false
+          hasPrev: false
     CampaignSummary:
+      description: Condensed campaign information for list views
       type: object
       properties:
         id:
@@ -691,6 +771,17 @@ components:
         - name
         - status
         - performance
+      example:
+        id: "camp_123"
+        name: "Summer Sale Campaign"
+        status: "active"
+        performance:
+          clicks: 1250
+          conversions: 45
+          ctr: 0.032
+          cr: 0.036
+          epc: {"amount": 2.50, "currency": "USD"}
+          roi: 2.45
 # ============================================================================
 # LANDING PAGE SCHEMAS
 # ============================================================================
@@ -882,6 +973,7 @@ components:
         - endDate
         - granularity
     AnalyticsMetrics:
+      description: Comprehensive analytics metrics for performance tracking
       type: object
       properties:
         clicks:
@@ -924,6 +1016,16 @@ components:
         - cr
         - epc
         - roi
+      example:
+        clicks: 5000
+        uniqueClicks: 4800
+        conversions: 150
+        revenue: {"amount": 7500.00, "currency": "USD"}
+        cost: {"amount": 1500.00, "currency": "USD"}
+        ctr: 0.025
+        cr: 0.03
+        epc: {"amount": 2.50, "currency": "USD"}
+        roi: 2.15
     AnalyticsBreakdowns:
       type: object
       properties:
