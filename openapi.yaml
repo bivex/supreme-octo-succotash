@@ -3304,9 +3304,12 @@ paths:
         - bearerAuth: [clicks:write]
         - oauth2: [clicks:write]
       requestBody:
-        oneOf:
-          - $ref: '#/components/schemas/ClickGenerationRequest'
-          - $ref: '#/components/schemas/BulkClickGenerationRequest'
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ClickGenerationRequest'
+                - $ref: '#/components/schemas/BulkClickGenerationRequest'
         description: |
           Either a single URL generation request or bulk generation with variations.
           Use `variations` array for bulk generation, otherwise single URL generation.
