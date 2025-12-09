@@ -1093,6 +1093,797 @@ components:
           format: date-time
 
 # ============================================================================
+# WEBHOOK SCHEMAS
+# ============================================================================
+
+    TelegramWebhookRequest:
+      type: object
+      description: Telegram webhook update payload
+      properties:
+        update_id:
+          type: integer
+          description: Unique update identifier
+          example: 123456789
+        message:
+          type: object
+          description: Message object from Telegram
+          properties:
+            message_id:
+              type: integer
+              example: 123
+            from:
+              type: object
+              description: Sender information
+              properties:
+                id:
+                  type: integer
+                  example: 123456789
+                username:
+                  type: string
+                  example: "john_doe"
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+            chat:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 123456789
+                type:
+                  type: string
+                  example: "private"
+            date:
+              type: integer
+              description: Unix timestamp
+              example: 1640995200
+            text:
+              type: string
+              description: Message text
+              example: "/start"
+      required:
+        - update_id
+        - message
+
+    TelegramWebhookResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error, skipped]
+          example: "success"
+        webhook_id:
+          type: string
+          description: Internal webhook identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        response:
+          type: object
+          description: Bot response to send back to Telegram
+          properties:
+            chat_id:
+              type: integer
+              example: 123456789
+            text:
+              type: string
+              example: "👋 Добро пожаловать!"
+            reply_markup:
+              type: object
+              description: Inline keyboard markup
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Invalid update format"
+
+    # Event Tracking Schemas
+    EventTrackingRequest:
+      type: object
+      description: Event tracking data from landing pages
+      properties:
+        event_type:
+          type: string
+          enum: [page_view, click, form_submit, form_start, form_complete, scroll, time_spent, conversion, purchase, signup, download, share, search, video_play, video_complete, custom]
+          description: Type of event being tracked
+          example: "click"
+        event_name:
+          type: string
+          description: Specific event name
+          example: "cta_button_click"
+        user_id:
+          type: string
+          description: Anonymous user identifier
+          example: "user_a1b2c3d4"
+        session_id:
+          type: string
+          description: Session identifier
+          example: "session_123456"
+        click_id:
+          type: string
+          description: Associated click ID from traffic tracking
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        campaign_id:
+          type: integer
+          description: Campaign identifier
+          example: 123
+        landing_page_id:
+          type: integer
+          description: Landing page identifier
+          example: 456
+        url:
+          type: string
+          format: uri
+          description: Current page URL
+          example: "https://example.com/landing-page"
+        referrer:
+          type: string
+          format: uri
+          description: Referrer URL
+          example: "https://facebook.com/ad/123"
+        properties:
+          type: object
+          description: Custom event properties
+          additionalProperties: true
+          example:
+            button_text: "Buy Now"
+            form_field: "email"
+            scroll_depth: 75
+      required:
+        - event_type
+        - event_name
+
+    EventTrackingResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        categories:
+          type: array
+          items:
+            type: string
+          description: Event categories for analytics
+          example: ["interaction", "cta_interaction"]
+        fraud_detected:
+          type: boolean
+          description: Whether fraudulent activity was detected
+          example: false
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Invalid event data"
+
+    # Conversion Tracking Schemas
+    ConversionTrackingRequest:
+      type: object
+      description: Conversion tracking data from external systems
+      properties:
+        click_id:
+          type: string
+          format: uuid
+          description: Click ID that led to this conversion
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        conversion_type:
+          type: string
+          enum: [lead, sale, install, registration, signup]
+          description: Type of conversion
+          example: "sale"
+        conversion_value:
+          $ref: '#/components/schemas/Money'
+          description: Revenue value of the conversion
+        order_id:
+          type: string
+          description: External order/transaction identifier
+          example: "ORDER_123456"
+        product_id:
+          type: string
+          description: Product or service identifier
+          example: "product_789"
+        metadata:
+          type: object
+          description: Additional conversion data
+          additionalProperties: true
+          example:
+            source: "web_store"
+            payment_method: "credit_card"
+            discount_applied: true
+      required:
+        - click_id
+        - conversion_type
+
+    ConversionTrackingResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error, duplicate]
+          example: "success"
+        conversion_id:
+          type: string
+          description: Unique conversion identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        attribution:
+          type: object
+          description: Attribution data for the conversion
+          properties:
+            attribution_model:
+              type: string
+              example: "last_click"
+            attribution_confidence:
+              type: number
+              format: float
+              example: 0.9
+            time_to_conversion:
+              type: number
+              format: float
+              description: Seconds between click and conversion
+              example: 3600.5
+            touchpoints:
+              type: integer
+              example: 1
+        fraud_detected:
+          type: boolean
+          description: Whether fraudulent activity was detected
+          example: false
+        postback_triggered:
+          type: boolean
+          description: Whether postback notifications were triggered
+          example: true
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Click ID not found"
+
+    # Click Generation Schemas
+    ClickGenerationRequest:
+      type: object
+      description: Request to generate click tracking URL(s)
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID to attribute clicks to
+          example: 123
+        base_url:
+          type: string
+          format: uri
+          description: Base URL to add tracking parameters to
+          example: "https://example.com/landing-page"
+        landing_page_id:
+          type: integer
+          description: Specific landing page ID to target
+          example: 456
+        offer_id:
+          type: integer
+          description: Specific offer ID to target
+          example: 789
+        params:
+          type: object
+          description: Tracking parameters to include
+          properties:
+            sub1:
+              type: string
+              maxLength: 255
+              description: Level 1 tracking parameter (Creative/Ad ID)
+              example: "fb_ad_15"
+            sub2:
+              type: string
+              maxLength: 255
+              description: Level 2 tracking parameter (Traffic Source)
+              example: "facebook"
+            sub3:
+              type: string
+              maxLength: 255
+              description: Level 3 tracking parameter (Ad Set/Campaign Group)
+              example: "prospecting"
+            sub4:
+              type: string
+              maxLength: 255
+              description: Level 4 tracking parameter (Ad Version/Creative Type)
+              example: "video1"
+            sub5:
+              type: string
+              maxLength: 255
+              description: Level 5 tracking parameter (Audience/Keyword)
+              example: "lookalike78"
+            click_id:
+              type: string
+              maxLength: 255
+              description: Affiliate network click ID
+              example: "USERCLICK123"
+            aff_sub:
+              type: string
+              maxLength: 255
+              description: Primary affiliate sub-identifier
+            aff_sub2:
+              type: string
+              maxLength: 255
+              description: Secondary affiliate sub-identifier
+            aff_sub3:
+              type: string
+              maxLength: 255
+              description: Tertiary affiliate sub-identifier
+            aff_sub4:
+              type: string
+              maxLength: 255
+              description: Quaternary affiliate sub-identifier
+            aff_sub5:
+              type: string
+              maxLength: 255
+              description: Quinary affiliate sub-identifier
+      required:
+        - campaign_id
+        - base_url
+
+    BulkClickGenerationRequest:
+      type: object
+      description: Request to generate multiple click tracking URLs
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID for all URLs
+          example: 123
+        base_url:
+          type: string
+          format: uri
+          description: Base URL for all variations
+          example: "https://example.com/landing-page"
+        variations:
+          type: array
+          description: Array of parameter variations
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for this variation
+                example: "variation_1"
+              name:
+                type: string
+                description: Human-readable name for this variation
+                example: "Facebook Prospecting"
+              landing_page_id:
+                type: integer
+                description: Landing page ID for this variation
+                example: 456
+              offer_id:
+                type: integer
+                description: Offer ID for this variation
+                example: 789
+              params:
+                type: object
+                description: Tracking parameters for this variation
+                additionalProperties: true
+                example:
+                  sub1: "fb_ad_15"
+                  sub2: "facebook"
+                  sub3: "prospecting"
+          minItems: 1
+          maxItems: 100
+      required:
+        - campaign_id
+        - base_url
+        - variations
+
+    ClickGenerationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        tracking_url:
+          type: string
+          format: uri
+          description: Generated tracking URL
+          example: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook"
+        campaign_id:
+          type: integer
+          description: Campaign ID used
+          example: 123
+        params:
+          type: object
+          description: Optimized tracking parameters used
+          additionalProperties: true
+          example:
+            sub1: "fb_ad_15"
+            sub2: "facebook"
+            _generated_at: 1640995200
+            _version: "1.0"
+        landing_page_id:
+          type: integer
+          description: Landing page ID used
+          example: 456
+        offer_id:
+          type: integer
+          description: Offer ID used
+          example: 789
+        message:
+          type: string
+          description: Error message if status is error
+          example: "campaign_id must be a positive integer"
+
+    BulkClickGenerationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        total_variations:
+          type: integer
+          description: Total number of variations requested
+          example: 3
+        successful:
+          type: integer
+          description: Number of successfully generated URLs
+          example: 2
+        failed:
+          type: integer
+          description: Number of failed generations
+          example: 1
+        results:
+          type: array
+          description: Results for each variation
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Variation identifier
+                example: "variation_1"
+              name:
+                type: string
+                description: Variation name
+                example: "Facebook Prospecting"
+              url:
+                type: string
+                format: uri
+                description: Generated tracking URL (null if failed)
+                example: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15"
+              params:
+                type: object
+                description: Parameters used for this variation
+                additionalProperties: true
+              status:
+                type: string
+                enum: [success, error]
+                example: "success"
+              error:
+                type: string
+                description: Error message if status is error
+                example: "Invalid landing_page_id"
+        message:
+          type: string
+          description: General error message if status is error
+          example: "Bulk generation failed"
+
+    # Goal Management Schemas
+    GoalResource:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique goal identifier
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+        campaign_id:
+          type: integer
+          description: Campaign this goal belongs to
+          example: 123
+        name:
+          type: string
+          description: Goal name
+          example: "Lead Form Submission"
+        description:
+          type: string
+          description: Goal description
+          example: "Track when visitors submit lead capture forms"
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Type of conversion goal
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          description: How the goal is triggered
+          example: "event"
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+          example:
+            fixed_value: 10.00
+        is_active:
+          type: boolean
+          description: Whether goal is active
+          example: true
+        attribution_window_days:
+          type: integer
+          description: Days to attribute conversions to this goal
+          example: 30
+        priority:
+          type: integer
+          description: Goal evaluation priority (higher = more important)
+          example: 1
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+          example: ["form", "lead", "conversion"]
+        created_at:
+          type: string
+          format: date-time
+          description: Goal creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Goal last update timestamp
+
+    CreateGoalRequest:
+      type: object
+      description: Request to create a new conversion goal
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID for the goal
+          example: 123
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Goal name
+          example: "Lead Form Submission"
+        description:
+          type: string
+          maxLength: 1000
+          description: Goal description
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Type of conversion goal
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          description: How the goal is triggered
+          example: "event"
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+          example:
+            fixed_value: 10.00
+        is_active:
+          type: boolean
+          default: true
+          description: Whether goal should be active
+        attribution_window_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+          description: Attribution window in days
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          description: Goal priority
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+      required:
+        - campaign_id
+        - name
+        - goal_type
+        - trigger_type
+
+    UpdateGoalRequest:
+      type: object
+      description: Request to update an existing goal
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Goal name
+        description:
+          type: string
+          maxLength: 1000
+          description: Goal description
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+        is_active:
+          type: boolean
+          description: Whether goal is active
+        attribution_window_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Attribution window in days
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Goal priority
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+
+    GoalCollection:
+      type: object
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalResource'
+        total:
+          type: integer
+          description: Total number of goals
+          example: 5
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    GoalTemplate:
+      type: object
+      description: Predefined goal template
+      properties:
+        name:
+          type: string
+          example: "Lead Form Submission"
+        description:
+          type: string
+          example: "Track when visitors submit lead capture forms"
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          example: "event"
+        trigger_config:
+          type: object
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          additionalProperties: true
+          example:
+            value_field: "lead_value"
+        attribution_window_days:
+          type: integer
+          example: 30
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["form", "lead", "conversion"]
+
+    # Postback Schemas
+    PostbackConfig:
+      type: object
+      description: Configuration for postback notification
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Postback URL to send notification to
+          example: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+        method:
+          type: string
+          enum: [GET, POST, PUT]
+          default: GET
+          description: HTTP method to use for postback
+          example: "GET"
+        headers:
+          type: object
+          description: Custom headers to include in postback request
+          additionalProperties:
+            type: string
+          example:
+            Authorization: "Bearer your_token_here"
+            X-API-Key: "your_api_key"
+        payload:
+          type: object
+          description: Request payload for POST/PUT methods (overrides URL parameters)
+          additionalProperties: true
+          example:
+            click_id: "{click_id}"
+            conversion_type: "{conversion_type}"
+            revenue: "{revenue}"
+            currency: "{currency}"
+        max_attempts:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: Maximum number of delivery attempts
+          example: 3
+      required:
+        - url
+
+    PostbackSendRequest:
+      type: object
+      description: Request to send postback notification
+      properties:
+        conversion_id:
+          type: string
+          format: uuid
+          description: Conversion ID to send postback for
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        postback_config:
+          $ref: '#/components/schemas/PostbackConfig'
+      required:
+        - conversion_id
+        - postback_config
+
+    PostbackSendResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, failed, error]
+          example: "success"
+        postback_id:
+          type: string
+          description: Unique postback identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        response_code:
+          type: integer
+          description: HTTP response code from postback endpoint
+          example: 200
+        response_body:
+          type: string
+          description: Response body from postback endpoint
+          example: "OK"
+        error_message:
+          type: string
+          description: Error message if delivery failed
+          example: "Connection timeout"
+        attempt_count:
+          type: integer
+          description: Number of attempts made
+          example: 1
+        message:
+          type: string
+          description: General status message
+          example: "Postback sent successfully"
+
+# ============================================================================
 # API PATHS
 # ============================================================================
 
@@ -2194,6 +2985,991 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # ============================================================================
+  # WEBHOOKS
+  # ============================================================================
+
+  /webhooks/telegram:
+    post:
+      summary: Receive Telegram bot webhook
+      description: |
+        **PUBLIC ENDPOINT** - Receives webhook updates from Telegram Bot API.
+
+        Processes incoming messages from Telegram bot and generates automated responses.
+        Supports bot commands, user interactions, and campaign management.
+
+        **Supported Commands:**
+        - `/start` - Welcome message with inline keyboard
+        - `/help` - Show available commands
+        - `/stats` - Campaign statistics
+        - `/campaigns` - Campaign management
+
+        **Rate Limit**: 100 requests/second (public webhook endpoint)
+        **Authentication**: Webhook secret validation (recommended)
+      operationId: post_webhooks_telegram
+      tags: [Webhooks]
+      security: []  # Public webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramWebhookRequest'
+            example:
+              update_id: 123456789
+              message:
+                message_id: 123
+                from:
+                  id: 123456789
+                  username: "john_doe"
+                  first_name: "John"
+                  last_name: "Doe"
+                chat:
+                  id: 123456789
+                  type: "private"
+                date: 1640995200
+                text: "/start"
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Webhook processed successfully.
+
+            Returns processing status and optional bot response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramWebhookResponse'
+              examples:
+                success:
+                  summary: Successful processing with response
+                  value:
+                    status: "success"
+                    webhook_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response:
+                      chat_id: 123456789
+                      text: "👋 Добро пожаловать! Я бот для управления кампаниями."
+                      reply_markup:
+                        inline_keyboard:
+                          - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🎯 Кампании", "callback_data": "campaigns"}]
+                          - [{"text": "💰 Финансы", "callback_data": "finance"}, {"text": "⚙️ Настройки", "callback_data": "settings"}]
+                skipped:
+                  summary: Message skipped (not supported)
+                  value:
+                    status: "skipped"
+                    reason: "message type not supported"
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid webhook payload.
+
+            Check Telegram webhook format and required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid update format"
+                  details:
+                    update_id: "update_id is required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # EVENT TRACKING
+  # ============================================================================
+
+  /events/track:
+    post:
+      summary: Track user events
+      description: |
+        **PUBLIC ENDPOINT** - Track user interactions and events on landing pages.
+
+        Captures comprehensive event data including clicks, form interactions, scroll depth,
+        time spent, conversions, and custom events. Includes fraud detection and
+        automatic session/user identification.
+
+        **Supported Event Types:**
+        - `page_view` - Page view events
+        - `click` - Click interactions
+        - `form_submit`, `form_start`, `form_complete` - Form interactions
+        - `scroll` - Scroll depth tracking
+        - `time_spent` - Time spent on page
+        - `conversion` - Conversion events
+        - `purchase` - Purchase completions
+        - `signup` - User registrations
+        - `video_play`, `video_complete` - Video interactions
+        - `custom` - Custom events
+
+        **Rate Limit**: 1000 requests/minute (public tracking endpoint)
+        **Authentication**: Not required (public tracking endpoint)
+      operationId: post_events_track
+      tags: [Events]
+      security: []  # Public endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTrackingRequest'
+            examples:
+              button_click:
+                summary: Button click event
+                value:
+                  event_type: "click"
+                  event_name: "cta_button_click"
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  url: "https://example.com/landing-page"
+                  properties:
+                    button_text: "Buy Now"
+                    button_position: "hero_section"
+              form_submit:
+                summary: Form submission event
+                value:
+                  event_type: "form_submit"
+                  event_name: "lead_form_submit"
+                  session_id: "session_123456"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  properties:
+                    form_type: "email_capture"
+                    fields_completed: ["name", "email", "phone"]
+              page_view:
+                summary: Page view event
+                value:
+                  event_type: "page_view"
+                  event_name: "landing_page_view"
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  url: "https://example.com/landing-page"
+                  referrer: "https://facebook.com/ad/123"
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Event tracked successfully.
+
+            Returns event ID and analytics categories for the tracked event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTrackingResponse'
+              examples:
+                success:
+                  summary: Successful event tracking
+                  value:
+                    status: "success"
+                    event_id: "550e8400-e29b-41d4-a716-446655440000"
+                    categories: ["interaction", "cta_interaction"]
+                    fraud_detected: false
+                fraud_detected:
+                  summary: Event tracked but fraud detected
+                  value:
+                    status: "success"
+                    event_id: "550e8400-e29b-41d4-a716-446655440000"
+                    categories: ["interaction"]
+                    fraud_detected: true
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid event data.
+
+            Check event_type, event_name, and other required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid event data"
+                  details:
+                    event_type: "event_type must be one of: page_view, click, ..."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # CONVERSION TRACKING
+  # ============================================================================
+
+  /conversions/track:
+    post:
+      summary: Track conversions
+      description: |
+        **PROTECTED ENDPOINT** - Track conversions (leads, sales, signups) from external systems.
+
+        Links conversions back to original clicks for attribution and revenue tracking.
+        Triggers automated postback notifications to affiliate networks and partners.
+        Includes fraud detection and duplicate prevention.
+
+        **Supported Conversion Types:**
+        - `lead` - Lead generation (email, phone, etc.)
+        - `sale` - Product/service purchase
+        - `install` - App/software installation
+        - `registration` - User account creation
+        - `signup` - Newsletter/content subscription
+
+        **Attribution**: Last-click attribution model with time-decay confidence scoring
+        **Fraud Detection**: Automated fraud scoring based on click validity and patterns
+        **Postbacks**: Automatic notification sending to configured affiliate networks
+      operationId: post_conversions_track
+      tags: [Conversions]
+      security:
+        - bearerAuth: [conversions:write]
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionTrackingRequest'
+            examples:
+              lead_conversion:
+                summary: Lead conversion tracking
+                value:
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  conversion_type: "lead"
+                  order_id: "LEAD_123456"
+                  metadata:
+                    lead_source: "contact_form"
+                    lead_quality: "high"
+                    follow_up_required: true
+              sale_conversion:
+                summary: Sale conversion with revenue
+                value:
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  conversion_type: "sale"
+                  conversion_value:
+                    amount: 99.99
+                    currency: "USD"
+                  order_id: "ORDER_789012"
+                  product_id: "premium_package"
+                  metadata:
+                    payment_method: "credit_card"
+                    discount_code: "SUMMER2024"
+                    upsell_offered: true
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Conversion tracked successfully.
+
+            Returns conversion ID and attribution data. Postback notifications
+            are triggered asynchronously for affiliate network updates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionTrackingResponse'
+              examples:
+                success:
+                  summary: Successful conversion tracking
+                  value:
+                    status: "success"
+                    conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                    attribution:
+                      attribution_model: "last_click"
+                      attribution_confidence: 0.95
+                      time_to_conversion: 3600.5
+                      touchpoints: 1
+                    fraud_detected: false
+                    postback_triggered: true
+                fraud_detected:
+                  summary: Conversion tracked but fraud detected
+                  value:
+                    status: "success"
+                    conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                    attribution:
+                      attribution_model: "last_click"
+                      attribution_confidence: 0.3
+                      time_to_conversion: 5.2
+                      touchpoints: 1
+                    fraud_detected: true
+                    postback_triggered: false
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid conversion data or click not found.
+
+            Check click_id exists and conversion_type is valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Click ID not found"
+                  details:
+                    click_id: "Click with this ID does not exist"
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # POSTBACKS
+  # ============================================================================
+
+  /postbacks/send:
+    post:
+      summary: Send postback notification
+      description: |
+        **PROTECTED ENDPOINT** - Send postback notification to external affiliate network or system.
+
+        Automatically builds postback URLs with conversion parameters and handles delivery
+        with retry logic and failure tracking. Supports GET (URL parameters) and POST (JSON payload)
+        methods with custom headers and authentication.
+
+        **URL Parameter Substitution:**
+        - `{click_id}` - Original click identifier
+        - `{conversion_id}` - Conversion identifier
+        - `{conversion_type}` - Type of conversion (lead, sale, etc.)
+        - `{revenue}` - Conversion revenue amount
+        - `{currency}` - Conversion currency code
+        - `{order_id}` - External order identifier
+
+        **Retry Logic:** Exponential backoff (1min, 2min, 4min, 8min) up to max_attempts
+        **Authentication:** Supports Bearer tokens and API keys in headers
+      operationId: post_postbacks_send
+      tags: [Postbacks]
+      security:
+        - bearerAuth: [postbacks:write]
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostbackSendRequest'
+            examples:
+              get_postback:
+                summary: GET postback with URL parameters
+                value:
+                  conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                  postback_config:
+                    url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}&type={conversion_type}"
+                    method: "GET"
+                    max_attempts: 3
+              post_postback:
+                summary: POST postback with JSON payload
+                value:
+                  conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                  postback_config:
+                    url: "https://api.affiliate.com/conversions"
+                    method: "POST"
+                    headers:
+                      Authorization: "Bearer your_token"
+                      Content-Type: "application/json"
+                    payload:
+                      click_id: "{click_id}"
+                      conversion_type: "{conversion_type}"
+                      revenue: "{revenue}"
+                      currency: "{currency}"
+                      order_id: "{order_id}"
+                    max_attempts: 5
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Postback sent successfully.
+
+            Returns delivery status and response details from external system.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostbackSendResponse'
+              examples:
+                success:
+                  summary: Successful postback delivery
+                  value:
+                    status: "success"
+                    postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response_code: 200
+                    response_body: "Conversion recorded"
+                    attempt_count: 1
+                queued_retry:
+                  summary: Postback queued for retry
+                  value:
+                    status: "failed"
+                    postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response_code: 500
+                    response_body: "Internal Server Error"
+                    error_message: "Server temporarily unavailable"
+                    attempt_count: 1
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid request or conversion not found.
+
+            Check conversion_id exists and postback_config is valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Conversion not found"
+                  details:
+                    conversion_id: "Conversion with this ID does not exist"
+        '502':
+          description: |
+            **BAD GATEWAY** - External postback endpoint failed.
+
+            Postback was attempted but external service returned error.
+            Will be retried according to retry policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostbackSendResponse'
+              example:
+                status: "failed"
+                postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                response_code: 502
+                error_message: "External service error"
+                attempt_count: 1
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # CLICK GENERATION
+  # ============================================================================
+
+  /clicks/generate:
+    post:
+      summary: Generate click tracking URLs
+      description: |
+        **PROTECTED ENDPOINT** - Generate personalized click tracking URLs with proper attribution parameters.
+
+        Creates tracking links that automatically include campaign ID, timestamps, sub-tracking parameters,
+        and affiliate network identifiers. Supports both single URL generation and bulk generation
+        for A/B testing and multi-creative campaigns.
+
+        **Parameter Hierarchy:**
+        - `cid`: Campaign ID (always included)
+        - `ts`: Unix timestamp (always included)
+        - `landing_page_id`: Direct landing page targeting
+        - `campaign_offer_id`: Direct offer targeting
+        - `sub1-sub5`: 5-level deep tracking parameters
+        - `click_id`: Affiliate network click ID
+        - `aff_sub-aff_sub5`: Affiliate sub-identifiers
+
+        **Supported Formats:**
+        - Single URL: Generate one tracking URL
+        - Bulk generation: Generate multiple variations with different parameters
+        - Parameter optimization: Automatic parameter cleaning and validation
+      operationId: post_clicks_generate
+      tags: [Clicks]
+      security:
+        - bearerAuth: [clicks:write]
+        - oauth2: [clicks:write]
+      requestBody:
+        oneOf:
+          - $ref: '#/components/schemas/ClickGenerationRequest'
+          - $ref: '#/components/schemas/BulkClickGenerationRequest'
+        description: |
+          Either a single URL generation request or bulk generation with variations.
+          Use `variations` array for bulk generation, otherwise single URL generation.
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Tracking URL(s) generated successfully.
+
+            Returns the generated tracking URL(s) with all attribution parameters included.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ClickGenerationResponse'
+                  - $ref: '#/components/schemas/BulkClickGenerationResponse'
+              examples:
+                single_url:
+                  summary: Single URL generation
+                  value:
+                    status: "success"
+                    tracking_url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook&landing_page_id=456"
+                    campaign_id: 123
+                    params:
+                      sub1: "fb_ad_15"
+                      sub2: "facebook"
+                      _generated_at: 1640995200
+                      _version: "1.0"
+                    landing_page_id: 456
+                bulk_generation:
+                  summary: Bulk URL generation
+                  value:
+                    status: "success"
+                    total_variations: 3
+                    successful: 3
+                    failed: 0
+                    results:
+                      - id: "variation_1"
+                        name: "Facebook Prospecting"
+                        url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook&sub3=prospecting"
+                        params:
+                          sub1: "fb_ad_15"
+                          sub2: "facebook"
+                          sub3: "prospecting"
+                        status: "success"
+                      - id: "variation_2"
+                        name: "Google Search"
+                        url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=google_search&sub2=google&sub3=search"
+                        params:
+                          sub1: "google_search"
+                          sub2: "google"
+                          sub3: "search"
+                        status: "success"
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid request parameters.
+
+            Check campaign_id format, base_url validity, and parameter constraints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "campaign_id must be a positive integer"
+                  details:
+                    campaign_id: "Must be greater than 0"
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # GOAL MANAGEMENT
+  # ============================================================================
+
+  /goals:
+    get:
+      summary: List goals
+      description: |
+        **PROTECTED ENDPOINT** - Get a list of conversion goals with optional filtering.
+
+        Supports filtering by campaign, goal type, tags, and active status.
+        Results are paginated and include goal performance metrics.
+      operationId: get_goals
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter goals by campaign ID
+          example: 123
+        - name: goal_type
+          in: query
+          schema:
+            type: string
+            enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Filter goals by type
+          example: "lead"
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter goals by tag
+          example: "form"
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Include only active goals
+          example: true
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of goals per page
+      responses:
+        '200':
+          description: List of goals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalCollection'
+              example:
+                status: "success"
+                goals:
+                  - id: "goal_550e8400-e29b-41d4-a716-446655440000"
+                    campaign_id: 123
+                    name: "Lead Form Submission"
+                    goal_type: "lead"
+                    trigger_type: "event"
+                    trigger_config:
+                      event_type: "form_submit"
+                      event_name: "lead_form_submit"
+                    is_active: true
+                    attribution_window_days: 30
+                    priority: 1
+                    tags: ["form", "lead", "conversion"]
+                    created_at: "2024-01-01T00:00:00Z"
+                    updated_at: "2024-01-01T00:00:00Z"
+                total: 1
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create goal
+      description: |
+        **PROTECTED ENDPOINT** - Create a new conversion goal for tracking specific user actions.
+
+        Goals define what constitutes a successful conversion for your campaigns,
+        including how they're triggered and how their value is calculated.
+      operationId: post_goals
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+            examples:
+              lead_goal:
+                summary: Lead capture goal
+                value:
+                  campaign_id: 123
+                  name: "Lead Form Submission"
+                  description: "Track when visitors submit lead capture forms"
+                  goal_type: "lead"
+                  trigger_type: "event"
+                  trigger_config:
+                    event_type: "form_submit"
+                    event_name: "lead_form_submit"
+                  value_config:
+                    fixed_value: 5.00
+                  attribution_window_days: 30
+                  tags: ["form", "lead"]
+              sale_goal:
+                summary: Product sale goal
+                value:
+                  campaign_id: 123
+                  name: "Product Purchase"
+                  goal_type: "sale"
+                  trigger_type: "event"
+                  trigger_config:
+                    event_type: "conversion"
+                    event_name: "purchase_complete"
+                  value_config:
+                    revenue_field: "order_total"
+                  attribution_window_days: 30
+                  tags: ["ecommerce", "revenue"]
+      responses:
+        '201':
+          description: Goal created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal_id:
+                    type: string
+                    example: "goal_550e8400-e29b-41d4-a716-446655440000"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '400':
+          description: Invalid goal configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "trigger_config required for event-based goals"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /goals/templates:
+    get:
+      summary: Get goal templates
+      description: |
+        **PROTECTED ENDPOINT** - Get predefined goal templates for common conversion scenarios.
+
+        Templates provide starting configurations for typical goals like form submissions,
+        purchases, signups, and engagement metrics.
+      operationId: get_goals_templates
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      responses:
+        '200':
+          description: List of goal templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GoalTemplate'
+
+  /goals/{goalId}:
+    get:
+      summary: Get goal
+      description: Get detailed information about a specific conversion goal
+      operationId: get_goals_goal_id
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Goal details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update goal
+      description: Update an existing conversion goal's configuration
+      operationId: put_goals_goal_id
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoalRequest'
+      responses:
+        '200':
+          description: Goal updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete goal
+      description: Delete a conversion goal (soft delete - marks as inactive)
+      operationId: delete_goals_goal_id
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:delete]
+        - oauth2: [goals:delete]
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Goal deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Goal deleted successfully"
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /goals/{goalId}/duplicate:
+    post:
+      summary: Duplicate goal
+      description: Create a copy of an existing goal, optionally for a different campaign
+      operationId: post_goals_goal_id_duplicate
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID to duplicate
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                campaign_id:
+                  type: integer
+                  description: Campaign ID for the duplicated goal (optional)
+                  example: 456
+      responses:
+        '201':
+          description: Goal duplicated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Original goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /clicks:
     get:
       summary: List clicks
@@ -2330,6 +4106,148 @@ tags:
     description: |
       Conversion tracking and partner postbacks for affiliate network integration
       and revenue optimization.
+  - name: Postbacks
+    description: |
+      Postback notifications to external systems including affiliate networks,
+      CRM platforms, and third-party services with retry logic and delivery tracking.
+  - name: Goals
+    description: |
+      Conversion goal management including creation, configuration, and evaluation
+      of goals that define successful campaign outcomes and conversion tracking.
+  - name: Journeys
+    description: |
+      Customer journey analysis including funnel tracking, drop-off analysis,
+      and attribution modeling for understanding user behavior across touchpoints.
+  - name: LTV
+    description: |
+      Lifetime Value analysis including customer profitability, cohort analysis,
+      and predictive modeling for long-term revenue forecasting.
+  - name: Forms
+    description: |
+      Form integration and lead capture including submission handling,
+      validation, and data processing for marketing automation.
+  - name: Retention
+    description: |
+      Customer retention campaigns and analysis including churn prediction,
+      re-engagement strategies, and loyalty program management.
+  - name: Webhooks
+    description: |
+      Webhook endpoints for external integrations including Telegram bot webhooks,
+      payment notifications, and external system callbacks.
+  - name: Events
+    description: |
+      Event tracking endpoints for capturing user interactions on landing pages,
+      including clicks, form submissions, conversions, and custom events with fraud detection.
+
+# ============================================================================
+# CUSTOMER JOURNEY ANALYSIS
+# ============================================================================
+
+  /journeys/funnel:
+    get:
+      summary: Get customer journey funnel
+      description: Analyze customer funnel stages and conversion rates across campaigns
+      operationId: get_journeys_funnel
+      tags: [Journeys]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by campaign ID
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+          description: Analysis period in days
+      responses:
+        '200':
+          description: Funnel analysis results
+
+  /journeys/drop-off:
+    get:
+      summary: Analyze customer journey drop-off points
+      description: Identify where customers drop off in their journey before conversion
+      operationId: get_journeys_drop_off
+      tags: [Journeys]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by campaign ID
+      responses:
+        '200':
+          description: Drop-off analysis results
+
+  # ============================================================================
+  # LTV TRACKING
+  # ============================================================================
+
+  /ltv/analysis:
+    get:
+      summary: Get LTV analysis
+      description: Analyze customer lifetime value and profitability metrics
+      operationId: get_ltv_analysis
+      tags: [LTV]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      responses:
+        '200':
+          description: LTV analysis results
+
+  # ============================================================================
+  # FORM INTEGRATION
+  # ============================================================================
+
+  /forms/submit:
+    post:
+      summary: Submit form data
+      description: Handle form submissions and lead capture from landing pages
+      operationId: post_forms_submit
+      tags: [Forms]
+      security: []  # Public endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                form_id:
+                  type: string
+                campaign_id:
+                  type: integer
+                fields:
+                  type: object
+      responses:
+        '200':
+          description: Form submitted successfully
+
+  # ============================================================================
+  # RETENTION CAMPAIGNS
+  # ============================================================================
+
+  /retention/campaigns:
+    get:
+      summary: List retention campaigns
+      description: Get active retention campaigns and their performance
+      operationId: get_retention_campaigns
+      tags: [Retention]
+      security:
+        - bearerAuth: [campaigns:read]
+        - oauth2: [campaigns:read]
+      responses:
+        '200':
+          description: List of retention campaigns
 
 # ============================================================================
 # EXTERNAL DOCUMENTATION AND SUPPORT

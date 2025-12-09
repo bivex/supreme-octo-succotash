@@ -5,6 +5,11 @@ from .infrastructure.repositories import (
     InMemoryCampaignRepository,
     InMemoryClickRepository,
     InMemoryAnalyticsRepository,
+    InMemoryWebhookRepository,
+    InMemoryEventRepository,
+    InMemoryConversionRepository,
+    InMemoryPostbackRepository,
+    InMemoryGoalRepository,
 )
 from .infrastructure.external import MockIpGeolocationService
 
@@ -15,15 +20,22 @@ from .domain.services import (
     CampaignPerformanceService,
     CampaignLifecycleService
 )
+from .domain.services.webhook import WebhookService
+from .domain.services.event import EventService
+from .domain.services.conversion import ConversionService
+from .domain.services.postback import PostbackService
+from .domain.services.click import ClickGenerationService
+from .domain.services.goal import GoalService
+from .domain.services.journey import JourneyService
 
 # Application handlers
-from .application.handlers import CreateCampaignHandler, TrackClickHandler
+from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler
 
 # Application queries
 from .application.queries import GetCampaignHandler
 
 # Presentation
-from .presentation.routes import CampaignRoutes, ClickRoutes
+from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes
 
 
 class Container:
@@ -137,6 +149,219 @@ class Container:
                 track_click_handler=self.get_track_click_handler(),
             )
         return self._singletons['click_routes']
+
+    def get_webhook_repository(self):
+        """Get webhook repository."""
+        if 'webhook_repository' not in self._singletons:
+            self._singletons['webhook_repository'] = InMemoryWebhookRepository()
+        return self._singletons['webhook_repository']
+
+    def get_webhook_service(self):
+        """Get webhook service."""
+        if 'webhook_service' not in self._singletons:
+            self._singletons['webhook_service'] = WebhookService()
+        return self._singletons['webhook_service']
+
+    def get_process_webhook_handler(self):
+        """Get process webhook handler."""
+        if 'process_webhook_handler' not in self._singletons:
+            self._singletons['process_webhook_handler'] = ProcessWebhookHandler(
+                webhook_repository=self.get_webhook_repository(),
+                webhook_service=self.get_webhook_service()
+            )
+        return self._singletons['process_webhook_handler']
+
+    def get_webhook_routes(self):
+        """Get webhook routes."""
+        if 'webhook_routes' not in self._singletons:
+            self._singletons['webhook_routes'] = WebhookRoutes(
+                process_webhook_handler=self.get_process_webhook_handler(),
+            )
+        return self._singletons['webhook_routes']
+
+    def get_event_repository(self):
+        """Get event repository."""
+        if 'event_repository' not in self._singletons:
+            self._singletons['event_repository'] = InMemoryEventRepository()
+        return self._singletons['event_repository']
+
+    def get_event_service(self):
+        """Get event service."""
+        if 'event_service' not in self._singletons:
+            self._singletons['event_service'] = EventService()
+        return self._singletons['event_service']
+
+    def get_track_event_handler(self):
+        """Get track event handler."""
+        if 'track_event_handler' not in self._singletons:
+            self._singletons['track_event_handler'] = TrackEventHandler(
+                event_repository=self.get_event_repository(),
+                event_service=self.get_event_service()
+            )
+        return self._singletons['track_event_handler']
+
+    def get_event_routes(self):
+        """Get event routes."""
+        if 'event_routes' not in self._singletons:
+            self._singletons['event_routes'] = EventRoutes(
+                track_event_handler=self.get_track_event_handler(),
+            )
+        return self._singletons['event_routes']
+
+    def get_conversion_repository(self):
+        """Get conversion repository."""
+        if 'conversion_repository' not in self._singletons:
+            self._singletons['conversion_repository'] = InMemoryConversionRepository()
+        return self._singletons['conversion_repository']
+
+    def get_conversion_service(self):
+        """Get conversion service."""
+        if 'conversion_service' not in self._singletons:
+            self._singletons['conversion_service'] = ConversionService(
+                click_repository=self.get_click_repository()
+            )
+        return self._singletons['conversion_service']
+
+    def get_track_conversion_handler(self):
+        """Get track conversion handler."""
+        if 'track_conversion_handler' not in self._singletons:
+            self._singletons['track_conversion_handler'] = TrackConversionHandler(
+                conversion_repository=self.get_conversion_repository(),
+                click_repository=self.get_click_repository(),
+                conversion_service=self.get_conversion_service()
+            )
+        return self._singletons['track_conversion_handler']
+
+    def get_conversion_routes(self):
+        """Get conversion routes."""
+        if 'conversion_routes' not in self._singletons:
+            self._singletons['conversion_routes'] = ConversionRoutes(
+                track_conversion_handler=self.get_track_conversion_handler(),
+            )
+        return self._singletons['conversion_routes']
+
+    def get_postback_repository(self):
+        """Get postback repository."""
+        if 'postback_repository' not in self._singletons:
+            self._singletons['postback_repository'] = InMemoryPostbackRepository()
+        return self._singletons['postback_repository']
+
+    def get_postback_service(self):
+        """Get postback service."""
+        if 'postback_service' not in self._singletons:
+            self._singletons['postback_service'] = PostbackService()
+        return self._singletons['postback_service']
+
+    def get_send_postback_handler(self):
+        """Get send postback handler."""
+        if 'send_postback_handler' not in self._singletons:
+            self._singletons['send_postback_handler'] = SendPostbackHandler(
+                postback_repository=self.get_postback_repository(),
+                conversion_repository=self.get_conversion_repository(),
+                postback_service=self.get_postback_service()
+            )
+        return self._singletons['send_postback_handler']
+
+    def get_postback_routes(self):
+        """Get postback routes."""
+        if 'postback_routes' not in self._singletons:
+            self._singletons['postback_routes'] = PostbackRoutes(
+                send_postback_handler=self.get_send_postback_handler(),
+            )
+        return self._singletons['postback_routes']
+
+    def get_click_generation_service(self):
+        """Get click generation service."""
+        if 'click_generation_service' not in self._singletons:
+            self._singletons['click_generation_service'] = ClickGenerationService()
+        return self._singletons['click_generation_service']
+
+    def get_generate_click_handler(self):
+        """Get generate click handler."""
+        if 'generate_click_handler' not in self._singletons:
+            self._singletons['generate_click_handler'] = GenerateClickHandler(
+                click_generation_service=self.get_click_generation_service()
+            )
+        return self._singletons['generate_click_handler']
+
+    def get_click_generation_routes(self):
+        """Get click generation routes."""
+        if 'click_generation_routes' not in self._singletons:
+            self._singletons['click_generation_routes'] = ClickGenerationRoutes(
+                generate_click_handler=self.get_generate_click_handler(),
+            )
+        return self._singletons['click_generation_routes']
+
+    def get_goal_repository(self):
+        """Get goal repository."""
+        if 'goal_repository' not in self._singletons:
+            self._singletons['goal_repository'] = InMemoryGoalRepository()
+        return self._singletons['goal_repository']
+
+    def get_goal_service(self):
+        """Get goal service."""
+        if 'goal_service' not in self._singletons:
+            self._singletons['goal_service'] = GoalService(
+                goal_repository=self.get_goal_repository()
+            )
+        return self._singletons['goal_service']
+
+    def get_manage_goal_handler(self):
+        """Get manage goal handler."""
+        if 'manage_goal_handler' not in self._singletons:
+            self._singletons['manage_goal_handler'] = ManageGoalHandler(
+                goal_repository=self.get_goal_repository(),
+                goal_service=self.get_goal_service()
+            )
+        return self._singletons['manage_goal_handler']
+
+    def get_goal_routes(self):
+        """Get goal routes."""
+        if 'goal_routes' not in self._singletons:
+            self._singletons['goal_routes'] = GoalRoutes(
+                manage_goal_handler=self.get_manage_goal_handler(),
+            )
+        return self._singletons['goal_routes']
+
+    def get_journey_service(self):
+        """Get journey service."""
+        if 'journey_service' not in self._singletons:
+            self._singletons['journey_service'] = JourneyService()
+        return self._singletons['journey_service']
+
+    def get_analyze_journey_handler(self):
+        """Get analyze journey handler."""
+        if 'analyze_journey_handler' not in self._singletons:
+            self._singletons['analyze_journey_handler'] = AnalyzeJourneyHandler(
+                journey_service=self.get_journey_service()
+            )
+        return self._singletons['analyze_journey_handler']
+
+    def get_journey_routes(self):
+        """Get journey routes."""
+        if 'journey_routes' not in self._singletons:
+            self._singletons['journey_routes'] = JourneyRoutes(
+                analyze_journey_handler=self.get_analyze_journey_handler(),
+            )
+        return self._singletons['journey_routes']
+
+    def get_ltv_routes(self):
+        """Get LTV routes."""
+        if 'ltv_routes' not in self._singletons:
+            self._singletons['ltv_routes'] = LtvRoutes()
+        return self._singletons['ltv_routes']
+
+    def get_form_routes(self):
+        """Get form routes."""
+        if 'form_routes' not in self._singletons:
+            self._singletons['form_routes'] = FormRoutes()
+        return self._singletons['form_routes']
+
+    def get_retention_routes(self):
+        """Get retention routes."""
+        if 'retention_routes' not in self._singletons:
+            self._singletons['retention_routes'] = RetentionRoutes()
+        return self._singletons['retention_routes']
 
 
 

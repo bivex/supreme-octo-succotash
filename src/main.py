@@ -95,6 +95,16 @@ def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
     container.get_campaign_routes().register(app)
     container.get_click_routes().register(app)
+    container.get_webhook_routes().register(app)
+    container.get_event_routes().register(app)
+    container.get_conversion_routes().register(app)
+    container.get_postback_routes().register(app)
+    container.get_click_generation_routes().register(app)
+    container.get_goal_routes().register(app)
+    container.get_journey_routes().register(app)
+    container.get_ltv_routes().register(app)
+    container.get_form_routes().register(app)
+    container.get_retention_routes().register(app)
 
 
 def _register_error_handlers(app: socketify.App) -> None:
