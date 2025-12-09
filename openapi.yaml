@@ -35,6 +35,10 @@ x-rate-limits:
   public:
     requests_per_minute: 10
     burst_limit: 50
+# Global security requirements (applied to all endpoints)
+security:
+  - bearerAuth: []
+  - apiKey: []
 # ============================================================================
 # SECURITY SCHEMES
 # ============================================================================
@@ -783,9 +787,124 @@ components:
           epc: {"amount": 2.50, "currency": "USD"}
           roi: 2.45
 # ============================================================================
+# RECOMMENDED SCHEMAS
+# ============================================================================
+    PaginationMeta:
+      description: Metadata for paginated responses including pagination information.
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 50
+          description: Number of items per page
+        total:
+          type: integer
+          minimum: 0
+          example: 250
+          description: Total number of items available
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 5
+          description: Total number of pages
+        hasNext:
+          type: boolean
+          example: true
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          example: false
+          description: Whether there is a previous page
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
+      example:
+        page: 1
+        limit: 50
+        total: 250
+        totalPages: 5
+        hasNext: true
+        hasPrev: false
+    ValidationError:
+      description: Standard error response for validation failures.
+      type: object
+      properties:
+        type:
+          type: string
+          example: "validation_error"
+          description: Error type identifier
+        title:
+          type: string
+          example: "Validation Error"
+          description: Human-readable error title
+        status:
+          type: integer
+          example: 400
+          description: HTTP status code
+        detail:
+          type: string
+          example: "The request contains invalid data"
+          description: Detailed error description
+        instance:
+          type: string
+          format: uri
+          example: "/campaigns/camp_123"
+          description: URI reference to the resource
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "name"
+                description: Field that failed validation
+              message:
+                type: string
+                example: "Name is required"
+                description: Validation error message
+              code:
+                type: string
+                example: "required"
+                description: Validation error code
+            required:
+              - field
+              - message
+          description: List of specific validation errors
+      required:
+        - type
+        - title
+        - status
+        - detail
+      example:
+        type: "validation_error"
+        title: "Validation Error"
+        status: 400
+        detail: "The request contains invalid data"
+        instance: "/campaigns/camp_123"
+        errors:
+          - field: "name"
+            message: "Name is required"
+            code: "required"
+          - field: "status"
+            message: "Status must be one of: active, paused, draft"
+            code: "invalid_choice"
+# ============================================================================
 # LANDING PAGE SCHEMAS
 # ============================================================================
     LandingPageResource:
+      description: Represents a landing page within a campaign, including its configuration, performance metrics, and A/B testing properties.
       type: object
       properties:
         id:
@@ -832,7 +951,28 @@ components:
         - isControl
         - createdAt
         - updatedAt
+      example:
+        id: "lp_456"
+        campaignId: "camp_123"
+        name: "Main Squeeze Page"
+        url: "https://example.com/page1"
+        pageType: "squeeze"
+        weight: 70
+        isActive: true
+        isControl: false
+        performance:
+          impressions: 5000
+          clicks: 250
+          conversions: 15
+          ctr: 0.05
+          cr: 0.06
+          epc:
+            amount: 12.50
+            currency: "USD"
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
     LandingPagePerformance:
+      description: Performance metrics for a landing page including impressions, clicks, conversions, and calculated ratios.
       type: object
       properties:
         impressions:
@@ -864,10 +1004,20 @@ components:
         - ctr
         - cr
         - epc
+      example:
+        impressions: 5000
+        clicks: 250
+        conversions: 15
+        ctr: 0.05
+        cr: 0.06
+        epc:
+          amount: 12.50
+          currency: "USD"
 # ============================================================================
 # CAMPAIGN OFFER SCHEMAS
 # ============================================================================
     CampaignOfferResource:
+      description: Represents an offer within a campaign, including payout configuration, performance tracking, and partner network integration.
       type: object
       properties:
         id:
@@ -933,10 +1083,31 @@ components:
         - payout
         - createdAt
         - updatedAt
+      example:
+        id: "offer_789"
+        campaignId: "camp_123"
+        name: "Premium Product"
+        url: "https://affiliate.com/offer/123"
+        offerType: "cpa"
+        weight: 60
+        isActive: true
+        isControl: false
+        payout:
+          amount: 25.00
+          currency: "USD"
+        revenueShare: 0.15
+        costPerClick:
+          amount: 0.50
+          currency: "USD"
+        externalId: "AFF_123"
+        partnerNetwork: "MaxBounty"
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
 # ============================================================================
 # ANALYTICS SCHEMAS
 # ============================================================================
     CampaignAnalytics:
+      description: Comprehensive analytics data for a campaign including time range, metrics, and breakdown data.
       type: object
       properties:
         campaignId:
@@ -952,7 +1123,26 @@ components:
         - campaignId
         - timeRange
         - metrics
+      example:
+        campaignId: "camp_123"
+        timeRange:
+          startDate: "2024-01-01"
+          endDate: "2024-01-31"
+          granularity: "day"
+        metrics:
+          impressions: 10000
+          clicks: 500
+          conversions: 25
+          revenue: 625.00
+          cost: 250.00
+          profit: 375.00
+          ctr: 0.05
+          cr: 0.05
+          epc: 1.25
+          roi: 2.5
+        breakdowns: {}
     AnalyticsTimeRange:
+      description: Defines the time period and granularity for analytics queries.
       type: object
       properties:
         startDate:
@@ -972,6 +1162,10 @@ components:
         - startDate
         - endDate
         - granularity
+      example:
+        startDate: "2024-01-01"
+        endDate: "2024-01-31"
+        granularity: "day"
     AnalyticsMetrics:
       description: Comprehensive analytics metrics for performance tracking
       type: object
@@ -1027,6 +1221,7 @@ components:
         epc: {"amount": 2.50, "currency": "USD"}
         roi: 2.15
     AnalyticsBreakdowns:
+      description: Contains various breakdown views of analytics data (by date, traffic source, landing page, geography, etc.).
       type: object
       properties:
         byDate:
@@ -1053,7 +1248,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeviceMetrics'
+      example:
+        byDate: []
+        byTrafficSource: []
+        byLandingPage: []
+        byOffer: []
+        byGeography: []
+        byDevice: []
     DateMetrics:
+      description: Time-series metrics showing performance data aggregated by date periods.
       type: object
       properties:
         date:
@@ -1065,7 +1268,21 @@ components:
       required:
         - date
         - metrics
+      example:
+        date: "2024-01-15"
+        metrics:
+          impressions: 1000
+          clicks: 50
+          conversions: 3
+          revenue: 75.00
+          cost: 25.00
+          profit: 50.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     TrafficSourceMetrics:
+      description: Performance metrics broken down by traffic source and referral channels.
       type: object
       properties:
         trafficSourceId:
@@ -1080,7 +1297,22 @@ components:
         - trafficSourceId
         - name
         - metrics
+      example:
+        trafficSourceId: "ts_google"
+        name: "Google Ads"
+        metrics:
+          impressions: 5000
+          clicks: 250
+          conversions: 15
+          revenue: 375.00
+          cost: 125.00
+          profit: 250.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     LandingPageMetrics:
+      description: Performance metrics broken down by individual landing pages within a campaign.
       type: object
       properties:
         landingPageId:
@@ -1095,7 +1327,22 @@ components:
         - landingPageId
         - name
         - metrics
+      example:
+        landingPageId: "lp_456"
+        name: "Main Landing Page"
+        metrics:
+          impressions: 3000
+          clicks: 150
+          conversions: 9
+          revenue: 225.00
+          cost: 75.00
+          profit: 150.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     GeographyMetrics:
+      description: Performance metrics broken down by geographic location (country, region, city).
       type: object
       properties:
         country:
@@ -1106,6 +1353,19 @@ components:
       required:
         - country
         - metrics
+      example:
+        country: "US"
+        metrics:
+          impressions: 8000
+          clicks: 400
+          conversions: 20
+          revenue: 500.00
+          cost: 200.00
+          profit: 300.00
+          ctr: 0.05
+          cr: 0.05
+          epc: 1.25
+          roi: 2.5
     DeviceMetrics:
       description: Analytics metrics broken down by device type
       type: object
@@ -2796,6 +3056,25 @@ paths:
           schema:
             type: string
           example: "camp_123"
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: List of campaign offers
@@ -4053,6 +4332,26 @@ paths:
       security:
         - bearerAuth: [goals:read]
         - oauth2: [goals:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: List of goal templates
@@ -4405,6 +4704,25 @@ paths:
             minimum: 1
             maximum: 365
           description: Analysis period in days
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: Funnel analysis results
@@ -4494,6 +4812,25 @@ paths:
             type: integer
             default: 30
           description: Analysis period in days
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: Drop-off analysis results
@@ -4566,6 +4903,25 @@ paths:
             enum: [monthly, quarterly, yearly]
             default: monthly
           description: Cohort analysis period
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: LTV analysis results
@@ -4695,6 +5051,26 @@ paths:
       security:
         - bearerAuth: [campaigns:read]
         - oauth2: [campaigns:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: List of retention campaigns
