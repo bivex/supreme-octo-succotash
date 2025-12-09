@@ -100,8 +100,12 @@ components:
         - amount
         - currency
       additionalProperties: false
+      example:
+        amount: 25.50
+        currency: "USD"
     OfferPerformance:
       type: object
+      description: Performance metrics for an offer including clicks, conversions, revenue, and calculated metrics
       properties:
         clicks:
           type: integer
@@ -133,9 +137,24 @@ components:
         - cr
         - epc
         - roi
+      example:
+        clicks: 1500
+        conversions: 45
+        revenue:
+          amount: 2250.00
+          currency: "USD"
+        cost:
+          amount: 750.00
+          currency: "USD"
+        cr: 0.03
+        epc:
+          amount: 1.50
+          currency: "USD"
+        roi: 2.15
       additionalProperties: false
     OfferAutoPause:
       type: object
+      description: Configuration for automatic pausing of offers based on conversion rate thresholds
       properties:
         threshold:
           type: number
@@ -148,7 +167,11 @@ components:
         - threshold
         - minClicksBeforePause
       additionalProperties: false
+      example:
+        threshold: 0.02
+        minClicksBeforePause: 1000
     OfferType:
+      description: Type of offer delivery method
       type: string
       enum:
         - direct
@@ -156,6 +179,7 @@ components:
         - phone
       example: "direct"
     OfferMetrics:
+      description: Performance metrics for a specific offer
       type: object
       properties:
         offerId:
@@ -171,6 +195,15 @@ components:
         - name
         - metrics
       additionalProperties: false
+      example:
+        offerId: "offer_123"
+        name: "Summer Sale Offer"
+        metrics:
+          clicks: 5000
+          conversions: 150
+          revenue:
+            amount: 7500.00
+            currency: "USD"
     # Click Tracking Schemas
     ClickRecord:
       type: object
@@ -323,7 +356,15 @@ components:
         - ua
         - isValid
         - ts
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        cid: 123
+        ip: "192.168.1.100"
+        ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        isValid: true
+        ts: 1640995200
     ClickList:
+      description: Paginated list of click records
       type: object
       properties:
         clicks:
@@ -343,7 +384,17 @@ components:
       required:
         - clicks
         - total
+      example:
+        clicks:
+          - id: "123e4567-e89b-12d3-a456-426614174000"
+            cid: 123
+            ip: "192.168.1.100"
+            ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            isValid: true
+            ts: 1640995200
+        total: 1500
     Pagination:
+      description: Pagination information for list responses
       type: object
       properties:
         page:
@@ -378,7 +429,15 @@ components:
         - totalPages
         - hasNext
         - hasPrev
+      example:
+        page: 1
+        pageSize: 20
+        totalItems: 150
+        totalPages: 8
+        hasNext: true
+        hasPrev: false
     PaginationLinks:
+      description: Navigation links for paginated responses
       type: object
       properties:
         first:
@@ -397,6 +456,11 @@ components:
           type: string
           format: uri
           example: "/api/v1/campaigns?page=8&pageSize=20"
+      example:
+        first: "/api/v1/campaigns?page=1&pageSize=20"
+        prev: "/api/v1/campaigns?page=1&pageSize=20"
+        next: "/api/v1/campaigns?page=2&pageSize=20"
+        last: "/api/v1/campaigns?page=8&pageSize=20"
     # Error Response
     Error:
       type: object
@@ -1783,6 +1847,24 @@ paths:
                   service:
                     type: string
                     example: "domain-driven-api-mock"
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Health endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # ============================================================================
   # CAMPAIGN MANAGEMENT
   # ============================================================================
@@ -1801,11 +1883,13 @@ paths:
       parameters:
         - name: page
           in: query
+          description: Page number for pagination (starts from 1)
           schema:
             type: integer
             default: 1
         - name: pageSize
           in: query
+          description: Number of items per page
           schema:
             type: integer
             default: 20
@@ -1932,6 +2016,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1978,6 +2063,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2036,6 +2122,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2088,6 +2175,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2146,6 +2234,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2207,17 +2296,20 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
         - name: page
           in: query
+          description: Page number for pagination (starts from 1)
           schema:
             type: integer
             default: 1
         - name: pageSize
           in: query
+          description: Number of items per page
           schema:
             type: integer
             default: 20
@@ -2270,6 +2362,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2347,6 +2440,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2400,6 +2494,7 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -2456,24 +2551,28 @@ paths:
       parameters:
         - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
         - name: startDate
           in: query
+          description: Start date for analytics period (inclusive)
           schema:
             type: string
             format: date
             example: "2024-01-01"
         - name: endDate
           in: query
+          description: End date for analytics period (inclusive)
           schema:
             type: string
             format: date
             example: "2024-01-31"
         - name: granularity
           in: query
+          description: Time granularity for grouping analytics data
           schema:
             type: string
             enum: [hour, day, week, month]
@@ -2481,6 +2580,7 @@ paths:
             example: "day"
         - name: breakdown
           in: query
+          description: Dimension to break down analytics by
           schema:
             type: string
             enum: [date, traffic_source, landing_page, offer, geography, device]
@@ -3315,6 +3415,7 @@ paths:
         - bearerAuth: [clicks:write]
         - oauth2: [clicks:write]
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -3498,6 +3599,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create goal
       description: |
@@ -3577,6 +3684,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /goals/templates:
     get:
       summary: Get goal templates
@@ -3604,6 +3717,30 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/GoalTemplate'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Templates not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /goals/{goalid}:
     get:
       summary: Get goal
@@ -3636,6 +3773,12 @@ paths:
                     $ref: '#/components/schemas/GoalResource'
         '404':
           description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -3681,6 +3824,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       summary: Delete goal
       description: Delete a conversion goal (soft delete - marks as inactive)
@@ -3717,6 +3866,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /goals/{goalid}/duplicate:
     post:
       summary: Duplicate goal
@@ -3735,6 +3890,7 @@ paths:
           description: Goal ID to duplicate
           example: "goal_550e8400-e29b-41d4-a716-446655440000"
       requestBody:
+        required: false
         content:
           application/json:
             schema:
@@ -3759,6 +3915,12 @@ paths:
                     $ref: '#/components/schemas/GoalResource'
         '404':
           description: Original goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -3942,6 +4104,24 @@ paths:
                         type: number
                         format: float
                         example: 0.5
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /journeys/drop-off:
     get:
       summary: Analyze customer journey drop-off points
@@ -3992,6 +4172,24 @@ paths:
                   period_days:
                     type: integer
                     example: 30
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 # ============================================================================
 # LTV TRACKING
 # ============================================================================
@@ -4051,6 +4249,24 @@ paths:
                           type: number
                           format: float
                           example: 12500
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 # ============================================================================
 # FORM INTEGRATION
 # ============================================================================
@@ -4106,6 +4322,12 @@ paths:
                     example: "Form submitted successfully"
         '400':
           description: Invalid form data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -4166,6 +4388,24 @@ paths:
                             converted:
                               type: integer
                               example: 75
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 # ============================================================================
 # TAGS
 # ============================================================================
