@@ -1766,7 +1766,7 @@ paths:
     get:
       summary: Health check
       description: Get the health status of the API service
-      operationId: get_health
+      operationId: getHealth
       tags: [Health]
       security: []  # Public endpoint - no authentication required
       responses:
@@ -1793,7 +1793,7 @@ paths:
         Get a paginated list of campaigns accessible to the authenticated user.
         **Supported Methods**: GET, POST
         **Rate Limit**: 60 requests/minute (authenticated)
-      operationId: get_campaigns
+      operationId: getCampaigns
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:read]
@@ -1818,9 +1818,9 @@ paths:
                 $ref: '#/components/schemas/CampaignCollection'
           links:
             GetCampaign:
-              operationId: get_campaigns_campaign_id
+              operationId: getCampaignById
               parameters:
-                campaignId: '$response.body#/campaigns/0/id'
+                campaignid: '$response.body#/campaigns/0/id'
         '400':
           description: Invalid request parameters
           content:
@@ -1858,7 +1858,7 @@ paths:
         **Supported Methods**: GET, POST
         **Rate Limit**: 30 requests/minute (authenticated)
         **Content-Type**: application/json
-      operationId: post_campaigns
+      operationId: createCampaign
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
@@ -1878,9 +1878,9 @@ paths:
                 $ref: '#/components/schemas/CampaignResource'
           links:
             GetCampaign:
-              operationId: get_campaigns_campaign_id
+              operationId: getCampaignById
               parameters:
-                campaignId: '$response.body#/id'
+                campaignid: '$response.body#/id'
           headers:
             Location:
               description: URL of the created campaign
@@ -1917,20 +1917,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /campaigns/{campaignId}:
+  /campaigns/{campaignid}:
     get:
       summary: Get campaign
       description: |
         Get detailed information about a specific campaign including performance metrics.
         **Supported Methods**: GET, PUT, DELETE
         **Rate Limit**: 120 requests/minute (authenticated)
-      operationId: get_campaigns_campaign_id
+      operationId: getCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:read]
         - oauth2: [campaign:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -1970,13 +1970,13 @@ paths:
     put:
       summary: Update campaign
       description: Update an existing campaign
-      operationId: put_campaigns_campaign_id
+      operationId: updateCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2028,13 +2028,13 @@ paths:
     delete:
       summary: Delete campaign
       description: Delete a campaign (admin only, typically soft delete)
-      operationId: delete_campaigns_campaign_id
+      operationId: deleteCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:delete]
         - oauth2: [campaign:delete]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2076,17 +2076,17 @@ paths:
   # ============================================================================
   # CAMPAIGN STATE MANAGEMENT
   # ============================================================================
-  /campaigns/{campaignId}/pause:
+  /campaigns/{campaignid}/pause:
     post:
       summary: Pause campaign
       description: Pause an active campaign
-      operationId: post_campaigns_campaign_id_pause
+      operationId: pauseCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2134,22 +2134,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /campaigns/{campaignId}/resume:
+  /campaigns/{campaignid}/resume:
     post:
       summary: Resume campaign
       description: Resume a paused campaign
-      operationId: post_campaigns_campaign_id_resume
+      operationId: resumeCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
             type: string
           example: "camp_123"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Ready to resume campaign"
       responses:
         '200':
           description: Campaign resumed successfully
@@ -2184,17 +2195,17 @@ paths:
   # ============================================================================
   # LANDING PAGES
   # ============================================================================
-  /campaigns/{campaignId}/landing-pages:
+  /campaigns/{campaignid}/landing-pages:
     get:
       summary: List landing pages
       description: Get landing pages for a campaign
-      operationId: get_campaigns_campaign_id_landing_pages
+      operationId: getCampaignLandingPagesById
       tags: [Landing Pages]
       security:
         - bearerAuth: [landing:read]
         - oauth2: [landing:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2251,13 +2262,13 @@ paths:
     post:
       summary: Create landing page
       description: Add a landing page to a campaign
-      operationId: post_campaigns_campaign_id_landing_pages
+      operationId: createCampaignLandingPageById
       tags: [Landing Pages]
       security:
         - bearerAuth: [landing:write]
         - oauth2: [landing:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2324,17 +2335,17 @@ paths:
   # ============================================================================
   # CAMPAIGN OFFERS
   # ============================================================================
-  /campaigns/{campaignId}/offers:
+  /campaigns/{campaignid}/offers:
     get:
       summary: List campaign offers
       description: Get a list of offers for a specific campaign
-      operationId: get_campaign_offers
+      operationId: getCampaignOffers
       tags: [Offers]
       security:
         - bearerAuth: [offers:read]
         - oauth2: [offers:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2381,13 +2392,13 @@ paths:
     post:
       summary: Create campaign offer
       description: Add a new offer to a campaign
-      operationId: post_campaign_offer
+      operationId: createCampaignOffer
       tags: [Offers]
       security:
         - bearerAuth: [offers:write]
         - oauth2: [offers:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2433,17 +2444,17 @@ paths:
   # ============================================================================
   # ANALYTICS
   # ============================================================================
-  /campaigns/{campaignId}/analytics:
+  /campaigns/{campaignid}/analytics:
     get:
       summary: Get campaign analytics
       description: Get detailed analytics and performance metrics for a campaign
-      operationId: get_campaigns_campaign_id_analytics
+      operationId: getCampaignAnalyticsById
       tags: [Analytics]
       security:
         - bearerAuth: [analytics:read]
         - oauth2: [analytics:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
           required: true
           schema:
@@ -2536,7 +2547,7 @@ paths:
         - IP blacklisting
         - Suspicious referrer analysis
         - Rate limiting per IP
-      operationId: get_click
+      operationId: trackClick
       tags:
         - Traffic
       security: []
@@ -2761,18 +2772,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /click/{clickId}:
+  /click/{clickid}:
     get:
       summary: Get click details
       description: Retrieve details of a specific click (for debugging and analytics)
-      operationId: get_click_click_id
+      operationId: getClickById
       tags:
         - Traffic
       security:
         - bearerAuth: [traffic:read]
         - oauth2: [traffic:read]
       parameters:
-        - name: clickId
+        - name: clickid
           in: path
           required: true
           schema:
@@ -2828,7 +2839,7 @@ paths:
         - `/campaigns` - Campaign management
         **Rate Limit**: 100 requests/second (public webhook endpoint)
         **Authentication**: Webhook secret validation (recommended)
-      operationId: post_webhooks_telegram
+      operationId: processTelegramWebhook
       tags: [Webhooks]
       security: []  # Public webhook endpoint
       requestBody:
@@ -2928,7 +2939,7 @@ paths:
         - `custom` - Custom events
         **Rate Limit**: 1000 requests/minute (public tracking endpoint)
         **Authentication**: Not required (public tracking endpoint)
-      operationId: post_events_track
+      operationId: trackEvent
       tags: [Events]
       security: []  # Public endpoint
       requestBody:
@@ -3041,7 +3052,7 @@ paths:
         **Attribution**: Last-click attribution model with time-decay confidence scoring
         **Fraud Detection**: Automated fraud scoring based on click validity and patterns
         **Postbacks**: Automatic notification sending to configured affiliate networks
-      operationId: post_conversions_track
+      operationId: trackConversion
       tags: [Conversions]
       security:
         - bearerAuth: [conversions:write]
@@ -3164,7 +3175,7 @@ paths:
         - `{order_id}` - External order identifier
         **Retry Logic:** Exponential backoff (1min, 2min, 4min, 8min) up to max_attempts
         **Authentication:** Supports Bearer tokens and API keys in headers
-      operationId: post_postbacks_send
+      operationId: sendPostback
       tags: [Postbacks]
       security:
         - bearerAuth: [postbacks:write]
@@ -3298,7 +3309,7 @@ paths:
         - Single URL: Generate one tracking URL
         - Bulk generation: Generate multiple variations with different parameters
         - Parameter optimization: Automatic parameter cleaning and validation
-      operationId: post_clicks_generate
+      operationId: generateClicks
       tags: [Clicks]
       security:
         - bearerAuth: [clicks:write]
@@ -3403,7 +3414,7 @@ paths:
         **PROTECTED ENDPOINT** - Get a list of conversion goals with optional filtering.
         Supports filtering by campaign, goal type, tags, and active status.
         Results are paginated and include goal performance metrics.
-      operationId: get_goals
+      operationId: getGoals
       tags: [Goals]
       security:
         - bearerAuth: [goals:read]
@@ -3493,7 +3504,7 @@ paths:
         **PROTECTED ENDPOINT** - Create a new conversion goal for tracking specific user actions.
         Goals define what constitutes a successful conversion for your campaigns,
         including how they're triggered and how their value is calculated.
-      operationId: post_goals
+      operationId: createGoal
       tags: [Goals]
       security:
         - bearerAuth: [goals:write]
@@ -3573,7 +3584,7 @@ paths:
         **PROTECTED ENDPOINT** - Get predefined goal templates for common conversion scenarios.
         Templates provide starting configurations for typical goals like form submissions,
         purchases, signups, and engagement metrics.
-      operationId: get_goals_templates
+      operationId: getGoalTemplates
       tags: [Goals]
       security:
         - bearerAuth: [goals:read]
@@ -3593,17 +3604,17 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/GoalTemplate'
-  /goals/{goalId}:
+  /goals/{goalid}:
     get:
       summary: Get goal
       description: Get detailed information about a specific conversion goal
-      operationId: get_goals_goal_id
+      operationId: getGoalById
       tags: [Goals]
       security:
         - bearerAuth: [goals:read]
         - oauth2: [goals:read]
       parameters:
-        - name: goalId
+        - name: goalid
           in: path
           required: true
           schema:
@@ -3632,13 +3643,13 @@ paths:
     put:
       summary: Update goal
       description: Update an existing conversion goal's configuration
-      operationId: put_goals_goal_id
+      operationId: updateGoalById
       tags: [Goals]
       security:
         - bearerAuth: [goals:write]
         - oauth2: [goals:write]
       parameters:
-        - name: goalId
+        - name: goalid
           in: path
           required: true
           schema:
@@ -3673,13 +3684,13 @@ paths:
     delete:
       summary: Delete goal
       description: Delete a conversion goal (soft delete - marks as inactive)
-      operationId: delete_goals_goal_id
+      operationId: deleteGoalById
       tags: [Goals]
       security:
         - bearerAuth: [goals:delete]
         - oauth2: [goals:delete]
       parameters:
-        - name: goalId
+        - name: goalid
           in: path
           required: true
           schema:
@@ -3706,17 +3717,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /goals/{goalId}/duplicate:
+  /goals/{goalid}/duplicate:
     post:
       summary: Duplicate goal
       description: Create a copy of an existing goal, optionally for a different campaign
-      operationId: post_goals_goal_id_duplicate
+      operationId: duplicateGoalById
       tags: [Goals]
       security:
         - bearerAuth: [goals:write]
         - oauth2: [goals:write]
       parameters:
-        - name: goalId
+        - name: goalid
           in: path
           required: true
           schema:
@@ -3760,7 +3771,7 @@ paths:
         
         **Authentication**: Supports multiple methods (Bearer token, OAuth2, or API Key).
         Any valid authentication method is acceptable (OR logic).
-      operationId: get_clicks
+      operationId: trackClicks
       tags:
         - Traffic
       security:
@@ -3862,7 +3873,7 @@ paths:
     get:
       summary: Get customer journey funnel
       description: Analyze customer funnel stages and conversion rates across campaigns
-      operationId: get_journeys_funnel
+      operationId: getJourneyFunnel
       tags: [Journeys]
       security:
         - bearerAuth: [analytics:read]
@@ -3935,7 +3946,7 @@ paths:
     get:
       summary: Analyze customer journey drop-off points
       description: Identify where customers drop off in their journey before conversion
-      operationId: get_journeys_drop_off
+      operationId: getJourneyDropOff
       tags: [Journeys]
       security:
         - bearerAuth: [analytics:read]
@@ -3988,7 +3999,7 @@ paths:
     get:
       summary: Get LTV analysis
       description: Analyze customer lifetime value and profitability metrics
-      operationId: get_ltv_analysis
+      operationId: getLtvAnalysis
       tags: [LTV]
       security:
         - bearerAuth: [analytics:read]
@@ -4047,7 +4058,7 @@ paths:
     post:
       summary: Submit form data
       description: Handle form submissions and lead capture from landing pages
-      operationId: post_forms_submit
+      operationId: submitForm
       tags: [Forms]
       security: []  # Public endpoint for form submissions
       requestBody:
@@ -4106,7 +4117,7 @@ paths:
     get:
       summary: List retention campaigns
       description: Get active retention campaigns and their performance
-      operationId: get_retention_campaigns
+      operationId: getRetentionCampaigns
       tags: [Retention]
       security:
         - bearerAuth: [campaigns:read]
@@ -4182,6 +4193,10 @@ tags:
     description: |
       Traffic acquisition and click tracking with fraud detection,
       multi-level sub-tracking, and conversion attribution.
+  - name: Clicks
+    description: |
+      Click tracking and URL generation for campaign attribution,
+      including bulk generation and parameter optimization.
   - name: Conversions
     description: |
       Conversion tracking and partner postbacks for affiliate network integration
