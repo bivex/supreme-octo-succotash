@@ -1005,6 +1005,7 @@ components:
         - country
         - metrics
     DeviceMetrics:
+      description: Analytics metrics broken down by device type
       type: object
       properties:
         device:
@@ -1015,10 +1016,19 @@ components:
       required:
         - device
         - metrics
+      example:
+        device: "desktop"
+        metrics:
+          clicks: 1500
+          conversions: 75
+          revenue:
+            amount: 3750.00
+            currency: "USD"
 # ============================================================================
 # REQUEST SCHEMAS
 # ============================================================================
     UpdateCampaignRequest:
+      description: Request payload for updating an existing campaign
       type: object
       properties:
         name:
@@ -1046,6 +1056,22 @@ components:
         endDate:
           type: string
           format: date-time
+      example:
+        name: "Updated Summer Campaign"
+        description: "Updated campaign for summer promotions"
+        whiteUrl: "https://example.com/allowed"
+        blackUrl: "https://example.com/blocked"
+        payout:
+          amount: 2.50
+          currency: "USD"
+        dailyBudget:
+          amount: 100.00
+          currency: "USD"
+        totalBudget:
+          amount: 5000.00
+          currency: "USD"
+        startDate: "2024-06-01T00:00:00Z"
+        endDate: "2024-08-31T23:59:59Z"
 # ============================================================================
 # WEBHOOK SCHEMAS
 # ============================================================================
@@ -1100,7 +1126,22 @@ components:
       required:
         - update_id
         - message
+      example:
+        update_id: 123456789
+        message:
+          message_id: 123
+          from:
+            id: 123456789
+            username: "john_doe"
+            first_name: "John"
+            last_name: "Doe"
+          chat:
+            id: 123456789
+            type: "private"
+          date: 1640995200
+          text: "/start"
     TelegramWebhookResponse:
+      description: Response from Telegram webhook processing
       type: object
       properties:
         status:
@@ -1128,6 +1169,15 @@ components:
           type: string
           description: Error message if status is error
           example: "Invalid update format"
+      example:
+        status: "success"
+        webhook_id: "550e8400-e29b-41d4-a716-446655440000"
+        response:
+          chat_id: 123456789
+          text: "👋 Добро пожаловать!"
+          reply_markup:
+            inline_keyboard:
+              - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🚀 Кампании", "callback_data": "campaigns"}]
     # Event Tracking Schemas
     EventTrackingRequest:
       type: object
@@ -1183,7 +1233,21 @@ components:
       required:
         - event_type
         - event_name
+      example:
+        event_type: "click"
+        event_name: "cta_button_click"
+        user_id: "user_a1b2c3d4"
+        session_id: "session_123456"
+        click_id: "123e4567-e89b-12d3-a456-426614174000"
+        campaign_id: 123
+        landing_page_id: 456
+        url: "https://example.com/landing-page"
+        referrer: "https://facebook.com/ad/123"
+        properties:
+          button_text: "Buy Now"
+          button_position: "hero_section"
     EventTrackingResponse:
+      description: Response from event tracking processing
       type: object
       properties:
         status:
@@ -1208,6 +1272,11 @@ components:
           type: string
           description: Error message if status is error
           example: "Invalid event data"
+      example:
+        status: "success"
+        event_id: "550e8400-e29b-41d4-a716-446655440000"
+        categories: ["interaction", "cta_interaction"]
+        fraud_detected: false
     # Conversion Tracking Schemas
     ConversionTrackingRequest:
       type: object
@@ -1246,7 +1315,20 @@ components:
       required:
         - click_id
         - conversion_type
+      example:
+        click_id: "123e4567-e89b-12d3-a456-426614174000"
+        conversion_type: "sale"
+        conversion_value:
+          amount: 99.99
+          currency: "USD"
+        order_id: "ORDER_123456"
+        product_id: "product_789"
+        metadata:
+          source: "web_store"
+          payment_method: "credit_card"
+          discount_applied: true
     ConversionTrackingResponse:
+      description: Response from conversion tracking processing
       type: object
       properties:
         status:
@@ -1288,6 +1370,16 @@ components:
           type: string
           description: Error message if status is error
           example: "Click ID not found"
+      example:
+        status: "success"
+        conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+        attribution:
+          attribution_model: "last_click"
+          attribution_confidence: 0.9
+          time_to_conversion: 3600.5
+          touchpoints: 1
+        fraud_detected: false
+        postback_triggered: true
     # Click Generation Schemas
     ClickGenerationRequest:
       type: object
@@ -1367,6 +1459,18 @@ components:
       required:
         - campaign_id
         - base_url
+      example:
+        campaign_id: 123
+        base_url: "https://example.com/landing-page"
+        landing_page_id: 456
+        offer_id: 789
+        params:
+          sub1: "fb_ad_15"
+          sub2: "facebook"
+          sub3: "prospecting"
+          sub4: "video1"
+          sub5: "lookalike78"
+          click_id: "USERCLICK123"
     BulkClickGenerationRequest:
       type: object
       description: Request to generate multiple click tracking URLs
@@ -1416,7 +1520,28 @@ components:
         - campaign_id
         - base_url
         - variations
+      example:
+        campaign_id: 123
+        base_url: "https://example.com/landing-page"
+        variations:
+          - id: "variation_1"
+            name: "Facebook Prospecting"
+            landing_page_id: 456
+            offer_id: 789
+            params:
+              sub1: "fb_ad_15"
+              sub2: "facebook"
+              sub3: "prospecting"
+          - id: "variation_2"
+            name: "Google Search"
+            landing_page_id: 457
+            offer_id: 790
+            params:
+              sub1: "google_ad_20"
+              sub2: "google"
+              sub3: "search"
     ClickGenerationResponse:
+      description: Response containing generated click tracking URL
       type: object
       properties:
         status:
@@ -1453,7 +1578,19 @@ components:
           type: string
           description: Error message if status is error
           example: "campaign_id must be a positive integer"
+      example:
+        status: "success"
+        tracking_url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook"
+        campaign_id: 123
+        params:
+          sub1: "fb_ad_15"
+          sub2: "facebook"
+          _generated_at: 1640995200
+          _version: "1.0"
+        landing_page_id: 456
+        offer_id: 789
     BulkClickGenerationResponse:
+      description: Response containing multiple generated click tracking URLs
       type: object
       properties:
         status:
@@ -1507,8 +1644,29 @@ components:
           type: string
           description: General error message if status is error
           example: "Bulk generation failed"
+      example:
+        status: "success"
+        total_variations: 3
+        successful: 2
+        failed: 1
+        results:
+          - id: "variation_1"
+            name: "Facebook Prospecting"
+            url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15"
+            params:
+              sub1: "fb_ad_15"
+              sub2: "facebook"
+            status: "success"
+          - id: "variation_2"
+            name: "Google Search"
+            url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=google_ad_20"
+            params:
+              sub1: "google_ad_20"
+              sub2: "google"
+            status: "success"
     # Goal Management Schemas
     GoalResource:
+      description: Conversion goal configuration and settings
       type: object
       properties:
         id:
@@ -1576,6 +1734,24 @@ components:
           type: string
           format: date-time
           description: Goal last update timestamp
+      example:
+        id: "goal_550e8400-e29b-41d4-a716-446655440000"
+        campaign_id: 123
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          fixed_value: 10.00
+        is_active: true
+        attribution_window_days: 30
+        priority: 1
+        tags: ["form", "lead", "conversion"]
+        created_at: "2024-01-01T00:00:00Z"
+        updated_at: "2024-01-01T00:00:00Z"
     CreateGoalRequest:
       type: object
       description: Request to create a new conversion goal
@@ -1643,6 +1819,21 @@ components:
         - name
         - goal_type
         - trigger_type
+      example:
+        campaign_id: 123
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          fixed_value: 10.00
+        is_active: true
+        attribution_window_days: 30
+        priority: 1
+        tags: ["form", "lead", "conversion"]
     UpdateGoalRequest:
       type: object
       description: Request to update an existing goal
@@ -1682,7 +1873,14 @@ components:
           items:
             type: string
           description: Tags for categorization
+      example:
+        name: "Updated Lead Goal"
+        description: "Updated goal for tracking lead conversions"
+        is_active: true
+        priority: 2
+        tags: ["form", "lead", "updated"]
     GoalCollection:
+      description: Collection of conversion goals with pagination
       type: object
       properties:
         goals:
@@ -1695,6 +1893,24 @@ components:
           example: 5
         pagination:
           $ref: '#/components/schemas/Pagination'
+      example:
+        goals:
+          - id: "goal_550e8400-e29b-41d4-a716-446655440000"
+            campaign_id: 123
+            name: "Lead Form Submission"
+            description: "Track when visitors submit lead capture forms"
+            goal_type: "lead"
+            trigger_type: "event"
+            is_active: true
+            attribution_window_days: 30
+        total: 5
+        pagination:
+          page: 1
+          pageSize: 20
+          totalItems: 5
+          totalPages: 1
+          hasNext: false
+          hasPrev: false
     GoalTemplate:
       type: object
       description: Predefined goal template
@@ -1732,6 +1948,18 @@ components:
           items:
             type: string
           example: ["form", "lead", "conversion"]
+      example:
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          value_field: "lead_value"
+        attribution_window_days: 30
+        tags: ["form", "lead", "conversion"]
     # Postback Schemas
     PostbackConfig:
       type: object
@@ -1774,6 +2002,13 @@ components:
           example: 3
       required:
         - url
+      example:
+        url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+        method: "GET"
+        headers:
+          Authorization: "Bearer your_token_here"
+          X-API-Key: "your_api_key"
+        max_attempts: 3
     PostbackSendRequest:
       type: object
       description: Request to send postback notification
@@ -1788,7 +2023,14 @@ components:
       required:
         - conversion_id
         - postback_config
+      example:
+        conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+        postback_config:
+          url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+          method: "GET"
+          max_attempts: 3
     PostbackSendResponse:
+      description: Response from postback notification delivery
       type: object
       properties:
         status:
@@ -1819,6 +2061,13 @@ components:
           type: string
           description: General status message
           example: "Postback sent successfully"
+      example:
+        status: "success"
+        postback_id: "550e8400-e29b-41d4-a716-446655440000"
+        response_code: 200
+        response_body: "OK"
+        attempt_count: 1
+        message: "Postback sent successfully"
 # ============================================================================
 # API PATHS
 # ============================================================================
