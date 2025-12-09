@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
 from datetime import datetime
-from .financial.money import Money
+from ..value_objects.financial.money import Money
 
 
 @dataclass

@@ -1,7 +1,7 @@
 """Goal management handler."""
 
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from loguru import logger
 from ...domain.repositories.goal_repository import GoalRepository
 from ...domain.services.goal.goal_service import GoalService

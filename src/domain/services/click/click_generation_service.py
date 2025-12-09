@@ -1,6 +1,6 @@
 """Click generation service for creating personalized tracking links."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from loguru import logger
 

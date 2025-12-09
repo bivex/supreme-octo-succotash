@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from loguru import logger
 from ...entities.conversion import Conversion
-from ...entities.click import ClickRecord
+from ...entities.click import Click
 from ...repositories.click_repository import ClickRepository
 
 
@@ -56,7 +56,7 @@ class ConversionService:
             logger.error(f"Error validating conversion data: {e}")
             return False, str(e)
 
-    def enrich_conversion_data(self, conversion_data: Dict[str, Any], click: ClickRecord) -> Dict[str, Any]:
+    def enrich_conversion_data(self, conversion_data: Dict[str, Any], click: Click) -> Dict[str, Any]:
         """Enrich conversion data with information from the original click."""
         enriched = conversion_data.copy()
 
@@ -100,7 +100,7 @@ class ConversionService:
         # This would require access to existing conversions
         return False
 
-    def calculate_attribution(self, conversion: Conversion, click: ClickRecord) -> Dict[str, Any]:
+    def calculate_attribution(self, conversion: Conversion, click: Click) -> Dict[str, Any]:
         """Calculate attribution data for the conversion."""
         attribution = {
             'attribution_model': 'last_click',  # Simple last-click attribution
@@ -124,7 +124,7 @@ class ConversionService:
 
         return attribution
 
-    def validate_fraud_risk(self, conversion: Conversion, click: ClickRecord) -> Optional[str]:
+    def validate_fraud_risk(self, conversion: Conversion, click: Click) -> Optional[str]:
         """Validate conversion for potential fraud."""
         # Check if click was marked as fraudulent
         if click.isValid == 0:
