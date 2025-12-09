@@ -954,30 +954,6 @@ components:
 # ============================================================================
 # REQUEST SCHEMAS
 # ============================================================================
-    CreateCampaignRequest:
-      type: object
-      properties:
-        name:
-          nullable: true
-        description:
-          nullable: true
-        whiteUrl:
-          nullable: true
-        blackUrl:
-          nullable: true
-        costModel:
-          nullable: true
-        payout:
-          nullable: true
-        dailyBudget:
-          nullable: true
-        totalBudget:
-          nullable: true
-        startDate:
-          nullable: true
-        endDate:
-          nullable: true
-      # No required fields - allow testing with various combinations
     UpdateCampaignRequest:
       type: object
       properties:
