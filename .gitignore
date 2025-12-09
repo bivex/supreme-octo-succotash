@@ -1,0 +1,50 @@
+# IDE and editor files
+.vscode/
+.idea/
+
+# Testing and coverage
+.hypothesis/
+.pytest_cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Virtual environment
+/venv/
+
+# Build and distribution
+/dist/
+/build/
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Compiled Python files (specific)
+/main_clean.pyc
+/main_clean.pyo
+/main_clean.pyd
+/main_clean.pyw
+/main_clean.pyz
+/main_clean.pywz
+
+# Compressed Python files
+*.pyc.gz
+*.pyo.gz
+*.pyd.gz
+*.pyw.gz
+*.pyz.gz
+*.pywz.gz
+
+# Logs
+app.log
+*.log

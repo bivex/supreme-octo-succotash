@@ -1,0 +1,37 @@
+"""Create campaign command."""
+
+from dataclasses import dataclass
+from typing import Optional
+from datetime import datetime
+
+from ...domain.value_objects import Money, Url
+
+
+@dataclass
+class CreateCampaignCommand:
+    """Command to create a new campaign."""
+
+    name: str
+    payout: Money
+    description: Optional[str] = None
+    cost_model: str = "CPA"
+    white_url: Optional[str] = None
+    black_url: Optional[str] = None
+    daily_budget: Optional[Money] = None
+    total_budget: Optional[Money] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        """Validate command data."""
+        if not self.name or not self.name.strip():
+            raise ValueError("Campaign name is required")
+
+        if self.cost_model not in ["CPA", "CPC", "CPM"]:
+            raise ValueError("Invalid cost model")
+
+        if self.white_url:
+            Url(self.white_url)  # Validate URL format
+
+        if self.black_url:
+            Url(self.black_url)  # Validate URL format

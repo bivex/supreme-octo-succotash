@@ -1,0 +1,1 @@
+{"name":"Test Campaign","description":"A test campaign","costModel":"CPA","payout":{"amount":25.50,"currency":"USD"},"whiteUrl":"https://example.com/safe","blackUrl":"https://example.com/offer","dailyBudget":{"amount":500.00,"currency":"USD"},"totalBudget":{"amount":15000.00,"currency":"USD"},"startDate":"2024-01-01T00:00:00Z","endDate":"2024-12-31T23:59:59Z"}

@@ -1,0 +1,117 @@
+"""Track click command handler."""
+
+from typing import Tuple
+
+from ..commands.track_click_command import TrackClickCommand
+from ...domain.entities.click import Click
+from ...domain.repositories.click_repository import ClickRepository
+from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.services.click import ClickValidationService
+from ...domain.value_objects import ClickId, CampaignId, Url
+
+
+class TrackClickHandler:
+    """Handler for tracking clicks."""
+
+    def __init__(self,
+                 click_repository: ClickRepository,
+                 campaign_repository: CampaignRepository,
+                 click_validation_service: ClickValidationService):
+        self._click_repository = click_repository
+        self._campaign_repository = campaign_repository
+        self._click_validation_service = click_validation_service
+
+    def handle(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
+        """
+        Handle track click command.
+
+        Returns:
+            Tuple of (click, redirect_url, is_valid_click)
+        """
+        campaign = self._find_campaign(command.campaign_id)
+
+        if not campaign:
+            return self._handle_unknown_campaign(command)
+
+        click = self._create_click_from_command(command)
+        is_valid = self._validate_click_and_mark_fraud(click)
+
+        redirect_url = self._determine_redirect_url(campaign, is_valid, command.test_mode, click.id.value)
+
+        # Save click
+        self._click_repository.save(click)
+
+        # Update campaign performance if valid click
+        if is_valid:
+            self._update_campaign_performance(campaign)
+
+        return click, redirect_url, is_valid
+
+    def _find_campaign(self, campaign_id_str: str):
+        """Find campaign by ID."""
+        campaign_id = CampaignId.from_string(campaign_id_str)
+        return self._campaign_repository.find_by_id(campaign_id)
+
+    def _handle_unknown_campaign(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
+        """Handle clicks for unknown campaigns."""
+        safe_url = Url("http://localhost:5000/mock-safe-page")
+        click = self._create_click_from_command(command)
+        return click, safe_url, False
+
+    def _validate_click_and_mark_fraud(self, click: Click) -> bool:
+        """Validate click for fraud and mark if fraudulent."""
+        is_valid, fraud_reason, fraud_score = self._click_validation_service.validate_click(
+            click, campaign_filters={}
+        )
+
+        if not is_valid:
+            click.mark_as_fraudulent(fraud_reason, fraud_score)
+
+        return is_valid
+
+    def _determine_redirect_url(self, campaign, is_valid: bool, test_mode: bool, click_id: str) -> Url:
+        """Determine redirect URL based on validation and campaign settings."""
+        if is_valid and campaign.offer_page_url:
+            redirect_url = campaign.offer_page_url
+        elif campaign.safe_page_url:
+            redirect_url = campaign.safe_page_url
+        else:
+            # Fallback
+            redirect_url = Url("http://localhost:5000/mock-safe-page")
+
+        # Add click ID to redirect URL if in test mode
+        if test_mode:
+            redirect_url = redirect_url.with_query_params({'click_id': click_id})
+
+        return redirect_url
+
+    def _update_campaign_performance(self, campaign):
+        """Update campaign performance metrics."""
+        campaign.update_performance(clicks_increment=1)
+        self._campaign_repository.save(campaign)
+
+    def _create_click_from_command(self, command: TrackClickCommand) -> Click:
+        """Create Click entity from command."""
+        click_id = ClickId.generate()
+        click_data = {
+            'id': click_id,
+            'campaign_id': command.campaign_id,
+            'ip_address': command.ip_address,
+            'user_agent': command.user_agent,
+            'referrer': command.referrer,
+            'sub1': command.sub1,
+            'sub2': command.sub2,
+            'sub3': command.sub3,
+            'sub4': command.sub4,
+            'sub5': command.sub5,
+            'click_id_param': command.click_id_param,
+            'affiliate_sub': command.affiliate_sub,
+            'affiliate_sub2': command.affiliate_sub2,
+            'affiliate_sub3': command.affiliate_sub3,
+            'affiliate_sub4': command.affiliate_sub4,
+            'affiliate_sub5': command.affiliate_sub5,
+            'landing_page_id': command.landing_page_id,
+            'campaign_offer_id': command.campaign_offer_id,
+            'traffic_source_id': command.traffic_source_id,
+        }
+        return Click(**click_data)
