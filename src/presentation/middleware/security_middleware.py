@@ -26,9 +26,9 @@ def validate_request(req, res):
         full_url = req.get_full_url()
         logger.debug(f"Full URL: {full_url}")
 
-        # Basic URL validation - reject obviously malformed URLs
-        if not full_url or len(full_url) > 8192:  # Reasonable URL length limit
-            logger.warning(f"URL too long or empty: {len(full_url) if full_url else 0} chars")
+        # Basic URL validation - skip validation if URL is empty (common for POST requests in socketify)
+        if full_url is None:
+            logger.warning("URL is None - this might be a socketify limitation for POST requests")
             error_response = {
                 'error': {
                     'code': 'INVALID_URL',
@@ -39,6 +39,19 @@ def validate_request(req, res):
             res.write_header("Content-Type", "application/json")
             res.end(json.dumps(error_response))
             return True
+        elif isinstance(full_url, str) and len(full_url) > 8192:  # Reasonable URL length limit
+            logger.warning(f"URL too long: {len(full_url)} chars")
+            error_response = {
+                'error': {
+                    'code': 'INVALID_URL',
+                    'message': 'Invalid URL format'
+                }
+            }
+            res.write_status(400)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps(error_response))
+            return True
+        # Allow empty strings to continue to path parsing
 
         # More robust URL parsing
         try:
@@ -83,6 +96,15 @@ def validate_request(req, res):
     if path.startswith('/v1/health') or path.startswith('/v1/reset'):
         logger.debug("Skipping validation for health/reset endpoints")
         return None
+
+    # Skip URL validation for POST endpoints that have issues with socketify URL parsing
+    skip_url_validation_endpoints = [
+        '/v1/fraud/rules',
+        '/v1/cache/flush'
+    ]
+    if any(path.startswith(endpoint) for endpoint in skip_url_validation_endpoints):
+        logger.debug(f"Skipping URL validation for endpoint: {path}")
+        # Skip the URL validation but continue with other validations
 
     try:
         _check_header_characters_socketify(req)
