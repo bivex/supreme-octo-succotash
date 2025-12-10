@@ -28,10 +28,16 @@ class FraudRoutes:
 
             try:
                 # Parse pagination parameters
-                page = int(req.get_query('page', '1'))
-                page_size = int(req.get_query('pageSize', '20'))
+                page_str = req.get_query('page')
+                page = int(page_str) if page_str else 1
+
+                page_size_str = req.get_query('pageSize')
+                page_size = int(page_size_str) if page_size_str else 20
+
                 rule_type = req.get_query('type')
-                active_only = req.get_query('active') == 'true'
+
+                active_str = req.get_query('active')
+                active_only = active_str == 'true'
 
                 # Validate parameters
                 if page < 1:

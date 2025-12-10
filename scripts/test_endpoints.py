@@ -248,11 +248,9 @@ class APIEndpointTester:
             ('GET', '/clicks?is_valid=1&limit=10', 'List valid clicks only', None, 200, False),
 
             # ============================================================================
-            # NEW HIGH/MEDIUM/LOW PRIORITY ENDPOINTS (NOT YET IMPLEMENTED)
+            # NEW HIGH/MEDIUM/LOW PRIORITY ENDPOINTS
             # ============================================================================
-            # NOTE: These endpoints are defined in OpenAPI spec but not yet implemented in server
-            # They will fail with connection errors until server implementation is added
-            ('POST', '/clicks/bulk-generate', 'Bulk generate click tracking URLs (HIGH PRIORITY - NOT IMPLEMENTED)', {
+            ('POST', '/v1/clicks/bulk-generate', 'Bulk generate click tracking URLs (HIGH PRIORITY)', {
                 "campaignId": "camp_test_123",
                 "landingPageId": "lp_test_456",
                 "offerId": "offer_test_789",
@@ -262,10 +260,10 @@ class APIEndpointTester:
                     {"sub1": "bulk_test_3", "sub2": "variant_c"}
                 ]
             }, 200, False),
-            ('GET', f'/clicks/validate/{test_click_id}', 'Validate click before redirect (HIGH PRIORITY - NOT IMPLEMENTED)', None, 200, True),
-            ('GET', '/fraud/rules', 'List fraud detection rules (MEDIUM PRIORITY - NOT IMPLEMENTED)', None, 200, False),
-            ('GET', '/fraud/rules?page=1&pageSize=10&type=ip_block', 'List fraud rules with filters (MEDIUM PRIORITY - NOT IMPLEMENTED)', None, 200, False),
-            ('POST', '/fraud/rules', 'Create fraud detection rule (MEDIUM PRIORITY - NOT IMPLEMENTED)', {
+            ('GET', f'/v1/clicks/validate/{test_click_id}', 'Validate click before redirect (HIGH PRIORITY)', None, 200, True),
+            ('GET', '/v1/fraud/rules', 'List fraud detection rules (MEDIUM PRIORITY)', None, 200, False),
+            ('GET', '/v1/fraud/rules?page=1&pageSize=10&type=ip_block', 'List fraud rules with filters (MEDIUM PRIORITY)', None, 200, False),
+            ('POST', '/v1/fraud/rules', 'Create fraud detection rule (MEDIUM PRIORITY)', {
                 "name": "Block suspicious user agents",
                 "type": "ua_block",
                 "action": "block",
@@ -275,13 +273,13 @@ class APIEndpointTester:
                 "priority": 80,
                 "isActive": True
             }, 201, False),
-            ('POST', '/cache/flush', 'Flush application cache (MEDIUM PRIORITY - NOT IMPLEMENTED)', {
+            ('POST', '/v1/cache/flush', 'Flush application cache (MEDIUM PRIORITY)', {
                 "types": ["campaigns", "landing_pages"]
             }, 200, False),
-            ('POST', '/cache/flush', 'Flush all cache (MEDIUM PRIORITY - NOT IMPLEMENTED)', {
+            ('POST', '/v1/cache/flush', 'Flush all cache (MEDIUM PRIORITY)', {
                 "types": ["all"]
             }, 200, False),
-            ('GET', '/analytics/real-time', 'Get real-time analytics (LOW PRIORITY - NOT IMPLEMENTED)', None, 200, False),
+            ('GET', '/v1/analytics/real-time', 'Get real-time analytics (LOW PRIORITY)', None, 200, False),
 
             # ============================================================================
             # RESET ENDPOINT (for testing)

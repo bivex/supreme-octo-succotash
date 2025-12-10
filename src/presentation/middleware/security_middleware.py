@@ -40,8 +40,31 @@ def validate_request(req, res):
             res.end(json.dumps(error_response))
             return True
 
-        path = full_url.split('://', 1)[1].split('/', 1)[1] if '://' in full_url else '/v1/campaigns/analytics'
-    except (AttributeError, IndexError, ValueError) as e:
+        # More robust URL parsing
+        try:
+            if not full_url or full_url.strip() == '':
+                # If URL is empty, try to get path from request object
+                # For socketify, we might need to construct path differently
+                path = '/v1'  # Default fallback
+            elif '://' in full_url:
+                # Extract path from URL like http://host:port/path
+                url_parts = full_url.split('://', 1)[1]  # Remove protocol
+                path_start = url_parts.find('/')
+                if path_start >= 0:
+                    path = url_parts[path_start:]  # Get path including leading /
+                else:
+                    path = '/'
+            else:
+                # Fallback for URLs without protocol
+                path = full_url if full_url.startswith('/') else '/'
+        except (IndexError, ValueError, AttributeError):
+            path = '/v1'  # Safe fallback
+
+        # Ensure path starts with /
+        if not path.startswith('/'):
+            path = '/' + path
+
+    except (AttributeError, Exception) as e:
         logger.warning(f"Failed to parse URL: {e}")
         error_response = {
             'error': {

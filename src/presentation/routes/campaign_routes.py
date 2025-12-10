@@ -299,7 +299,7 @@ class CampaignRoutes:
                 # Return 204 No Content on successful deletion
                 add_security_headers(res)
                 res.write_status(204)
-                res.end()
+                res.end('')
 
             except Exception as e:
                 logger.error(f"DELETE campaign error: {e}")
