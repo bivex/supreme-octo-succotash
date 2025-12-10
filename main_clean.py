@@ -11,6 +11,7 @@ import signal
 import sys
 import threading
 import time
+import weakref
 from contextlib import contextmanager
 from typing import Optional
 
@@ -21,6 +22,10 @@ from src.container import container
 from src.main import create_app
 
 
+# Global registry to prevent conflicts between multiple managers
+_active_managers = weakref.WeakSet()
+
+
 class BackgroundServiceManager:
     """Manages background services and their cleanup."""
 
@@ -28,6 +33,19 @@ class BackgroundServiceManager:
         self._threads: list[threading.Thread] = []
         self._services = []
         self._service_lock = threading.RLock()  # Синхронизация для доступа к сервисам
+        self._is_primary_manager = False  # Only primary manager handles global services
+
+        # Register this manager
+        if not _active_managers:
+            self._is_primary_manager = True
+        _active_managers.add(self)
+
+    def __del__(self):
+        """Cleanup when manager is destroyed."""
+        try:
+            _active_managers.discard(self)
+        except:
+            pass  # Ignore errors during cleanup
 
     def add_thread(self, thread: threading.Thread) -> None:
         """Add a thread to be tracked for cleanup."""
@@ -38,6 +56,16 @@ class BackgroundServiceManager:
         """Start the PostgreSQL connection upholder service."""
         with self._service_lock:
             try:
+                # Check if already started by this manager
+                if any(name == 'postgres_upholder' for name, _ in self._services):
+                    logger.info("PostgreSQL upholder already started by this manager")
+                    return
+
+                # Only primary manager starts global services
+                if not self._is_primary_manager:
+                    logger.info("Skipping postgres upholder start - not primary manager")
+                    return
+
                 upholder = container.get_postgres_upholder()
                 if hasattr(upholder, 'start'):
                     logger.info("Starting PostgreSQL upholder...")
@@ -56,6 +84,16 @@ class BackgroundServiceManager:
         """Start the cache monitoring service."""
         with self._service_lock:
             try:
+                # Check if already started by this manager
+                if any(name == 'cache_monitor' for name, _ in self._services):
+                    logger.info("Cache monitor already started by this manager")
+                    return
+
+                # Only primary manager starts global services
+                if not self._is_primary_manager:
+                    logger.info("Skipping cache monitor start - not primary manager")
+                    return
+
                 cache_monitor = container.get_postgres_cache_monitor()
                 logger.info("Starting cache monitor...")
                 cache_monitor.start_monitoring(interval_seconds=interval_seconds)
@@ -72,27 +110,37 @@ class BackgroundServiceManager:
     def stop_all_services(self) -> None:
         """Stop all background services gracefully."""
         with self._service_lock:
-            logger.info("Stopping background services...")
+            logger.info(f"Stopping background services (managing {len(self._services)} services)...")
 
             # Stop services in reverse order
             for service_name, service in reversed(self._services):
                 try:
-                    if service_name == 'postgres_upholder' and hasattr(service, 'stop'):
-                        logger.info("Stopping PostgreSQL upholder...")
+                    # More robust service stopping logic
+                    if hasattr(service, 'stop') and callable(getattr(service, 'stop')):
+                        logger.info(f"Stopping service '{service_name}' via stop()...")
                         service.stop()
-                    elif service_name == 'cache_monitor' and hasattr(service, 'stop_monitoring'):
-                        logger.info("Stopping cache monitor...")
+                    elif hasattr(service, 'stop_monitoring') and callable(getattr(service, 'stop_monitoring')):
+                        logger.info(f"Stopping service '{service_name}' via stop_monitoring()...")
                         service.stop_monitoring()
+                    else:
+                        logger.warning(f"Service '{service_name}' ({type(service).__name__}) has no known stop method")
                 except Exception as e:
-                    logger.error(f"Error stopping {service_name}: {e}")
+                    logger.error(f"Error stopping {service_name} ({type(service).__name__}): {e}")
+
+            # Clear services list after stopping
+            stopped_services = len(self._services)
+            self._services.clear()
 
             # Wait for threads to finish
-            self._wait_for_threads()
+            if self._threads:
+                logger.info(f"Waiting for {len(self._threads)} threads to finish...")
+                self._wait_for_threads()
+                self._threads.clear()  # Clear after waiting
 
             # Close database connections
             self._close_database_connections()
 
-            logger.info("All background services stopped")
+            logger.info(f"All background services stopped (stopped {stopped_services} services)")
 
     def _wait_for_threads(self) -> None:
         """Wait for all tracked threads to finish."""
