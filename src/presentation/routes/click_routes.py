@@ -80,34 +80,48 @@ class ClickRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock click details
-                mock_click = {
-                    "id": click_id,
-                    "cid": 123,
-                    "ip": "192.168.1.100",
-                    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "ref": "https://facebook.com/ad/123",
-                    "isValid": 1,
-                    "ts": 1640995200,
-                    "sub1": "fb_ad_15",
-                    "sub2": "facebook",
-                    "sub3": "adset_12",
-                    "sub4": "video1",
-                    "sub5": "lookalike78",
-                    "clickId": "USERCLICK123",
-                    "affSub": "aff_sub_123",
-                    "fraudScore": 0.05,
-                    "fraudReason": None,
-                    "landingPageId": 456,
-                    "campaignOfferId": 789,
-                    "trafficSourceId": 101,
-                    "conversionType": "sale"
+                # Get click from repository
+                click = self.track_click_handler.click_repository.find_by_id(uuid.UUID(click_id))
+
+                if not click:
+                    error_response = {"error": {"code": "NOT_FOUND", "message": "Click not found"}}
+                    res.write_status(404)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Convert click to response format
+                click_data = {
+                    "id": str(click.id.value),
+                    "campaign_id": click.campaign_id,
+                    "ip_address": click.ip_address,
+                    "user_agent": click.user_agent,
+                    "referrer": click.referrer,
+                    "is_valid": click.is_valid,
+                    "sub1": click.sub1,
+                    "sub2": click.sub2,
+                    "sub3": click.sub3,
+                    "sub4": click.sub4,
+                    "sub5": click.sub5,
+                    "click_id_param": click.click_id_param,
+                    "affiliate_sub": click.affiliate_sub,
+                    "affiliate_sub2": click.affiliate_sub2,
+                    "landing_page_id": click.landing_page_id,
+                    "campaign_offer_id": click.campaign_offer_id,
+                    "traffic_source_id": click.traffic_source_id,
+                    "conversion_type": click.conversion_type,
+                    "converted_at": click.converted_at.isoformat() if click.converted_at else None,
+                    "created_at": click.created_at.isoformat(),
+                    "has_conversion": click.has_conversion
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_click))
+                res.end(json.dumps(click_data))
 
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error getting click details: {e}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -179,14 +193,47 @@ class ClickRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # TODO: Implement list clicks query
-                # For now, return mock response
-                response = {
-                    "clicks": [],
-                    "total": 0,
-                    "limit": limit,
-                    "offset": offset
-                }
+                # Get clicks from repository
+                try:
+                    clicks = self.track_click_handler.click_repository.find_by_filters(
+                        filters=None  # TODO: Implement proper filter object
+                    )
+
+                    # Apply pagination manually since filters don't support it yet
+                    total_clicks = len(clicks)
+                    paginated_clicks = clicks[offset:offset + limit]
+
+                    # Convert clicks to response format
+                    click_list = []
+                    for click in paginated_clicks:
+                        click_list.append({
+                            "id": str(click.id.value),
+                            "campaign_id": click.campaign_id,
+                            "ip_address": click.ip_address,
+                            "user_agent": click.user_agent,
+                            "referrer": click.referrer,
+                            "is_valid": click.is_valid,
+                            "created_at": click.created_at.isoformat(),
+                            "has_conversion": click.has_conversion
+                        })
+
+                    response = {
+                        "clicks": click_list,
+                        "total": total_clicks,
+                        "limit": limit,
+                        "offset": offset
+                    }
+
+                except Exception as e:
+                    logger.error(f"Error listing clicks: {e}")
+                    response = {
+                        "clicks": [],
+                        "total": 0,
+                        "limit": limit,
+                        "offset": offset,
+                        "error": "Failed to retrieve clicks"
+                    }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
