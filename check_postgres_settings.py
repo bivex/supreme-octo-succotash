@@ -1,109 +1,206 @@
 #!/usr/bin/env python3
 """
-Check PostgreSQL settings and database state
+Check PostgreSQL settings and database state.
 """
 
-import psycopg2
+import sys
+import os
+import logging
+from typing import List, Tuple, Optional
+from contextlib import contextmanager
 
-def check_postgres_settings():
-    """Check PostgreSQL settings and database state"""
-    try:
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            database="supreme_octosuccotash_db",
-            user="app_user",
-            password="app_password"
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+try:
+    import psycopg2
+    from psycopg2 import pool
+    from src.container import Container
+except ImportError as e:
+    print(f"Import error: {e}")
+    print("Make sure all dependencies are installed")
+    sys.exit(1)
+
+
+class PostgreSQLChecker:
+    """Handles PostgreSQL settings and database state checking."""
+
+    def __init__(self):
+        self.container = Container()
+        self.logger = logging.getLogger(__name__)
+        self._setup_logging()
+
+    def _setup_logging(self) -> None:
+        """Configure logging for PostgreSQL checking."""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
         )
-        cursor = conn.cursor()
 
-        print("🔍 PostgreSQL Cache Hit Ratio Analysis")
-        print("=" * 50)
+    @contextmanager
+    def get_database_connection(self):
+        """Context manager for database connections."""
+        connection = None
+        try:
+            connection = self.container.get_db_connection()
+            yield connection
+        finally:
+            if connection:
+                connection.close()
 
-        # Размер базы данных
-        cursor.execute("SELECT pg_size_pretty(pg_database_size(current_database())) as db_size")
-        db_size = cursor.fetchone()[0]
-        print(f"📊 Database size: {db_size}")
+    def get_database_size(self, connection) -> str:
+        """Get the size of the current database."""
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT pg_size_pretty(pg_database_size(current_database())) as db_size")
+            return cursor.fetchone()[0]
+        finally:
+            cursor.close()
 
-        # Количество записей в основных таблицах
-        tables = ['campaigns', 'clicks', 'events', 'conversions', 'landing_pages', 'offers']
-        total_records = 0
-        print("\n📋 Table records:")
-        for table in tables:
-            try:
-                cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                count = cursor.fetchone()[0]
-                total_records += count
-                print(f"  {table}: {count} records")
-            except Exception as e:
-                print(f"  {table}: error - {e}")
+    def get_table_record_counts(self, connection, tables: List[str]) -> List[Tuple[str, int]]:
+        """Get record counts for specified tables."""
+        cursor = connection.cursor()
+        results = []
 
-        print(f"\n📈 Total records: {total_records}")
+        try:
+            for table in tables:
+                try:
+                    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                    count = cursor.fetchone()[0]
+                    results.append((table, count))
+                except Exception as e:
+                    self.logger.warning(f"Error counting records in {table}: {str(e)}")
+                    results.append((table, -1))  # -1 indicates error
+        finally:
+            cursor.close()
 
-        # Текущие настройки PostgreSQL
-        cursor.execute("""
-            SELECT name, setting, unit
-            FROM pg_settings
-            WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size', 'shared_preload_libraries')
-            ORDER BY name
-        """)
-        settings = cursor.fetchall()
+        return results
 
-        print("\n⚙️ PostgreSQL Cache Settings:")
-        for name, setting, unit in settings:
-            unit_str = f" {unit}" if unit else ""
-            print(f"  {name}: {setting}{unit_str}")
+    def get_postgresql_settings(self, connection) -> List[Tuple[str, str, Optional[str]]]:
+        """Get PostgreSQL cache-related settings."""
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT name, setting, unit
+                FROM pg_settings
+                WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size', 'shared_preload_libraries')
+                ORDER BY name
+            """)
+            return cursor.fetchall()
+        finally:
+            cursor.close()
 
-        # Проверка расширения pg_buffercache
-        cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'pg_buffercache'")
-        has_buffercache = cursor.fetchone()
+    def check_extension(self, connection, extension_name: str) -> bool:
+        """Check if a PostgreSQL extension is installed."""
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT 1 FROM pg_extension WHERE extname = %s", (extension_name,))
+            return cursor.fetchone() is not None
+        finally:
+            cursor.close()
 
-        if has_buffercache:
-            print("\n✅ pg_buffercache extension: INSTALLED")
-        else:
-            print("\n❌ pg_buffercache extension: NOT INSTALLED")
-            print("   This may cause inaccurate cache hit ratio measurements")
+    def analyze_cache_settings(self) -> None:
+        """Analyze PostgreSQL cache settings and provide recommendations."""
+        self.logger.info("PostgreSQL Cache Hit Ratio Analysis")
+        self.logger.info("=" * 50)
 
-        # Проверка расширения pg_stat_statements
-        cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'")
-        has_stat_statements = cursor.fetchone()
+        try:
+            with self.get_database_connection() as connection:
+                # Database size
+                db_size = self.get_database_size(connection)
+                self.logger.info(f"Database size: {db_size}")
 
-        if has_stat_statements:
-            print("✅ pg_stat_statements extension: INSTALLED")
-        else:
-            print("❌ pg_stat_statements extension: NOT INSTALLED")
-            print("   This may cause missing query performance data")
+                # Table records
+                tables = ['campaigns', 'clicks', 'events', 'conversions', 'landing_pages', 'offers']
+                table_counts = self.get_table_record_counts(connection, tables)
 
-        # Диагностика cache hit ratio = 0%
-        print("\n🔬 DIAGNOSIS:")
+                total_records = 0
+                self.logger.info("Table records:")
+                for table, count in table_counts:
+                    if count >= 0:
+                        self.logger.info(f"  {table}: {count} records")
+                        total_records += count
+                    else:
+                        self.logger.info(f"  {table}: error retrieving count")
+
+                self.logger.info(f"Total records: {total_records}")
+
+                # PostgreSQL settings
+                settings = self.get_postgresql_settings(connection)
+                self.logger.info("PostgreSQL Cache Settings:")
+                for name, setting, unit in settings:
+                    unit_str = f" {unit}" if unit else ""
+                    self.logger.info(f"  {name}: {setting}{unit_str}")
+
+                # Extension checks
+                buffercache_installed = self.check_extension(connection, 'pg_buffercache')
+                stat_statements_installed = self.check_extension(connection, 'pg_stat_statements')
+
+                if buffercache_installed:
+                    self.logger.info("pg_buffercache extension: INSTALLED")
+                else:
+                    self.logger.warning("pg_buffercache extension: NOT INSTALLED")
+                    self.logger.warning("This may cause inaccurate cache hit ratio measurements")
+
+                if stat_statements_installed:
+                    self.logger.info("pg_stat_statements extension: INSTALLED")
+                else:
+                    self.logger.warning("pg_stat_statements extension: NOT INSTALLED")
+                    self.logger.warning("This may cause missing query performance data")
+
+                # Diagnosis
+                self._provide_diagnosis(db_size, total_records, settings)
+
+        except Exception as e:
+            self.logger.error(f"Error during PostgreSQL analysis: {str(e)}")
+            raise
+
+    def _provide_diagnosis(self, db_size: str, total_records: int, settings: List[Tuple[str, str, Optional[str]]]) -> None:
+        """Provide diagnosis and recommendations based on analysis."""
+        self.logger.info("DIAGNOSIS:")
+
+        issues_found = False
+
         if total_records == 0:
-            print("❌ ПРОБЛЕМА: База данных пустая (0 записей)")
-            print("   Решение: Загрузите тестовые данные для тестирования кеша")
+            self.logger.error("PROBLEM: Database is empty (0 records)")
+            self.logger.info("  Solution: Load test data for cache testing")
+            issues_found = True
 
         if db_size.endswith('kB') and int(db_size[:-2]) < 10000:
-            print("❌ ПРОБЛЕМА: База данных слишком маленькая для эффективного кеширования")
-            print(f"   Текущий размер: {db_size}")
-            print("   Решение: Увеличьте объем данных")
+            self.logger.error("PROBLEM: Database is too small for effective caching")
+            self.logger.info(f"  Current size: {db_size}")
+            self.logger.info("  Solution: Increase data volume")
+            issues_found = True
 
-        # Проверяем shared_buffers
-        cursor.execute("SELECT setting::bigint FROM pg_settings WHERE name = 'shared_buffers'")
-        shared_buffers_kb = cursor.fetchone()[0]
+        # Check shared_buffers
+        shared_buffers_setting = next((setting for name, setting, unit in settings if name == 'shared_buffers'), None)
+        if shared_buffers_setting:
+            shared_buffers_kb = int(shared_buffers_setting)
+            if shared_buffers_kb < 128 * 1024:  # less than 128MB
+                self.logger.error("PROBLEM: shared_buffers is too small")
+                self.logger.info(f"  Current: {shared_buffers_kb // 1024} MB")
+                self.logger.info("  Recommendation: 25-40% of system memory")
+                issues_found = True
 
-        if shared_buffers_kb < 128 * 1024:  # меньше 128MB
-            print("❌ ПРОБЛЕМА: shared_buffers слишком маленький")
-            print(f"   Текущий: {shared_buffers_kb // 1024} MB")
-            print("   Рекомендация: 25-40% от оперативной памяти")
+        self.logger.info("RECOMMENDATIONS:")
+        if issues_found:
+            self.logger.info("1. Load test data: python load_test_db.py --small")
+            self.logger.info("2. Increase shared_buffers in postgresql.conf")
+            self.logger.info("3. Install pg_buffercache for accurate measurements")
+            self.logger.info("4. Conduct load testing")
+        else:
+            self.logger.info("Database configuration appears optimal for caching")
 
-        print("\n💡 РЕКОМЕНДАЦИИ:")
-        print("1. Загрузите тестовые данные: python load_test_db.py --small")
-        print("2. Увеличьте shared_buffers в postgresql.conf")
-        print("3. Установите pg_buffercache для точных измерений")
-        print("4. Проведите нагрузочное тестирование")
 
-        conn.close()
-
+def main() -> None:
+    """Main entry point for PostgreSQL checking."""
+    try:
+        checker = PostgreSQLChecker()
+        checker.analyze_cache_settings()
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Failed to check PostgreSQL settings: {str(e)}")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    check_postgres_settings()
+    main()
