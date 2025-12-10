@@ -8,6 +8,8 @@ from .in_memory_event_repository import InMemoryEventRepository
 from .in_memory_conversion_repository import InMemoryConversionRepository
 from .in_memory_postback_repository import InMemoryPostbackRepository
 from .in_memory_goal_repository import InMemoryGoalRepository
+from .in_memory_retention_repository import InMemoryRetentionRepository
+from .in_memory_form_repository import InMemoryFormRepository
 
 from .sqlite_campaign_repository import SQLiteCampaignRepository
 from .sqlite_click_repository import SQLiteClickRepository
@@ -18,6 +20,8 @@ from .sqlite_conversion_repository import SQLiteConversionRepository
 from .sqlite_postback_repository import SQLitePostbackRepository
 from .sqlite_goal_repository import SQLiteGoalRepository
 from .sqlite_ltv_repository import SQLiteLTVRepository
+from .sqlite_retention_repository import SQLiteRetentionRepository
+from .sqlite_form_repository import SQLiteFormRepository
 
 __all__ = [
     'InMemoryCampaignRepository',
@@ -28,6 +32,8 @@ __all__ = [
     'InMemoryConversionRepository',
     'InMemoryPostbackRepository',
     'InMemoryGoalRepository',
+    'InMemoryRetentionRepository',
+    'InMemoryFormRepository',
     'SQLiteCampaignRepository',
     'SQLiteClickRepository',
     'SQLiteAnalyticsRepository',
@@ -36,5 +42,7 @@ __all__ = [
     'SQLiteConversionRepository',
     'SQLitePostbackRepository',
     'SQLiteGoalRepository',
-    'SQLiteLTVRepository'
+    'SQLiteLTVRepository',
+    'SQLiteRetentionRepository',
+    'SQLiteFormRepository'
 ]

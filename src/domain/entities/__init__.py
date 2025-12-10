@@ -7,7 +7,7 @@ from .offer import Offer
 from .conversion import Conversion
 from .event import Event
 from .goal import Goal
-from .journey import Journey
+from .journey import CustomerJourney
 from .postback import Postback
 from .webhook import TelegramWebhook
 from .ltv import Cohort, CustomerLTV, LTVSegment
@@ -22,7 +22,7 @@ __all__ = [
     'Conversion',
     'Event',
     'Goal',
-    'Journey',
+    'CustomerJourney',
     'Postback',
     'TelegramWebhook',
     'Cohort',

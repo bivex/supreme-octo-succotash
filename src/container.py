@@ -10,6 +10,9 @@ from .infrastructure.repositories import (
     SQLiteConversionRepository,
     SQLitePostbackRepository,
     SQLiteGoalRepository,
+    SQLiteLTVRepository,
+    SQLiteRetentionRepository,
+    SQLiteFormRepository,
 )
 from .infrastructure.external import MockIpGeolocationService
 
@@ -29,7 +32,7 @@ from .domain.services.goal import GoalService
 from .domain.services.journey import JourneyService
 
 # Application handlers
-from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler, BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler
+from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler, BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler, LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
 
 # Application queries
 from .application.queries import GetCampaignHandler
@@ -308,6 +311,27 @@ class Container:
             self._singletons['goal_repository'] = SQLiteGoalRepository(db_path)
         return self._singletons['goal_repository']
 
+    def get_ltv_repository(self):
+        """Get LTV repository."""
+        if 'ltv_repository' not in self._singletons:
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['ltv_repository'] = SQLiteLTVRepository(db_path)
+        return self._singletons['ltv_repository']
+
+    def get_retention_repository(self):
+        """Get retention repository."""
+        if 'retention_repository' not in self._singletons:
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['retention_repository'] = SQLiteRetentionRepository(db_path)
+        return self._singletons['retention_repository']
+
+    def get_form_repository(self):
+        """Get form repository."""
+        if 'form_repository' not in self._singletons:
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['form_repository'] = SQLiteFormRepository(db_path)
+        return self._singletons['form_repository']
+
     def get_goal_service(self):
         """Get goal service."""
         if 'goal_service' not in self._singletons:
@@ -358,19 +382,25 @@ class Container:
     def get_ltv_routes(self):
         """Get LTV routes."""
         if 'ltv_routes' not in self._singletons:
-            self._singletons['ltv_routes'] = LtvRoutes()
+            self._singletons['ltv_routes'] = LtvRoutes(
+                ltv_handler=self.get_ltv_handler()
+            )
         return self._singletons['ltv_routes']
 
     def get_form_routes(self):
         """Get form routes."""
         if 'form_routes' not in self._singletons:
-            self._singletons['form_routes'] = FormRoutes()
+            self._singletons['form_routes'] = FormRoutes(
+                form_handler=self.get_form_handler()
+            )
         return self._singletons['form_routes']
 
     def get_retention_routes(self):
         """Get retention routes."""
         if 'retention_routes' not in self._singletons:
-            self._singletons['retention_routes'] = RetentionRoutes()
+            self._singletons['retention_routes'] = RetentionRoutes(
+                retention_handler=self.get_retention_handler()
+            )
         return self._singletons['retention_routes']
 
     def get_bulk_click_handler(self):
@@ -422,6 +452,50 @@ class Container:
         if 'analytics_handler' not in self._singletons:
             self._singletons['analytics_handler'] = AnalyticsHandler()
         return self._singletons['analytics_handler']
+
+    def get_ltv_handler(self):
+        """Get LTV handler."""
+        if 'ltv_handler' not in self._singletons:
+            self._singletons['ltv_handler'] = LTVHandler(
+                ltv_repository=self.get_ltv_repository()
+            )
+        return self._singletons['ltv_handler']
+
+    def get_retention_handler(self):
+        """Get retention handler."""
+        if 'retention_handler' not in self._singletons:
+            self._singletons['retention_handler'] = RetentionHandler(
+                retention_repository=self.get_retention_repository(),
+                click_repository=self.get_click_repository(),
+                conversion_repository=self.get_conversion_repository()
+            )
+        return self._singletons['retention_handler']
+
+    def get_form_handler(self):
+        """Get form handler."""
+        if 'form_handler' not in self._singletons:
+            self._singletons['form_handler'] = FormHandler(
+                form_repository=self.get_form_repository()
+            )
+        return self._singletons['form_handler']
+
+    def get_cohort_analysis_handler(self):
+        """Get cohort analysis handler."""
+        if 'cohort_analysis_handler' not in self._singletons:
+            self._singletons['cohort_analysis_handler'] = CohortAnalysisHandler(
+                ltv_repository=self.get_ltv_repository()
+            )
+        return self._singletons['cohort_analysis_handler']
+
+    def get_segmentation_handler(self):
+        """Get segmentation handler."""
+        if 'segmentation_handler' not in self._singletons:
+            self._singletons['segmentation_handler'] = SegmentationHandler(
+                retention_repository=self.get_retention_repository(),
+                click_repository=self.get_click_repository(),
+                conversion_repository=self.get_conversion_repository()
+            )
+        return self._singletons['segmentation_handler']
 
     def get_analytics_routes(self):
         """Get analytics routes."""
