@@ -38,3 +38,8 @@ class LandingPageRepository(ABC):
     def exists_by_id(self, landing_page_id: str) -> bool:
         """Check if landing page exists by ID."""
         pass
+
+    @abstractmethod
+    def count_by_campaign_id(self, campaign_id: str) -> int:
+        """Count landing pages by campaign ID."""
+        pass

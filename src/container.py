@@ -652,23 +652,15 @@ class Container:
     def get_landing_page_repository(self):
         """Get landing page repository."""
         if 'landing_page_repository' not in self._singletons:
-            # Try PostgreSQL first, fallback to SQLite
-            try:
-                self._singletons['landing_page_repository'] = self.get_postgres_landing_page_repository()
-            except Exception:
-                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-                self._singletons['landing_page_repository'] = SQLiteLandingPageRepository(db_path)
+            # Use PostgreSQL repository
+            self._singletons['landing_page_repository'] = self.get_postgres_landing_page_repository()
         return self._singletons['landing_page_repository']
 
     def get_offer_repository(self):
         """Get offer repository."""
         if 'offer_repository' not in self._singletons:
-            # Try PostgreSQL first, fallback to SQLite
-            try:
-                self._singletons['offer_repository'] = self.get_postgres_offer_repository()
-            except Exception:
-                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-                self._singletons['offer_repository'] = SQLiteOfferRepository(db_path)
+            # Use PostgreSQL repository
+            self._singletons['offer_repository'] = self.get_postgres_offer_repository()
         return self._singletons['offer_repository']
 
     def get_goal_service(self):

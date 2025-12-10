@@ -38,3 +38,8 @@ class OfferRepository(ABC):
     def exists_by_id(self, offer_id: str) -> bool:
         """Check if offer exists by ID."""
         pass
+
+    @abstractmethod
+    def count_by_campaign_id(self, campaign_id: str) -> int:
+        """Count offers by campaign ID."""
+        pass

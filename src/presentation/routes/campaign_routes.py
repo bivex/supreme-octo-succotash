@@ -485,9 +485,11 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # For now, simulate successful deletion (would delete from database)
-                # TODO: Implement actual campaign deletion logic
-                logger.info(f"Deleting campaign {campaign_id}")
+                # Delete campaign from database
+                from ...domain.value_objects import CampaignId
+                campaign_id_obj = CampaignId.from_string(campaign_id)
+                self._container.get_campaign_repository().delete_by_id(campaign_id_obj)
+                logger.info(f"Successfully deleted campaign {campaign_id}")
 
                 # Return 204 No Content on successful deletion
                 add_security_headers(res)
@@ -810,9 +812,8 @@ class CampaignRoutes:
                 if hasattr(landing_pages, '__len__'):
                     logger.debug(f"Length: {len(landing_pages)}")
 
-                # For now, assume we have some landing pages for pagination
-                # TODO: Implement proper count query
-                total_count = max(len(landing_pages), page_size)  # At least current page
+                # Get total count for pagination
+                total_count = self._container.get_landing_page_repository().count_by_campaign_id(campaign_id)
 
                 # Convert to response format
                 response = {
@@ -992,9 +993,8 @@ class CampaignRoutes:
                 if hasattr(offers, '__len__'):
                     logger.debug(f"Length: {len(offers)}")
 
-                # For now, assume we have some offers for pagination
-                # TODO: Implement proper count query
-                total_count = max(len(offers), page_size)  # At least current page
+                # Get total count for pagination
+                total_count = self._container.get_offer_repository().count_by_campaign_id(campaign_id)
 
                 # Convert to response format
                 response = {

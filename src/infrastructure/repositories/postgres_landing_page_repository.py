@@ -205,3 +205,18 @@ class PostgresLandingPageRepository(LandingPageRepository):
         finally:
             if conn:
                 self._container.release_db_connection(conn)
+
+    def count_by_campaign_id(self, campaign_id: str) -> int:
+        """Count landing pages by campaign ID."""
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT COUNT(*) FROM landing_pages WHERE campaign_id = %s", (campaign_id,))
+
+            result = cursor.fetchone()
+            return result[0] if result else 0
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
