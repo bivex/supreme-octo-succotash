@@ -145,11 +145,14 @@ class CampaignRoutes:
 
                 logger.debug(f"page={page}, page_size={page_size}")
 
-                # For now, return mock data (would need a list campaigns query)
-                campaigns = []  # TODO: Implement list campaigns query
-                logger.debug(f"campaigns count={len(campaigns)}")
+                # Get campaigns from repository
+                offset = (page - 1) * page_size
+                campaign_repo = self.create_campaign_handler._campaign_repository
+                campaigns = campaign_repo.find_all(limit=page_size, offset=offset)
+                total_count = campaign_repo.count_all()
+                logger.debug(f"campaigns count={len(campaigns)}, total_count={total_count}")
 
-                pagination = self._build_pagination_info(page, page_size, campaigns)
+                pagination = self._build_pagination_info(page, page_size, total_count)
                 logger.debug(f"pagination={pagination}")
 
                 response = {
@@ -271,7 +274,7 @@ class CampaignRoutes:
 
     def _register_get_campaign(self, app):
         """Register get campaign route."""
-        def get_campaign(res, req):
+        async def get_campaign(res, req):
             """Get campaign details."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -284,7 +287,7 @@ class CampaignRoutes:
 
                 # Get campaign from repository
                 from ...domain.value_objects import CampaignId
-                campaign = self.campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
+                campaign = self.create_campaign_handler._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
 
                 if not campaign:
                     error_response = {"error": {"code": "NOT_FOUND", "message": "Campaign not found"}}
@@ -358,8 +361,11 @@ class CampaignRoutes:
                 res.write_status(400)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
-            except Exception:
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+            except Exception as e:
+                import traceback
+                logger.error(f"Error getting campaign: {e}", exc_info=True)
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -488,9 +494,8 @@ class CampaignRoutes:
         app.put('/v1/campaigns/:campaign_id', update_campaign)
         app.delete('/v1/campaigns/:campaign_id', delete_campaign)
 
-    def _build_pagination_info(self, page: int, page_size: int, campaigns: list) -> dict:
+    def _build_pagination_info(self, page: int, page_size: int, total_items: int) -> dict:
         """Build pagination information."""
-        total_items = len(campaigns)
         total_pages = max(1, (total_items + page_size - 1) // page_size)
 
         return {
