@@ -180,7 +180,10 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(response))
 
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in list_campaigns: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 from ...presentation.error_handlers import handle_internal_server_error
                 handle_internal_server_error(res)
 
@@ -272,7 +275,7 @@ class CampaignRoutes:
                 res.end(json.dumps(error_response))
             except Exception as e:
                 import traceback
-                logger.error(f"Error creating campaign: {e}", exc_info=True)
+                logger.error(f"Error creating campaign: {e}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
@@ -599,6 +602,15 @@ class CampaignRoutes:
                 else:
                     breakdowns_data = {}
 
+                # Convert Money objects to dict format
+                def money_to_dict(money_obj):
+                    if money_obj:
+                        return {
+                            "amount": float(money_obj.amount),
+                            "currency": money_obj.currency.value
+                        }
+                    return None
+
                 response = {
                     "campaignId": campaign_id,
                     "timeRange": {
@@ -610,11 +622,11 @@ class CampaignRoutes:
                         "clicks": analytics.clicks,
                         "uniqueClicks": analytics.unique_clicks,
                         "conversions": analytics.conversions,
-                        "revenue": analytics.revenue,
-                        "cost": analytics.cost,
+                        "revenue": money_to_dict(analytics.revenue),
+                        "cost": money_to_dict(analytics.cost),
                         "ctr": analytics.ctr,
                         "cr": analytics.cr,
-                        "epc": analytics.epc,
+                        "epc": money_to_dict(analytics.epc),
                         "roi": analytics.roi
                     },
                     "breakdowns": breakdowns_data
@@ -623,7 +635,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -728,7 +743,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -910,7 +928,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -1077,7 +1098,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -1133,7 +1157,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")

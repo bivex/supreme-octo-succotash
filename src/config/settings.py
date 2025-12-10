@@ -67,9 +67,10 @@ class ExternalServicesSettings:
 @dataclass
 class LoggingSettings:
     """Logging configuration."""
-    level: str = "WARNING"
+    level: str = "DEBUG"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     file_path: Optional[str] = None
+    show_traceback: bool = True
 
 
 @dataclass

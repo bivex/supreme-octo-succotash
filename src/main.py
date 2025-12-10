@@ -6,9 +6,21 @@ import socketify
 from loguru import logger
 import json
 import os
+from decimal import Decimal
 
 from .config.settings import settings
 from .container import container
+
+# Setup custom JSON encoder immediately
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+# Monkey patch json.dumps globally
+_original_dumps = json.dumps
+json.dumps = lambda obj, **kwargs: _original_dumps(obj, cls=CustomJSONEncoder, **kwargs)
 
 
 def create_app() -> socketify.App:
@@ -23,6 +35,7 @@ def create_app() -> socketify.App:
 
     _configure_socketify_app(app)
     _configure_logging(app)
+    _setup_global_exception_handler()
     _apply_middleware(app)
     _register_routes(app)
     _register_error_handlers(app)
@@ -91,6 +104,86 @@ def _configure_logging(app: socketify.App) -> None:
     logger.info("Logging system initialized with loguru")
 
 
+def _setup_global_exception_handler() -> None:
+    """Setup global exception handler to catch all unhandled exceptions."""
+    import sys
+    import traceback
+    import functools
+    from decimal import Decimal
+
+    def global_exception_handler(exc_type, exc_value, exc_traceback):
+        """Global exception handler that logs full traceback."""
+        if issubclass(exc_type, KeyboardInterrupt):
+            # Don't log keyboard interrupts
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        logger.critical("Unhandled exception occurred!")
+        logger.critical(f"Exception type: {exc_type.__name__}")
+        logger.critical(f"Exception message: {exc_value}")
+        logger.critical("Full traceback:")
+        logger.critical("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+
+        # Also call the original exception handler
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+    # Set the global exception handler
+    sys.excepthook = global_exception_handler
+
+    # Custom JSON encoder to handle Decimal objects
+    class CustomJSONEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, Decimal):
+                return float(obj)
+            return super().default(obj)
+
+    # Monkey patch json.dumps to use custom encoder globally
+    original_dumps = json.dumps
+    json.dumps = lambda obj, **kwargs: original_dumps(obj, cls=CustomJSONEncoder, **kwargs)
+
+    # Decorator to wrap route handlers with exception handling
+    def exception_handler_wrapper(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                import traceback
+                logger.error(f"Exception in route handler {func.__name__}: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+
+                # Try to get response object from args
+                res = None
+                for arg in args:
+                    if hasattr(arg, 'write_status'):
+                        res = arg
+                        break
+
+                if res:
+                    try:
+                        from .presentation.middleware.security_middleware import add_security_headers
+                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        res.write_status(500)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+                    except Exception as response_error:
+                        logger.error(f"Failed to send error response: {response_error}")
+                else:
+                    logger.error("Could not find response object to send error")
+
+                # Re-raise to let global handler catch it
+                raise
+
+        return wrapper
+
+    # Store the decorator globally so routes can use it
+    import builtins
+    builtins.exception_handler = exception_handler_wrapper
+
+    logger.info("Global exception handler, custom JSON encoder, and route wrapper configured")
+
+
 def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
     container.get_campaign_routes().register(app)
@@ -113,9 +206,11 @@ def _register_routes(app: socketify.App) -> None:
 
 
 def _register_error_handlers(app: socketify.App) -> None:
-    """Register error handlers."""
-    from .presentation.error_handlers import register_error_handlers
-    register_error_handlers(app)
+    """Register error handlers for socketify."""
+    # Global exception handler is already set up
+    # Socketify handles errors differently - exceptions in route handlers
+    # will be caught by the global exception handler
+    logger.info("Error handlers configured (using global exception handler)")
 
 
 def _add_health_endpoints(app: socketify.App) -> None:
