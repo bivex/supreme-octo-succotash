@@ -264,15 +264,15 @@ class APIEndpointTester:
             ('GET', '/fraud/rules', 'List fraud detection rules', None, 200, False),
             ('GET', '/fraud/rules?page=1&pageSize=10&type=ip_block', 'List fraud rules with filters', None, 200, False),
             ('POST', '/fraud/rules', 'Create fraud detection rule', {
-                "name": "Block suspicious user agents",
+                "name": "Block test user agents",
                 "type": "ua_block",
                 "action": "block",
                 "conditions": {
-                    "user_agents": ["bot", "crawler", "spider"]
+                    "user_agents": ["test_bot", "test_crawler"]
                 },
-                "priority": 80,
+                "priority": 85,
                 "isActive": True
-            }, 201, False),
+            }, 200, False),
             ('POST', '/cache/flush', 'Flush application cache', {
                 "types": ["campaigns", "landing_pages"]
             }, 200, False),
