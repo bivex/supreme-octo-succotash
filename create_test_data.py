@@ -248,7 +248,7 @@ def load_test_campaigns_api():
 
     # Analyze results
     print()
-    print('TEST RESULTS:')
+    print('Test results:')
     print('=' * 60)
 
     successful = [r for r in results if r['status'] == 'success']
@@ -269,7 +269,7 @@ def load_test_campaigns_api():
         print(f'   - Median: {statistics.median(times):.4f}s')
         print()
 
-    print('PERFORMANCE ANALYSIS:')
+    print('Performance analysis:')
     print('=' * 60)
 
     if successful:
@@ -292,7 +292,7 @@ def load_test_campaigns_api():
 
     # Check database statistics
     print()
-    print('DATABASE STATISTICS CHECK:')
+    print('Database statistics check:')
     print('=' * 60)
 
     try:
@@ -332,7 +332,7 @@ def create_mass_campaigns_api():
     import time
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    print('MAXIMUM SPEED MASS CAMPAIGN CREATION')
+    print('Maximum speed mass campaign creation')
     print('=' * 60)
 
     BASE_URL = 'http://localhost:5000'
@@ -350,7 +350,7 @@ def create_mass_campaigns_api():
     SUCCESSFUL = 0
     FAILED = 0
 
-    print(f'MAXIMUM SPEED SETTINGS:')
+    print(f'Maximum speed settings:')
     print(f'   - Total campaigns: {TOTAL_CAMPAIGNS}')
     print(f'   - Concurrent: {CONCURRENT_REQUESTS} threads')
     print(f'   - Batches of: {BATCH_SIZE} campaigns')
@@ -428,7 +428,7 @@ def create_mass_campaigns_api():
     total_time = time.time() - start_time
 
     print()
-    print('FINAL RESULTS:')
+    print('Final results:')
     print('=' * 60)
     print(f'SUCCESSFULLY CREATED: {SUCCESSFUL} campaigns')
     print(f'ERRORS: {FAILED} campaigns')
@@ -439,7 +439,7 @@ def create_mass_campaigns_api():
 
     # Check COUNT(*) cache impact
     print()
-    print('COUNT(*) CACHE IMPACT:')
+    print('COUNT(*) cache impact:')
     print('=' * 60)
 
     try:

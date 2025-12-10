@@ -6,12 +6,71 @@ Clean Architecture Affiliate Marketing API Server
 import sys
 import os
 import argparse
+import signal
+import threading
+import time
 from src.main import create_app
 from src.config.settings import settings
+from src.container import container
 from loguru import logger
+
+# Global list to track background threads for cleanup
+background_threads = []
+
+def cleanup_background_threads():
+    """Clean up background threads and services on shutdown."""
+    logger.info("Cleaning up background threads and services...")
+
+    try:
+        # Stop postgres upholder
+        upholder = container.get_postgres_upholder()
+        if hasattr(upholder, 'stop'):
+            logger.info("Stopping postgres upholder...")
+            upholder.stop()
+    except Exception as e:
+        logger.error(f"Error stopping postgres upholder: {e}")
+
+    try:
+        # Stop cache monitor
+        cache_monitor = container.get_postgres_cache_monitor()
+        if hasattr(cache_monitor, 'stop_monitoring'):
+            logger.info("Stopping cache monitor...")
+            cache_monitor.stop_monitoring()
+    except Exception as e:
+        logger.error(f"Error stopping cache monitor: {e}")
+
+    # Wait for threads to finish
+    for thread in background_threads[:]:  # Copy list to avoid modification during iteration
+        if thread.is_alive():
+            logger.info(f"Waiting for thread {thread.name} to finish...")
+            thread.join(timeout=5.0)
+            if thread.is_alive():
+                logger.warning(f"Thread {thread.name} did not finish gracefully")
+
+    # Clear the list
+    background_threads.clear()
+
+    # Close database connections
+    try:
+        logger.info("Closing database connections...")
+        pool = container.get_db_connection_pool()
+        if hasattr(pool, '_closeall'):
+            pool._closeall()
+    except Exception as e:
+        logger.error(f"Error closing database connections: {e}")
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    cleanup_background_threads()
+    sys.exit(0)
 
 def run_server():
     """Run the server normally."""
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     app = create_app()
 
     port = settings.api.port
@@ -37,12 +96,43 @@ def run_server():
         logger.warning(f"Database driver: {db_driver_info}")
         logger.warning(f"PostgreSQL connection failed: {str(e)[:50]}...")
 
+    # Start background services and track their threads
+    try:
+        logger.info("Starting background services...")
+
+        # Start postgres upholder
+        upholder = container.get_postgres_upholder()
+        if hasattr(upholder, 'start'):
+            upholder.start()
+            # Track the upholder thread
+            if hasattr(upholder, '_scheduler_thread') and upholder._scheduler_thread:
+                background_threads.append(upholder._scheduler_thread)
+
+        # Start cache monitor
+        cache_monitor = container.get_postgres_cache_monitor()
+        cache_monitor.start_monitoring(interval_seconds=30)
+        # Track the monitor thread
+        if hasattr(cache_monitor, 'monitor_thread') and cache_monitor.monitor_thread:
+            background_threads.append(cache_monitor.monitor_thread)
+
+        logger.info(f"Started {len(background_threads)} background threads")
+
+    except Exception as e:
+        logger.error(f"Error starting background services: {e}")
+
     def on_listen(cfg):
         logger.info(f"Server listening on port {cfg.port}")
 
-    app.listen(port, on_listen)
-
-    app.run()
+    try:
+        app.listen(port, on_listen)
+        app.run()
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt, shutting down...")
+    except Exception as e:
+        logger.error(f"Server error: {e}")
+    finally:
+        # Ensure cleanup happens even if app.run() fails
+        cleanup_background_threads()
 
 def run_with_reload():
     """Run server with hot reload using watchdog."""

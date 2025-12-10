@@ -124,8 +124,8 @@ class PostgresAutoUpholder:
         monitoring_thread.start()
 
         # Start scheduler thread
-        scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
-        scheduler_thread.start()
+        self._scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
+        self._scheduler_thread.start()
 
         logger.info("PostgreSQL Auto Upholder started successfully")
 
