@@ -4,14 +4,52 @@ Integrates with Supreme Tracker (Supreme)
 """
 
 import asyncio
+import base64
 import hashlib
+import json
 import time
 import uuid
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
 import aiohttp
 from loguru import logger
+
+# Global cache for short links (in production, use Redis)
+# Format: {short_code: (encoded_payload, timestamp)}
+SHORT_LINKS_CACHE: Dict[str, Tuple[str, float]] = {}
+
+def store_short_link(short_code: str, encoded_payload: str) -> None:
+    """Store encoded payload in global cache"""
+    SHORT_LINKS_CACHE[short_code] = (encoded_payload, time.time())
+
+def get_short_link_payload(short_code: str) -> Optional[Dict[str, Any]]:
+    """Get decoded payload from global cache"""
+    if short_code not in SHORT_LINKS_CACHE:
+        return None
+
+    encoded_payload, timestamp = SHORT_LINKS_CACHE[short_code]
+
+    # Check if link is expired (24 hours)
+    if time.time() - timestamp > 24 * 3600:
+        del SHORT_LINKS_CACHE[short_code]
+        return None
+
+    try:
+        payload_json = base64.urlsafe_b64decode(encoded_payload.encode()).decode()
+        return json.loads(payload_json)
+    except Exception:
+        return None
+
+def cleanup_expired_links() -> None:
+    """Clean up expired short links from cache"""
+    current_time = time.time()
+    expired_codes = [
+        code for code, (_, timestamp) in SHORT_LINKS_CACHE.items()
+        if current_time - timestamp > 24 * 3600
+    ]
+    for code in expired_codes:
+        del SHORT_LINKS_CACHE[code]
 
 from config import settings, DEFAULT_TRACKING_PARAMS, API_ENDPOINTS
 
@@ -111,59 +149,48 @@ class TrackingManager:
         }
 
     async def _generate_short_tracking_url(self, user_id: int, source: str, additional_params: Dict[str, Any]) -> str:
-        """Generate short tracking URL using API"""
-        if not self.session:
-            logger.warning("HTTP session not initialized - using fallback URL generation")
-            click_id = self._generate_click_id(user_id, time.time())
-            return self._build_tracking_url(click_id, additional_params)
+        """Generate short tracking URL with encoded parameters"""
+        import base64
+        import json
 
         try:
-            # Prepare payload for API URL generation
-            # API expects campaign_id as integer without "camp-" prefix
+            # Prepare payload for URL generation
             campaign_id_num = int(settings.campaign_id.replace("camp_", ""))
             payload = {
-                "campaign_id": campaign_id_num,  # Send as integer for API
+                "campaign_id": campaign_id_num,
                 "base_url": self.local_landing_url,
                 "source": source,
                 "sub1": additional_params.get("sub1", source),
                 "sub2": additional_params.get("sub2", "telegram"),
                 "sub3": additional_params.get("sub3", "callback_offer"),
                 "sub4": additional_params.get("sub4", str(user_id)),
-                "sub5": additional_params.get("sub5", "premium_offer")
+                "sub5": additional_params.get("sub5", "premium_offer"),
+                "click_id": self._generate_click_id(user_id, time.time()),
+                "timestamp": int(time.time())
             }
 
-            url = f"{self.local_landing_url}/clicks/generate"
-            headers = {'Authorization': 'Bearer test_jwt_token_12345', 'Content-Type': 'application/json'}
+            # Encode payload as base64
+            payload_json = json.dumps(payload, separators=(',', ':'))
+            encoded_payload = base64.urlsafe_b64encode(payload_json.encode()).decode()
 
-            logger.info(f"Generating short URL with payload: {payload}")
+            # Generate short code (first 8 chars of hash for readability)
+            short_code = hashlib.md5(encoded_payload.encode()).hexdigest()[:8]
 
-            async with self.session.post(url, json=payload, headers=headers) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    if result.get("status") == "success" and result.get("tracking_url"):
-                        # Fix the generated URL to point to the correct click endpoint
-                        api_generated_url = result["tracking_url"]
-                        # Replace the base URL with base URL + /v1/click
-                        if "?" in api_generated_url:
-                            base_part, query_part = api_generated_url.split("?", 1)
-                            short_url = f"{self.local_landing_url}/v1/click?{query_part}"
-                        else:
-                            short_url = f"{self.local_landing_url}/v1/click"
+            # Store encoded payload in global cache for later retrieval
+            # In production, this should be stored in Redis/database
+            store_short_link(short_code, encoded_payload)
 
-                        logger.info(f"Generated short tracking URL: {short_url}")
-                        return short_url
-                    else:
-                        logger.warning(f"API returned error: {result}")
-                else:
-                    logger.warning(f"API request failed with status {response.status}")
+            # Return short link URL
+            short_url = f"{self.local_landing_url}/v1/s/{short_code}"
+
+            logger.info(f"Generated short tracking URL: {short_url} with encoded payload")
+            return short_url
 
         except Exception as e:
             logger.warning(f"Error generating short URL: {e}")
-
-        # Fallback to manual URL building
-        logger.info("Falling back to manual URL generation")
-        click_id = self._generate_click_id(user_id, time.time())
-        return self._build_tracking_url(click_id, additional_params)
+            # Fallback to direct URL building
+            click_id = self._generate_click_id(user_id, time.time())
+            return self._build_tracking_url(click_id, additional_params)
 
     async def track_event(self,
                          click_id: str,

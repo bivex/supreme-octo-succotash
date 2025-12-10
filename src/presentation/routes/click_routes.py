@@ -11,6 +11,7 @@ class ClickRoutes:
 
     def __init__(self, track_click_handler: TrackClickHandler):
         self.track_click_handler = track_click_handler
+        self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
 
     def register(self, app):
         """Register routes with socketify app."""
@@ -409,11 +410,66 @@ class ClickRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
+        def handle_short_link(res, req):
+            """Handle short link redirection with encoded parameters."""
+            try:
+                short_code = req.get_parameter(0)
+                if not short_code:
+                    error_html = "<html><body><h1>Error</h1><p>Invalid short link</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                # Import the function to get payload
+                from telegram_landing_bot.tracking import get_short_link_payload
+
+                payload = get_short_link_payload(short_code)
+                if not payload:
+                    error_html = "<html><body><h1>Error</h1><p>Short link expired or invalid</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                # Build redirect URL to /v1/click with decoded parameters
+                redirect_params = {
+                    'cid': f"camp_{payload['campaign_id']}",
+                    'sub1': payload.get('sub1', ''),
+                    'sub2': payload.get('sub2', ''),
+                    'sub3': payload.get('sub3', ''),
+                    'sub4': payload.get('sub4', ''),
+                    'sub5': payload.get('sub5', ''),
+                    'click_id': payload.get('click_id', ''),
+                    'source': payload.get('source', ''),
+                }
+
+                # Remove empty parameters
+                redirect_params = {k: v for k, v in redirect_params.items() if v}
+
+                query_string = '&'.join([f"{k}={v}" for k, v in redirect_params.items()])
+                redirect_url = f"{self.local_landing_url}/v1/click?{query_string}"
+
+                logger.info(f"Short link {short_code} redirecting to: {redirect_url}")
+
+                # Redirect to the click tracking endpoint
+                res.write_status(302)
+                res.write_header("Location", redirect_url)
+                res.end('')
+
+            except Exception as e:
+                logger.error(f"Error handling short link: {e}")
+                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
+                res.write_status(500)
+                res.write_header("Content-Type", "text/html")
+                res.end(error_html)
+
         # Register all routes
         app.post('/clicks', create_click)
         app.get('/v1/click', track_click)
         app.get('/v1/click/:click_id', get_click_details)
         app.get('/v1/clicks', list_clicks)
+        app.get('/v1/s/:short_code', handle_short_link)
         app.get('/mock-offer', mock_offer)
 
     def _get_client_ip(self, request) -> str:
