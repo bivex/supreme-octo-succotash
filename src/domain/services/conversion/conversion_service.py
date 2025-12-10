@@ -64,18 +64,18 @@ class ConversionService:
 
         # Add click-derived information
         if 'campaign_id' not in enriched:
-            enriched['campaign_id'] = click.cid
+            enriched['campaign_id'] = click.campaign_id
 
         if 'landing_page_id' not in enriched:
-            enriched['landing_page_id'] = click.landingPageId
+            enriched['landing_page_id'] = click.landing_page_id
 
         if 'offer_id' not in enriched:
-            enriched['offer_id'] = click.campaignOfferId
+            enriched['offer_id'] = click.campaign_offer_id
 
         # Add user tracking info
-        enriched['ip_address'] = click.ip
-        enriched['user_agent'] = click.ua
-        enriched['referrer'] = click.ref
+        enriched['ip_address'] = click.ip_address
+        enriched['user_agent'] = click.user_agent
+        enriched['referrer'] = click.referrer
 
         # Add sub-tracking parameters
         enriched.setdefault('metadata', {}).update({

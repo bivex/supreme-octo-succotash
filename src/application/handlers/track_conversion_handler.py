@@ -38,7 +38,9 @@ class TrackConversionHandler:
                 }
 
             # Get the original click
-            click = self.click_repository.get_by_id(conversion_data['click_id'])
+            from ...domain.value_objects import ClickId
+            click_id = ClickId.from_string(conversion_data['click_id'])
+            click = self.click_repository.find_by_id(click_id)
             if not click:
                 return {
                     "status": "error",

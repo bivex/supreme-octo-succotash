@@ -24,6 +24,7 @@ class Event:
     properties: Dict[str, Any]  # Custom event properties
     event_data: Optional[Dict[str, Any]]  # Additional event data
     timestamp: datetime
+    created_at: Optional[datetime] = None  # Database timestamp
 
     @classmethod
     def create_from_request(cls, event_data: Dict[str, Any]) -> 'Event':
@@ -31,6 +32,7 @@ class Event:
         import uuid
         from datetime import datetime
 
+        now = datetime.utcnow()
         return cls(
             id=str(uuid.uuid4()),
             event_type=event_data.get('event_type', 'custom'),
@@ -46,5 +48,6 @@ class Event:
             ip_address=event_data.get('ip_address'),
             properties=event_data.get('properties', {}),
             event_data=event_data.get('event_data'),
-            timestamp=datetime.utcnow()
+            timestamp=now,
+            created_at=now
         )

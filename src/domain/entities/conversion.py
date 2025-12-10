@@ -27,6 +27,8 @@ class Conversion:
     metadata: Dict[str, Any]  # Additional conversion data
     timestamp: datetime
     processed: bool = False  # Whether postbacks have been sent
+    created_at: Optional[datetime] = None  # Database creation timestamp
+    updated_at: Optional[datetime] = None  # Database update timestamp
 
     @classmethod
     def create_from_request(cls, conversion_data: Dict[str, Any]) -> 'Conversion':
@@ -45,6 +47,7 @@ class Conversion:
                     currency=value_data.get('currency', 'USD')
                 )
 
+        now = datetime.utcnow()
         return cls(
             id=str(uuid.uuid4()),
             click_id=conversion_data['click_id'],
@@ -61,8 +64,10 @@ class Conversion:
             user_agent=conversion_data.get('user_agent'),
             referrer=conversion_data.get('referrer'),
             metadata=conversion_data.get('metadata', {}),
-            timestamp=datetime.utcnow(),
-            processed=False
+            timestamp=now,
+            processed=False,
+            created_at=now,
+            updated_at=now
         )
 
     def calculate_payout(self, payout_rate: float, payout_type: str = 'percentage') -> Optional[Money]:

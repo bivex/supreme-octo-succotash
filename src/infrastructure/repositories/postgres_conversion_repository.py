@@ -69,16 +69,37 @@ class PostgresConversionRepository(ConversionRepository):
 
     def _row_to_conversion(self, row) -> Conversion:
         """Convert database row to Conversion entity."""
+        from ..value_objects.financial.money import Money
+
+        # Handle conversion value
+        conversion_value = None
+        if row["conversion_value"] and float(row["conversion_value"]) > 0:
+            conversion_value = Money(
+                amount=float(row["conversion_value"]),
+                currency=row["currency"] or "USD"
+            )
+
+        # Extract metadata fields
+        metadata = row["metadata"] or {}
+
         return Conversion(
             id=row["id"],
             click_id=row["click_id"],
-            campaign_id=row["campaign_id"],
             conversion_type=row["conversion_type"],
-            conversion_value=float(row["conversion_value"]),
-            currency=row["currency"],
-            status=row["status"],
-            external_id=row["external_id"],
-            metadata=row["metadata"],
+            conversion_value=conversion_value,
+            order_id=metadata.get('order_id'),
+            product_id=metadata.get('product_id'),
+            campaign_id=int(row["campaign_id"]) if row["campaign_id"] else None,
+            offer_id=metadata.get('offer_id'),
+            landing_page_id=metadata.get('landing_page_id'),
+            user_id=metadata.get('user_id'),
+            session_id=metadata.get('session_id'),
+            ip_address=metadata.get('ip_address'),
+            user_agent=metadata.get('user_agent'),
+            referrer=metadata.get('referrer'),
+            metadata=metadata,
+            timestamp=row["created_at"],
+            processed=row["status"] == "processed",
             created_at=row["created_at"],
             updated_at=row["updated_at"]
         )
@@ -87,6 +108,26 @@ class PostgresConversionRepository(ConversionRepository):
         """Save a conversion."""
         conn = self._container.get_db_connection()
         cursor = conn.cursor()
+
+        # Prepare database fields from entity
+        conversion_value = conversion.conversion_value.amount if conversion.conversion_value else 0.0
+        currency = conversion.conversion_value.currency if conversion.conversion_value else "USD"
+        status = "processed" if conversion.processed else "pending"
+        external_id = conversion.order_id  # Use order_id as external_id
+
+        # Store additional fields in metadata
+        metadata = conversion.metadata.copy() if conversion.metadata else {}
+        metadata.update({
+            'order_id': conversion.order_id,
+            'product_id': conversion.product_id,
+            'offer_id': conversion.offer_id,
+            'landing_page_id': conversion.landing_page_id,
+            'user_id': conversion.user_id,
+            'session_id': conversion.session_id,
+            'ip_address': conversion.ip_address,
+            'user_agent': conversion.user_agent,
+            'referrer': conversion.referrer,
+        })
 
         cursor.execute("""
             INSERT INTO conversions
@@ -104,10 +145,10 @@ class PostgresConversionRepository(ConversionRepository):
                 metadata = EXCLUDED.metadata,
                 updated_at = EXCLUDED.updated_at
         """, (
-            conversion.id, conversion.click_id, conversion.campaign_id,
-            conversion.conversion_type, conversion.conversion_value,
-            conversion.currency, conversion.status, conversion.external_id,
-            json.dumps(conversion.metadata), conversion.created_at, conversion.updated_at
+            conversion.id, conversion.click_id, str(conversion.campaign_id) if conversion.campaign_id else None,
+            conversion.conversion_type, conversion_value,
+            currency, status, external_id,
+            json.dumps(metadata), conversion.created_at, conversion.updated_at
         ))
 
         conn.commit()

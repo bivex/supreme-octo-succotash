@@ -63,11 +63,24 @@ class PostgresEventRepository(EventRepository):
 
     def _row_to_event(self, row) -> Event:
         """Convert database row to Event entity."""
+        event_data = row["event_data"] or {}
+
         return Event(
             id=row["id"],
-            click_id=row["click_id"],
             event_type=row["event_type"],
-            event_data=row["event_data"],
+            event_name=event_data.get('event_name', 'unknown'),
+            user_id=event_data.get('user_id'),
+            session_id=event_data.get('session_id'),
+            click_id=row["click_id"],
+            campaign_id=event_data.get('campaign_id'),
+            landing_page_id=event_data.get('landing_page_id'),
+            url=event_data.get('url'),
+            referrer=event_data.get('referrer'),
+            user_agent=event_data.get('user_agent'),
+            ip_address=event_data.get('ip_address'),
+            properties=event_data.get('properties', {}),
+            event_data=event_data,
+            timestamp=row["created_at"],  # Use created_at as timestamp
             created_at=row["created_at"]
         )
 
@@ -75,6 +88,22 @@ class PostgresEventRepository(EventRepository):
         """Save an event."""
         conn = self._container.get_db_connection()
         cursor = conn.cursor()
+
+        # Prepare event_data as JSON containing all event fields
+        event_data = {
+            'event_name': event.event_name,
+            'user_id': event.user_id,
+            'session_id': event.session_id,
+            'campaign_id': event.campaign_id,
+            'landing_page_id': event.landing_page_id,
+            'url': event.url,
+            'referrer': event.referrer,
+            'user_agent': event.user_agent,
+            'ip_address': event.ip_address,
+            'properties': event.properties,
+            'event_data': event.event_data,
+            'timestamp': event.timestamp.isoformat() if event.timestamp else None
+        }
 
         cursor.execute("""
             INSERT INTO events
@@ -86,7 +115,7 @@ class PostgresEventRepository(EventRepository):
                 event_data = EXCLUDED.event_data
         """, (
             event.id, event.click_id, event.event_type,
-            json.dumps(event.event_data), event.created_at
+            json.dumps(event_data), event.created_at
         ))
 
         conn.commit()

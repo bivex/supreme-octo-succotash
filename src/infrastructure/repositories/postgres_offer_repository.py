@@ -78,6 +78,9 @@ class PostgresOfferRepository(OfferRepository):
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_offers_active ON offers(is_active)")
 
             conn.commit()
+        except Exception as e:
+            logger.error(f"Error initializing offers database: {e}")
+            raise
         finally:
             if conn:
                 self._container.release_db_connection(conn)
