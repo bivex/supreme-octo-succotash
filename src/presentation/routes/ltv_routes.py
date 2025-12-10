@@ -24,9 +24,13 @@ class LtvRoutes:
 
             try:
                 # Parse query parameters for date range
-                query = req.get_query()
-                start_date = query.get('start_date')
-                end_date = query.get('end_date')
+                from urllib.parse import parse_qs, urlparse
+                url = req.get_url()
+                parsed_url = urlparse(url)
+                query_params = parse_qs(parsed_url.query)
+
+                start_date = query_params.get('start_date', [None])[0]
+                end_date = query_params.get('end_date', [None])[0]
 
                 # Convert string dates to datetime if provided
                 start_dt = None

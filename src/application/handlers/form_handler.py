@@ -1,7 +1,7 @@
 """Form processing handler."""
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from loguru import logger
 
 from ...domain.repositories.form_repository import FormRepository
@@ -193,7 +193,7 @@ class FormHandler:
 
             # Use provided dates or default to last 30 days
             if not start_date:
-                start_date = datetime.now().replace(day=datetime.now().day - 30)
+                start_date = datetime.now() - timedelta(days=30)
             if not end_date:
                 end_date = datetime.now()
 
