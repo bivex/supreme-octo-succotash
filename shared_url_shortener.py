@@ -634,6 +634,74 @@ def parse_click_code(code: str) -> dict:
     return decode_tracking_url(code)
 
 
+# ==================== LEGACY COMPATIBILITY ====================
+
+def shorten_url(original_url: str) -> tuple[str, dict]:
+    """
+    Legacy interface compatibility - extracts params from URL and encodes
+    """
+    from urllib.parse import urlparse, parse_qs
+
+    parsed = urlparse(original_url)
+    query_params = parse_qs(parsed.query)
+        
+    # Convert to URLParams
+    params_dict = {}
+    for k, v in query_params.items():
+        if len(v) == 1:
+            params_dict[k] = v[0]
+        else:
+            params_dict[k] = v
+
+    url_params = URLParams(
+        cid=params_dict.get('cid', 'unknown'),
+        sub1=params_dict.get('sub1'),
+        sub2=params_dict.get('sub2'),
+        sub3=params_dict.get('sub3'),
+        sub4=params_dict.get('sub4'),
+        sub5=params_dict.get('sub5'),
+        click_id=params_dict.get('click_id'),
+        extra={k: v for k, v in params_dict.items()
+               if k not in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']}
+    )
+
+    # Auto-select strategy based on parameters
+    strategy = EncodingStrategy.SEQUENTIAL
+    if len(params_dict) > 3:  # Many parameters -> compressed
+        strategy = EncodingStrategy.COMPRESSED
+
+    code = _url_shortener.encode(url_params, strategy)
+    short_url = f"{parsed.scheme}://{parsed.netloc}/s/{code}"
+
+    return short_url, url_params.to_dict()
+
+
+def expand_url(short_url: str) -> tuple[str | None, dict | None]:
+    """
+    Legacy interface compatibility - decodes and reconstructs URL
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(short_url)
+    path_parts = parsed.path.strip('/').split('/')
+
+    if len(path_parts) < 2 or path_parts[-2] != 's':
+        return None, None
+
+    short_code = path_parts[-1]
+    url_params = _url_shortener.decode(short_code)
+
+    if not url_params:
+        return None, None
+
+    # Reconstruct URL
+    params_dict = url_params.to_dict()
+    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
+    full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
+
+    return full_url, params_dict
+
+
 # ==================== COMPATIBILITY BINDINGS ====================
 
 def short_url(original_url: str) -> str:
