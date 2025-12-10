@@ -18,7 +18,7 @@ class ClickFilters:
 
     def __post_init__(self) -> None:
         """Validate filter parameters."""
-        from ..constants import DEFAULT_PAGE_SIZE
+        from ...constants import DEFAULT_PAGE_SIZE
 
         if self.limit < 1 or self.limit > DEFAULT_PAGE_SIZE * 2:
             raise ValueError(f"Limit must be between 1 and {DEFAULT_PAGE_SIZE * 2}")

@@ -18,42 +18,68 @@ class ClickRoutes:
             """Handle click tracking and redirection."""
             try:
                 # Validate required parameters
-                if not req.get_query('cid'):
+                campaign_id = req.get_query('cid')
+                if not campaign_id:
                     error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
                     res.end(error_html)
                     return
 
-                # Mock click tracking - always valid for testing
-                import uuid
-                click_id = str(uuid.uuid4())
-
                 # Check if test mode
                 test_mode = req.get_query('test_mode') == '1'
 
+                # Create track click command
+                from ...application.commands.track_click_command import TrackClickCommand
+
+                command = TrackClickCommand(
+                    campaign_id=campaign_id,
+                    ip_address=self._get_client_ip(req),
+                    user_agent=req.headers.get('User-Agent'),
+                    referrer=req.headers.get('Referer'),
+                    sub1=req.get_query('sub1'),
+                    sub2=req.get_query('sub2'),
+                    sub3=req.get_query('sub3'),
+                    sub4=req.get_query('sub4'),
+                    sub5=req.get_query('sub5'),
+                    click_id_param=req.get_query('click_id'),
+                    affiliate_sub=req.get_query('aff_sub'),
+                    affiliate_sub2=req.get_query('aff_sub2'),
+                    affiliate_sub3=req.get_query('aff_sub3'),
+                    affiliate_sub4=req.get_query('aff_sub4'),
+                    affiliate_sub5=req.get_query('aff_sub5'),
+                    landing_page_id=int(req.get_query('lp_id')) if req.get_query('lp_id') else None,
+                    campaign_offer_id=int(req.get_query('offer_id')) if req.get_query('offer_id') else None,
+                    traffic_source_id=int(req.get_query('ts_id')) if req.get_query('ts_id') else None,
+                    test_mode=test_mode
+                )
+
+                # Handle click tracking
+                click, redirect_url, is_valid = self.track_click_handler.handle(command)
+
                 if test_mode:
                     # Return HTML for testing
+                    status_text = "Valid" if is_valid else "Invalid/Fraud"
                     html = (
                         f"<html><body><h1>Offer Page</h1>"
-                        f"<p>Click ID: {click_id}</p>"
-                        f"<p>Status: Valid</p>"
-                        f"<p>Redirecting to: https://example.com/offer</p></body></html>"
+                        f"<p>Click ID: {click.id.value}</p>"
+                        f"<p>Status: {status_text}</p>"
+                        f"<p>Redirecting to: {redirect_url.value}</p></body></html>"
                     )
                     res.write_header("Content-Type", "text/html")
                     res.end(html)
                     return
 
-                # Standard redirect (use local URL for testing)
+                # Standard redirect
                 res.write_status(302)
-                res.write_header("Location", "http://127.0.0.1:5000/mock-offer")
+                res.write_header("Location", redirect_url.value)
                 res.end('')
 
             except Exception as e:
                 # Log error and return HTML error page
-                logger.info(f"Click tracking error: {e}")
-                error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
-                res.write_status(404)
+                logger.error(f"Click tracking error: {e}")
+                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
+                res.write_status(500)
                 res.write_header("Content-Type", "text/html")
                 res.end(error_html)
 
@@ -194,20 +220,32 @@ class ClickRoutes:
                     res.end(json.dumps(error_response))
                     return
 
+                # Build filters for click query
+                from ...domain.value_objects.filters.click_filters import ClickFilters
+
+                filters = ClickFilters(
+                    campaign_id=cid if 'cid' in locals() and cid is not None else None,
+                    is_valid=bool(is_valid) if 'is_valid' in locals() and is_valid is not None else None,
+                    limit=limit,
+                    offset=offset
+                )
+
                 # Get clicks from repository
                 try:
-                    clicks = self.track_click_handler._click_repository.find_by_filters(
-                        filters=None  # TODO: Implement proper filter object
-                    )
+                    clicks = self.track_click_handler._click_repository.find_by_filters(filters)
 
-                    # Filter out None values and apply pagination
-                    clicks = [click for click in clicks if click is not None]
-                    total_clicks = len(clicks)
-                    paginated_clicks = clicks[offset:offset + limit]
+                    # Get total count for pagination
+                    if filters.campaign_id:
+                        total_clicks = self.track_click_handler._click_repository.count_by_campaign_id(filters.campaign_id)
+                    else:
+                        # For now, approximate total - in production would need a count query
+                        total_clicks = len(clicks) + offset if len(clicks) == limit else len(clicks) + offset
+
+                    # clicks already paginated by the repository
 
                     # Convert clicks to response format
                     click_list = []
-                    for click in paginated_clicks:
+                    for click in clicks:
                         click_list.append({
                             "id": str(click.id),
                             "campaign_id": click.campaign_id,
