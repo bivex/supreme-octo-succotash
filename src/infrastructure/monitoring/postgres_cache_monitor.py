@@ -97,21 +97,6 @@ class PostgresCacheMonitor:
                 # It's a direct connection
                 with self.connection.cursor() as cursor:
                     return self._execute_cache_queries(cursor)
-                # Get cache hit ratios
-                cursor.execute("""
-                    SELECT
-                        sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read)) as heap_hit_ratio,
-                        sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read)) as index_hit_ratio
-                    FROM pg_statio_user_tables
-                    WHERE heap_blks_hit + heap_blks_read > 0
-                """)
-
-                heap_ratio, index_ratio = cursor.fetchone()
-                heap_ratio = heap_ratio or 0
-                index_ratio = index_ratio or 0
-
-                # Get shared buffer usage (only if pg_buffercache extension is available)
-                buffer_usage = 0
                 try:
                     # Try to query pg_buffercache directly - if it fails, extension is not available
                     cursor.execute("""
@@ -164,18 +149,26 @@ class PostgresCacheMonitor:
 
     def _execute_cache_queries(self, cursor) -> CacheMetrics:
         """Execute cache-related queries and return metrics."""
-        # Get cache hit ratios
+        # Get cache hit ratios with null safety
         cursor.execute("""
             SELECT
-                sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read)) as heap_hit_ratio,
-                sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read)) as index_hit_ratio
+                CASE WHEN sum(heap_blks_hit) + sum(heap_blks_read) > 0
+                     THEN sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read))
+                     ELSE 0 END as heap_hit_ratio,
+                CASE WHEN sum(idx_blks_hit) + sum(idx_blks_read) > 0
+                     THEN sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read))
+                     ELSE 0 END as index_hit_ratio
             FROM pg_statio_user_tables
-            WHERE heap_blks_hit + heap_blks_read > 0
         """)
 
-        heap_ratio, index_ratio = cursor.fetchone()
-        heap_ratio = heap_ratio or 0
-        index_ratio = index_ratio or 0
+        result = cursor.fetchone()
+        if result and result[0] is not None and result[1] is not None:
+            heap_ratio, index_ratio = result
+            heap_ratio = float(heap_ratio) if heap_ratio is not None else 0
+            index_ratio = float(index_ratio) if index_ratio is not None else 0
+        else:
+            # No data available, return 0 ratios
+            heap_ratio, index_ratio = 0.0, 0.0
 
         # Get shared buffer usage (only if pg_buffercache extension is available)
         buffer_usage = 0
