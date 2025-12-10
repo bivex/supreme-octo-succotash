@@ -4,18 +4,94 @@ import json
 from loguru import logger
 
 from ...application.handlers.create_campaign_handler import CreateCampaignHandler
+from ...application.handlers.update_campaign_handler import UpdateCampaignHandler
+from ...application.handlers.pause_campaign_handler import PauseCampaignHandler
+from ...application.handlers.resume_campaign_handler import ResumeCampaignHandler
+from ...application.handlers.create_landing_page_handler import CreateLandingPageHandler
+from ...application.handlers.create_offer_handler import CreateOfferHandler
 from ...application.queries.get_campaign_query import GetCampaignHandler
+from ...application.queries.get_campaign_analytics_query import GetCampaignAnalyticsHandler
+from ...application.queries.get_campaign_landing_pages_query import GetCampaignLandingPagesHandler
+from ...application.queries.get_campaign_offers_query import GetCampaignOffersHandler
 from ..dto.campaign_dto import CampaignSummaryResponse
 
 
 class CampaignRoutes:
     """Socketify routes for campaign operations."""
 
-    def __init__(self,
-                 create_campaign_handler: CreateCampaignHandler,
-                 get_campaign_handler: GetCampaignHandler):
-        self.create_campaign_handler = create_campaign_handler
-        self.get_campaign_handler = get_campaign_handler
+    def __init__(self, container):
+        self._container = container
+        # Lazy-loaded handlers
+        self._create_campaign_handler = None
+        self._update_campaign_handler = None
+        self._pause_campaign_handler = None
+        self._resume_campaign_handler = None
+        self._create_landing_page_handler = None
+        self._create_offer_handler = None
+        self._get_campaign_handler = None
+        self._get_campaign_analytics_handler = None
+        self._get_campaign_landing_pages_handler = None
+        self._get_campaign_offers_handler = None
+
+    @property
+    def create_campaign_handler(self):
+        if self._create_campaign_handler is None:
+            self._create_campaign_handler = self._container.get_create_campaign_handler()
+        return self._create_campaign_handler
+
+    @property
+    def update_campaign_handler(self):
+        if self._update_campaign_handler is None:
+            self._update_campaign_handler = self._container.get_update_campaign_handler()
+        return self._update_campaign_handler
+
+    @property
+    def pause_campaign_handler(self):
+        if self._pause_campaign_handler is None:
+            self._pause_campaign_handler = self._container.get_pause_campaign_handler()
+        return self._pause_campaign_handler
+
+    @property
+    def resume_campaign_handler(self):
+        if self._resume_campaign_handler is None:
+            self._resume_campaign_handler = self._container.get_resume_campaign_handler()
+        return self._resume_campaign_handler
+
+    @property
+    def create_landing_page_handler(self):
+        if self._create_landing_page_handler is None:
+            self._create_landing_page_handler = self._container.get_create_landing_page_handler()
+        return self._create_landing_page_handler
+
+    @property
+    def create_offer_handler(self):
+        if self._create_offer_handler is None:
+            self._create_offer_handler = self._container.get_create_offer_handler()
+        return self._create_offer_handler
+
+    @property
+    def get_campaign_handler(self):
+        if self._get_campaign_handler is None:
+            self._get_campaign_handler = self._container.get_get_campaign_handler()
+        return self._get_campaign_handler
+
+    @property
+    def get_campaign_analytics_handler(self):
+        if self._get_campaign_analytics_handler is None:
+            self._get_campaign_analytics_handler = self._container.get_get_campaign_analytics_handler()
+        return self._get_campaign_analytics_handler
+
+    @property
+    def get_campaign_landing_pages_handler(self):
+        if self._get_campaign_landing_pages_handler is None:
+            self._get_campaign_landing_pages_handler = self._container.get_get_campaign_landing_pages_handler()
+        return self._get_campaign_landing_pages_handler
+
+    @property
+    def get_campaign_offers_handler(self):
+        if self._get_campaign_offers_handler is None:
+            self._get_campaign_offers_handler = self._container.get_get_campaign_offers_handler()
+        return self._get_campaign_offers_handler
 
 
     def _validate_query_parameters(self, req, allowed_params: set):
@@ -130,18 +206,48 @@ class CampaignRoutes:
 
                 logger.debug(f"page={page}, page_size={page_size}")
 
-                # For now, return mock data (would need a list campaigns query)
-                campaigns = []  # TODO: Implement list campaigns query
-                logger.debug(f"campaigns count={len(campaigns)}")
+                # Get campaigns from repository
+                offset = (page - 1) * page_size
+                campaign_repo = self.create_campaign_handler._campaign_repository
+                logger.debug(f"About to call find_all with limit={page_size}, offset={offset}")
+                try:
+                    campaigns = campaign_repo.find_all(limit=page_size, offset=offset)
+                    logger.debug(f"find_all returned {len(campaigns)} campaigns")
+                except Exception as db_error:
+                    logger.error(f"Database error in find_all: {db_error}")
+                    import traceback
+                    logger.error(f"Database traceback: {traceback.format_exc()}")
+                    raise
 
-                pagination = self._build_pagination_info(page, page_size, campaigns)
-                logger.debug(f"pagination={pagination}")
+                try:
+                    total_count = campaign_repo.count_all()
+                    logger.debug(f"count_all returned {total_count}")
+                except Exception as count_error:
+                    logger.error(f"Database error in count_all: {count_error}")
+                    import traceback
+                    logger.error(f"Count traceback: {traceback.format_exc()}")
+                    raise
 
-                response = {
-                    "campaigns": [CampaignSummaryResponse.from_campaign(c) for c in campaigns],
-                    "pagination": pagination
-                }
-                logger.debug(f"response created, campaigns in response={len(response['campaigns'])}")
+                logger.debug(f"campaigns count={len(campaigns)}, total_count={total_count}")
+
+                try:
+                    pagination = self._build_pagination_info(page, page_size, total_count)
+                    logger.debug(f"pagination={pagination}")
+                except Exception as pagination_error:
+                    logger.error(f"Error building pagination: {pagination_error}")
+                    raise
+
+                try:
+                    response = {
+                        "campaigns": [{"id": c.id.value, "name": c.name, "status": c.status.value} for c in campaigns],
+                        "pagination": pagination
+                    }
+                    logger.debug(f"response created, campaigns in response={len(response['campaigns'])}")
+                except Exception as response_error:
+                    logger.error(f"Error creating response: {response_error}")
+                    import traceback
+                    logger.error(f"Response traceback: {traceback.format_exc()}")
+                    raise
                 res.write_header("Content-Type", "application/json")
                 # Add CORS headers
                 res.write_header('Access-Control-Allow-Origin', '*')
@@ -153,7 +259,10 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(response))
 
-            except Exception:
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in list_campaigns: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 from ...presentation.error_handlers import handle_internal_server_error
                 handle_internal_server_error(res)
 
@@ -161,32 +270,81 @@ class CampaignRoutes:
 
     def _register_create_campaign(self, app):
         """Register create campaign route."""
-        def create_campaign(res, req):
+        async def create_campaign(res, req):
             """Create a new campaign."""
-            from ...presentation.middleware.security_middleware import validate_request
+            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             # Validate request
             if validate_request(req, res):
                 return  # Validation failed, response already sent
 
             try:
-                # TEMPORARY: Simple mock response for testing
-                import uuid
-                mock_id = str(uuid.uuid4())[:8]
+                # Parse request body using socketify's res.get_json()
+                logger.info("Starting campaign creation")
+                body_data = await res.get_json()
+                
+                logger.info(f"Parsed body data: {body_data}")
+
+                if not body_data:
+                    logger.warning("Body data is empty")
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Validate required fields
+                required_fields = ['name']
+                for field in required_fields:
+                    if field not in body_data:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        res.write_status(400)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+                        return
+
+                # Create command
+                from ...application.commands.create_campaign_command import CreateCampaignCommand
+                from ...domain.value_objects import Url, Money
+
+                command = CreateCampaignCommand(
+                    name=body_data['name'],
+                    description=body_data.get('description'),
+                    cost_model=body_data.get('costModel', 'CPA'),
+                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
+                    white_url=body_data.get('whiteUrl'),  # safe page URL
+                    black_url=body_data.get('blackUrl'),  # offer page URL
+                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
+                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
+                    start_date=body_data.get('startDate'),
+                    end_date=body_data.get('endDate')
+                )
+
+                # Handle command
+                campaign = self.create_campaign_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": f"camp_{mock_id}",
-                    "name": "Test Campaign",
-                    "status": "draft",
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_status(201)
                 res.write_header('Location', f'http://localhost:5000/v1/campaigns/{response["id"]}')
                 res.write_header('Content-Type', 'application/json')
+                add_security_headers(res)
                 res.end(json.dumps(response))
 
             except ValueError as e:
@@ -195,8 +353,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
             except Exception as e:
-                logger.error(f"Error creating campaign: {e}", exc_info=True)
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                import traceback
+                logger.error(f"Error creating campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -205,7 +365,7 @@ class CampaignRoutes:
 
     def _register_get_campaign(self, app):
         """Register get campaign route."""
-        def get_campaign(res, req):
+        async def get_campaign(res, req):
             """Get campaign details."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -216,55 +376,88 @@ class CampaignRoutes:
             try:
                 campaign_id = req.get_parameter(0)  # Get path parameter
 
-                # Mock campaign response
-                mock_campaign = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "description": "High-converting summer promotion",
-                    "status": "active",
+                # Get campaign from repository
+                from ...domain.value_objects import CampaignId
+                campaign = self.create_campaign_handler._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
+
+                if not campaign:
+                    error_response = {"error": {"code": "NOT_FOUND", "message": "Campaign not found"}}
+                    res.write_status(404)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "description": campaign.description,
+                    "status": campaign.status.value,
                     "schedule": {
-                        "startDate": "2024-01-01T00:00:00Z",
-                        "endDate": "2024-01-31T23:59:59Z"
+                        "startDate": campaign.start_date.isoformat() + "Z" if campaign.start_date else None,
+                        "endDate": campaign.end_date.isoformat() + "Z" if campaign.end_date else None
                     },
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
                     "financial": {
-                        "costModel": "CPA",
-                        "payout": {"amount": 25.00, "currency": "USD"},
-                        "dailyBudget": {"amount": 100.00, "currency": "USD"},
-                        "totalBudget": {"amount": 3000.00, "currency": "USD"},
-                        "spent": {"amount": 750.00, "currency": "USD"}
+                        "costModel": campaign.cost_model,
+                        "payout": {
+                            "amount": float(campaign.payout.amount),
+                            "currency": campaign.payout.currency
+                        } if campaign.payout else None,
+                        "dailyBudget": {
+                            "amount": float(campaign.daily_budget.amount),
+                            "currency": campaign.daily_budget.currency
+                        } if campaign.daily_budget else None,
+                        "totalBudget": {
+                            "amount": float(campaign.total_budget.amount),
+                            "currency": campaign.total_budget.currency
+                        } if campaign.total_budget else None,
+                        "spent": {
+                            "amount": float(campaign.spent_amount.amount),
+                            "currency": campaign.spent_amount.currency
+                        } if campaign.spent_amount else None
                     },
                     "performance": {
-                        "clicks": 1250,
-                        "conversions": 45,
-                        "ctr": 0.032,
-                        "cr": 0.036,
-                        "epc": {"amount": 16.67, "currency": "USD"},
-                        "roi": 2.45
+                        "impressions": campaign.impressions_count,
+                        "clicks": campaign.clicks_count,
+                        "conversions": campaign.conversions_count,
+                        "ctr": round(campaign.ctr, 3),
+                        "cr": round(campaign.cr, 3),
+                        "epc": {
+                            "amount": round(float(campaign.epc.amount), 2) if campaign.epc else 0.0,
+                            "currency": campaign.epc.currency if campaign.epc else "USD"
+                        },
+                        "roi": round(campaign.roi, 2)
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:00:00Z",
+                    "createdAt": campaign.created_at.isoformat() + "Z" if campaign.created_at else None,
+                    "updatedAt": campaign.updated_at.isoformat() + "Z" if campaign.updated_at else None,
                     "_links": {
-                        "self": f"/v1/campaigns/{campaign_id}",
-                        "landingPages": f"/v1/campaigns/{campaign_id}/landing-pages",
-                        "offers": f"/v1/campaigns/{campaign_id}/offers",
-                        "analytics": f"/v1/campaigns/{campaign_id}/analytics"
+                        "self": f"/v1/campaigns/{campaign.id.value}",
+                        "landingPages": f"/v1/campaigns/{campaign.id.value}/landing-pages",
+                        "offers": f"/v1/campaigns/{campaign.id.value}/offers",
+                        "analytics": f"/v1/campaigns/{campaign.id.value}/analytics"
                     }
                 }
+
+                res.write_status(200)
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_campaign))
+                res.end(json.dumps(response))
 
             except ValueError as e:
                 error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
                 res.write_status(400)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
-            except Exception:
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+            except Exception as e:
+                import traceback
+                logger.error(f"Error getting campaign: {e}", exc_info=True)
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -292,14 +485,16 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # For now, simulate successful deletion (would delete from database)
-                # TODO: Implement actual campaign deletion logic
-                logger.info(f"Deleting campaign {campaign_id}")
+                # Delete campaign from database
+                from ...domain.value_objects import CampaignId
+                campaign_id_obj = CampaignId.from_string(campaign_id)
+                self._container.get_campaign_repository().delete_by_id(campaign_id_obj)
+                logger.info(f"Successfully deleted campaign {campaign_id}")
 
                 # Return 204 No Content on successful deletion
                 add_security_headers(res)
                 res.write_status(204)
-                res.end()
+                res.end('')
 
             except Exception as e:
                 logger.error(f"DELETE campaign error: {e}")
@@ -311,7 +506,7 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        def update_campaign(res, req):
+        async def update_campaign(res, req):
             """Update a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -320,21 +515,66 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                # Simple mock response matching schema requirements
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Parse request body using socketify's res.get_json()
+                body_data = await res.get_json()
+
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Create command
+                from ...application.commands.update_campaign_command import UpdateCampaignCommand
+                from ...domain.value_objects import CampaignId, Url, Money
+
+                command = UpdateCampaignCommand(
+                    campaign_id=CampaignId.from_string(campaign_id),
+                    name=body_data.get('name'),
+                    description=body_data.get('description'),
+                    cost_model=body_data.get('costModel'),
+                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
+                    safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
+                    offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
+                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
+                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
+                    start_date=body_data.get('startDate'),
+                    end_date=body_data.get('endDate')
+                )
+
+                # Handle command
+                campaign = self.update_campaign_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": campaign_id,
-                    "name": "Updated Campaign",
-                    "status": "active",
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_status(200)
                 res.write_header('Content-Type', 'application/json')
+                add_security_headers(res)
                 res.end(json.dumps(response))
 
             except Exception:
@@ -348,9 +588,8 @@ class CampaignRoutes:
         app.put('/v1/campaigns/:campaign_id', update_campaign)
         app.delete('/v1/campaigns/:campaign_id', delete_campaign)
 
-    def _build_pagination_info(self, page: int, page_size: int, campaigns: list) -> dict:
+    def _build_pagination_info(self, page: int, page_size: int, total_items: int) -> dict:
         """Build pagination information."""
-        total_items = len(campaigns)
         total_pages = max(1, (total_items + page_size - 1) // page_size)
 
         return {
@@ -415,127 +654,54 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Generate mock data based on breakdown
-                breakdowns_data = {
-                    "byDate": [],
-                    "byTrafficSource": [],
-                    "byLandingPage": [],
-                    "byOffer": [],
-                    "byGeography": [],
-                    "byDevice": []
-                }
+                # Create analytics query
+                from ...application.queries.get_campaign_analytics_query import GetCampaignAnalyticsQuery
+                from datetime import datetime
 
-                # Fill the appropriate breakdown with sample data
+                query = GetCampaignAnalyticsQuery(
+                    campaign_id=campaign_id,
+                    start_date=datetime.fromisoformat(start_date).date(),
+                    end_date=datetime.fromisoformat(end_date).date(),
+                    granularity=granularity
+                )
+
+                # Get analytics from business logic
+                analytics = self.get_campaign_analytics_handler.handle(query)
+                logger.debug(f"Analytics object type: {type(analytics)}")
+                if hasattr(analytics, 'revenue'):
+                    logger.debug(f"Analytics revenue type: {type(analytics.revenue)}")
+                    logger.debug(f"Analytics revenue: {analytics.revenue}")
+                    if hasattr(analytics.revenue, 'currency'):
+                        logger.debug(f"Analytics revenue.currency: {analytics.revenue.currency}")
+                    else:
+                        logger.debug("Analytics revenue has no currency attribute")
+
+                # Convert to response format based on breakdown
                 if breakdown == "date":
-                    breakdowns_data["byDate"] = [
-                        {
-                            "date": "2024-01-15",
-                            "metrics": {
-                                "clicks": 1250,
-                                "uniqueClicks": 1200,
-                                "conversions": 38,
-                                "revenue": {"amount": 190.00, "currency": "USD"},
-                                "cost": {"amount": 62.50, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byDate": analytics.get_breakdown_by_date()}
                 elif breakdown == "traffic_source":
-                    breakdowns_data["byTrafficSource"] = [
-                        {
-                            "trafficSourceId": "ts_google",
-                            "name": "Google Ads",
-                            "metrics": {
-                                "clicks": 2500,
-                                "uniqueClicks": 2400,
-                                "conversions": 75,
-                                "revenue": {"amount": 375.00, "currency": "USD"},
-                                "cost": {"amount": 125.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byTrafficSource": analytics.get_breakdown_by_traffic_source()}
                 elif breakdown == "landing_page":
-                    breakdowns_data["byLandingPage"] = [
-                        {
-                            "landingPageId": "lp_456",
-                            "name": "Main Squeeze Page",
-                            "url": "https://example.com/page1",
-                            "metrics": {
-                                "clicks": 3000,
-                                "uniqueClicks": 2880,
-                                "conversions": 90,
-                                "revenue": {"amount": 450.00, "currency": "USD"},
-                                "cost": {"amount": 150.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byLandingPage": analytics.get_breakdown_by_landing_page()}
                 elif breakdown == "offer":
-                    breakdowns_data["byOffer"] = [
-                        {
-                            "offerId": "offer_789",
-                            "name": "Premium Product",
-                            "metrics": {
-                                "clicks": 2000,
-                                "uniqueClicks": 1920,
-                                "conversions": 60,
-                                "revenue": {"amount": 300.00, "currency": "USD"},
-                                "cost": {"amount": 100.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byOffer": analytics.get_breakdown_by_offer()}
                 elif breakdown == "geography":
-                    breakdowns_data["byGeography"] = [
-                        {
-                            "country": "US",
-                            "countryName": "United States",
-                            "metrics": {
-                                "clicks": 3500,
-                                "uniqueClicks": 3360,
-                                "conversions": 105,
-                                "revenue": {"amount": 525.00, "currency": "USD"},
-                                "cost": {"amount": 175.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byGeography": analytics.get_breakdown_by_geography()}
                 elif breakdown == "device":
-                    breakdowns_data["byDevice"] = [
-                        {
-                            "device": "desktop",
-                            "metrics": {
-                                "clicks": 3000,
-                                "uniqueClicks": 2880,
-                                "conversions": 90,
-                                "revenue": {"amount": 450.00, "currency": "USD"},
-                                "cost": {"amount": 150.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byDevice": analytics.get_breakdown_by_device()}
+                else:
+                    breakdowns_data = {}
 
-                # Mock analytics data
-                mock_analytics = {
+                # Convert Money objects to dict format
+                def money_to_dict(money_obj):
+                    if money_obj:
+                        return {
+                            "amount": float(money_obj.amount),
+                            "currency": money_obj.currency
+                        }
+                    return None
+
+                response = {
                     "campaignId": campaign_id,
                     "timeRange": {
                         "startDate": start_date,
@@ -543,22 +709,26 @@ class CampaignRoutes:
                         "granularity": granularity
                     },
                     "metrics": {
-                        "clicks": 5000,
-                        "uniqueClicks": 4800,
-                        "conversions": 150,
-                        "revenue": {"amount": 750.00, "currency": "USD"},
-                        "cost": {"amount": 250.00, "currency": "USD"},
-                        "ctr": 0.025,
-                        "cr": 0.03,
-                        "epc": {"amount": 5.00, "currency": "USD"},
-                        "roi": 2.0
+                        "clicks": analytics.clicks,
+                        "uniqueClicks": analytics.unique_clicks,
+                        "conversions": analytics.conversions,
+                        "revenue": money_to_dict(analytics.revenue),
+                        "cost": money_to_dict(analytics.cost),
+                        "ctr": analytics.ctr,
+                        "cr": analytics.cr,
+                        "epc": money_to_dict(analytics.epc),
+                        "roi": analytics.roi
                     },
                     "breakdowns": breakdowns_data
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_analytics))
-            except Exception:
+                res.end(json.dumps(response))
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -623,49 +793,61 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock landing pages data
-                mock_landing_pages = {
+                # Get landing pages from business logic
+                from ...application.queries.get_campaign_landing_pages_query import GetCampaignLandingPagesQuery
+
+                offset = (page - 1) * page_size
+                limit = min(page_size, 100)  # Ensure limit <= 100
+                logger.debug(f"Landing pages query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
+
+                query = GetCampaignLandingPagesQuery(
+                    campaign_id=campaign_id,
+                    limit=limit,
+                    offset=offset
+                )
+
+                landing_pages = self.get_campaign_landing_pages_handler.handle(query)
+                logger.debug("Landing pages query executed successfully")
+                logger.debug(f"Type: {type(landing_pages)}")
+                if hasattr(landing_pages, '__len__'):
+                    logger.debug(f"Length: {len(landing_pages)}")
+
+                # Get total count for pagination
+                total_count = self._container.get_landing_page_repository().count_by_campaign_id(campaign_id)
+
+                # Convert to response format
+                response = {
                     "landingPages": [
                         {
-                            "id": "lp_456",
-                            "campaignId": campaign_id,
-                            "name": "Main Squeeze Page",
-                            "url": "https://example.com/page1",
-                            "pageType": "squeeze",
-                            "weight": 70,
-                            "isActive": True,
-                            "isControl": False,
-                            "performance": {
-                                "impressions": 5000,
-                                "clicks": 250,
-                                "conversions": 15,
-                                "ctr": 0.05,
-                                "cr": 0.06,
-                                "epc": {"amount": 3.50, "currency": "USD"}
-                            },
-                            "createdAt": "2024-01-01T00:00:00Z",
-                            "updatedAt": "2024-01-01T00:00:00Z"
+                            "id": lp.id,
+                            "campaignId": lp.campaign_id,
+                            "name": lp.name,
+                            "url": lp.url.value,
+                            "pageType": lp.page_type,
+                            "weight": lp.weight,
+                            "isActive": lp.is_active,
+                            "isControl": lp.is_control,
+                            "createdAt": lp.created_at.isoformat() + "Z",
+                            "updatedAt": lp.updated_at.isoformat() + "Z"
                         }
+                        for lp in landing_pages
                     ],
-                    "pagination": {
-                        "page": 1,
-                        "pageSize": 20,
-                        "totalItems": 1,
-                        "totalPages": 1,
-                        "hasNext": False,
-                        "hasPrev": False
-                    }
+                    "pagination": self._build_pagination_info(page, page_size, total_count)
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_landing_pages))
-            except Exception:
+                res.end(json.dumps(response))
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
 
-        def create_campaign_landing_page(res, req):
+        async def create_campaign_landing_page(res, req):
             """Create a landing page for a campaign."""
             logger.info("DEBUG: create_campaign_landing_page function called!")
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -677,29 +859,73 @@ class CampaignRoutes:
 
             try:
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
+                # Parse request body using socketify's res.get_json()
+                body_data = await res.get_json()
 
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
-                # Simple mock response matching schema requirements
-                import uuid
-                landing_page_id = str(uuid.uuid4())[:8]
+                # Validate required fields
+                required_fields = ['name', 'url']
+                for field in required_fields:
+                    if field not in body_data:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        res.write_status(400)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+                        return
+
+                # Create command
+                from ...application.commands.create_landing_page_command import CreateLandingPageCommand
+                from ...domain.value_objects import Url
+
+                command = CreateLandingPageCommand(
+                    campaign_id=campaign_id,
+                    name=body_data['name'],
+                    url=Url(body_data['url']),
+                    page_type=body_data.get('pageType', 'squeeze'),
+                    weight=body_data.get('weight', 100),
+                    is_control=body_data.get('isControl', False)
+                )
+
+                # Handle command
+                landing_page = self.create_landing_page_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": f"lp_{landing_page_id}",
-                    "campaignId": campaign_id,
-                    "name": "Test Landing Page",
-                    "url": "https://example.com/page",
-                    "pageType": "squeeze",
-                    "weight": 100,
-                    "isActive": True,
-                    "isControl": False,
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "id": landing_page.id,
+                    "campaignId": landing_page.campaign_id,
+                    "name": landing_page.name,
+                    "url": landing_page.url.value,
+                    "pageType": landing_page.page_type,
+                    "weight": landing_page.weight,
+                    "isActive": landing_page.is_active,
+                    "isControl": landing_page.is_control,
+                    "createdAt": landing_page.created_at.isoformat(),
+                    "updatedAt": landing_page.updated_at.isoformat()
                 }
+
                 res.write_status(201)
                 res.write_header('Content-Type', 'application/json')
+                add_security_headers(res)
                 res.end(json.dumps(response))
 
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in create_campaign_landing_page: {e}", exc_info=True)
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -710,9 +936,9 @@ class CampaignRoutes:
         app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
 
     def _register_campaign_offers(self, app):
-        """Register campaign offers route."""
+        """Register campaign offers route with CQRS query pattern."""
         def get_campaign_offers(res, req):
-            """Get campaign offers."""
+            """Get campaign offers using GetCampaignOffersQuery and business logic handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             # Validate request (authentication, rate limiting, etc.)
@@ -722,59 +948,96 @@ class CampaignRoutes:
             try:
                 campaign_id = req.get_parameter(0)
 
-                # Mock offers data
-                mock_offers = {
+                # Validate and parse query parameters for pagination
+                try:
+                    page_str = req.get_query('page')
+                    if page_str is not None:
+                        page = int(page_str)
+                        if page < 1:
+                            raise ValueError("Page must be >= 1")
+                    else:
+                        page = 1
+
+                    page_size_str = req.get_query('pageSize')
+                    if page_size_str is not None:
+                        page_size = int(page_size_str)
+                        if page_size < 1 or page_size > 100:
+                            raise ValueError("Page size must be between 1 and 100")
+                    else:
+                        page_size = 20
+
+                except ValueError as e:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Get offers from business logic using CQRS query pattern
+                from ...application.queries.get_campaign_offers_query import GetCampaignOffersQuery
+
+                offset = (page - 1) * page_size
+                limit = min(page_size, 100)  # Ensure limit <= 100
+                logger.debug(f"Offers query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
+
+                query = GetCampaignOffersQuery(
+                    campaign_id=campaign_id,
+                    limit=limit,
+                    offset=offset
+                )
+
+                offers = self.get_campaign_offers_handler.handle(query)
+                logger.debug("Offers query executed successfully")
+                logger.debug(f"Type: {type(offers)}")
+                if hasattr(offers, '__len__'):
+                    logger.debug(f"Length: {len(offers)}")
+
+                # Get total count for pagination
+                total_count = self._container.get_offer_repository().count_by_campaign_id(campaign_id)
+
+                # Convert to response format
+                response = {
                     "offers": [
                         {
-                            "id": "offer_789",
-                            "campaignId": campaign_id,
-                            "name": "Premium Product",
-                            "url": "https://affiliate.com/offer/123",
-                            "offerType": "direct",
-                            "weight": 60,
-                            "isActive": True,
-                            "isControl": False,
-                            "payout": {"amount": 25.00, "currency": "USD"},
-                            "revenueShare": 0.15,
-                            "costPerClick": {"amount": 0.50, "currency": "USD"},
-                            "performance": {
-                                "clicks": 1000,
-                                "conversions": 30,
-                                "revenue": {"amount": 750.00, "currency": "USD"},
-                                "cost": {"amount": 500.00, "currency": "USD"},
-                                "cr": 0.03,
-                                "epc": {"amount": 25.00, "currency": "USD"},
-                                "roi": 1.5
+                            "id": offer.id,
+                            "campaignId": offer.campaign_id,
+                            "name": offer.name,
+                            "url": offer.url.value,
+                            "offerType": offer.offer_type,
+                            "weight": offer.weight,
+                            "isActive": offer.is_active,
+                            "isControl": offer.is_control,
+                            "payout": {
+                                "amount": float(offer.payout.amount),
+                                "currency": offer.payout.currency.value
                             },
-                            "autoPause": {
-                                "threshold": 0.02,
-                                "minClicksBeforePause": 1000
-                            },
-                            "externalId": "AFF_123",
-                            "partnerNetwork": "MaxBounty",
-                            "createdAt": "2024-01-01T00:00:00Z",
-                            "updatedAt": "2024-01-01T00:00:00Z"
+                            "revenueShare": float(offer.revenue_share),
+                            "costPerClick": {
+                                "amount": float(offer.cost_per_click.amount),
+                                "currency": offer.cost_per_click.currency.value
+                            } if offer.cost_per_click else None,
+                            "createdAt": offer.created_at.isoformat() + "Z",
+                            "updatedAt": offer.updated_at.isoformat() + "Z"
                         }
+                        for offer in offers
                     ],
-                    "pagination": {
-                        "page": 1,
-                        "pageSize": 20,
-                        "totalItems": 1,
-                        "totalPages": 1,
-                        "hasNext": False,
-                        "hasPrev": False
-                    }
+                    "pagination": self._build_pagination_info(page, page_size, total_count)
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_offers))
-            except Exception:
+                res.end(json.dumps(response))
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
 
-        def create_campaign_offer(res, req):
+        async def create_campaign_offer(res, req):
             """Create an offer for a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
             import json
@@ -784,7 +1047,27 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                campaign_id = req.get_parameter(0)
+                # Extract campaign_id from URL path
+                url_path = req.get_url()
+                logger.debug(f"create_campaign_offer: full URL: '{url_path}'")
+
+                # Parse path to extract campaign_id (format: /v1/campaigns/{campaign_id}/offers)
+                path_parts = url_path.split('/')
+                if len(path_parts) >= 4 and path_parts[3]:  # campaigns/{campaign_id}/offers
+                    campaign_id = path_parts[3]
+                else:
+                    campaign_id = None
+
+                logger.debug(f"create_campaign_offer: extracted campaign_id: '{campaign_id}'")
+
+                # Validate campaign_id
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
                 # Buffer for request body
                 data_parts = []
@@ -821,28 +1104,54 @@ class CampaignRoutes:
                                 res.end(json.dumps(error_response))
                                 return
 
-                            # Use provided data or defaults
-                            if not body_data:
-                                body_data = {"name": "Premium Product", "url": "https://affiliate.com/offer/123", "offerType": "direct", "weight": 60, "isActive": True, "isControl": False, "payout": {"amount": 25.50, "currency": "USD"}}
+                            # Create command using CQRS pattern
+                            from ...application.commands.create_offer_command import CreateOfferCommand
+                            from ...domain.value_objects import Money, Url
+                            from decimal import Decimal
 
-                            # Simple mock response matching schema requirements
-                            import uuid
-                            offer_id = str(uuid.uuid4())[:8]
+                            # Build command with business logic validation
+                            from ...domain.value_objects import CampaignId
+                            command = CreateOfferCommand(
+                                campaign_id=CampaignId(campaign_id),
+                                name=body_data['name'],
+                                url=Url(body_data['url']),
+                                offer_type=body_data.get('offerType', 'direct'),
+                                payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
+                                revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
+                                cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
+                                weight=body_data.get('weight', 100),
+                                is_control=body_data.get('isControl', False)
+                            )
+
+                            # Handle command
+                            offer = self.create_offer_handler.handle(command)
+
+                            # Convert to response
                             response = {
-                                "id": f"offer_{offer_id}",
-                                "campaignId": campaign_id,
-                                "name": body_data.get('name', 'Test Offer'),
-                                "url": body_data.get('url', 'https://example.com/offer'),
-                                "offerType": body_data.get('offerType', 'direct'),
-                                "weight": body_data.get('weight', 100),
-                                "isActive": body_data.get('isActive', True),
-                                "isControl": body_data.get('isControl', False),
-                                "payout": body_data.get('payout', {"amount": 25.50, "currency": "USD"}),
-                                "createdAt": "2024-01-01T00:00:00Z",
-                                "updatedAt": "2024-01-01T00:00:00Z"
+                                "id": offer.id,
+                                "campaignId": offer.campaign_id,
+                                "name": offer.name,
+                                "url": offer.url.value,
+                                "offerType": offer.offer_type,
+                                "weight": offer.weight,
+                                "isActive": offer.is_active,
+                                "isControl": offer.is_control,
+                                "payout": {
+                                    "amount": float(offer.payout.amount),
+                                    "currency": offer.payout.currency.value
+                                },
+                                "revenueShare": float(offer.revenue_share),
+                                "costPerClick": {
+                                    "amount": float(offer.cost_per_click.amount),
+                                    "currency": offer.cost_per_click.currency.value
+                                } if offer.cost_per_click else None,
+                                "createdAt": offer.created_at.isoformat(),
+                                "updatedAt": offer.updated_at.isoformat()
                             }
+
                             res.write_status(201)
                             res.write_header('Content-Type', 'application/json')
+                            add_security_headers(res)
                             res.end(json.dumps(response))
 
                     except Exception as e:
@@ -869,7 +1178,7 @@ class CampaignRoutes:
     def _register_campaign_pause(self, app):
         """Register campaign pause route."""
         def pause_campaign(res, req):
-            """Pause a campaign."""
+            """Pause a campaign using CQRS pattern with PauseCampaignCommand and handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             # Validate request (authentication, rate limiting, etc.)
@@ -878,23 +1187,50 @@ class CampaignRoutes:
 
             try:
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
-                # Mock pause response
-                mock_response = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "status": "paused",
+                # Create command using CQRS pattern
+                from ...application.commands.pause_campaign_command import PauseCampaignCommand
+                from ...domain.value_objects import CampaignId
+
+                command = PauseCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
+
+                # Handle command
+                campaign = self.pause_campaign_handler.handle(command)
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_response))
-            except Exception:
+                res.end(json.dumps(response))
+            except ValueError as e:
+                # Handle business logic validation errors (e.g., campaign already paused)
+                error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
+                res.write_status(400)
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+                res.end(json.dumps(error_response))
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in pause_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -925,22 +1261,35 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock resume response
-                mock_response = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "status": "active",
+                # Create command
+                from ...application.commands.resume_campaign_command import ResumeCampaignCommand
+                from ...domain.value_objects import CampaignId
+
+                command = ResumeCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
+
+                # Handle command
+                campaign = self.resume_campaign_handler.handle(command)
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:30:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_response))
-            except Exception:
+                res.end(json.dumps(response))
+            except Exception as e:
+                import traceback
+                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")

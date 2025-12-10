@@ -1,7 +1,7 @@
 """Domain value objects."""
 
 # Identifiers
-from .identifiers import CampaignId, ClickId
+from .identifiers import CampaignId, ClickId, ImpressionId
 
 # Financial
 from .financial import Money
@@ -21,6 +21,7 @@ from .filters import ClickFilters
 __all__ = [
     'CampaignId',
     'ClickId',
+    'ImpressionId',
     'Money',
     'Url',
     'CampaignStatus',

@@ -4,7 +4,6 @@ info:
   description: |
     Domain-driven API for managing advertising campaigns, tracking performance,
     and optimizing conversions. Built from bounded contexts rather than raw SQL schema.
-
     ## Key Features
     - **Domain-Driven Design**: API designed around business domains, not database tables
     - **Property-Based Testing Ready**: Comprehensive OpenAPI spec for automated testing
@@ -19,7 +18,6 @@ info:
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-
 servers:
   - url: http://127.0.0.1:5000/v1
     description: Local development server (port 5000)
@@ -29,8 +27,6 @@ servers:
     description: Production server
   - url: https://staging-api.advertising-platform.com/v1
     description: Staging server
-
-
 # Global rate limiting (applied to all endpoints)
 x-rate-limits:
   authenticated:
@@ -39,11 +35,13 @@ x-rate-limits:
   public:
     requests_per_minute: 10
     burst_limit: 50
-
+# Global security requirements (applied to all endpoints)
+security:
+  - bearerAuth: []
+  - apiKey: []
 # ============================================================================
 # SECURITY SCHEMES
 # ============================================================================
-
 components:
   securitySchemes:
     bearerAuth:
@@ -52,13 +50,11 @@ components:
       bearerFormat: JWT
       description: JWT token for authenticated users
       x-bearerInfoFunc: mock_server.bearer_token_auth
-
     apiKey:
       type: apiKey
       in: header
       name: X-API-Key
       description: API key for partner integrations
-
     oauth2:
       type: oauth2
       description: OAuth 2.0 authorization for third-party applications
@@ -71,28 +67,21 @@ components:
             campaign:read: Read campaign data
             campaign:write: Create and modify campaigns
             campaign:delete: Delete campaigns
-
             # Landing page scopes (NEW)
             landing:read: Read landing pages
             landing:write: Create and modify landing pages
-
             # Offer scopes (NEW)
             offers:read: Read offers
             offers:write: Create and modify offers
-
             # Analytics and traffic
             analytics:read: Read analytics and performance data
             traffic:read: Read traffic and click data
-
             # Admin
             admin: Full administrative access
-
 # ============================================================================
 # COMMON SCHEMAS
 # ============================================================================
-
   schemas:
-
     # Common Types
     Money:
       type: object
@@ -115,9 +104,12 @@ components:
         - amount
         - currency
       additionalProperties: false
-
+      example:
+        amount: 25.50
+        currency: "USD"
     OfferPerformance:
       type: object
+      description: Performance metrics for an offer including clicks, conversions, revenue, and calculated metrics
       properties:
         clicks:
           type: integer
@@ -149,10 +141,24 @@ components:
         - cr
         - epc
         - roi
+      example:
+        clicks: 1500
+        conversions: 45
+        revenue:
+          amount: 2250.00
+          currency: "USD"
+        cost:
+          amount: 750.00
+          currency: "USD"
+        cr: 0.03
+        epc:
+          amount: 1.50
+          currency: "USD"
+        roi: 2.15
       additionalProperties: false
-
     OfferAutoPause:
       type: object
+      description: Configuration for automatic pausing of offers based on conversion rate thresholds
       properties:
         threshold:
           type: number
@@ -165,16 +171,19 @@ components:
         - threshold
         - minClicksBeforePause
       additionalProperties: false
-
+      example:
+        threshold: 0.02
+        minClicksBeforePause: 1000
     OfferType:
+      description: Type of offer delivery method
       type: string
       enum:
         - direct
         - email
         - phone
       example: "direct"
-
     OfferMetrics:
+      description: Performance metrics for a specific offer
       type: object
       properties:
         offerId:
@@ -190,7 +199,15 @@ components:
         - name
         - metrics
       additionalProperties: false
-
+      example:
+        offerId: "offer_123"
+        name: "Summer Sale Offer"
+        metrics:
+          clicks: 5000
+          conversions: 150
+          revenue:
+            amount: 7500.00
+            currency: "USD"
     # Click Tracking Schemas
     ClickRecord:
       type: object
@@ -333,7 +350,8 @@ components:
           description: ID of traffic source
           example: 101
         conversionType:
-          $ref: '#/components/schemas/ConversionType'
+          allOf:
+            - $ref: '#/components/schemas/ConversionType'
           nullable: true
       required:
         - id
@@ -342,8 +360,15 @@ components:
         - ua
         - isValid
         - ts
-
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        cid: 123
+        ip: "192.168.1.100"
+        ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        isValid: true
+        ts: 1640995200
     ClickList:
+      description: Paginated list of click records
       type: object
       properties:
         clicks:
@@ -363,8 +388,17 @@ components:
       required:
         - clicks
         - total
-
+      example:
+        clicks:
+          - id: "123e4567-e89b-12d3-a456-426614174000"
+            cid: 123
+            ip: "192.168.1.100"
+            ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            isValid: true
+            ts: 1640995200
+        total: 1500
     Pagination:
+      description: Pagination information for list responses
       type: object
       properties:
         page:
@@ -399,8 +433,15 @@ components:
         - totalPages
         - hasNext
         - hasPrev
-
+      example:
+        page: 1
+        pageSize: 20
+        totalItems: 150
+        totalPages: 8
+        hasNext: true
+        hasPrev: false
     PaginationLinks:
+      description: Navigation links for paginated responses
       type: object
       properties:
         first:
@@ -419,7 +460,11 @@ components:
           type: string
           format: uri
           example: "/api/v1/campaigns?page=8&pageSize=20"
-
+      example:
+        first: "/api/v1/campaigns?page=1&pageSize=20"
+        prev: "/api/v1/campaigns?page=1&pageSize=20"
+        next: "/api/v1/campaigns?page=2&pageSize=20"
+        last: "/api/v1/campaigns?page=8&pageSize=20"
     # Error Response
     Error:
       type: object
@@ -454,39 +499,16 @@ components:
             details:
               type: object
               description: Optional object for detailed validation errors
-
-    ProblemDetails:
-      type: object
-      description: RFC 7807 Problem Details format for HTTP API errors
-      properties:
-        type:
-          type: string
-          format: uri
-          description: A URI reference that identifies the problem type
-          example: "about:blank"
-        title:
-          type: string
-          description: A short, human-readable summary of the problem type
-          example: "Bad Request"
-        detail:
-          type: string
-          description: A human-readable explanation specific to this occurrence of the problem
-          example: "'payout' is a required property"
-        status:
-          type: integer
-          description: The HTTP status code
-          example: 400
-        instance:
-          type: string
-          format: uri
-          description: A URI reference that identifies the specific occurrence of the problem
-      required:
-        - type
-        - title
-        - status
-
+      example:
+        error:
+          code: "VALIDATION_ERROR"
+          message: "Validation failed: name is required"
+          details:
+            field: "name"
+            issue: "required"
     # Enums
     CampaignStatus:
+      description: Current status of a campaign
       type: string
       enum:
         - draft
@@ -495,8 +517,8 @@ components:
         - completed
         - cancelled
       example: "active"
-
     PageType:
+      description: Type of landing page in the conversion funnel
       type: string
       enum:
         - direct
@@ -504,8 +526,8 @@ components:
         - bridge
         - thank_you
       example: "squeeze"
-
     ConversionType:
+      description: Type of conversion event being tracked
       type: string
       enum:
         - lead
@@ -514,20 +536,19 @@ components:
         - registration
         - signup
       example: "sale"
-
     CostModel:
+      description: Cost model for campaign billing (CPA=Cost Per Action, CPC=Cost Per Click, CPM=Cost Per Mille)
       type: string
       enum:
         - CPA
         - CPC
         - CPM
       example: "CPA"
-
 # ============================================================================
 # CAMPAIGN MANAGEMENT SCHEMAS
 # ============================================================================
-
     CampaignResource:
+      description: Complete campaign configuration and status information
       type: object
       properties:
         id:
@@ -564,8 +585,30 @@ components:
         - urls
         - createdAt
         - updatedAt
-
+      example:
+        id: "camp_123"
+        name: "Summer Sale Campaign"
+        description: "High-converting summer promotion"
+        status: "active"
+        schedule:
+          startDate: "2024-06-01T00:00:00Z"
+          endDate: "2024-08-31T23:59:59Z"
+        urls:
+          trackingUrl: "https://example.com/track"
+          successUrl: "https://example.com/success"
+          failureUrl: "https://example.com/failure"
+        financial:
+          payout: {"amount": 2.50, "currency": "USD"}
+          dailyBudget: {"amount": 100.00, "currency": "USD"}
+          totalBudget: {"amount": 5000.00, "currency": "USD"}
+        performance:
+          clicks: 5000
+          conversions: 150
+          revenue: {"amount": 7500.00, "currency": "USD"}
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-01T00:00:00Z"
     CampaignSchedule:
+      description: Campaign scheduling information including start and end dates
       type: object
       properties:
         startDate:
@@ -574,8 +617,11 @@ components:
         endDate:
           type: string
           format: date-time
-
+      example:
+        startDate: "2024-06-01T00:00:00Z"
+        endDate: "2024-08-31T23:59:59Z"
     CampaignURLs:
+      description: URLs for campaign landing pages and offers
       type: object
       properties:
         safePage:
@@ -589,8 +635,11 @@ components:
       required:
         - safePage
         - offerPage
-
+      example:
+        safePage: "https://example.com/safe-landing"
+        offerPage: "https://example.com/offer"
     CampaignFinancial:
+      description: Financial configuration and spending information for a campaign
       type: object
       properties:
         costModel:
@@ -607,8 +656,14 @@ components:
         - costModel
         - payout
         - spent
-
+      example:
+        costModel: "CPA"
+        payout: {"amount": 2.50, "currency": "USD"}
+        dailyBudget: {"amount": 100.00, "currency": "USD"}
+        totalBudget: {"amount": 5000.00, "currency": "USD"}
+        spent: {"amount": 1250.00, "currency": "USD"}
     CampaignPerformance:
+      description: Key performance metrics and KPIs for a campaign
       type: object
       properties:
         clicks:
@@ -640,8 +695,15 @@ components:
         - cr
         - epc
         - roi
-
+      example:
+        clicks: 1250
+        conversions: 45
+        ctr: 0.032
+        cr: 0.036
+        epc: {"amount": 2.50, "currency": "USD"}
+        roi: 2.45
     CampaignLinks:
+      description: HATEOAS links for campaign-related resources
       type: object
       properties:
         self:
@@ -659,8 +721,14 @@ components:
         analytics:
           type: string
           example: "/api/v1/campaigns/camp_123/analytics"
-
+      example:
+        self: "/api/v1/campaigns/camp_123"
+        landingPages: "/api/v1/campaigns/camp_123/landing-pages"
+        offers: "/api/v1/campaigns/camp_123/offers"
+        targeting: "/api/v1/campaigns/camp_123/targeting"
+        analytics: "/api/v1/campaigns/camp_123/analytics"
     CampaignCollection:
+      description: Collection of campaign summaries with pagination
       type: object
       properties:
         campaigns:
@@ -672,8 +740,22 @@ components:
       required:
         - campaigns
         - pagination
-
+      example:
+        campaigns:
+          - id: "camp_123"
+            name: "Summer Sale Campaign"
+            status: "active"
+            clicks: 1250
+            conversions: 45
+        pagination:
+          page: 1
+          pageSize: 20
+          totalItems: 5
+          totalPages: 1
+          hasNext: false
+          hasPrev: false
     CampaignSummary:
+      description: Condensed campaign information for list views
       type: object
       properties:
         id:
@@ -693,12 +775,444 @@ components:
         - name
         - status
         - performance
-
+      example:
+        id: "camp_123"
+        name: "Summer Sale Campaign"
+        status: "active"
+        performance:
+          clicks: 1250
+          conversions: 45
+          ctr: 0.032
+          cr: 0.036
+          epc: {"amount": 2.50, "currency": "USD"}
+          roi: 2.45
+# ============================================================================
+# RECOMMENDED SCHEMAS
+# ============================================================================
+    PaginationMeta:
+      description: Metadata for paginated responses including pagination information.
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          example: 50
+          description: Number of items per page
+        total:
+          type: integer
+          minimum: 0
+          example: 250
+          description: Total number of items available
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 5
+          description: Total number of pages
+        hasNext:
+          type: boolean
+          example: true
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          example: false
+          description: Whether there is a previous page
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
+      example:
+        page: 1
+        limit: 50
+        total: 250
+        totalPages: 5
+        hasNext: true
+        hasPrev: false
+    ValidationError:
+      description: Standard error response for validation failures.
+      type: object
+      properties:
+        type:
+          type: string
+          example: "validation_error"
+          description: Error type identifier
+        title:
+          type: string
+          example: "Validation Error"
+          description: Human-readable error title
+        status:
+          type: integer
+          example: 400
+          description: HTTP status code
+        detail:
+          type: string
+          example: "The request contains invalid data"
+          description: Detailed error description
+        instance:
+          type: string
+          format: uri
+          example: "/campaigns/camp_123"
+          description: URI reference to the resource
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "name"
+                description: Field that failed validation
+              message:
+                type: string
+                example: "Name is required"
+                description: Validation error message
+              code:
+                type: string
+                example: "required"
+                description: Validation error code
+            required:
+              - field
+              - message
+          description: List of specific validation errors
+      required:
+        - type
+        - title
+        - status
+        - detail
+      example:
+        type: "validation_error"
+        title: "Validation Error"
+        status: 400
+        detail: "The request contains invalid data"
+        instance: "/campaigns/camp_123"
+        errors:
+          - field: "name"
+            message: "Name is required"
+            code: "required"
+          - field: "status"
+            message: "Status must be one of: active, paused, draft"
+            code: "invalid_choice"
+# ============================================================================
+# NEW FEATURES SCHEMAS
+# ============================================================================
+    ClickValidationResponse:
+      description: Response for click validation including fraud detection results and redirect information.
+      type: object
+      properties:
+        clickId:
+          type: string
+          example: "click_123456"
+          description: Unique click identifier
+        isValid:
+          type: boolean
+          example: true
+          description: Whether the click passes validation
+        fraudScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.05
+          description: Fraud risk score (0.0 = safe, 1.0 = high risk)
+        redirectUrl:
+          type: string
+          format: uri
+          example: "https://affiliate.com/offer/123"
+          description: URL to redirect to if valid
+        validationReason:
+          type: string
+          example: "passed_all_checks"
+          description: Reason for validation result
+        blockedReason:
+          type: string
+          example: null
+          description: Reason why click was blocked (null if valid)
+        campaignId:
+          type: string
+          example: "camp_123"
+          description: Associated campaign ID
+        landingPageId:
+          type: string
+          example: "lp_456"
+          description: Target landing page ID
+        offerId:
+          type: string
+          example: "offer_789"
+          description: Associated offer ID
+      required:
+        - clickId
+        - isValid
+        - fraudScore
+      example:
+        clickId: "click_123456"
+        isValid: true
+        fraudScore: 0.05
+        redirectUrl: "https://affiliate.com/offer/123"
+        validationReason: "passed_all_checks"
+        blockedReason: null
+        campaignId: "camp_123"
+        landingPageId: "lp_456"
+        offerId: "offer_789"
+    FraudRule:
+      description: Fraud detection rule configuration for automated blocking and scoring.
+      type: object
+      properties:
+        id:
+          type: string
+          example: "fraud_rule_001"
+          description: Unique rule identifier
+        name:
+          type: string
+          example: "Block suspicious user agents"
+          description: Human-readable rule name
+        type:
+          type: string
+          enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+          example: "ip_block"
+          description: Type of fraud detection rule
+        action:
+          type: string
+          enum: [block, flag, score_increase, redirect_safe]
+          example: "block"
+          description: Action to take when rule matches
+        conditions:
+          type: object
+          description: Rule-specific conditions
+          properties:
+            ip_addresses:
+              type: array
+              items:
+                type: string
+                format: ipv4
+              example: ["192.168.1.1", "10.0.0.0/8"]
+              description: IP addresses or CIDR ranges to block/flag
+            user_agents:
+              type: array
+              items:
+                type: string
+              example: ["bot", "crawler"]
+              description: User agent patterns to match
+            countries:
+              type: array
+              items:
+                type: string
+                pattern: '^[A-Z]{2}$'
+              example: ["RU", "CN"]
+              description: Country codes to restrict
+            rate_limit:
+              type: object
+              properties:
+                requests_per_minute:
+                  type: integer
+                  minimum: 1
+                  example: 100
+                time_window_seconds:
+                  type: integer
+                  minimum: 1
+                  example: 60
+              description: Rate limiting configuration
+            score_threshold:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+              example: 0.8
+              description: Fraud score threshold for action
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 50
+          description: Rule priority (higher = processed first)
+        isActive:
+          type: boolean
+          example: true
+          description: Whether the rule is currently active
+        createdAt:
+          type: string
+          format: date-time
+          description: Rule creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Rule last update timestamp
+      required:
+        - id
+        - name
+        - type
+        - action
+        - priority
+        - isActive
+      example:
+        id: "fraud_rule_001"
+        name: "Block suspicious user agents"
+        type: "ua_block"
+        action: "block"
+        conditions:
+          user_agents: ["bot", "crawler", "spider"]
+        priority: 80
+        isActive: true
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
+    FraudRuleCollection:
+      description: Collection of fraud detection rules with pagination.
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/FraudRule'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+      required:
+        - status
+        - rules
+      example:
+        status: "success"
+        rules: []
+        pagination:
+          page: 1
+          limit: 20
+          total: 0
+          totalPages: 0
+          hasNext: false
+          hasPrev: false
+    RealTimeAnalytics:
+      description: Real-time analytics data for the last 5 minutes of activity.
+      type: object
+      properties:
+        timeRange:
+          type: object
+          properties:
+            startTime:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:00:00Z"
+              description: Start of the 5-minute window
+            endTime:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:05:00Z"
+              description: End of the 5-minute window
+          required:
+            - startTime
+            - endTime
+          description: Time window for real-time data
+        activeUsers:
+          type: integer
+          format: int64
+          example: 1250
+          description: Number of active users in the last 5 minutes
+        clicks:
+          type: integer
+          format: int64
+          example: 89
+          description: Total clicks in the last 5 minutes
+        conversions:
+          type: integer
+          format: int64
+          example: 12
+          description: Total conversions in the last 5 minutes
+        revenue:
+          $ref: '#/components/schemas/Money'
+        topCampaigns:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              campaignId:
+                type: string
+                example: "camp_123"
+              campaignName:
+                type: string
+                example: "Summer Sale Campaign"
+              clicks:
+                type: integer
+                example: 45
+              conversions:
+                type: integer
+                example: 8
+            required:
+              - campaignId
+              - campaignName
+              - clicks
+              - conversions
+          description: Top 10 performing campaigns in the last 5 minutes
+        topLandingPages:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              landingPageId:
+                type: string
+                example: "lp_456"
+              pageName:
+                type: string
+                example: "Main Squeeze Page"
+              clicks:
+                type: integer
+                example: 67
+              conversions:
+                type: integer
+                example: 15
+            required:
+              - landingPageId
+              - pageName
+              - clicks
+              - conversions
+          description: Top 10 performing landing pages in the last 5 minutes
+        fraudEvents:
+          type: integer
+          format: int64
+          example: 3
+          description: Number of fraud events detected in the last 5 minutes
+        blockedClicks:
+          type: integer
+          format: int64
+          example: 7
+          description: Number of clicks blocked by fraud detection
+      required:
+        - timeRange
+        - activeUsers
+        - clicks
+        - conversions
+        - revenue
+        - topCampaigns
+        - topLandingPages
+        - fraudEvents
+        - blockedClicks
+      example:
+        timeRange:
+          startTime: "2024-01-15T10:00:00Z"
+          endTime: "2024-01-15T10:05:00Z"
+        activeUsers: 1250
+        clicks: 89
+        conversions: 12
+        revenue:
+          amount: 300.00
+          currency: "USD"
+        topCampaigns: []
+        topLandingPages: []
+        fraudEvents: 3
+        blockedClicks: 7
 # ============================================================================
 # LANDING PAGE SCHEMAS
 # ============================================================================
-
     LandingPageResource:
+      description: Represents a landing page within a campaign, including its configuration, performance metrics, and A/B testing properties.
       type: object
       properties:
         id:
@@ -745,8 +1259,28 @@ components:
         - isControl
         - createdAt
         - updatedAt
-
+      example:
+        id: "lp_456"
+        campaignId: "camp_123"
+        name: "Main Squeeze Page"
+        url: "https://example.com/page1"
+        pageType: "squeeze"
+        weight: 70
+        isActive: true
+        isControl: false
+        performance:
+          impressions: 5000
+          clicks: 250
+          conversions: 15
+          ctr: 0.05
+          cr: 0.06
+          epc:
+            amount: 12.50
+            currency: "USD"
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
     LandingPagePerformance:
+      description: Performance metrics for a landing page including impressions, clicks, conversions, and calculated ratios.
       type: object
       properties:
         impressions:
@@ -778,12 +1312,20 @@ components:
         - ctr
         - cr
         - epc
-
+      example:
+        impressions: 5000
+        clicks: 250
+        conversions: 15
+        ctr: 0.05
+        cr: 0.06
+        epc:
+          amount: 12.50
+          currency: "USD"
 # ============================================================================
 # CAMPAIGN OFFER SCHEMAS
 # ============================================================================
-
     CampaignOfferResource:
+      description: Represents an offer within a campaign, including payout configuration, performance tracking, and partner network integration.
       type: object
       properties:
         id:
@@ -849,12 +1391,31 @@ components:
         - payout
         - createdAt
         - updatedAt
-
+      example:
+        id: "offer_789"
+        campaignId: "camp_123"
+        name: "Premium Product"
+        url: "https://affiliate.com/offer/123"
+        offerType: "cpa"
+        weight: 60
+        isActive: true
+        isControl: false
+        payout:
+          amount: 25.00
+          currency: "USD"
+        revenueShare: 0.15
+        costPerClick:
+          amount: 0.50
+          currency: "USD"
+        externalId: "AFF_123"
+        partnerNetwork: "MaxBounty"
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
 # ============================================================================
 # ANALYTICS SCHEMAS
 # ============================================================================
-
     CampaignAnalytics:
+      description: Comprehensive analytics data for a campaign including time range, metrics, and breakdown data.
       type: object
       properties:
         campaignId:
@@ -870,8 +1431,26 @@ components:
         - campaignId
         - timeRange
         - metrics
-
+      example:
+        campaignId: "camp_123"
+        timeRange:
+          startDate: "2024-01-01"
+          endDate: "2024-01-31"
+          granularity: "day"
+        metrics:
+          impressions: 10000
+          clicks: 500
+          conversions: 25
+          revenue: 625.00
+          cost: 250.00
+          profit: 375.00
+          ctr: 0.05
+          cr: 0.05
+          epc: 1.25
+          roi: 2.5
+        breakdowns: {}
     AnalyticsTimeRange:
+      description: Defines the time period and granularity for analytics queries.
       type: object
       properties:
         startDate:
@@ -891,8 +1470,12 @@ components:
         - startDate
         - endDate
         - granularity
-
+      example:
+        startDate: "2024-01-01"
+        endDate: "2024-01-31"
+        granularity: "day"
     AnalyticsMetrics:
+      description: Comprehensive analytics metrics for performance tracking
       type: object
       properties:
         clicks:
@@ -935,8 +1518,18 @@ components:
         - cr
         - epc
         - roi
-
+      example:
+        clicks: 5000
+        uniqueClicks: 4800
+        conversions: 150
+        revenue: {"amount": 7500.00, "currency": "USD"}
+        cost: {"amount": 1500.00, "currency": "USD"}
+        ctr: 0.025
+        cr: 0.03
+        epc: {"amount": 2.50, "currency": "USD"}
+        roi: 2.15
     AnalyticsBreakdowns:
+      description: Contains various breakdown views of analytics data (by date, traffic source, landing page, geography, etc.).
       type: object
       properties:
         byDate:
@@ -963,8 +1556,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeviceMetrics'
-
+      example:
+        byDate: []
+        byTrafficSource: []
+        byLandingPage: []
+        byOffer: []
+        byGeography: []
+        byDevice: []
     DateMetrics:
+      description: Time-series metrics showing performance data aggregated by date periods.
       type: object
       properties:
         date:
@@ -976,8 +1576,21 @@ components:
       required:
         - date
         - metrics
-
+      example:
+        date: "2024-01-15"
+        metrics:
+          impressions: 1000
+          clicks: 50
+          conversions: 3
+          revenue: 75.00
+          cost: 25.00
+          profit: 50.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     TrafficSourceMetrics:
+      description: Performance metrics broken down by traffic source and referral channels.
       type: object
       properties:
         trafficSourceId:
@@ -992,8 +1605,22 @@ components:
         - trafficSourceId
         - name
         - metrics
-
+      example:
+        trafficSourceId: "ts_google"
+        name: "Google Ads"
+        metrics:
+          impressions: 5000
+          clicks: 250
+          conversions: 15
+          revenue: 375.00
+          cost: 125.00
+          profit: 250.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     LandingPageMetrics:
+      description: Performance metrics broken down by individual landing pages within a campaign.
       type: object
       properties:
         landingPageId:
@@ -1008,8 +1635,22 @@ components:
         - landingPageId
         - name
         - metrics
-
+      example:
+        landingPageId: "lp_456"
+        name: "Main Landing Page"
+        metrics:
+          impressions: 3000
+          clicks: 150
+          conversions: 9
+          revenue: 225.00
+          cost: 75.00
+          profit: 150.00
+          ctr: 0.05
+          cr: 0.06
+          epc: 1.50
+          roi: 3.0
     GeographyMetrics:
+      description: Performance metrics broken down by geographic location (country, region, city).
       type: object
       properties:
         country:
@@ -1020,8 +1661,21 @@ components:
       required:
         - country
         - metrics
-
+      example:
+        country: "US"
+        metrics:
+          impressions: 8000
+          clicks: 400
+          conversions: 20
+          revenue: 500.00
+          cost: 200.00
+          profit: 300.00
+          ctr: 0.05
+          cr: 0.05
+          epc: 1.25
+          roi: 2.5
     DeviceMetrics:
+      description: Analytics metrics broken down by device type
       type: object
       properties:
         device:
@@ -1032,38 +1686,19 @@ components:
       required:
         - device
         - metrics
-
+      example:
+        device: "desktop"
+        metrics:
+          clicks: 1500
+          conversions: 75
+          revenue:
+            amount: 3750.00
+            currency: "USD"
 # ============================================================================
 # REQUEST SCHEMAS
 # ============================================================================
-
-    CreateCampaignRequest:
-      type: object
-      properties:
-        name:
-          nullable: true
-        description:
-          nullable: true
-        whiteUrl:
-          nullable: true
-        blackUrl:
-          nullable: true
-        costModel:
-          nullable: true
-        payout:
-          nullable: true
-        dailyBudget:
-          nullable: true
-        totalBudget:
-          nullable: true
-        startDate:
-          nullable: true
-        endDate:
-          nullable: true
-      # No required fields - allow testing with various combinations
-
-
     UpdateCampaignRequest:
+      description: Request payload for updating an existing campaign
       type: object
       properties:
         name:
@@ -1091,22 +1726,1030 @@ components:
         endDate:
           type: string
           format: date-time
-
+      example:
+        name: "Updated Summer Campaign"
+        description: "Updated campaign for summer promotions"
+        whiteUrl: "https://example.com/allowed"
+        blackUrl: "https://example.com/blocked"
+        payout:
+          amount: 2.50
+          currency: "USD"
+        dailyBudget:
+          amount: 100.00
+          currency: "USD"
+        totalBudget:
+          amount: 5000.00
+          currency: "USD"
+        startDate: "2024-06-01T00:00:00Z"
+        endDate: "2024-08-31T23:59:59Z"
+# ============================================================================
+# WEBHOOK SCHEMAS
+# ============================================================================
+    TelegramWebhookRequest:
+      type: object
+      description: Telegram webhook update payload
+      properties:
+        update_id:
+          type: integer
+          description: Unique update identifier
+          example: 123456789
+        message:
+          type: object
+          description: Message object from Telegram
+          properties:
+            message_id:
+              type: integer
+              example: 123
+            from:
+              type: object
+              description: Sender information
+              properties:
+                id:
+                  type: integer
+                  example: 123456789
+                username:
+                  type: string
+                  example: "john_doe"
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+            chat:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 123456789
+                type:
+                  type: string
+                  example: "private"
+            date:
+              type: integer
+              description: Unix timestamp
+              example: 1640995200
+            text:
+              type: string
+              description: Message text
+              example: "/start"
+      required:
+        - update_id
+        - message
+      example:
+        update_id: 123456789
+        message:
+          message_id: 123
+          from:
+            id: 123456789
+            username: "john_doe"
+            first_name: "John"
+            last_name: "Doe"
+          chat:
+            id: 123456789
+            type: "private"
+          date: 1640995200
+          text: "/start"
+    TelegramWebhookResponse:
+      description: Response from Telegram webhook processing
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error, skipped]
+          example: "success"
+        webhook_id:
+          type: string
+          description: Internal webhook identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        response:
+          type: object
+          description: Bot response to send back to Telegram
+          properties:
+            chat_id:
+              type: integer
+              example: 123456789
+            text:
+              type: string
+              example: "👋 Добро пожаловать!"
+            reply_markup:
+              type: object
+              description: Inline keyboard markup
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Invalid update format"
+      example:
+        status: "success"
+        webhook_id: "550e8400-e29b-41d4-a716-446655440000"
+        response:
+          chat_id: 123456789
+          text: "👋 Добро пожаловать!"
+          reply_markup:
+            inline_keyboard:
+              - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🚀 Кампании", "callback_data": "campaigns"}]
+    # Event Tracking Schemas
+    EventTrackingRequest:
+      type: object
+      description: Event tracking data from landing pages
+      properties:
+        event_type:
+          type: string
+          enum: [page_view, click, form_submit, form_start, form_complete, scroll, time_spent, conversion, purchase, signup, download, share, search, video_play, video_complete, custom]
+          description: Type of event being tracked
+          example: "click"
+        event_name:
+          type: string
+          description: Specific event name
+          example: "cta_button_click"
+        user_id:
+          type: string
+          description: Anonymous user identifier
+          example: "user_a1b2c3d4"
+        session_id:
+          type: string
+          description: Session identifier
+          example: "session_123456"
+        click_id:
+          type: string
+          description: Associated click ID from traffic tracking
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        campaign_id:
+          type: integer
+          description: Campaign identifier
+          example: 123
+        landing_page_id:
+          type: integer
+          description: Landing page identifier
+          example: 456
+        url:
+          type: string
+          format: uri
+          description: Current page URL
+          example: "https://example.com/landing-page"
+        referrer:
+          type: string
+          format: uri
+          description: Referrer URL
+          example: "https://facebook.com/ad/123"
+        properties:
+          type: object
+          description: Custom event properties
+          additionalProperties: true
+          example:
+            button_text: "Buy Now"
+            form_field: "email"
+            scroll_depth: 75
+      required:
+        - event_type
+        - event_name
+      example:
+        event_type: "click"
+        event_name: "cta_button_click"
+        user_id: "user_a1b2c3d4"
+        session_id: "session_123456"
+        click_id: "123e4567-e89b-12d3-a456-426614174000"
+        campaign_id: 123
+        landing_page_id: 456
+        url: "https://example.com/landing-page"
+        referrer: "https://facebook.com/ad/123"
+        properties:
+          button_text: "Buy Now"
+          button_position: "hero_section"
+    EventTrackingResponse:
+      description: Response from event tracking processing
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        categories:
+          type: array
+          items:
+            type: string
+          description: Event categories for analytics
+          example: ["interaction", "cta_interaction"]
+        fraud_detected:
+          type: boolean
+          description: Whether fraudulent activity was detected
+          example: false
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Invalid event data"
+      example:
+        status: "success"
+        event_id: "550e8400-e29b-41d4-a716-446655440000"
+        categories: ["interaction", "cta_interaction"]
+        fraud_detected: false
+    # Conversion Tracking Schemas
+    ConversionTrackingRequest:
+      type: object
+      description: Conversion tracking data from external systems
+      properties:
+        click_id:
+          type: string
+          format: uuid
+          description: Click ID that led to this conversion
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        conversion_type:
+          type: string
+          enum: [lead, sale, install, registration, signup]
+          description: Type of conversion
+          example: "sale"
+        conversion_value:
+          allOf:
+            - $ref: '#/components/schemas/Money'
+          description: Revenue value of the conversion
+        order_id:
+          type: string
+          description: External order/transaction identifier
+          example: "ORDER_123456"
+        product_id:
+          type: string
+          description: Product or service identifier
+          example: "product_789"
+        metadata:
+          type: object
+          description: Additional conversion data
+          additionalProperties: true
+          example:
+            source: "web_store"
+            payment_method: "credit_card"
+            discount_applied: true
+      required:
+        - click_id
+        - conversion_type
+      example:
+        click_id: "123e4567-e89b-12d3-a456-426614174000"
+        conversion_type: "sale"
+        conversion_value:
+          amount: 99.99
+          currency: "USD"
+        order_id: "ORDER_123456"
+        product_id: "product_789"
+        metadata:
+          source: "web_store"
+          payment_method: "credit_card"
+          discount_applied: true
+    ConversionTrackingResponse:
+      description: Response from conversion tracking processing
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error, duplicate]
+          example: "success"
+        conversion_id:
+          type: string
+          description: Unique conversion identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        attribution:
+          type: object
+          description: Attribution data for the conversion
+          properties:
+            attribution_model:
+              type: string
+              example: "last_click"
+            attribution_confidence:
+              type: number
+              format: float
+              example: 0.9
+            time_to_conversion:
+              type: number
+              format: float
+              description: Seconds between click and conversion
+              example: 3600.5
+            touchpoints:
+              type: integer
+              example: 1
+        fraud_detected:
+          type: boolean
+          description: Whether fraudulent activity was detected
+          example: false
+        postback_triggered:
+          type: boolean
+          description: Whether postback notifications were triggered
+          example: true
+        message:
+          type: string
+          description: Error message if status is error
+          example: "Click ID not found"
+      example:
+        status: "success"
+        conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+        attribution:
+          attribution_model: "last_click"
+          attribution_confidence: 0.9
+          time_to_conversion: 3600.5
+          touchpoints: 1
+        fraud_detected: false
+        postback_triggered: true
+    # Click Generation Schemas
+    ClickGenerationRequest:
+      type: object
+      description: Request to generate click tracking URL(s)
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID to attribute clicks to
+          example: 123
+        base_url:
+          type: string
+          format: uri
+          description: Base URL to add tracking parameters to
+          example: "https://example.com/landing-page"
+        landing_page_id:
+          type: integer
+          description: Specific landing page ID to target
+          example: 456
+        offer_id:
+          type: integer
+          description: Specific offer ID to target
+          example: 789
+        params:
+          type: object
+          description: Tracking parameters to include
+          properties:
+            sub1:
+              type: string
+              maxLength: 255
+              description: Level 1 tracking parameter (Creative/Ad ID)
+              example: "fb_ad_15"
+            sub2:
+              type: string
+              maxLength: 255
+              description: Level 2 tracking parameter (Traffic Source)
+              example: "facebook"
+            sub3:
+              type: string
+              maxLength: 255
+              description: Level 3 tracking parameter (Ad Set/Campaign Group)
+              example: "prospecting"
+            sub4:
+              type: string
+              maxLength: 255
+              description: Level 4 tracking parameter (Ad Version/Creative Type)
+              example: "video1"
+            sub5:
+              type: string
+              maxLength: 255
+              description: Level 5 tracking parameter (Audience/Keyword)
+              example: "lookalike78"
+            click_id:
+              type: string
+              maxLength: 255
+              description: Affiliate network click ID
+              example: "USERCLICK123"
+            aff_sub:
+              type: string
+              maxLength: 255
+              description: Primary affiliate sub-identifier
+            aff_sub2:
+              type: string
+              maxLength: 255
+              description: Secondary affiliate sub-identifier
+            aff_sub3:
+              type: string
+              maxLength: 255
+              description: Tertiary affiliate sub-identifier
+            aff_sub4:
+              type: string
+              maxLength: 255
+              description: Quaternary affiliate sub-identifier
+            aff_sub5:
+              type: string
+              maxLength: 255
+              description: Quinary affiliate sub-identifier
+      required:
+        - campaign_id
+        - base_url
+      example:
+        campaign_id: 123
+        base_url: "https://example.com/landing-page"
+        landing_page_id: 456
+        offer_id: 789
+        params:
+          sub1: "fb_ad_15"
+          sub2: "facebook"
+          sub3: "prospecting"
+          sub4: "video1"
+          sub5: "lookalike78"
+          click_id: "USERCLICK123"
+    BulkClickGenerationRequest:
+      type: object
+      description: Request to generate multiple click tracking URLs
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID for all URLs
+          example: 123
+        base_url:
+          type: string
+          format: uri
+          description: Base URL for all variations
+          example: "https://example.com/landing-page"
+        variations:
+          type: array
+          description: Array of parameter variations
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique identifier for this variation
+                example: "variation_1"
+              name:
+                type: string
+                description: Human-readable name for this variation
+                example: "Facebook Prospecting"
+              landing_page_id:
+                type: integer
+                description: Landing page ID for this variation
+                example: 456
+              offer_id:
+                type: integer
+                description: Offer ID for this variation
+                example: 789
+              params:
+                type: object
+                description: Tracking parameters for this variation
+                additionalProperties: true
+                example:
+                  sub1: "fb_ad_15"
+                  sub2: "facebook"
+                  sub3: "prospecting"
+          minItems: 1
+          maxItems: 100
+      required:
+        - campaign_id
+        - base_url
+        - variations
+      example:
+        campaign_id: 123
+        base_url: "https://example.com/landing-page"
+        variations:
+          - id: "variation_1"
+            name: "Facebook Prospecting"
+            landing_page_id: 456
+            offer_id: 789
+            params:
+              sub1: "fb_ad_15"
+              sub2: "facebook"
+              sub3: "prospecting"
+          - id: "variation_2"
+            name: "Google Search"
+            landing_page_id: 457
+            offer_id: 790
+            params:
+              sub1: "google_ad_20"
+              sub2: "google"
+              sub3: "search"
+    ClickGenerationResponse:
+      description: Response containing generated click tracking URL
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        tracking_url:
+          type: string
+          format: uri
+          description: Generated tracking URL
+          example: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook"
+        campaign_id:
+          type: integer
+          description: Campaign ID used
+          example: 123
+        params:
+          type: object
+          description: Optimized tracking parameters used
+          additionalProperties: true
+          example:
+            sub1: "fb_ad_15"
+            sub2: "facebook"
+            _generated_at: 1640995200
+            _version: "1.0"
+        landing_page_id:
+          type: integer
+          description: Landing page ID used
+          example: 456
+        offer_id:
+          type: integer
+          description: Offer ID used
+          example: 789
+        message:
+          type: string
+          description: Error message if status is error
+          example: "campaign_id must be a positive integer"
+      example:
+        status: "success"
+        tracking_url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook"
+        campaign_id: 123
+        params:
+          sub1: "fb_ad_15"
+          sub2: "facebook"
+          _generated_at: 1640995200
+          _version: "1.0"
+        landing_page_id: 456
+        offer_id: 789
+    BulkClickGenerationResponse:
+      description: Response containing multiple generated click tracking URLs
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: "success"
+        total_variations:
+          type: integer
+          description: Total number of variations requested
+          example: 3
+        successful:
+          type: integer
+          description: Number of successfully generated URLs
+          example: 2
+        failed:
+          type: integer
+          description: Number of failed generations
+          example: 1
+        results:
+          type: array
+          description: Results for each variation
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Variation identifier
+                example: "variation_1"
+              name:
+                type: string
+                description: Variation name
+                example: "Facebook Prospecting"
+              url:
+                type: string
+                format: uri
+                description: Generated tracking URL (null if failed)
+                example: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15"
+              params:
+                type: object
+                description: Parameters used for this variation
+                additionalProperties: true
+              status:
+                type: string
+                enum: [success, error]
+                example: "success"
+              error:
+                type: string
+                description: Error message if status is error
+                example: "Invalid landing_page_id"
+        message:
+          type: string
+          description: General error message if status is error
+          example: "Bulk generation failed"
+      example:
+        status: "success"
+        total_variations: 3
+        successful: 2
+        failed: 1
+        results:
+          - id: "variation_1"
+            name: "Facebook Prospecting"
+            url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15"
+            params:
+              sub1: "fb_ad_15"
+              sub2: "facebook"
+            status: "success"
+          - id: "variation_2"
+            name: "Google Search"
+            url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=google_ad_20"
+            params:
+              sub1: "google_ad_20"
+              sub2: "google"
+            status: "success"
+    # Goal Management Schemas
+    GoalResource:
+      description: Conversion goal configuration and settings
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique goal identifier
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+        campaign_id:
+          type: integer
+          description: Campaign this goal belongs to
+          example: 123
+        name:
+          type: string
+          description: Goal name
+          example: "Lead Form Submission"
+        description:
+          type: string
+          description: Goal description
+          example: "Track when visitors submit lead capture forms"
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Type of conversion goal
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          description: How the goal is triggered
+          example: "event"
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+          example:
+            fixed_value: 10.00
+        is_active:
+          type: boolean
+          description: Whether goal is active
+          example: true
+        attribution_window_days:
+          type: integer
+          description: Days to attribute conversions to this goal
+          example: 30
+        priority:
+          type: integer
+          description: Goal evaluation priority (higher = more important)
+          example: 1
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+          example: ["form", "lead", "conversion"]
+        created_at:
+          type: string
+          format: date-time
+          description: Goal creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Goal last update timestamp
+      example:
+        id: "goal_550e8400-e29b-41d4-a716-446655440000"
+        campaign_id: 123
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          fixed_value: 10.00
+        is_active: true
+        attribution_window_days: 30
+        priority: 1
+        tags: ["form", "lead", "conversion"]
+        created_at: "2024-01-01T00:00:00Z"
+        updated_at: "2024-01-01T00:00:00Z"
+    CreateGoalRequest:
+      type: object
+      description: Request to create a new conversion goal
+      properties:
+        campaign_id:
+          type: integer
+          description: Campaign ID for the goal
+          example: 123
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Goal name
+          example: "Lead Form Submission"
+        description:
+          type: string
+          maxLength: 1000
+          description: Goal description
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Type of conversion goal
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          description: How the goal is triggered
+          example: "event"
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+          example:
+            fixed_value: 10.00
+        is_active:
+          type: boolean
+          default: true
+          description: Whether goal should be active
+        attribution_window_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+          description: Attribution window in days
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          description: Goal priority
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+      required:
+        - campaign_id
+        - name
+        - goal_type
+        - trigger_type
+      example:
+        campaign_id: 123
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          fixed_value: 10.00
+        is_active: true
+        attribution_window_days: 30
+        priority: 1
+        tags: ["form", "lead", "conversion"]
+    UpdateGoalRequest:
+      type: object
+      description: Request to update an existing goal
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Goal name
+        description:
+          type: string
+          maxLength: 1000
+          description: Goal description
+        trigger_config:
+          type: object
+          description: Configuration for goal triggering
+          additionalProperties: true
+        value_config:
+          type: object
+          description: Configuration for goal value calculation
+          additionalProperties: true
+        is_active:
+          type: boolean
+          description: Whether goal is active
+        attribution_window_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Attribution window in days
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Goal priority
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+      example:
+        name: "Updated Lead Goal"
+        description: "Updated goal for tracking lead conversions"
+        is_active: true
+        priority: 2
+        tags: ["form", "lead", "updated"]
+    GoalCollection:
+      description: Collection of conversion goals with pagination
+      type: object
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalResource'
+        total:
+          type: integer
+          description: Total number of goals
+          example: 5
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      example:
+        goals:
+          - id: "goal_550e8400-e29b-41d4-a716-446655440000"
+            campaign_id: 123
+            name: "Lead Form Submission"
+            description: "Track when visitors submit lead capture forms"
+            goal_type: "lead"
+            trigger_type: "event"
+            is_active: true
+            attribution_window_days: 30
+        total: 5
+        pagination:
+          page: 1
+          pageSize: 20
+          totalItems: 5
+          totalPages: 1
+          hasNext: false
+          hasPrev: false
+    GoalTemplate:
+      type: object
+      description: Predefined goal template
+      properties:
+        name:
+          type: string
+          example: "Lead Form Submission"
+        description:
+          type: string
+          example: "Track when visitors submit lead capture forms"
+        goal_type:
+          type: string
+          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          example: "lead"
+        trigger_type:
+          type: string
+          enum: [event, url, time, manual]
+          example: "event"
+        trigger_config:
+          type: object
+          additionalProperties: true
+          example:
+            event_type: "form_submit"
+            event_name: "lead_form_submit"
+        value_config:
+          type: object
+          additionalProperties: true
+          example:
+            value_field: "lead_value"
+        attribution_window_days:
+          type: integer
+          example: 30
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["form", "lead", "conversion"]
+      example:
+        name: "Lead Form Submission"
+        description: "Track when visitors submit lead capture forms"
+        goal_type: "lead"
+        trigger_type: "event"
+        trigger_config:
+          event_type: "form_submit"
+          event_name: "lead_form_submit"
+        value_config:
+          value_field: "lead_value"
+        attribution_window_days: 30
+        tags: ["form", "lead", "conversion"]
+    # Postback Schemas
+    PostbackConfig:
+      type: object
+      description: Configuration for postback notification
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Postback URL to send notification to
+          example: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+        method:
+          type: string
+          enum: [GET, POST, PUT]
+          default: GET
+          description: HTTP method to use for postback
+          example: "GET"
+        headers:
+          type: object
+          description: Custom headers to include in postback request
+          additionalProperties:
+            type: string
+          example:
+            Authorization: "Bearer your_token_here"
+            X-API-Key: "your_api_key"
+        payload:
+          type: object
+          description: Request payload for POST/PUT methods (overrides URL parameters)
+          additionalProperties: true
+          example:
+            click_id: "{click_id}"
+            conversion_type: "{conversion_type}"
+            revenue: "{revenue}"
+            currency: "{currency}"
+        max_attempts:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: Maximum number of delivery attempts
+          example: 3
+      required:
+        - url
+      example:
+        url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+        method: "GET"
+        headers:
+          Authorization: "Bearer your_token_here"
+          X-API-Key: "your_api_key"
+        max_attempts: 3
+    PostbackSendRequest:
+      type: object
+      description: Request to send postback notification
+      properties:
+        conversion_id:
+          type: string
+          format: uuid
+          description: Conversion ID to send postback for
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        postback_config:
+          $ref: '#/components/schemas/PostbackConfig'
+      required:
+        - conversion_id
+        - postback_config
+      example:
+        conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+        postback_config:
+          url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
+          method: "GET"
+          max_attempts: 3
+    PostbackSendResponse:
+      description: Response from postback notification delivery
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, failed, error]
+          example: "success"
+        postback_id:
+          type: string
+          description: Unique postback identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        response_code:
+          type: integer
+          description: HTTP response code from postback endpoint
+          example: 200
+        response_body:
+          type: string
+          description: Response body from postback endpoint
+          example: "OK"
+        error_message:
+          type: string
+          description: Error message if delivery failed
+          example: "Connection timeout"
+        attempt_count:
+          type: integer
+          description: Number of attempts made
+          example: 1
+        message:
+          type: string
+          description: General status message
+          example: "Postback sent successfully"
+      example:
+        status: "success"
+        postback_id: "550e8400-e29b-41d4-a716-446655440000"
+        response_code: 200
+        response_body: "OK"
+        attempt_count: 1
+        message: "Postback sent successfully"
 # ============================================================================
 # API PATHS
 # ============================================================================
-
 paths:
-
   # ============================================================================
   # HEALTH CHECK
   # ============================================================================
-
   /health:
     get:
       summary: Health check
       description: Get the health status of the API service
-      operationId: get_health
+      operationId: getHealth
       tags: [Health]
       security: []  # Public endpoint - no authentication required
       responses:
@@ -1123,20 +2766,35 @@ paths:
                   service:
                     type: string
                     example: "domain-driven-api-mock"
-
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Health endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   # ============================================================================
   # CAMPAIGN MANAGEMENT
   # ============================================================================
-
   /campaigns:
     get:
       summary: List campaigns
       description: |
         Get a paginated list of campaigns accessible to the authenticated user.
-
         **Supported Methods**: GET, POST
         **Rate Limit**: 60 requests/minute (authenticated)
-      operationId: get_campaigns
+      operationId: getCampaigns
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:read]
@@ -1144,11 +2802,13 @@ paths:
       parameters:
         - name: page
           in: query
+          description: Page number for pagination (starts from 1)
           schema:
             type: integer
             default: 1
         - name: pageSize
           in: query
+          description: Number of items per page
           schema:
             type: integer
             default: 20
@@ -1161,9 +2821,9 @@ paths:
                 $ref: '#/components/schemas/CampaignCollection'
           links:
             GetCampaign:
-              operationId: get_campaigns_campaign_id
+              operationId: getCampaignById
               parameters:
-                campaignId: '$response.body#/campaigns/0/id'
+                campaignid: '$response.body#/campaigns/0/id'
         '400':
           description: Invalid request parameters
           content:
@@ -1194,16 +2854,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     post:
       summary: Create campaign
       description: |
         Create a new advertising campaign with specified parameters.
-
         **Supported Methods**: GET, POST
         **Rate Limit**: 30 requests/minute (authenticated)
         **Content-Type**: application/json
-      operationId: post_campaigns
+      operationId: createCampaign
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
@@ -1223,9 +2881,9 @@ paths:
                 $ref: '#/components/schemas/CampaignResource'
           links:
             GetCampaign:
-              operationId: get_campaigns_campaign_id
+              operationId: getCampaignById
               parameters:
-                campaignId: '$response.body#/id'
+                campaignid: '$response.body#/id'
           headers:
             Location:
               description: URL of the created campaign
@@ -1262,23 +2920,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /campaigns/{campaignId}:
+  /campaigns/{campaignid}:
     get:
       summary: Get campaign
       description: |
         Get detailed information about a specific campaign including performance metrics.
-
         **Supported Methods**: GET, PUT, DELETE
         **Rate Limit**: 120 requests/minute (authenticated)
-      operationId: get_campaigns_campaign_id
+      operationId: getCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:read]
         - oauth2: [campaign:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1314,18 +2971,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     put:
       summary: Update campaign
       description: Update an existing campaign
-      operationId: put_campaigns_campaign_id
+      operationId: updateCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1373,18 +3030,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     delete:
       summary: Delete campaign
       description: Delete a campaign (admin only, typically soft delete)
-      operationId: delete_campaigns_campaign_id
+      operationId: deleteCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:delete]
         - oauth2: [campaign:delete]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1422,23 +3079,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   # ============================================================================
   # CAMPAIGN STATE MANAGEMENT
   # ============================================================================
-
-  /campaigns/{campaignId}/pause:
+  /campaigns/{campaignid}/pause:
     post:
       summary: Pause campaign
       description: Pause an active campaign
-      operationId: post_campaigns_campaign_id_pause
+      operationId: pauseCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1485,23 +3141,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /campaigns/{campaignId}/resume:
+  /campaigns/{campaignid}/resume:
     post:
       summary: Resume campaign
       description: Resume a paused campaign
-      operationId: post_campaigns_campaign_id_resume
+      operationId: resumeCampaignById
       tags: [Campaigns]
       security:
         - bearerAuth: [campaign:write]
         - oauth2: [campaign:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Ready to resume campaign"
       responses:
         '200':
           description: Campaign resumed successfully
@@ -1533,34 +3200,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   # ============================================================================
   # LANDING PAGES
   # ============================================================================
-
-  /campaigns/{campaignId}/landing-pages:
+  /campaigns/{campaignid}/landing-pages:
     get:
       summary: List landing pages
       description: Get landing pages for a campaign
-      operationId: get_campaigns_campaign_id_landing_pages
+      operationId: getCampaignLandingPagesById
       tags: [Landing Pages]
       security:
         - bearerAuth: [landing:read]
         - oauth2: [landing:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
         - name: page
           in: query
+          description: Page number for pagination (starts from 1)
           schema:
             type: integer
             default: 1
         - name: pageSize
           in: query
+          description: Number of items per page
           schema:
             type: integer
             default: 20
@@ -1602,18 +3270,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     post:
       summary: Create landing page
       description: Add a landing page to a campaign
-      operationId: post_campaigns_campaign_id_landing_pages
+      operationId: createCampaignLandingPageById
       tags: [Landing Pages]
       security:
         - bearerAuth: [landing:write]
         - oauth2: [landing:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1676,27 +3344,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   # ============================================================================
   # CAMPAIGN OFFERS
   # ============================================================================
-
-  /campaigns/{campaignId}/offers:
+  /campaigns/{campaignid}/offers:
     get:
       summary: List campaign offers
       description: Get a list of offers for a specific campaign
-      operationId: get_campaign_offers
+      operationId: getCampaignOffers
       tags: [Offers]
       security:
         - bearerAuth: [offers:read]
         - oauth2: [offers:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
       responses:
         '200':
           description: List of campaign offers
@@ -1735,18 +3421,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     post:
       summary: Create campaign offer
       description: Add a new offer to a campaign
-      operationId: post_campaign_offer
+      operationId: createCampaignOffer
       tags: [Offers]
       security:
         - bearerAuth: [offers:write]
         - oauth2: [offers:write]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
@@ -1788,41 +3474,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
   # ============================================================================
   # ANALYTICS
   # ============================================================================
-
-  /campaigns/{campaignId}/analytics:
+  /campaigns/{campaignid}/analytics:
     get:
       summary: Get campaign analytics
       description: Get detailed analytics and performance metrics for a campaign
-      operationId: get_campaigns_campaign_id_analytics
+      operationId: getCampaignAnalyticsById
       tags: [Analytics]
       security:
         - bearerAuth: [analytics:read]
         - oauth2: [analytics:read]
       parameters:
-        - name: campaignId
+        - name: campaignid
           in: path
+          description: Unique identifier of the campaign
           required: true
           schema:
             type: string
           example: "camp_123"
         - name: startDate
           in: query
+          description: Start date for analytics period (inclusive)
           schema:
             type: string
             format: date
             example: "2024-01-01"
         - name: endDate
           in: query
+          description: End date for analytics period (inclusive)
           schema:
             type: string
             format: date
             example: "2024-01-31"
         - name: granularity
           in: query
+          description: Time granularity for grouping analytics data
           schema:
             type: string
             enum: [hour, day, week, month]
@@ -1830,6 +3518,7 @@ paths:
             example: "day"
         - name: breakdown
           in: query
+          description: Dimension to break down analytics by
           schema:
             type: string
             enum: [date, traffic_source, landing_page, offer, geography, device]
@@ -1871,38 +3560,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
 # ============================================================================
 # CLICK TRACKING ENDPOINTS (PUBLIC)
 # ============================================================================
-
   /click:
     get:
       summary: Track click and redirect to offer
       description: |
         **PUBLIC ENDPOINT** - Click tracking and redirection service.
-
         Records comprehensive click data including fraud detection and redirects users
         to either the safe page (white URL) or offer page (black URL) based on
         real-time fraud analysis and campaign targeting rules.
-
         **Supported Methods**: GET
         **Rate Limit**: 1000 requests/minute (public endpoint)
         **Authentication**: Not required (public tracking endpoint)
         **Redirect Behavior**: HTTP 302 redirect to offer or safe page
-
         ## Tracking Parameters
         - **sub1-sub5**: 5-level deep tracking for creative optimization
         - **aff_sub-aff_sub5**: Affiliate network tracking parameters
         - **click_id**: Unique click identifier for postback matching
         - **landing_page_id/campaign_offer_id**: Direct targeting parameters
-
         ## Fraud Detection
         - Bot pattern detection in user agent
         - IP blacklisting
         - Suspicious referrer analysis
         - Rate limiting per IP
-      operationId: get_click
+      operationId: trackClick
       tags:
         - Traffic
       security: []
@@ -1917,7 +3600,6 @@ paths:
             default: 123
           description: |
             Campaign ID to attribute the click to.
-
             **Default**: 123 (for testing/development)
             **Validation**: Must be a positive integer
           example: 123
@@ -1930,7 +3612,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Level 1 tracking parameter - typically Creative/Ad ID.
-
             **Examples**: fb_ad_15, banner_728x90, email_campaign_001
             **Use**: Creative optimization and performance tracking
           example: "fb_ad_15"
@@ -1942,7 +3623,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Level 2 tracking parameter - typically Traffic Source.
-
             **Examples**: facebook, google, taboola, email
             **Use**: Source attribution and media buying optimization
           example: "facebook"
@@ -1954,7 +3634,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Level 3 tracking parameter - typically Ad Set/Campaign Group.
-
             **Examples**: prospecting, retargeting, lookalike_audience
             **Use**: Campaign structure optimization
           example: "adset_12"
@@ -1966,7 +3645,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Level 4 tracking parameter - typically Ad Version/Creative Type.
-
             **Examples**: video1, carousel, single_image, cta_buy_now
             **Use**: Creative testing and A/B optimization
           example: "video1"
@@ -1978,7 +3656,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Level 5 tracking parameter - typically Audience/Keyword.
-
             **Examples**: lookalike78, interest_gaming, keyword_cloud_computing
             **Use**: Audience segmentation and keyword optimization
           example: "lookalike78"
@@ -1991,7 +3668,6 @@ paths:
             pattern: '^[a-zA-Z0-9._-]*$'
           description: |
             Unique click identifier for postback/conversion matching.
-
             **Important**: Must be unique per click for proper conversion attribution
             **Use**: Server-to-server postback integration with affiliate networks
           example: "USERCLICK123"
@@ -2040,7 +3716,6 @@ paths:
             maximum: 2147483647
           description: |
             Specific landing page ID to force redirect to.
-
             **Use**: Direct linking, A/B testing bypass, troubleshooting
             **Note**: Overrides automatic landing page selection
           example: 456
@@ -2052,7 +3727,6 @@ paths:
             maximum: 2147483647
           description: |
             Specific offer ID to force redirect to.
-
             **Use**: Direct offer linking, testing specific offers
             **Note**: Overrides automatic offer selection and rotation
           example: 789
@@ -2064,7 +3738,6 @@ paths:
             maximum: 2147483647
           description: |
             Traffic source ID for attribution tracking.
-
             **Use**: Multi-source traffic attribution
             **Note**: Used for analytics and reporting segmentation
           example: 101
@@ -2085,7 +3758,6 @@ paths:
         '302':
           description: |
             **SUCCESS** - Click recorded and user redirected.
-
             Redirects to offer page (valid click) or safe page (fraudulent/invalid click).
             The redirect preserves all tracking parameters for downstream attribution.
           headers:
@@ -2095,14 +3767,12 @@ paths:
                 format: uri
               description: |
                 Redirect destination URL.
-
                 **Valid clicks**: Offer/affiliate page URL
                 **Invalid clicks**: Safe page (white URL) to prevent fraud
               example: "https://example.com/offer?click_id=123e4567-e89b-12d3-a456-426614174000"
         '200':
           description: |
             **TESTING MODE** - HTML page content when redirects are not followed.
-
             Used for API testing tools that don't follow redirects automatically.
             Contains click information for debugging purposes.
           content:
@@ -2113,7 +3783,6 @@ paths:
         '404':
           description: |
             **REDIRECT ERROR** - Campaign or destination URL not found.
-
             Occurs when campaign ID is invalid or configured URLs are unreachable.
           content:
             text/html:
@@ -2123,7 +3792,6 @@ paths:
         '400':
           description: |
             **VALIDATION ERROR** - Invalid parameters or campaign configuration.
-
             Check campaign ID format and required parameters.
           content:
             application/json:
@@ -2142,19 +3810,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /click/{clickId}:
+  /click/{clickid}:
     get:
       summary: Get click details
       description: Retrieve details of a specific click (for debugging and analytics)
-      operationId: get_click_click_id
+      operationId: getClickById
       tags:
         - Traffic
       security:
         - bearerAuth: [traffic:read]
         - oauth2: [traffic:read]
       parameters:
-        - name: clickId
+        - name: clickid
           in: path
           required: true
           schema:
@@ -2193,7 +3860,1029 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
+  # ============================================================================
+  # WEBHOOKS
+  # ============================================================================
+  /webhooks/telegram:
+    post:
+      summary: Receive Telegram bot webhook
+      description: |
+        **PUBLIC ENDPOINT** - Receives webhook updates from Telegram Bot API.
+        Processes incoming messages from Telegram bot and generates automated responses.
+        Supports bot commands, user interactions, and campaign management.
+        **Supported Commands:**
+        - `/start` - Welcome message with inline keyboard
+        - `/help` - Show available commands
+        - `/stats` - Campaign statistics
+        - `/campaigns` - Campaign management
+        **Rate Limit**: 100 requests/second (public webhook endpoint)
+        **Authentication**: Webhook secret validation (recommended)
+      operationId: processTelegramWebhook
+      tags: [Webhooks]
+      security: []  # Public webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramWebhookRequest'
+            example:
+              update_id: 123456789
+              message:
+                message_id: 123
+                from:
+                  id: 123456789
+                  username: "john_doe"
+                  first_name: "John"
+                  last_name: "Doe"
+                chat:
+                  id: 123456789
+                  type: "private"
+                date: 1640995200
+                text: "/start"
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Webhook processed successfully.
+            Returns processing status and optional bot response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramWebhookResponse'
+              examples:
+                success:
+                  summary: Successful processing with response
+                  value:
+                    status: "success"
+                    webhook_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response:
+                      chat_id: 123456789
+                      text: "👋 Добро пожаловать! Я бот для управления кампаниями."
+                      reply_markup:
+                        inline_keyboard:
+                          - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🎯 Кампании", "callback_data": "campaigns"}]
+                          - [{"text": "💰 Финансы", "callback_data": "finance"}, {"text": "⚙️ Настройки", "callback_data": "settings"}]
+                skipped:
+                  summary: Message skipped (not supported)
+                  value:
+                    status: "skipped"
+                    reason: "message type not supported"
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid webhook payload.
+            Check Telegram webhook format and required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid update format"
+                  details:
+                    update_id: "update_id is required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ============================================================================
+  # EVENT TRACKING
+  # ============================================================================
+  /events/track:
+    post:
+      summary: Track user events
+      description: |
+        **PUBLIC ENDPOINT** - Track user interactions and events on landing pages.
+        Captures comprehensive event data including clicks, form interactions, scroll depth,
+        time spent, conversions, and custom events. Includes fraud detection and
+        automatic session/user identification.
+        **Supported Event Types:**
+        - `page_view` - Page view events
+        - `click` - Click interactions
+        - `form_submit`, `form_start`, `form_complete` - Form interactions
+        - `scroll` - Scroll depth tracking
+        - `time_spent` - Time spent on page
+        - `conversion` - Conversion events
+        - `purchase` - Purchase completions
+        - `signup` - User registrations
+        - `video_play`, `video_complete` - Video interactions
+        - `custom` - Custom events
+        **Rate Limit**: 1000 requests/minute (public tracking endpoint)
+        **Authentication**: Not required (public tracking endpoint)
+      operationId: trackEvent
+      tags: [Events]
+      security: []  # Public endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTrackingRequest'
+            examples:
+              button_click:
+                summary: Button click event
+                value:
+                  event_type: "click"
+                  event_name: "cta_button_click"
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  url: "https://example.com/landing-page"
+                  properties:
+                    button_text: "Buy Now"
+                    button_position: "hero_section"
+              form_submit:
+                summary: Form submission event
+                value:
+                  event_type: "form_submit"
+                  event_name: "lead_form_submit"
+                  session_id: "session_123456"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  properties:
+                    form_type: "email_capture"
+                    fields_completed: ["name", "email", "phone"]
+              page_view:
+                summary: Page view event
+                value:
+                  event_type: "page_view"
+                  event_name: "landing_page_view"
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  campaign_id: 123
+                  landing_page_id: 456
+                  url: "https://example.com/landing-page"
+                  referrer: "https://facebook.com/ad/123"
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Event tracked successfully.
+            Returns event ID and analytics categories for the tracked event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTrackingResponse'
+              examples:
+                success:
+                  summary: Successful event tracking
+                  value:
+                    status: "success"
+                    event_id: "550e8400-e29b-41d4-a716-446655440000"
+                    categories: ["interaction", "cta_interaction"]
+                    fraud_detected: false
+                fraud_detected:
+                  summary: Event tracked but fraud detected
+                  value:
+                    status: "success"
+                    event_id: "550e8400-e29b-41d4-a716-446655440000"
+                    categories: ["interaction"]
+                    fraud_detected: true
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid event data.
+            Check event_type, event_name, and other required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid event data"
+                  details:
+                    event_type: "event_type must be one of: page_view, click, ..."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ============================================================================
+  # CONVERSION TRACKING
+  # ============================================================================
+  /conversions/track:
+    post:
+      summary: Track conversions
+      description: |
+        **PROTECTED ENDPOINT** - Track conversions (leads, sales, signups) from external systems.
+        Links conversions back to original clicks for attribution and revenue tracking.
+        Triggers automated postback notifications to affiliate networks and partners.
+        Includes fraud detection and duplicate prevention.
+        **Supported Conversion Types:**
+        - `lead` - Lead generation (email, phone, etc.)
+        - `sale` - Product/service purchase
+        - `install` - App/software installation
+        - `registration` - User account creation
+        - `signup` - Newsletter/content subscription
+        **Attribution**: Last-click attribution model with time-decay confidence scoring
+        **Fraud Detection**: Automated fraud scoring based on click validity and patterns
+        **Postbacks**: Automatic notification sending to configured affiliate networks
+      operationId: trackConversion
+      tags: [Conversions]
+      security:
+        - bearerAuth: [conversions:write]
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionTrackingRequest'
+            examples:
+              lead_conversion:
+                summary: Lead conversion tracking
+                value:
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  conversion_type: "lead"
+                  order_id: "LEAD_123456"
+                  metadata:
+                    lead_source: "contact_form"
+                    lead_quality: "high"
+                    follow_up_required: true
+              sale_conversion:
+                summary: Sale conversion with revenue
+                value:
+                  click_id: "123e4567-e89b-12d3-a456-426614174000"
+                  conversion_type: "sale"
+                  conversion_value:
+                    amount: 99.99
+                    currency: "USD"
+                  order_id: "ORDER_789012"
+                  product_id: "premium_package"
+                  metadata:
+                    payment_method: "credit_card"
+                    discount_code: "SUMMER2024"
+                    upsell_offered: true
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Conversion tracked successfully.
+            Returns conversion ID and attribution data. Postback notifications
+            are triggered asynchronously for affiliate network updates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionTrackingResponse'
+              examples:
+                success:
+                  summary: Successful conversion tracking
+                  value:
+                    status: "success"
+                    conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                    attribution:
+                      attribution_model: "last_click"
+                      attribution_confidence: 0.95
+                      time_to_conversion: 3600.5
+                      touchpoints: 1
+                    fraud_detected: false
+                    postback_triggered: true
+                fraud_detected:
+                  summary: Conversion tracked but fraud detected
+                  value:
+                    status: "success"
+                    conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                    attribution:
+                      attribution_model: "last_click"
+                      attribution_confidence: 0.3
+                      time_to_conversion: 5.2
+                      touchpoints: 1
+                    fraud_detected: true
+                    postback_triggered: false
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid conversion data or click not found.
+            Check click_id exists and conversion_type is valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Click ID not found"
+                  details:
+                    click_id: "Click with this ID does not exist"
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ============================================================================
+  # POSTBACKS
+  # ============================================================================
+  /postbacks/send:
+    post:
+      summary: Send postback notification
+      description: |
+        **PROTECTED ENDPOINT** - Send postback notification to external affiliate network or system.
+        Automatically builds postback URLs with conversion parameters and handles delivery
+        with retry logic and failure tracking. Supports GET (URL parameters) and POST (JSON payload)
+        methods with custom headers and authentication.
+        **URL Parameter Substitution:**
+        - `{click_id}` - Original click identifier
+        - `{conversion_id}` - Conversion identifier
+        - `{conversion_type}` - Type of conversion (lead, sale, etc.)
+        - `{revenue}` - Conversion revenue amount
+        - `{currency}` - Conversion currency code
+        - `{order_id}` - External order identifier
+        **Retry Logic:** Exponential backoff (1min, 2min, 4min, 8min) up to max_attempts
+        **Authentication:** Supports Bearer tokens and API keys in headers
+      operationId: sendPostback
+      tags: [Postbacks]
+      security:
+        - bearerAuth: [postbacks:write]
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostbackSendRequest'
+            examples:
+              get_postback:
+                summary: GET postback with URL parameters
+                value:
+                  conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                  postback_config:
+                    url: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}&type={conversion_type}"
+                    method: "GET"
+                    max_attempts: 3
+              post_postback:
+                summary: POST postback with JSON payload
+                value:
+                  conversion_id: "550e8400-e29b-41d4-a716-446655440000"
+                  postback_config:
+                    url: "https://api.affiliate.com/conversions"
+                    method: "POST"
+                    headers:
+                      Authorization: "Bearer your_token"
+                      Content-Type: "application/json"
+                    payload:
+                      click_id: "{click_id}"
+                      conversion_type: "{conversion_type}"
+                      revenue: "{revenue}"
+                      currency: "{currency}"
+                      order_id: "{order_id}"
+                    max_attempts: 5
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Postback sent successfully.
+            Returns delivery status and response details from external system.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostbackSendResponse'
+              examples:
+                success:
+                  summary: Successful postback delivery
+                  value:
+                    status: "success"
+                    postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response_code: 200
+                    response_body: "Conversion recorded"
+                    attempt_count: 1
+                queued_retry:
+                  summary: Postback queued for retry
+                  value:
+                    status: "failed"
+                    postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response_code: 500
+                    response_body: "Internal Server Error"
+                    error_message: "Server temporarily unavailable"
+                    attempt_count: 1
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid request or conversion not found.
+            Check conversion_id exists and postback_config is valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Conversion not found"
+                  details:
+                    conversion_id: "Conversion with this ID does not exist"
+        '502':
+          description: |
+            **BAD GATEWAY** - External postback endpoint failed.
+            Postback was attempted but external service returned error.
+            Will be retried according to retry policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostbackSendResponse'
+              example:
+                status: "failed"
+                postback_id: "550e8400-e29b-41d4-a716-446655440000"
+                response_code: 502
+                error_message: "External service error"
+                attempt_count: 1
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ============================================================================
+  # CLICK GENERATION
+  # ============================================================================
+  /clicks/generate:
+    post:
+      summary: Generate click tracking URLs
+      description: |
+        **PROTECTED ENDPOINT** - Generate personalized click tracking URLs with proper attribution parameters.
+        Creates tracking links that automatically include campaign ID, timestamps, sub-tracking parameters,
+        and affiliate network identifiers. Supports both single URL generation and bulk generation
+        for A/B testing and multi-creative campaigns.
+        **Parameter Hierarchy:**
+        - `cid`: Campaign ID (always included)
+        - `ts`: Unix timestamp (always included)
+        - `landing_page_id`: Direct landing page targeting
+        - `campaign_offer_id`: Direct offer targeting
+        - `sub1-sub5`: 5-level deep tracking parameters
+        - `click_id`: Affiliate network click ID
+        - `aff_sub-aff_sub5`: Affiliate sub-identifiers
+        **Supported Formats:**
+        - Single URL: Generate one tracking URL
+        - Bulk generation: Generate multiple variations with different parameters
+        - Parameter optimization: Automatic parameter cleaning and validation
+      operationId: generateClicks
+      tags: [Clicks]
+      security:
+        - bearerAuth: [clicks:write]
+        - oauth2: [clicks:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ClickGenerationRequest'
+                - $ref: '#/components/schemas/BulkClickGenerationRequest'
+        description: |
+          Either a single URL generation request or bulk generation with variations.
+          Use `variations` array for bulk generation, otherwise single URL generation.
+      responses:
+        '200':
+          description: |
+            **SUCCESS** - Tracking URL(s) generated successfully.
+            Returns the generated tracking URL(s) with all attribution parameters included.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ClickGenerationResponse'
+                  - $ref: '#/components/schemas/BulkClickGenerationResponse'
+              examples:
+                single_url:
+                  summary: Single URL generation
+                  value:
+                    status: "success"
+                    tracking_url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook&landing_page_id=456"
+                    campaign_id: 123
+                    params:
+                      sub1: "fb_ad_15"
+                      sub2: "facebook"
+                      _generated_at: 1640995200
+                      _version: "1.0"
+                    landing_page_id: 456
+                bulk_generation:
+                  summary: Bulk URL generation
+                  value:
+                    status: "success"
+                    total_variations: 3
+                    successful: 3
+                    failed: 0
+                    results:
+                      - id: "variation_1"
+                        name: "Facebook Prospecting"
+                        url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=fb_ad_15&sub2=facebook&sub3=prospecting"
+                        params:
+                          sub1: "fb_ad_15"
+                          sub2: "facebook"
+                          sub3: "prospecting"
+                        status: "success"
+                      - id: "variation_2"
+                        name: "Google Search"
+                        url: "https://example.com/landing-page?cid=123&ts=1640995200&sub1=google_search&sub2=google&sub3=search"
+                        params:
+                          sub1: "google_search"
+                          sub2: "google"
+                          sub3: "search"
+                        status: "success"
+        '400':
+          description: |
+            **VALIDATION ERROR** - Invalid request parameters.
+            Check campaign_id format, base_url validity, and parameter constraints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "campaign_id must be a positive integer"
+                  details:
+                    campaign_id: "Must be greater than 0"
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # ============================================================================
+  # GOAL MANAGEMENT
+  # ============================================================================
+  /goals:
+    get:
+      summary: List goals
+      description: |
+        **PROTECTED ENDPOINT** - Get a list of conversion goals with optional filtering.
+        Supports filtering by campaign, goal type, tags, and active status.
+        Results are paginated and include goal performance metrics.
+      operationId: getGoals
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter goals by campaign ID
+          example: 123
+        - name: goal_type
+          in: query
+          schema:
+            type: string
+            enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          description: Filter goals by type
+          example: "lead"
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter goals by tag
+          example: "form"
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Include only active goals
+          example: true
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of goals per page
+      responses:
+        '200':
+          description: List of goals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalCollection'
+              example:
+                status: "success"
+                goals:
+                  - id: "goal_550e8400-e29b-41d4-a716-446655440000"
+                    campaign_id: 123
+                    name: "Lead Form Submission"
+                    goal_type: "lead"
+                    trigger_type: "event"
+                    trigger_config:
+                      event_type: "form_submit"
+                      event_name: "lead_form_submit"
+                    is_active: true
+                    attribution_window_days: 30
+                    priority: 1
+                    tags: ["form", "lead", "conversion"]
+                    created_at: "2024-01-01T00:00:00Z"
+                    updated_at: "2024-01-01T00:00:00Z"
+                total: 1
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create goal
+      description: |
+        **PROTECTED ENDPOINT** - Create a new conversion goal for tracking specific user actions.
+        Goals define what constitutes a successful conversion for your campaigns,
+        including how they're triggered and how their value is calculated.
+      operationId: createGoal
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+            examples:
+              lead_goal:
+                summary: Lead capture goal
+                value:
+                  campaign_id: 123
+                  name: "Lead Form Submission"
+                  description: "Track when visitors submit lead capture forms"
+                  goal_type: "lead"
+                  trigger_type: "event"
+                  trigger_config:
+                    event_type: "form_submit"
+                    event_name: "lead_form_submit"
+                  value_config:
+                    fixed_value: 5.00
+                  attribution_window_days: 30
+                  tags: ["form", "lead"]
+              sale_goal:
+                summary: Product sale goal
+                value:
+                  campaign_id: 123
+                  name: "Product Purchase"
+                  goal_type: "sale"
+                  trigger_type: "event"
+                  trigger_config:
+                    event_type: "conversion"
+                    event_name: "purchase_complete"
+                  value_config:
+                    revenue_field: "order_total"
+                  attribution_window_days: 30
+                  tags: ["ecommerce", "revenue"]
+      responses:
+        '201':
+          description: Goal created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal_id:
+                    type: string
+                    example: "goal_550e8400-e29b-41d4-a716-446655440000"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '400':
+          description: Invalid goal configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "trigger_config required for event-based goals"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /goals/templates:
+    get:
+      summary: Get goal templates
+      description: |
+        **PROTECTED ENDPOINT** - Get predefined goal templates for common conversion scenarios.
+        Templates provide starting configurations for typical goals like form submissions,
+        purchases, signups, and engagement metrics.
+      operationId: getGoalTemplates
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of goal templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GoalTemplate'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Templates not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /goals/{goalid}:
+    get:
+      summary: Get goal
+      description: Get detailed information about a specific conversion goal
+      operationId: getGoalById
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:read]
+        - oauth2: [goals:read]
+      parameters:
+        - name: goalid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Goal details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update goal
+      description: Update an existing conversion goal's configuration
+      operationId: updateGoalById
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      parameters:
+        - name: goalid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoalRequest'
+      responses:
+        '200':
+          description: Goal updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete goal
+      description: Delete a conversion goal (soft delete - marks as inactive)
+      operationId: deleteGoalById
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:delete]
+        - oauth2: [goals:delete]
+      parameters:
+        - name: goalid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Goal deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Goal deleted successfully"
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /goals/{goalid}/duplicate:
+    post:
+      summary: Duplicate goal
+      description: Create a copy of an existing goal, optionally for a different campaign
+      operationId: duplicateGoalById
+      tags: [Goals]
+      security:
+        - bearerAuth: [goals:write]
+        - oauth2: [goals:write]
+      parameters:
+        - name: goalid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID to duplicate
+          example: "goal_550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                campaign_id:
+                  type: integer
+                  description: Campaign ID for the duplicated goal (optional)
+                  example: 456
+      responses:
+        '201':
+          description: Goal duplicated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  goal:
+                    $ref: '#/components/schemas/GoalResource'
+        '404':
+          description: Original goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /clicks:
     get:
       summary: List clicks
@@ -2202,7 +4891,7 @@ paths:
         
         **Authentication**: Supports multiple methods (Bearer token, OAuth2, or API Key).
         Any valid authentication method is acceptable (OR logic).
-      operationId: get_clicks
+      operationId: trackClicks
       tags:
         - Traffic
       security:
@@ -2297,11 +4986,849 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
+# ============================================================================
+# CUSTOMER JOURNEY ANALYSIS
+# ============================================================================
+  /journeys/funnel:
+    get:
+      summary: Get customer journey funnel
+      description: Analyze customer funnel stages and conversion rates across campaigns
+      operationId: getJourneyFunnel
+      tags: [Journeys]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by campaign ID
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 365
+          description: Analysis period in days
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Funnel analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  period_days:
+                    type: integer
+                    example: 30
+                  total_journeys:
+                    type: integer
+                    example: 1000
+                  funnel_stages:
+                    type: object
+                    properties:
+                      awareness:
+                        type: integer
+                        example: 800
+                      interest:
+                        type: integer
+                        example: 600
+                      consideration:
+                        type: integer
+                        example: 300
+                      purchase:
+                        type: integer
+                        example: 150
+                      retention:
+                        type: integer
+                        example: 100
+                  conversion_rates:
+                    type: object
+                    properties:
+                      awareness_to_interest:
+                        type: number
+                        format: float
+                        example: 0.75
+                      interest_to_consideration:
+                        type: number
+                        format: float
+                        example: 0.5
+                      consideration_to_purchase:
+                        type: number
+                        format: float
+                        example: 0.5
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /journeys/drop-off:
+    get:
+      summary: Analyze customer journey drop-off points
+      description: Identify where customers drop off in their journey before conversion
+      operationId: getJourneyDropOff
+      tags: [Journeys]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by campaign ID
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+          description: Analysis period in days
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Drop-off analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  drop_off_points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stage:
+                          type: string
+                          example: "consideration"
+                        users_dropped:
+                          type: integer
+                          example: 200
+                        percentage:
+                          type: number
+                          format: float
+                          example: 0.4
+                  period_days:
+                    type: integer
+                    example: 30
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+# ============================================================================
+# LTV TRACKING
+# ============================================================================
+  /ltv/analysis:
+    get:
+      summary: Get LTV analysis
+      description: Analyze customer lifetime value and profitability metrics
+      operationId: getLtvAnalysis
+      tags: [LTV]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      parameters:
+        - name: campaign_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by campaign ID
+        - name: cohort_period
+          in: query
+          schema:
+            type: string
+            enum: [monthly, quarterly, yearly]
+            default: monthly
+          description: Cohort analysis period
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: LTV analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  average_ltv:
+                    type: number
+                    format: float
+                    example: 125.50
+                  total_customers:
+                    type: integer
+                    example: 1000
+                  total_revenue:
+                    type: number
+                    format: float
+                    example: 125500.00
+                  cohort_analysis:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        customers:
+                          type: integer
+                          example: 100
+                        revenue:
+                          type: number
+                          format: float
+                          example: 12500
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+# ============================================================================
+# FORM INTEGRATION
+# ============================================================================
+  /forms/submit:
+    post:
+      summary: Submit form data
+      description: Handle form submissions and lead capture from landing pages
+      operationId: submitForm
+      tags: [Forms]
+      security: []  # Public endpoint for form submissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                form_id:
+                  type: string
+                  example: "contact_form"
+                campaign_id:
+                  type: integer
+                  example: 123
+                fields:
+                  type: object
+                  additionalProperties: true
+                  example:
+                    name: "John Doe"
+                    email: "john@example.com"
+                    phone: "+1234567890"
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  example:
+                    user_agent: "Mozilla/5.0..."
+                    referrer: "https://facebook.com"
+      responses:
+        '200':
+          description: Form submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  lead_id:
+                    type: string
+                    example: "lead_123"
+                  message:
+                    type: string
+                    example: "Form submitted successfully"
+        '400':
+          description: Invalid form data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+# ============================================================================
+# RETENTION CAMPAIGNS
+# ============================================================================
+  /retention/campaigns:
+    get:
+      summary: List retention campaigns
+      description: Get active retention campaigns and their performance
+      operationId: getRetentionCampaigns
+      tags: [Retention]
+      security:
+        - bearerAuth: [campaigns:read]
+        - oauth2: [campaigns:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of retention campaigns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  campaigns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "retention_1"
+                        name:
+                          type: string
+                          example: "Welcome Back Campaign"
+                        target_audience:
+                          type: string
+                          example: "inactive_users_30_days"
+                        status:
+                          type: string
+                          enum: [active, paused, completed]
+                          example: "active"
+                        performance:
+                          type: object
+                          properties:
+                            sent:
+                              type: integer
+                              example: 5000
+                            opened:
+                              type: integer
+                              example: 1250
+                            clicked:
+                              type: integer
+                              example: 375
+                            converted:
+                              type: integer
+                              example: 75
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+# ============================================================================
+# NEW FEATURES ENDPOINTS
+# ============================================================================
+  /clicks/bulk-generate:
+    post:
+      summary: Bulk generate click tracking URLs
+      description: |
+        **HIGH PRIORITY** - Generate multiple click tracking URLs in a single request.
+        Supports up to 1000 URLs per request for large advertising campaigns.
+        Each generated click inherits campaign, landing page, and offer targeting rules.
+      operationId: bulkGenerateClicks
+      tags: [Clicks]
+      security:
+        - bearerAuth: [clicks:write]
+        - oauth2: [clicks:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkClickGenerationRequest'
+      responses:
+        '200':
+          description: Bulk click generation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkClickGenerationResponse'
+        '400':
+          description: Invalid request parameters or exceeds maximum limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /clicks/validate/{clickid}:
+    get:
+      summary: Validate click before redirect
+      description: |
+        **HIGH PRIORITY** - Real-time validation of click tracking links before redirecting users.
+        Performs comprehensive fraud detection, validates campaign status, and determines
+        the appropriate redirect URL based on A/B testing and targeting rules.
+      operationId: validateClick
+      tags: [Clicks, Fraud]
+      security: []  # Public endpoint for click validation
+      parameters:
+        - name: clickid
+          in: path
+          description: Unique click identifier to validate
+          required: true
+          schema:
+            type: string
+            pattern: '^click_[a-zA-Z0-9]+$'
+          example: "click_123456"
+        - name: user_agent
+          in: query
+          description: User agent string for fraud detection
+          required: false
+          schema:
+            type: string
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        - name: ip_address
+          in: query
+          description: Client IP address for geo-blocking and fraud detection
+          required: false
+          schema:
+            type: string
+            format: ipv4
+          example: "192.168.1.100"
+        - name: referrer
+          in: query
+          description: HTTP referrer for traffic source validation
+          required: false
+          schema:
+            type: string
+            format: uri
+          example: "https://google.com"
+      responses:
+        '200':
+          description: Click validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickValidationResponse'
+        '400':
+          description: Invalid click ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Click blocked by fraud detection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickValidationResponse'
+        '404':
+          description: Click not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /fraud/rules:
+    get:
+      summary: List fraud detection rules
+      description: |
+        **MEDIUM PRIORITY** - Retrieve all active fraud detection rules with their
+        configurations, priorities, and conditions for monitoring and auditing.
+      operationId: getFraudRules
+      tags: [Fraud]
+      security:
+        - bearerAuth: [fraud:read]
+        - oauth2: [fraud:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of rules per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: type
+          in: query
+          description: Filter by rule type
+          required: false
+          schema:
+            type: string
+            enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+          example: "ip_block"
+        - name: active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: List of fraud detection rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudRuleCollection'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create fraud detection rule
+      description: |
+        **MEDIUM PRIORITY** - Create a new fraud detection rule with specific conditions
+        and actions for automated threat mitigation.
+      operationId: createFraudRule
+      tags: [Fraud]
+      security:
+        - bearerAuth: [fraud:write]
+        - oauth2: [fraud:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FraudRule'
+            example:
+              name: "Block Russian traffic"
+              type: "geo_block"
+              action: "block"
+              conditions:
+                countries: ["RU"]
+              priority: 90
+              isActive: true
+      responses:
+        '201':
+          description: Fraud rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudRule'
+        '400':
+          description: Invalid rule configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Rule with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /cache/flush:
+    post:
+      summary: Flush application cache
+      description: |
+        **MEDIUM PRIORITY** - Clear cached data to ensure fresh content after
+        campaign or landing page updates. Supports selective cache flushing by data type.
+      operationId: flushCache
+      tags: [System]
+      security:
+        - bearerAuth: [admin:write]
+        - oauth2: [admin:write]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [campaigns, landing_pages, offers, analytics, all]
+                  example: ["campaigns", "landing_pages"]
+                  description: Specific cache types to flush (empty = flush all)
+                pattern:
+                  type: string
+                  example: "camp_*"
+                  description: Pattern to match cache keys (optional)
+              description: Cache flush configuration
+      responses:
+        '200':
+          description: Cache flushed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Cache flushed successfully"
+                  flushed_keys:
+                    type: integer
+                    example: 150
+                    description: Number of cache keys cleared
+                  flush_time_ms:
+                    type: integer
+                    example: 45
+                    description: Time taken to flush cache in milliseconds
+                required:
+                  - status
+                  - message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin permissions required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Cache flush failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /analytics/real-time:
+    get:
+      summary: Get real-time analytics
+      description: |
+        **LOW PRIORITY** - Retrieve live analytics data for the last 5 minutes,
+        including active users, recent conversions, top-performing campaigns and
+        landing pages, plus fraud detection metrics.
+      operationId: getRealTimeAnalytics
+      tags: [Analytics]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      responses:
+        '200':
+          description: Real-time analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealTimeAnalytics'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 # ============================================================================
 # TAGS
 # ============================================================================
-
 tags:
   - name: Health
     description: |
@@ -2326,19 +5853,60 @@ tags:
     description: |
       Traffic acquisition and click tracking with fraud detection,
       multi-level sub-tracking, and conversion attribution.
+  - name: Clicks
+    description: |
+      Click tracking and URL generation for campaign attribution,
+      including bulk generation and parameter optimization.
   - name: Conversions
     description: |
       Conversion tracking and partner postbacks for affiliate network integration
       and revenue optimization.
-
+  - name: Postbacks
+    description: |
+      Postback notifications to external systems including affiliate networks,
+      CRM platforms, and third-party services with retry logic and delivery tracking.
+  - name: Goals
+    description: |
+      Conversion goal management including creation, configuration, and evaluation
+      of goals that define successful campaign outcomes and conversion tracking.
+  - name: Journeys
+    description: |
+      Customer journey analysis including funnel tracking, drop-off analysis,
+      and attribution modeling for understanding user behavior across touchpoints.
+  - name: LTV
+    description: |
+      Lifetime Value analysis including customer profitability, cohort analysis,
+      and predictive modeling for long-term revenue forecasting.
+  - name: Forms
+    description: |
+      Form integration and lead capture including submission handling,
+      validation, and data processing for marketing automation.
+  - name: Retention
+    description: |
+      Customer retention campaigns and analysis including churn prediction,
+      re-engagement strategies, and loyalty program management.
+  - name: Webhooks
+    description: |
+      Webhook endpoints for external integrations including Telegram bot webhooks,
+      payment notifications, and external system callbacks.
+  - name: Events
+    description: |
+      Event tracking endpoints for capturing user interactions on landing pages,
+      including clicks, form submissions, conversions, and custom events with fraud detection.
+  - name: Fraud
+    description: |
+      Fraud detection and prevention including rule management, real-time validation,
+      IP blocking, user agent filtering, and automated threat mitigation.
+  - name: System
+    description: |
+      System administration and maintenance endpoints including cache management,
+      configuration updates, and performance monitoring tools.
 # ============================================================================
 # EXTERNAL DOCUMENTATION AND SUPPORT
 # ============================================================================
-
 externalDocs:
   description: Domain-Driven Design Documentation
   url: https://github.com/yourorg/ad-platform-ddd
-
 # Support and contact information
 x-support:
   contact:

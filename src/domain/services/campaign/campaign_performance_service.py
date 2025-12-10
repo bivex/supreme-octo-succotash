@@ -4,15 +4,16 @@ from typing import Dict, Any, List
 
 from ...entities.campaign import Campaign
 from ...entities.click import Click
+from ...entities.impression import Impression
 from ...value_objects import Money
 
 
 class CampaignPerformanceService:
     """Domain service for campaign performance calculations."""
 
-    def calculate_campaign_performance(self, campaign: Campaign, clicks: List[Click]) -> Dict[str, Any]:
+    def calculate_campaign_performance(self, campaign: Campaign, clicks: List[Click], impressions: List[Impression]) -> Dict[str, Any]:
         """
-        Calculate campaign performance metrics from click data.
+        Calculate campaign performance metrics from click and impression data.
 
         Returns:
             Dictionary with performance metrics
@@ -31,8 +32,12 @@ class CampaignPerformanceService:
         revenue_amount = total_conversions * float(campaign.payout.amount) if campaign.payout else 0.0
         revenue = Money.from_float(revenue_amount, campaign.payout.currency) if campaign.payout else Money.zero("USD")
 
-        # Calculate metrics
-        ctr = (total_clicks / max(total_clicks, 1)) if total_clicks > 0 else 0.0
+        # Calculate impressions
+        valid_impressions = [i for i in impressions if i.is_valid]
+        total_impressions = len(valid_impressions)
+
+        # Calculate rates
+        ctr = (total_clicks / total_impressions) if total_impressions > 0 else 0.0
         cr = (total_conversions / total_clicks) if total_clicks > 0 else 0.0
 
         # EPC (Earnings Per Click)
@@ -44,6 +49,7 @@ class CampaignPerformanceService:
         roi = ((revenue_amount - cost_float) / cost_float) if cost_float > 0 else 0.0
 
         return {
+            'impressions': total_impressions,
             'clicks': total_clicks,
             'conversions': total_conversions,
             'revenue': revenue,

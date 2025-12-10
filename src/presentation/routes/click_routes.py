@@ -18,42 +18,68 @@ class ClickRoutes:
             """Handle click tracking and redirection."""
             try:
                 # Validate required parameters
-                if not req.get_query('cid'):
+                campaign_id = req.get_query('cid')
+                if not campaign_id:
                     error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
                     res.end(error_html)
                     return
 
-                # Mock click tracking - always valid for testing
-                import uuid
-                click_id = str(uuid.uuid4())
-
                 # Check if test mode
                 test_mode = req.get_query('test_mode') == '1'
 
+                # Create track click command
+                from ...application.commands.track_click_command import TrackClickCommand
+
+                command = TrackClickCommand(
+                    campaign_id=campaign_id,
+                    ip_address=self._get_client_ip(req),
+                    user_agent=req.headers.get('User-Agent'),
+                    referrer=req.headers.get('Referer'),
+                    sub1=req.get_query('sub1'),
+                    sub2=req.get_query('sub2'),
+                    sub3=req.get_query('sub3'),
+                    sub4=req.get_query('sub4'),
+                    sub5=req.get_query('sub5'),
+                    click_id_param=req.get_query('click_id'),
+                    affiliate_sub=req.get_query('aff_sub'),
+                    affiliate_sub2=req.get_query('aff_sub2'),
+                    affiliate_sub3=req.get_query('aff_sub3'),
+                    affiliate_sub4=req.get_query('aff_sub4'),
+                    affiliate_sub5=req.get_query('aff_sub5'),
+                    landing_page_id=int(req.get_query('lp_id')) if req.get_query('lp_id') else None,
+                    campaign_offer_id=int(req.get_query('offer_id')) if req.get_query('offer_id') else None,
+                    traffic_source_id=int(req.get_query('ts_id')) if req.get_query('ts_id') else None,
+                    test_mode=test_mode
+                )
+
+                # Handle click tracking
+                click, redirect_url, is_valid = self.track_click_handler.handle(command)
+
                 if test_mode:
                     # Return HTML for testing
+                    status_text = "Valid" if is_valid else "Invalid/Fraud"
                     html = (
                         f"<html><body><h1>Offer Page</h1>"
-                        f"<p>Click ID: {click_id}</p>"
-                        f"<p>Status: Valid</p>"
-                        f"<p>Redirecting to: https://example.com/offer</p></body></html>"
+                        f"<p>Click ID: {click.id.value}</p>"
+                        f"<p>Status: {status_text}</p>"
+                        f"<p>Redirecting to: {redirect_url.value}</p></body></html>"
                     )
                     res.write_header("Content-Type", "text/html")
                     res.end(html)
                     return
 
-                # Standard redirect (use local URL for testing)
+                # Standard redirect
                 res.write_status(302)
-                res.write_header("Location", "http://127.0.0.1:5000/mock-offer")
+                res.write_header("Location", redirect_url.value)
                 res.end('')
 
             except Exception as e:
                 # Log error and return HTML error page
-                logger.info(f"Click tracking error: {e}")
-                error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
-                res.write_status(404)
+                logger.error(f"Click tracking error: {e}")
+                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
+                res.write_status(500)
                 res.write_header("Content-Type", "text/html")
                 res.end(error_html)
 
@@ -80,34 +106,49 @@ class ClickRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock click details
-                mock_click = {
-                    "id": click_id,
-                    "cid": 123,
-                    "ip": "192.168.1.100",
-                    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "ref": "https://facebook.com/ad/123",
-                    "isValid": 1,
-                    "ts": 1640995200,
-                    "sub1": "fb_ad_15",
-                    "sub2": "facebook",
-                    "sub3": "adset_12",
-                    "sub4": "video1",
-                    "sub5": "lookalike78",
-                    "clickId": "USERCLICK123",
-                    "affSub": "aff_sub_123",
-                    "fraudScore": 0.05,
-                    "fraudReason": None,
-                    "landingPageId": 456,
-                    "campaignOfferId": 789,
-                    "trafficSourceId": 101,
-                    "conversionType": "sale"
+                # Get click from repository
+                from ...domain.value_objects import ClickId
+                click = self.track_click_handler._click_repository.find_by_id(ClickId.from_string(click_id))
+
+                if not click:
+                    error_response = {"error": {"code": "NOT_FOUND", "message": "Click not found"}}
+                    res.write_status(404)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Convert click to response format
+                click_data = {
+                    "id": str(click.id),
+                    "campaign_id": click.campaign_id,
+                    "ip_address": click.ip_address,
+                    "user_agent": click.user_agent,
+                    "referrer": click.referrer,
+                    "is_valid": click.is_valid,
+                    "sub1": click.sub1,
+                    "sub2": click.sub2,
+                    "sub3": click.sub3,
+                    "sub4": click.sub4,
+                    "sub5": click.sub5,
+                    "click_id_param": click.click_id_param,
+                    "affiliate_sub": click.affiliate_sub,
+                    "affiliate_sub2": click.affiliate_sub2,
+                    "landing_page_id": click.landing_page_id,
+                    "campaign_offer_id": click.campaign_offer_id,
+                    "traffic_source_id": click.traffic_source_id,
+                    "conversion_type": click.conversion_type,
+                    "converted_at": click.converted_at.isoformat() if click.converted_at else None,
+                    "created_at": click.created_at.isoformat(),
+                    "has_conversion": click.has_conversion
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_click))
+                res.end(json.dumps(click_data))
 
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error getting click details: {e}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
@@ -179,14 +220,54 @@ class ClickRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # TODO: Implement list clicks query
-                # For now, return mock response
-                response = {
-                    "clicks": [],
-                    "total": 0,
-                    "limit": limit,
-                    "offset": offset
-                }
+                # Build filters for click query
+                from ...domain.value_objects.filters.click_filters import ClickFilters
+
+                filters = ClickFilters(
+                    campaign_id=cid if 'cid' in locals() and cid is not None else None,
+                    is_valid=bool(is_valid) if 'is_valid' in locals() and is_valid is not None else None,
+                    limit=limit,
+                    offset=offset
+                )
+
+                # Get clicks from repository
+                try:
+                    clicks = self.track_click_handler._click_repository.find_by_filters(filters)
+
+                    # Get total count for pagination
+                    if filters.campaign_id:
+                        total_clicks = self.track_click_handler._click_repository.count_by_campaign_id(filters.campaign_id)
+                    else:
+                        # For now, approximate total - in production would need a count query
+                        total_clicks = len(clicks) + offset if len(clicks) == limit else len(clicks) + offset
+
+                    # clicks already paginated by the repository
+
+                    # Convert clicks to response format
+                    click_list = []
+                    for click in clicks:
+                        click_list.append({
+                            "id": str(click.id),
+                            "campaign_id": click.campaign_id,
+                            "ip_address": click.ip_address,
+                            "user_agent": click.user_agent,
+                            "referrer": click.referrer,
+                            "is_valid": click.is_valid,
+                            "created_at": click.created_at.isoformat(),
+                            "has_conversion": click.has_conversion
+                        })
+
+                    response = {
+                        "clicks": click_list,
+                        "total": total_clicks,
+                        "limit": limit,
+                        "offset": offset
+                    }
+
+                except Exception as e:
+                    logger.error(f"Error listing clicks: {e}")
+                    raise
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
@@ -204,7 +285,132 @@ class ClickRoutes:
             res.write_header("Content-Type", "text/html")
             res.end(html)
 
+        def create_click(res, req):
+            """Create a click directly (for testing purposes)."""
+            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            import json
+            import uuid
+
+            # Validate request (authentication, rate limiting, etc.)
+            if validate_request(req, res):
+                return  # Validation failed, response already sent
+
+            try:
+                # Parse request body
+                data_parts = []
+
+                def on_data(res, chunk, is_last, *args):
+                    try:
+                        if chunk:
+                            data_parts.append(chunk)
+
+                        if is_last:
+                            # Parse body
+                            body_data = {}
+                            if data_parts:
+                                full_body = b"".join(data_parts)
+                                if full_body:
+                                    try:
+                                        body_data = json.loads(full_body)
+                                    except (ValueError, json.JSONDecodeError):
+                                        logger.error("Invalid JSON in click creation request")
+                                        res.write_status(400)
+                                        res.write_header("Content-Type", "application/json")
+                                        add_security_headers(res)
+                                        res.end(json.dumps({
+                                            "status": "error",
+                                            "message": "Invalid JSON format"
+                                        }))
+                                        return
+
+                            # Create click from request data
+                            try:
+                                from ...domain.entities.click import Click
+                                from ...domain.value_objects import ClickId
+
+                                # Convert string IDs to integers where needed
+                                landing_page_id = body_data.get('landing_page_id')
+                                if isinstance(landing_page_id, str) and landing_page_id.startswith('lp_'):
+                                    try:
+                                        landing_page_id = int(landing_page_id.replace('lp_', ''))
+                                    except ValueError:
+                                        landing_page_id = None
+                                elif isinstance(landing_page_id, str):
+                                    try:
+                                        landing_page_id = int(landing_page_id)
+                                    except ValueError:
+                                        landing_page_id = None
+
+                                campaign_offer_id = body_data.get('campaign_offer_id')
+                                if isinstance(campaign_offer_id, str) and campaign_offer_id.startswith('offer_'):
+                                    try:
+                                        campaign_offer_id = int(campaign_offer_id.replace('offer_', ''))
+                                    except ValueError:
+                                        campaign_offer_id = None
+                                elif isinstance(campaign_offer_id, str):
+                                    try:
+                                        campaign_offer_id = int(campaign_offer_id)
+                                    except ValueError:
+                                        campaign_offer_id = None
+
+                                click = Click(
+                                    id=ClickId(str(uuid.uuid4())),
+                                    campaign_id=body_data.get('campaign_id'),
+                                    ip_address=body_data.get('ip_address', '127.0.0.1'),
+                                    user_agent=body_data.get('user_agent', 'Test User Agent'),
+                                    referrer=body_data.get('referrer'),
+                                    landing_page_id=landing_page_id,
+                                    campaign_offer_id=campaign_offer_id,
+                                    sub1=body_data.get('sub1'),
+                                    sub2=body_data.get('sub2'),
+                                    sub3=body_data.get('sub3'),
+                                    sub4=body_data.get('sub4'),
+                                    sub5=body_data.get('sub5')
+                                )
+
+                                # Save click
+                                self.track_click_handler._click_repository.save(click)
+
+                                response = {
+                                    "status": "success",
+                                    "click_id": str(click.id),
+                                    "campaign_id": click.campaign_id,
+                                    "created_at": click.created_at.isoformat()
+                                }
+
+                                res.write_status(201)
+                                res.write_header("Content-Type", "application/json")
+                                add_security_headers(res)
+                                res.end(json.dumps(response))
+
+                            except Exception as e:
+                                logger.error(f"Error creating click: {e}")
+                                error_response = {"status": "error", "message": str(e)}
+                                res.write_status(500)
+                                res.write_header("Content-Type", "application/json")
+                                add_security_headers(res)
+                                res.end(json.dumps(error_response))
+
+                    except Exception as e:
+                        logger.error(f"Error processing click creation data: {e}")
+                        error_response = {"status": "error", "message": "Internal server error"}
+                        res.write_status(500)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+
+                res.on_data(on_data)
+
+            except Exception as e:
+                logger.error(f"Error in create_click: {e}")
+                error_response = {"status": "error", "message": "Internal server error"}
+                res.write_status(500)
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+                res.end(json.dumps(error_response))
+
         # Register all routes
+        app.post('/clicks', create_click)
         app.get('/v1/click', track_click)
         app.get('/v1/click/:click_id', get_click_details)
         app.get('/v1/clicks', list_clicks)

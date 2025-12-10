@@ -215,13 +215,13 @@ class APIEndpointTester:
             # ============================================================================
             ('GET', f'/campaigns/{test_campaign_id}/landing-pages', 'List campaign landing pages', None, 200, False),
             ('GET', f'/campaigns/{test_campaign_id}/landing-pages?page=1&pageSize=20', 'List landing pages with pagination', None, 200, False),
-            ('POST', f'/campaigns/{test_campaign_id}/landing-pages', 'Create landing page for campaign', test_landing_page_data, 400, False),
+            ('POST', f'/campaigns/{test_campaign_id}/landing-pages', 'Create landing page for campaign', test_landing_page_data, 201, False),
 
             # ============================================================================
             # CAMPAIGN OFFERS
             # ============================================================================
             ('GET', f'/campaigns/{test_campaign_id}/offers', 'List campaign offers', None, 200, False),
-            ('POST', f'/campaigns/{test_campaign_id}/offers', 'Create campaign offer', test_offer_data, 400, False),
+            ('POST', f'/campaigns/{test_campaign_id}/offers', 'Create campaign offer', test_offer_data, 201, False),
 
             # ============================================================================
             # ANALYTICS
@@ -246,6 +246,40 @@ class APIEndpointTester:
             ('GET', '/clicks?cid=123&limit=5', 'List clicks filtered by campaign', None, 200, False),
             ('GET', '/clicks?sub1=fb_ad_15&limit=5', 'List clicks filtered by sub1', None, 200, False),
             ('GET', '/clicks?is_valid=1&limit=10', 'List valid clicks only', None, 200, False),
+
+            # ============================================================================
+            # NEW HIGH/MEDIUM/LOW PRIORITY ENDPOINTS
+            # ============================================================================
+            ('POST', '/clicks/bulk-generate', 'Bulk generate click tracking URLs', {
+                "campaignId": "camp_test_123",
+                "landingPageId": "lp_test_456",
+                "offerId": "offer_test_789",
+                "urls": [
+                    {"sub1": "bulk_test_1", "sub2": "variant_a"},
+                    {"sub1": "bulk_test_2", "sub2": "variant_b"},
+                    {"sub1": "bulk_test_3", "sub2": "variant_c"}
+                ]
+            }, 200, False),
+            ('GET', f'/clicks/validate/{test_click_id}', 'Validate click before redirect', None, 200, True),
+            ('GET', '/fraud/rules', 'List fraud detection rules', None, 200, False),
+            ('GET', '/fraud/rules?page=1&pageSize=10&type=ip_block', 'List fraud rules with filters', None, 200, False),
+            ('POST', '/fraud/rules', 'Create fraud detection rule', {
+                "name": "Block test user agents",
+                "type": "ua_block",
+                "action": "block",
+                "conditions": {
+                    "user_agents": ["test_bot", "test_crawler"]
+                },
+                "priority": 85,
+                "isActive": True
+            }, 200, False),
+            ('POST', '/cache/flush', 'Flush application cache', {
+                "types": ["campaigns", "landing_pages"]
+            }, 200, False),
+            ('POST', '/cache/flush', 'Flush all cache', {
+                "types": ["all"]
+            }, 200, False),
+            ('GET', '/analytics/real-time', 'Get real-time analytics', None, 200, False),
 
             # ============================================================================
             # RESET ENDPOINT (for testing)
@@ -297,7 +331,10 @@ class APIEndpointTester:
             'Landing Pages': [],
             'Offers': [],
             'Analytics': [],
-            'Click Tracking': []
+            'Click Tracking': [],
+            'Fraud Detection': [],
+            'System Admin': [],
+            'Bulk Operations': []
         }
 
         for result in results:
@@ -313,7 +350,17 @@ class APIEndpointTester:
             elif 'analytic' in endpoint.lower():
                 categories['Analytics'].append(result)
             elif 'click' in endpoint.lower():
-                categories['Click Tracking'].append(result)
+                # Special handling for new bulk operations and validation endpoints
+                if 'bulk-generate' in endpoint.lower() or 'validate' in endpoint.lower():
+                    categories['Bulk Operations'].append(result)
+                else:
+                    categories['Click Tracking'].append(result)
+            elif 'fraud' in endpoint.lower():
+                categories['Fraud Detection'].append(result)
+            elif 'cache' in endpoint.lower():
+                categories['System Admin'].append(result)
+            elif 'real-time' in endpoint.lower():
+                categories['Analytics'].append(result)
 
         # Print categorized results
         logger.info("\n" + "-" * 80)
@@ -348,7 +395,9 @@ class APIEndpointTester:
             logger.info("-" * 80)
             for result in all_failed:
                 logger.info(f"✗ {result['endpoint']}")
-                logger.info(f"    Expected: {result['expected_status']}, Got: {result.get('response_status', 'N/A')}")
+                expected = result.get('expected_status', 'N/A')
+                got = result.get('response_status', 'N/A')
+                logger.info(f"    Expected: {expected}, Got: {got}")
                 if result['error']:
                     logger.info(f"    Error: {result['error']}")
                 if result.get('response_body'):

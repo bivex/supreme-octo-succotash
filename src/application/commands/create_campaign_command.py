@@ -12,7 +12,7 @@ class CreateCampaignCommand:
     """Command to create a new campaign."""
 
     name: str
-    payout: Money
+    payout: Optional[Money] = None
     description: Optional[str] = None
     cost_model: str = "CPA"
     white_url: Optional[str] = None

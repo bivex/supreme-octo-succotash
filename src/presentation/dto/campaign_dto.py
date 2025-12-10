@@ -137,10 +137,10 @@ class CampaignSummaryResponse:
             performance={
                 "clicks": campaign.clicks_count,
                 "conversions": campaign.conversions_count,
-                "ctr": campaign.ctr,
-                "cr": campaign.cr,
+                "ctr": float(campaign.ctr),
+                "cr": float(campaign.cr),
                 "epc": {"amount": float(campaign.epc.amount), "currency": campaign.epc.currency} if campaign.epc else None,
-                "roi": campaign.roi,
+                "roi": float(campaign.roi),
             },
             _links={"self": f"/api/v1/campaigns/{campaign.id.value}"}
         )

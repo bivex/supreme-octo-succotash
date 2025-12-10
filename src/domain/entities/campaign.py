@@ -35,6 +35,7 @@ class Campaign:
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Performance tracking
+    impressions_count: int = 0
     clicks_count: int = 0
     conversions_count: int = 0
     spent_amount: Money = field(default_factory=lambda: Money.zero("USD"))
@@ -121,9 +122,10 @@ class Campaign:
         self.status = CampaignStatus.CANCELLED
         self.updated_at = datetime.now(timezone.utc)
 
-    def update_performance(self, clicks_increment: int = 0, conversions_increment: int = 0,
-                          spent_increment: Optional[Money] = None) -> None:
+    def update_performance(self, impressions_increment: int = 0, clicks_increment: int = 0,
+                          conversions_increment: int = 0, spent_increment: Optional[Money] = None) -> None:
         """Update campaign performance metrics."""
+        self.impressions_count += impressions_increment
         self.clicks_count += clicks_increment
         self.conversions_count += conversions_increment
 
@@ -157,9 +159,9 @@ class Campaign:
     @property
     def ctr(self) -> float:
         """Calculate click-through rate."""
-        if self.clicks_count == 0:
+        if self.impressions_count == 0:
             return 0.0
-        return self.clicks_count / max(self.clicks_count, 1)  # Simplified
+        return self.clicks_count / self.impressions_count
 
     @property
     def cr(self) -> float:
