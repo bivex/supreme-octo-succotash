@@ -117,6 +117,12 @@ class PostgresConnectionPoolMonitor:
             logger.error(f"Error in get_connection_stats: {e}")
             return self._get_fallback_stats("stats_error")
 
+    def start_monitoring(self) -> None:
+        """Заглушка для совместимости - этот монитор работает синхронно"""
+        logger.info("PostgresConnectionPoolMonitor: Monitoring is synchronous, no background monitoring needed")
+        # Этот класс предназначен для синхронного получения статуса с защитой от блокировок
+        # Фоновый мониторинг не требуется
+
     def get_optimization_suggestions(self) -> Dict:
         """Получить предложения по оптимизации пула соединений"""
         try:

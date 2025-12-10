@@ -15,6 +15,7 @@ from ..monitoring.postgres_query_analyzer import PostgresQueryAnalyzer, QueryAna
 from ..monitoring.postgres_index_auditor import PostgresIndexAuditor
 from ..monitoring.postgres_cache_monitor import PostgresCacheMonitor, create_default_cache_monitor
 from ..monitoring.postgres_query_optimizer import PostgresQueryOptimizer
+from ..monitoring.postgres_performance_analyzer import PostgresPerformanceAnalyzer, SystemPerformanceReport
 from ..monitoring.adaptive_connection_pool_optimizer import AdaptiveConnectionPoolOptimizer
 from ..database.postgres_connection_pool_monitor import PostgresConnectionPoolMonitor
 from ..repositories.postgres_bulk_loader import PostgresBulkLoader
@@ -72,6 +73,7 @@ class PostgresAutoUpholder:
         self.cache_monitor = create_default_cache_monitor(connection_pool)
         self.query_optimizer = PostgresQueryOptimizer(connection_pool)
         self.bulk_loader = PostgresBulkLoader(connection_pool)
+        self.performance_analyzer = PostgresPerformanceAnalyzer(connection_pool)
 
         # Initialize connection pool monitor
         self.connection_pool_monitor = PostgresConnectionPoolMonitor(connection_pool)
@@ -150,6 +152,34 @@ class PostgresAutoUpholder:
         performance_improvements = {}
 
         try:
+            # 0. System Performance Analysis (new comprehensive analysis)
+            logger.info("Running comprehensive performance analysis...")
+            performance_report = self.performance_analyzer.get_comprehensive_performance_report()
+
+            # Add performance insights to alerts and recommendations
+            if performance_report.queries_with_bad_cache > 0:
+                alerts_generated.append(
+                    f"Cache performance issue: {performance_report.queries_with_bad_cache} queries "
+                    f"have <95% cache hit ratio (avg: {performance_report.avg_cache_hit_ratio:.1f}%)"
+                )
+
+            if performance_report.queries_using_temp > 0:
+                alerts_generated.append(
+                    f"Temp space usage: {performance_report.queries_using_temp} queries "
+                    f"using {performance_report.total_temp_bytes // 1024 // 1024}MB temp space"
+                )
+
+            # Add performance recommendations
+            recommendations_pending.extend(performance_report.optimization_recommendations)
+
+            # Store performance metrics
+            performance_improvements.update({
+                'cache_hit_ratio': performance_report.avg_cache_hit_ratio,
+                'total_queries_analyzed': performance_report.total_queries,
+                'queries_with_bad_cache': performance_report.queries_with_bad_cache,
+                'temp_space_usage_mb': performance_report.total_temp_bytes // 1024 // 1024
+            })
+
             # 1. Query Analysis
             logger.info("Running query analysis...")
             slow_queries = self.query_analyzer.get_slow_queries_report(
