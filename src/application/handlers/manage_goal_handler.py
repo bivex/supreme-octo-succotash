@@ -207,6 +207,33 @@ class ManageGoalHandler:
                 "message": str(e)
             }
 
+    def get_goal_performance(self, goal_id: str, start_date: str, end_date: str) -> Dict[str, Any]:
+        """Get performance metrics for a specific goal."""
+        try:
+            from datetime import datetime
+            start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+
+            performance = self.goal_service.calculate_goal_performance(goal_id, start, end)
+
+            if 'error' in performance:
+                return {
+                    "status": "error",
+                    "message": performance['error']
+                }
+
+            return {
+                "status": "success",
+                "performance": performance
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting goal performance for {goal_id}: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
     def _goal_to_dict(self, goal: Goal) -> Dict[str, Any]:
         """Convert goal entity to dictionary."""
         return {

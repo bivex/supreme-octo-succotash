@@ -18,6 +18,7 @@ class GoalRoutes:
         self._register_list_goals(app)
         self._register_update_goal(app)
         self._register_delete_goal(app)
+        self._register_get_goal_performance(app)
         self._register_get_templates(app)
         self._register_duplicate_goal(app)
 
@@ -394,3 +395,57 @@ class GoalRoutes:
                 res.end(json.dumps(error_response))
 
         app.post('/goals/:goal_id/duplicate', duplicate_goal)
+
+    def _register_get_goal_performance(self, app):
+        """Register get goal performance route."""
+        def get_goal_performance(res, req):
+            """Get performance metrics for a specific goal."""
+            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+
+            # Validate request (authentication, rate limiting, etc.)
+            if validate_request(req, res):
+                return  # Validation failed, response already sent
+
+            try:
+                goal_id = req.get_parameter(0)
+                start_date = req.get_query('start_date')
+                end_date = req.get_query('end_date')
+
+                # Validate required parameters
+                if not start_date or not end_date:
+                    error_response = {
+                        "status": "error",
+                        "message": "start_date and end_date query parameters are required"
+                    }
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Get goal performance
+                result = self.manage_goal_handler.get_goal_performance(goal_id, start_date, end_date)
+
+                # Return response
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+
+                if result["status"] == "success":
+                    res.write_status(200)
+                else:
+                    res.write_status(404 if "not found" in result.get("message", "").lower() else 400)
+
+                res.end(json.dumps(result))
+
+            except Exception as e:
+                logger.error(f"Error in get_goal_performance: {e}")
+                error_response = {
+                    "status": "error",
+                    "message": "Internal server error"
+                }
+                res.write_status(500)
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+                res.end(json.dumps(error_response))
+
+        app.get('/goals/:goal_id/performance', get_goal_performance)

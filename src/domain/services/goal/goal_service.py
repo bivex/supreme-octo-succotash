@@ -221,20 +221,41 @@ class GoalService:
         if not goal:
             return {'error': 'Goal not found'}
 
-        # This would typically query conversion/event repositories
-        # For now, return mock performance data
-        return {
-            'goal_id': goal_id,
-            'goal_name': goal.name,
-            'achievements': 0,  # Would be calculated from actual data
-            'conversion_rate': 0.0,
-            'average_value': 0.0,
-            'total_value': 0.0,
-            'period': {
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat()
+        # Get goal conversions from repository (this would need to be implemented in repository)
+        # For now, calculate based on available goal data
+        try:
+            # This is a placeholder - real implementation would query conversion events
+            # that match this goal's trigger conditions within the date range
+            achievements = 0  # Number of times goal was achieved
+            total_value = 0.0  # Total monetary value from goal achievements
+
+            # Calculate metrics
+            conversion_rate = 0.0  # Would be calculated from campaign traffic data
+            average_value = total_value / achievements if achievements > 0 else 0.0
+
+            return {
+                'goal_id': goal_id,
+                'goal_name': goal.name,
+                'achievements': achievements,
+                'conversion_rate': conversion_rate,
+                'average_value': average_value,
+                'total_value': total_value,
+                'period': {
+                    'start_date': start_date.isoformat(),
+                    'end_date': end_date.isoformat()
+                },
+                'goal_type': goal.goal_type.value,
+                'goal_trigger': goal.trigger_type.value,
+                'is_active': goal.is_active,
+                'attribution_window_days': goal.attribution_window_days
             }
-        }
+        except Exception as e:
+            logger.error(f"Error calculating goal performance for {goal_id}: {e}")
+            return {
+                'error': f'Failed to calculate performance: {str(e)}',
+                'goal_id': goal_id,
+                'goal_name': goal.name
+            }
 
     def duplicate_goal(self, goal_id: str, new_campaign_id: Optional[int] = None) -> Optional[Goal]:
         """Create a duplicate of an existing goal."""

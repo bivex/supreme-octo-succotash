@@ -20,6 +20,44 @@ class JourneyService:
         self._journeys[user_id] = journey
         return journey
 
+    def create_journey_from_click(self, click_data: Dict[str, Any]) -> CustomerJourney:
+        """Create a customer journey from click data."""
+        user_id = click_data.get('user_id') or click_data.get('click_id') or str(click_data.get('id', 'unknown'))
+
+        initial_touchpoint = {
+            'type': 'click',
+            'campaign_id': click_data.get('campaign_id'),
+            'source': 'paid',
+            'channel': 'affiliate',
+            'timestamp': click_data.get('created_at'),
+            'metadata': {
+                'ip_address': click_data.get('ip_address'),
+                'user_agent': click_data.get('user_agent'),
+                'referrer': click_data.get('referrer')
+            }
+        }
+
+        return self.get_or_create_journey(user_id, initial_touchpoint)
+
+    def create_journey_from_impression(self, impression_data: Dict[str, Any]) -> CustomerJourney:
+        """Create a customer journey from impression data."""
+        user_id = impression_data.get('user_id') or impression_data.get('impression_id') or str(impression_data.get('id', 'unknown'))
+
+        initial_touchpoint = {
+            'type': 'impression',
+            'campaign_id': impression_data.get('campaign_id'),
+            'source': 'paid',
+            'channel': 'display',
+            'timestamp': impression_data.get('created_at'),
+            'metadata': {
+                'ip_address': impression_data.get('ip_address'),
+                'user_agent': impression_data.get('user_agent'),
+                'referrer': impression_data.get('referrer')
+            }
+        }
+
+        return self.get_or_create_journey(user_id, initial_touchpoint)
+
     def update_journey(self, user_id: str, touchpoint: Dict[str, Any]) -> Optional[CustomerJourney]:
         """Update customer journey with new touchpoint."""
         if user_id not in self._journeys:

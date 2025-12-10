@@ -34,10 +34,46 @@ class AnalyzeJourneyHandler:
             return {
                 "status": "success",
                 "drop_off_points": drop_offs,
-                "period_days": days
+                "period_days": days,
+                "analysis_type": "funnel_drop_off",
+                "total_drop_off_points": len(drop_offs)
             }
         except Exception as e:
             logger.error(f"Error getting drop-off analysis: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
+    def populate_journeys_from_data(self, click_data: List[Dict[str, Any]] = None,
+                                   impression_data: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Populate journey data from clicks and impressions for analysis."""
+        try:
+            journeys_created = 0
+
+            if click_data:
+                for click in click_data:
+                    try:
+                        journey = self.journey_service.create_journey_from_click(click)
+                        journeys_created += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to create journey from click {click.get('id')}: {e}")
+
+            if impression_data:
+                for impression in impression_data:
+                    try:
+                        journey = self.journey_service.create_journey_from_impression(impression)
+                        journeys_created += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to create journey from impression {impression.get('id')}: {e}")
+
+            return {
+                "status": "success",
+                "journeys_created": journeys_created,
+                "total_journeys": len(self.journey_service._journeys)
+            }
+        except Exception as e:
+            logger.error(f"Error populating journeys: {e}")
             return {
                 "status": "error",
                 "message": str(e)
