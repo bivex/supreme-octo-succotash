@@ -179,13 +179,10 @@ class TrackingManager:
             logger.info(f"Using campaign_id: {settings.campaign_id} -> {campaign_id_num}")
             payload = {
                 "event_type": event_type,
+                "event_name": event_data.get("event_name", event_type) if event_data else event_type,
                 "click_id": click_id,
-                "campaign_id": campaign_id_num
+                "campaign_id": str(campaign_id_num)
             }
-
-            # Add optional fields based on API documentation
-            if event_data and event_data.get("event_name"):
-                payload["event_name"] = event_data["event_name"]
 
             # Add landing_page_id if available (from API docs example)
             # For now, we'll keep it simple with just required fields
@@ -287,7 +284,7 @@ class TrackingManager:
                 "event_type": event_type_map.get(conversion_type, "conversion"),
                 "event_name": f"{conversion_type}_conversion",
                 "click_id": click_id,
-                "campaign_id": int(settings.campaign_id.replace("camp_", "")),  # Convert to integer for events API
+                "campaign_id": settings.campaign_id.replace("camp_", ""),  # Keep as string for events API
                 "url": f"{self.local_landing_url}/landing",
                 "properties": {
                     "conversion_value": conversion_value,
@@ -378,7 +375,7 @@ class TrackingManager:
                 "event_type": "postback",
                 "event_name": f"{postback_type}_postback",
                 "click_id": click_id,
-                "campaign_id": int(settings.campaign_id.replace("camp_", "")),  # Convert to integer for events API
+                "campaign_id": settings.campaign_id.replace("camp_", ""),  # Keep as string for events API
                 "url": f"{self.local_landing_url}/landing",
                 "properties": {
                     "postback_type": postback_type,
