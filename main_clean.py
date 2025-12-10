@@ -27,6 +27,7 @@ class BackgroundServiceManager:
     def __init__(self):
         self._threads: list[threading.Thread] = []
         self._services = []
+        self._service_lock = threading.RLock()  # Синхронизация для доступа к сервисам
 
     def add_thread(self, thread: threading.Thread) -> None:
         """Add a thread to be tracked for cleanup."""
@@ -35,60 +36,63 @@ class BackgroundServiceManager:
 
     def start_postgres_upholder(self) -> None:
         """Start the PostgreSQL connection upholder service."""
-        try:
-            upholder = container.get_postgres_upholder()
-            if hasattr(upholder, 'start'):
-                logger.info("Starting PostgreSQL upholder...")
-                upholder.start()
+        with self._service_lock:
+            try:
+                upholder = container.get_postgres_upholder()
+                if hasattr(upholder, 'start'):
+                    logger.info("Starting PostgreSQL upholder...")
+                    upholder.start()
 
-                # Track the scheduler thread if it exists
-                if hasattr(upholder, '_scheduler_thread') and upholder._scheduler_thread:
-                    self.add_thread(upholder._scheduler_thread)
-                    self._services.append(('postgres_upholder', upholder))
+                    # Track the scheduler thread if it exists
+                    if hasattr(upholder, '_scheduler_thread') and upholder._scheduler_thread:
+                        self.add_thread(upholder._scheduler_thread)
+                        self._services.append(('postgres_upholder', upholder))
 
-                logger.info("PostgreSQL upholder started successfully")
-        except Exception as e:
-            logger.error(f"Failed to start PostgreSQL upholder: {e}")
+                    logger.info("PostgreSQL upholder started successfully")
+            except Exception as e:
+                logger.error(f"Failed to start PostgreSQL upholder: {e}")
 
     def start_cache_monitor(self, interval_seconds: int = 30) -> None:
         """Start the cache monitoring service."""
-        try:
-            cache_monitor = container.get_postgres_cache_monitor()
-            logger.info("Starting cache monitor...")
-            cache_monitor.start_monitoring(interval_seconds=interval_seconds)
+        with self._service_lock:
+            try:
+                cache_monitor = container.get_postgres_cache_monitor()
+                logger.info("Starting cache monitor...")
+                cache_monitor.start_monitoring(interval_seconds=interval_seconds)
 
-            # Track the monitor thread if it exists
-            if hasattr(cache_monitor, 'monitor_thread') and cache_monitor.monitor_thread:
-                self.add_thread(cache_monitor.monitor_thread)
-                self._services.append(('cache_monitor', cache_monitor))
+                # Track the monitor thread if it exists
+                if hasattr(cache_monitor, 'monitor_thread') and cache_monitor.monitor_thread:
+                    self.add_thread(cache_monitor.monitor_thread)
+                    self._services.append(('cache_monitor', cache_monitor))
 
-            logger.info("Cache monitor started successfully")
-        except Exception as e:
-            logger.error(f"Failed to start cache monitor: {e}")
+                logger.info("Cache monitor started successfully")
+            except Exception as e:
+                logger.error(f"Failed to start cache monitor: {e}")
 
     def stop_all_services(self) -> None:
         """Stop all background services gracefully."""
-        logger.info("Stopping background services...")
+        with self._service_lock:
+            logger.info("Stopping background services...")
 
-        # Stop services in reverse order
-        for service_name, service in reversed(self._services):
-            try:
-                if service_name == 'postgres_upholder' and hasattr(service, 'stop'):
-                    logger.info("Stopping PostgreSQL upholder...")
-                    service.stop()
-                elif service_name == 'cache_monitor' and hasattr(service, 'stop_monitoring'):
-                    logger.info("Stopping cache monitor...")
-                    service.stop_monitoring()
-            except Exception as e:
-                logger.error(f"Error stopping {service_name}: {e}")
+            # Stop services in reverse order
+            for service_name, service in reversed(self._services):
+                try:
+                    if service_name == 'postgres_upholder' and hasattr(service, 'stop'):
+                        logger.info("Stopping PostgreSQL upholder...")
+                        service.stop()
+                    elif service_name == 'cache_monitor' and hasattr(service, 'stop_monitoring'):
+                        logger.info("Stopping cache monitor...")
+                        service.stop_monitoring()
+                except Exception as e:
+                    logger.error(f"Error stopping {service_name}: {e}")
 
-        # Wait for threads to finish
-        self._wait_for_threads()
+            # Wait for threads to finish
+            self._wait_for_threads()
 
-        # Close database connections
-        self._close_database_connections()
+            # Close database connections
+            self._close_database_connections()
 
-        logger.info("All background services stopped")
+            logger.info("All background services stopped")
 
     def _wait_for_threads(self) -> None:
         """Wait for all tracked threads to finish."""
@@ -101,14 +105,15 @@ class BackgroundServiceManager:
 
     def _close_database_connections(self) -> None:
         """Close all database connections."""
-        try:
-            logger.info("Closing database connections...")
-            pool = container.get_db_connection_pool()
-            if hasattr(pool, '_closeall'):
-                pool._closeall()
-                logger.info("Database connections closed successfully")
-        except Exception as e:
-            logger.error(f"Error closing database connections: {e}")
+        with self._service_lock:
+            try:
+                logger.info("Closing database connections...")
+                pool = container.get_db_connection_pool()
+                if hasattr(pool, '_closeall'):
+                    pool._closeall()
+                    logger.info("Database connections closed successfully")
+            except Exception as e:
+                logger.error(f"Error closing database connections: {e}")
 
 
 class DatabaseConnectionTester:
@@ -117,7 +122,8 @@ class DatabaseConnectionTester:
     def __init__(self, container_instance):
         """Initialize with container instance for thread-safe connection testing."""
         self.container = container_instance
-        self._connection_lock = threading.Lock()  # Protect connection testing
+        self._connection_lock = threading.RLock()  # Reentrant lock for connection testing and container access
+        self._container_lock = threading.RLock()   # Separate lock for container operations
 
     def test_postgresql_connection(self) -> tuple[bool, str]:
         """Test PostgreSQL connection using connection pool with thread safety."""
@@ -125,8 +131,9 @@ class DatabaseConnectionTester:
             try:
                 import psycopg2
 
-                # Use connection pool from container for thread-safe testing
-                pool = self.container.get_db_connection_pool()
+                # Use connection pool from container with thread-safe access
+                with self._container_lock:
+                    pool = self.container.get_db_connection_pool()
                 conn = None
 
                 try:
