@@ -178,14 +178,28 @@ class TrackingManager:
 
                         # Auto-select optimal strategy based on parameters
                         strategy = EncodingStrategy.SEQUENTIAL  # Default for telegram bot
-                        if len([v for v in url_params.to_dict().values() if v]) > 3:
+                        param_count = len([v for v in url_params.to_dict().values() if v])
+
+                        if param_count > 3:
                             strategy = EncodingStrategy.COMPRESSED
+                        elif param_count > 5:  # Many parameters -> hybrid for better compression
+                            strategy = EncodingStrategy.HYBRID
 
                         # Generate ultra-short code (max 10 chars)
                         short_code = url_shortener.encode(url_params, strategy)
                         short_url = f"{self.local_landing_url}/s/{short_code}"
 
-                        logger.info(f"Generated ultra-short tracking URL: {short_url} (strategy: {strategy.value})")
+                        # Detailed logging of encoding strategy and parameters
+                        strategy_names = {
+                            EncodingStrategy.SEQUENTIAL: "Sequential (повторяющиеся параметры)",
+                            EncodingStrategy.COMPRESSED: "Compressed (сжатие с кампаниями)",
+                            EncodingStrategy.HYBRID: "Hybrid (битовая упаковка)"
+                        }
+
+                        logger.info(f"Generated ultra-short tracking URL: {short_url}")
+                        logger.info(f"Encoding strategy: {strategy_names.get(strategy, strategy.value)} ({strategy.value})")
+                        logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
+                        logger.info(f"Tracking params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
                         return short_url
                     else:
                         logger.warning(f"API returned error: {result}")

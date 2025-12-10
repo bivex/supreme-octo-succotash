@@ -433,6 +433,7 @@ class ClickRoutes:
                 url_params = url_shortener.decode(short_code)
 
                 if not url_params:
+                    logger.warning(f"Failed to decode short link: {short_code}")
                     error_html = "<html><body><h1>Error</h1><p>Short link not found or expired</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
@@ -444,7 +445,12 @@ class ClickRoutes:
                 query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
                 tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
 
-                logger.info(f"Short link {short_code} redirecting to: {tracking_url}")
+                # Log successful decoding with details
+                strategy_info = url_shortener.get_strategy_info(short_code)
+                logger.info(f"Short link {short_code} decoded successfully")
+                logger.info(f"Encoding strategy: {strategy_info}")
+                logger.info(f"Decoded params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
+                logger.info(f"Redirecting to: {tracking_url}")
 
                 # Redirect to the click tracking endpoint
                 res.write_status(302)
