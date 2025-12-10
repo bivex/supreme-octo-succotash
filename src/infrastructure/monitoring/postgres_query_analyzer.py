@@ -256,23 +256,64 @@ class PostgresQueryAnalyzer:
                 conn = self.connection.getconn()
                 try:
                     cursor = conn.cursor()
+                    # Check available columns in pg_stat_statements and adapt query
                     cursor.execute("""
-                        SELECT query, calls, total_time, mean_time, rows
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'pg_stat_statements' AND table_schema = 'public'
+                    """)
+                    available_columns = {row[0] for row in cursor.fetchall()}
+
+                    # Build query based on available columns
+                    select_columns = ['query', 'calls']
+                    where_conditions = ['calls >= %s']
+                    order_by = 'calls DESC'  # fallback
+
+                    if 'total_exec_time' in available_columns:
+                        select_columns.extend(['total_exec_time', 'mean_exec_time'])
+                        where_conditions.append('mean_exec_time >= %s')
+                        order_by = 'mean_exec_time DESC'
+                    elif 'total_time' in available_columns and 'mean_time' in available_columns:
+                        select_columns.extend(['total_time', 'mean_time'])
+                        where_conditions.append('mean_time >= %s')
+                        order_by = 'mean_time DESC'
+                    elif 'mean_time' in available_columns:
+                        select_columns.append('mean_time')
+                        where_conditions.append('mean_time >= %s')
+                        order_by = 'mean_time DESC'
+
+                    if 'rows' in available_columns:
+                        select_columns.append('rows')
+
+                    query = f"""
+                        SELECT {', '.join(select_columns)}
                         FROM pg_stat_statements
-                        WHERE calls >= %s AND mean_time >= %s
-                        ORDER BY mean_time DESC
+                        WHERE {' AND '.join(where_conditions)}
+                        ORDER BY {order_by}
                         LIMIT 20
-                    """, (min_calls, min_avg_time))
+                    """
+
+                    cursor.execute(query, (min_calls, min_avg_time))
 
                     slow_queries = []
                     for row in cursor.fetchall():
-                        slow_queries.append({
+                        query_data = {
                             'query': row[0],
-                            'calls': row[1],
-                            'total_time': row[2],
-                            'mean_time': row[3],
-                            'rows': row[4]
-                        })
+                            'calls': row[1]
+                        }
+
+                        # Add available columns dynamically
+                        col_idx = 2
+                        if 'total_exec_time' in available_columns or 'total_time' in available_columns:
+                            query_data['total_time'] = row[col_idx] if col_idx < len(row) else 0
+                            col_idx += 1
+                        if 'mean_exec_time' in available_columns or 'mean_time' in available_columns:
+                            query_data['mean_time'] = row[col_idx] if col_idx < len(row) else 0
+                            col_idx += 1
+                        if 'rows' in available_columns:
+                            query_data['rows'] = row[col_idx] if col_idx < len(row) else 0
+
+                        slow_queries.append(query_data)
 
                     cursor.close()
                     return slow_queries
@@ -281,23 +322,64 @@ class PostgresQueryAnalyzer:
             else:
                 # It's a direct connection
                 with self.connection.cursor() as cursor:
+                    # Check available columns in pg_stat_statements and adapt query
                     cursor.execute("""
-                        SELECT query, calls, total_time, mean_time, rows
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'pg_stat_statements' AND table_schema = 'public'
+                    """)
+                    available_columns = {row[0] for row in cursor.fetchall()}
+
+                    # Build query based on available columns
+                    select_columns = ['query', 'calls']
+                    where_conditions = ['calls >= %s']
+                    order_by = 'calls DESC'  # fallback
+
+                    if 'total_exec_time' in available_columns:
+                        select_columns.extend(['total_exec_time', 'mean_exec_time'])
+                        where_conditions.append('mean_exec_time >= %s')
+                        order_by = 'mean_exec_time DESC'
+                    elif 'total_time' in available_columns and 'mean_time' in available_columns:
+                        select_columns.extend(['total_time', 'mean_time'])
+                        where_conditions.append('mean_time >= %s')
+                        order_by = 'mean_time DESC'
+                    elif 'mean_time' in available_columns:
+                        select_columns.append('mean_time')
+                        where_conditions.append('mean_time >= %s')
+                        order_by = 'mean_time DESC'
+
+                    if 'rows' in available_columns:
+                        select_columns.append('rows')
+
+                    query = f"""
+                        SELECT {', '.join(select_columns)}
                         FROM pg_stat_statements
-                        WHERE calls >= %s AND mean_time >= %s
-                        ORDER BY mean_time DESC
+                        WHERE {' AND '.join(where_conditions)}
+                        ORDER BY {order_by}
                         LIMIT 20
-                    """, (min_calls, min_avg_time))
+                    """
+
+                    cursor.execute(query, (min_calls, min_avg_time))
 
                     slow_queries = []
                     for row in cursor.fetchall():
-                        slow_queries.append({
+                        query_data = {
                             'query': row[0],
-                            'calls': row[1],
-                            'total_time': row[2],
-                            'mean_time': row[3],
-                            'rows': row[4]
-                        })
+                            'calls': row[1]
+                        }
+
+                        # Add available columns dynamically
+                        col_idx = 2
+                        if 'total_exec_time' in available_columns or 'total_time' in available_columns:
+                            query_data['total_time'] = row[col_idx] if col_idx < len(row) else 0
+                            col_idx += 1
+                        if 'mean_exec_time' in available_columns or 'mean_time' in available_columns:
+                            query_data['mean_time'] = row[col_idx] if col_idx < len(row) else 0
+                            col_idx += 1
+                        if 'rows' in available_columns:
+                            query_data['rows'] = row[col_idx] if col_idx < len(row) else 0
+
+                        slow_queries.append(query_data)
 
                     return slow_queries
 

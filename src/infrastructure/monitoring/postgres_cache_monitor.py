@@ -110,17 +110,24 @@ class PostgresCacheMonitor:
                 heap_ratio = heap_ratio or 0
                 index_ratio = index_ratio or 0
 
-                # Get shared buffer usage
-                cursor.execute("""
-                    SELECT
-                        sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
-                    FROM pg_buffercache b
-                    CROSS JOIN pg_settings s
-                    WHERE s.name = 'shared_buffers'
-                """)
-
-                buffer_usage_row = cursor.fetchone()
-                buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
+                # Get shared buffer usage (only if pg_buffercache extension is available)
+                buffer_usage = 0
+                try:
+                    # Try to query pg_buffercache directly - if it fails, extension is not available
+                    cursor.execute("""
+                        SELECT
+                            sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
+                        FROM pg_buffercache b
+                        CROSS JOIN pg_settings s
+                        WHERE s.name = 'shared_buffers'
+                    """)
+                    buffer_usage_row = cursor.fetchone()
+                    buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
+                    logger.debug(f"Successfully retrieved buffer usage: {buffer_usage}%")
+                except Exception as e:
+                    # pg_buffercache extension not available or not accessible
+                    logger.debug(f"pg_buffercache not available, skipping buffer usage metrics: {e}")
+                    buffer_usage = 0
 
                 # Get temporary file statistics (last hour)
                 cursor.execute("""
