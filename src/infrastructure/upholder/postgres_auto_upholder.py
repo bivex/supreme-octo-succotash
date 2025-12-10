@@ -104,9 +104,22 @@ class PostgresAutoUpholder:
         # Setup scheduled tasks
         self._setup_scheduled_tasks()
 
-        # Start background monitoring
-        self.cache_monitor.start_monitoring(interval_seconds=self.config.cache_monitoring_interval * 60)
-        self.connection_pool_monitor.start_monitoring()
+        # Start background monitoring (asynchronously)
+        def start_monitoring_async():
+            try:
+                self.cache_monitor.start_monitoring(interval_seconds=self.config.cache_monitoring_interval * 60)
+                self.connection_pool_monitor.start_monitoring()
+                logger.info("Background monitoring started successfully")
+            except Exception as e:
+                logger.error(f"Failed to start background monitoring: {e}")
+
+        import threading
+        monitoring_thread = threading.Thread(
+            target=start_monitoring_async,
+            daemon=True,
+            name="Monitoring-Start"
+        )
+        monitoring_thread.start()
 
         # Start scheduler thread
         scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
@@ -244,25 +257,43 @@ class PostgresAutoUpholder:
         return report
 
     def _establish_performance_baseline(self) -> None:
-        """Establish initial performance baseline."""
+        """Establish initial performance baseline asynchronously."""
         try:
-            logger.info("Establishing performance baseline...")
+            logger.info("Scheduling performance baseline establishment...")
 
-            # Get current metrics
-            cache_metrics = self.cache_monitor.get_current_metrics()
-            slow_queries = self.query_analyzer.get_slow_queries_report()
+            # Schedule baseline establishment for later (after server starts)
+            # This prevents blocking the main thread during startup
+            def establish_baseline_async():
+                try:
+                    logger.info("Establishing performance baseline (async)...")
 
-            self.performance_baseline = {
-                'cache_heap_hit_ratio': cache_metrics.heap_hit_ratio,
-                'cache_index_hit_ratio': cache_metrics.index_hit_ratio,
-                'slow_queries_count': len(slow_queries),
-                'established_at': datetime.now()
-            }
+                    # Get current metrics
+                    cache_metrics = self.cache_monitor.get_current_metrics()
+                    slow_queries = self.query_analyzer.get_slow_queries_report()
 
-            logger.info("Performance baseline established")
+                    self.performance_baseline = {
+                        'cache_heap_hit_ratio': cache_metrics.heap_hit_ratio,
+                        'cache_index_hit_ratio': cache_metrics.index_hit_ratio,
+                        'slow_queries_count': len(slow_queries),
+                        'established_at': datetime.now()
+                    }
+
+                    logger.info("Performance baseline established successfully")
+
+                except Exception as e:
+                    logger.error(f"Failed to establish performance baseline: {e}")
+
+            # Run baseline establishment in a separate thread to avoid blocking
+            import threading
+            baseline_thread = threading.Thread(
+                target=establish_baseline_async,
+                daemon=True,
+                name="Baseline-Estab"
+            )
+            baseline_thread.start()
 
         except Exception as e:
-            logger.error(f"Failed to establish performance baseline: {e}")
+            logger.error(f"Failed to schedule performance baseline: {e}")
 
     def _setup_scheduled_tasks(self) -> None:
         """Setup scheduled optimization tasks."""
@@ -421,12 +452,34 @@ class PostgresAutoUpholder:
 
     def get_performance_dashboard(self) -> Dict[str, Any]:
         """Get comprehensive performance dashboard."""
+        import time
+        logger.info("📊 START: get_performance_dashboard()")
+
+        logger.info("📊 Getting upholder status")
+        upholder_status = self.get_status()
+
+        logger.info("📊 Getting cache monitoring report")
+        cache_start = time.time()
+        cache_report = self.cache_monitor.get_monitoring_report()
+        cache_time = time.time() - cache_start
+        logger.info(".3f"
+        logger.info("📊 Getting query performance dashboard")
+        query_start = time.time()
+        query_report = self.query_optimizer.get_performance_dashboard()
+        query_time = time.time() - query_start
+        logger.info(".3f"
+        logger.info("📊 Getting connection pool status")
+        pool_start = time.time()
+        pool_report = self.connection_pool_monitor.get_pool_status()
+        pool_time = time.time() - pool_start
+        logger.info(".3f"
+        logger.info("📊 Building dashboard response")
         dashboard = {
-            'upholder_status': self.get_status(),
+            'upholder_status': upholder_status,
             'current_metrics': {
-                'cache': self.cache_monitor.get_monitoring_report(),
-                'query_performance': self.query_optimizer.get_performance_dashboard(),
-                'connection_pool': self.connection_pool_monitor.get_pool_status()
+                'cache': cache_report,
+                'query_performance': query_report,
+                'connection_pool': pool_report
             },
             'recent_alerts': [
                 {
@@ -437,6 +490,7 @@ class PostgresAutoUpholder:
             ]
         }
 
+        logger.info("📊 Dashboard complete")
         return dashboard
 
 

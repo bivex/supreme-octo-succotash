@@ -14,6 +14,7 @@ _request_counts = {}
 
 def setup_security_middleware(app):
     """Setup security middleware for socketify app."""
+    logger.info("🛡️ Setting up security middleware")
     # In socketify, we handle security checks in individual route handlers
     # rather than using global middleware
     pass

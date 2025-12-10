@@ -6,6 +6,7 @@ import socketify
 from loguru import logger
 import json
 import os
+import time
 from decimal import Decimal
 
 from .config.settings import settings
@@ -32,7 +33,11 @@ json.dumps = custom_dumps
 
 def create_app() -> socketify.App:
     """Create and configure socketify application with maximum performance settings."""
+    logger.info("🏗️ START: Creating Socketify application")
+    app_start = time.time()
+
     # Create app with basic configuration
+    logger.info("🏗️ Step 1: Initializing Socketify App")
     app = socketify.App()
 
     # Set uWebSockets environment variables for maximum performance
@@ -49,6 +54,7 @@ def create_app() -> socketify.App:
     _add_health_endpoints(app)
     _initialize_postgres_upholder(app)
 
+    app_time = time.time() - app_start
     return app
 
 
@@ -251,28 +257,47 @@ def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
 
     def get_upholder_status(res, req):
         """Get upholder status and recent reports."""
-        try:
-            status = upholder.get_status()
-            dashboard = upholder.get_performance_dashboard()
+        logger.info("🚀 START: GET /v1/system/upholder/status")
+        start_time = time.time()
 
+        try:
+            logger.info("📊 Step 1: Getting upholder status")
+            status_start = time.time()
+            status = upholder.get_status()
+            status_time = time.time() - status_start
+            logger.info("📊 Step 2: Getting performance dashboard")
+            dashboard_start = time.time()
+            dashboard = upholder.get_performance_dashboard()
+            dashboard_time = time.time() - dashboard_start
+            logger.info("📊 Step 3: Preparing response")
             response = {
                 "upholder_status": status,
                 "performance_dashboard": dashboard
             }
 
+            logger.info("📊 Step 4: Setting response headers")
             res.write_header("Content-Type", "application/json")
             res.write_header('Access-Control-Allow-Origin', '*')
             res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
             res.write_header('Access-Control-Allow-Credentials', 'false')
             res.write_header('Access-Control-Max-Age', '86400')
-            # Add security headers
+
+            logger.info("📊 Step 5: Adding security headers")
             from .presentation.middleware.security_middleware import add_security_headers
             add_security_headers(res)
-            res.end(json.dumps(response, default=str))
 
+            logger.info("📊 Step 6: Serializing response")
+            response_json = json.dumps(response, default=str)
+
+            logger.info("📊 Step 7: Sending response")
+            res.end(response_json)
+
+            total_time = time.time() - start_time
         except Exception as e:
-            logger.error(f"Error getting upholder status: {e}")
+            logger.error(f"❌ ERROR in get_upholder_status: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             res.write_status(500)
             res.write_header("Content-Type", "application/json")
             res.end(json.dumps({"error": str(e)}))
@@ -335,22 +360,35 @@ def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
 
     def get_connection_pool_status(res, req):
         """Get connection pool status."""
-        try:
-            pool_status = upholder.connection_pool_monitor.get_pool_status()
+        logger.info("🏊 START: GET /v1/system/upholder/connection-pool/status")
+        pool_start = time.time()
 
+        try:
+            logger.info("🏊 Step 1: Getting pool status from monitor")
+            monitor_start = time.time()
+            pool_status = upholder.connection_pool_monitor.get_pool_status()
+            monitor_time = time.time() - monitor_start
+            logger.info("🏊 Step 2: Setting response headers")
             res.write_header("Content-Type", "application/json")
             res.write_header('Access-Control-Allow-Origin', '*')
             res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
             res.write_header('Access-Control-Allow-Credentials', 'false')
             res.write_header('Access-Control-Max-Age', '86400')
-            # Add security headers
+
+            logger.info("🏊 Step 3: Adding security headers")
             from .presentation.middleware.security_middleware import add_security_headers
             add_security_headers(res)
-            res.end(json.dumps(pool_status, default=str))
 
+            logger.info("🏊 Step 4: Serializing and sending response")
+            response_json = json.dumps(pool_status, default=str)
+            res.end(response_json)
+
+            total_time = time.time() - pool_start
         except Exception as e:
-            logger.error(f"Error getting connection pool status: {e}")
+            logger.error(f"❌ ERROR in get_connection_pool_status: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             res.write_status(500)
             res.write_header("Content-Type", "application/json")
             res.end(json.dumps({"error": str(e)}))
@@ -438,9 +476,14 @@ def _add_cors_headers(app: socketify.App) -> None:
 
 
 if __name__ == "__main__":
+    logger.info("🚀 START: Application main execution")
+    main_start = time.time()
+
     import multiprocessing
 
+    logger.info("🏗️ Creating application...")
     app = create_app()
+    app_create_time = time.time() - main_start
 
     # Maximum performance listen options
     listen_options = socketify.AppListenOptions(
@@ -452,9 +495,12 @@ if __name__ == "__main__":
         idle_timeout=0,                     # Don't disconnect idle clients
     )
 
-    logger.info(f"Starting high-performance server on {settings.api.host}:{settings.api.port}...")
-
+    logger.info(f"🏁 Starting high-performance server on {settings.api.host}:{settings.api.port}...")
+    server_setup_time = time.time() - main_start
     def on_listen(config):
+        total_startup_time = time.time() - main_start
+        logger.info(f"🚀 Server listening on {config.host}:{config.port} with maximum performance settings")
+        logger.info("✅ Compression: DISABLED | Backlog: 16384 | Idle timeout: NONE | Reuse port: ENABLED")
         logger.info(f"🚀 Server listening on {config.host}:{config.port} with maximum performance settings")
         logger.info("✅ Compression: DISABLED | Backlog: 16384 | Idle timeout: NONE | Reuse port: ENABLED")
 

@@ -40,11 +40,31 @@ class PostgresQueryOptimizer:
     def __init__(self, connection):
         self.connection = connection
 
+    def _get_cursor(self):
+        """Get cursor, handling both connection pools and direct connections."""
+        if hasattr(self.connection, 'getconn'):
+            # It's a connection pool
+            conn = self.connection.getconn()
+            cursor = conn.cursor()
+            # Return both connection and cursor for proper cleanup
+            return conn, cursor
+        else:
+            # It's a direct connection
+            return None, self.connection.cursor()
+
+    def _close_cursor(self, conn, cursor):
+        """Close cursor and return connection to pool if needed."""
+        cursor.close()
+        if conn is not None:
+            # Return connection to pool
+            self.connection.putconn(conn)
+
     def analyze_slow_queries(self, min_avg_time: float = 100,
                            min_calls: int = 10) -> List[QueryPerformanceIssue]:
         """Analyze slow queries and identify performance issues."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 # Get slow queries from pg_stat_statements
                 cursor.execute("""
                     SELECT
@@ -73,6 +93,8 @@ class PostgresQueryOptimizer:
                         issues.append(issue)
 
                 return issues
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to analyze slow queries: {e}")
@@ -291,7 +313,8 @@ class PostgresQueryOptimizer:
     def _index_exists(self, table: str, columns: List[str]) -> bool:
         """Check if index exists for given table and columns."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT indexdef
                     FROM pg_indexes
@@ -306,6 +329,8 @@ class PostgresQueryOptimizer:
                         return True
 
                 return False
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to check index existence: {e}")
@@ -419,13 +444,20 @@ class PostgresQueryOptimizer:
             return result
 
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 for cmd in action.sql_commands:
                     cursor.execute(cmd)
                     result['executed_commands'].append(cmd)
 
-                self.connection.commit()
+                # Commit changes
+                if conn:
+                    conn.commit()  # For connection pool
+                else:
+                    self.connection.commit()  # For direct connection
                 result['success'] = True
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             result['errors'].append(str(e))
