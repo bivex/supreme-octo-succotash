@@ -777,6 +777,13 @@ class Container:
             self._singletons['analytics_routes'] = AnalyticsRoutes(self.get_analytics_handler())
         return self._singletons['analytics_routes']
 
+    def get_postgres_upholder(self):
+        """Get PostgreSQL Auto Upholder instance."""
+        if 'postgres_upholder' not in self._singletons:
+            from .infrastructure.upholder.postgres_auto_upholder import create_default_upholder
+            connection_pool = self.get_db_connection_pool()
+            self._singletons['postgres_upholder'] = create_default_upholder(connection_pool)
+        return self._singletons['postgres_upholder']
 
 
 # Global container instance

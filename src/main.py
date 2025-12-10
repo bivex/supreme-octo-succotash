@@ -47,6 +47,7 @@ def create_app() -> socketify.App:
     _register_routes(app)
     _register_error_handlers(app)
     _add_health_endpoints(app)
+    _initialize_postgres_upholder(app)
 
     return app
 
@@ -213,6 +214,212 @@ def _add_health_endpoints(app: socketify.App) -> None:
     # Register the routes
     app.get("/v1/health", health)
     app.post("/v1/reset", reset)
+
+
+def _initialize_postgres_upholder(app: socketify.App) -> None:
+    """Initialize PostgreSQL Auto Upholder system."""
+    try:
+        logger.info("🔧 Initializing PostgreSQL Auto Upholder...")
+
+        # Get upholder instance from container
+        upholder = container.get_postgres_upholder()
+
+        # Add custom alert handler that integrates with app logging
+        def app_alert_handler(alert_type: str, message: str):
+            if alert_type == "performance_alert":
+                logger.warning(f"🚨 PostgreSQL Performance Alert: {message}")
+            else:
+                logger.info(f"📊 PostgreSQL Upholder: {alert_type} - {message}")
+
+        upholder.add_alert_handler(app_alert_handler)
+
+        # Start upholder monitoring
+        upholder.start()
+        logger.info("✅ PostgreSQL Auto Upholder started successfully")
+
+        # Add upholder management endpoints
+        _add_upholder_endpoints(app, upholder)
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize PostgreSQL Auto Upholder: {e}")
+        # Don't fail app startup if upholder fails
+        logger.warning("⚠️  Continuing without PostgreSQL optimization monitoring")
+
+
+def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
+    """Add PostgreSQL upholder management endpoints."""
+
+    def get_upholder_status(res, req):
+        """Get upholder status and recent reports."""
+        try:
+            status = upholder.get_status()
+            dashboard = upholder.get_performance_dashboard()
+
+            response = {
+                "upholder_status": status,
+                "performance_dashboard": dashboard
+            }
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(response, default=str))
+
+        except Exception as e:
+            logger.error(f"Error getting upholder status: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    def run_upholder_audit(res, req):
+        """Run immediate upholder audit."""
+        try:
+            logger.info("🔍 Running manual PostgreSQL audit...")
+            report = upholder.run_full_audit()
+
+            response = {
+                "audit_completed": True,
+                "duration_seconds": report.duration_seconds,
+                "optimizations_applied": report.optimizations_applied,
+                "alerts_generated": report.alerts_generated,
+                "recommendations_pending": report.recommendations_pending,
+                "performance_improvements": report.performance_improvements
+            }
+
+            logger.info(f"✅ Manual audit completed in {report.duration_seconds:.2f}s")
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(response, default=str))
+
+        except Exception as e:
+            logger.error(f"Error running upholder audit: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    def get_upholder_config(res, req):
+        """Get upholder configuration."""
+        try:
+            status = upholder.get_status()
+            config = status.get('config', {})
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(config))
+
+        except Exception as e:
+            logger.error(f"Error getting upholder config: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    def get_connection_pool_status(res, req):
+        """Get connection pool status."""
+        try:
+            pool_status = upholder.connection_pool_monitor.get_pool_status()
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(pool_status, default=str))
+
+        except Exception as e:
+            logger.error(f"Error getting connection pool status: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    def get_connection_pool_suggestions(res, req):
+        """Get connection pool optimization suggestions."""
+        try:
+            suggestions = upholder.connection_pool_monitor.get_optimization_suggestions()
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(suggestions, default=str))
+
+        except Exception as e:
+            logger.error(f"Error getting connection pool suggestions: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    def apply_connection_pool_optimization(res, req):
+        """Apply connection pool optimization."""
+        try:
+            # Get action from query parameter
+            action = req.get_query('action')
+            if not action:
+                res.write_status(400)
+                res.write_header("Content-Type", "application/json")
+                res.end(json.dumps({"error": "action parameter required"}))
+                return
+
+            dry_run = req.get_query('dry_run') != 'false'  # Default to true
+
+            result = upholder.connection_pool_monitor.apply_optimization(action, dry_run=dry_run)
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(result, default=str))
+
+        except Exception as e:
+            logger.error(f"Error applying connection pool optimization: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
+    # Register endpoints
+    app.get('/v1/system/upholder/status', get_upholder_status)
+    app.post('/v1/system/upholder/audit', run_upholder_audit)
+    app.get('/v1/system/upholder/config', get_upholder_config)
+
+    # Connection pool specific endpoints
+    app.get('/v1/system/upholder/connection-pool/status', get_connection_pool_status)
+    app.get('/v1/system/upholder/connection-pool/suggestions', get_connection_pool_suggestions)
+    app.post('/v1/system/upholder/connection-pool/optimize', apply_connection_pool_optimization)
+
+    logger.info("📊 PostgreSQL upholder endpoints registered: /v1/system/upholder/*")
 
 
 def _apply_middleware(app: socketify.App) -> None:
