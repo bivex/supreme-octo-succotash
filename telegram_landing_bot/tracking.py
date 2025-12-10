@@ -162,42 +162,49 @@ class TrackingManager:
                         query_params = parse_qs(parsed.query)
 
                         # Create URLParams object for optimal encoding
-                        url_params = URLParams(
-                            cid=str(payload["campaign_id"]),
-                            sub1=payload["params"].get("sub1", "telegram_bot"),
-                            sub2=payload["params"].get("sub2", "telegram"),
-                            sub3=payload["params"].get("sub3", "callback_offer"),
-                            sub4=payload["params"].get("sub4", str(user_id)),
-                            sub5=payload["params"].get("sub5", "premium_offer"),
-                            click_id=query_params.get('click_id', [None])[0],
-                            extra={
-                                'landing_page_id': str(payload.get('landing_page_id')) if payload.get('landing_page_id') else None,
-                                'offer_id': str(payload.get('offer_id')) if payload.get('offer_id') else None
-                            }
-                        )
+                        try:
+                            url_params = URLParams(
+                                cid=str(payload["campaign_id"]),
+                                sub1=payload["params"].get("sub1", "telegram_bot"),
+                                sub2=payload["params"].get("sub2", "telegram"),
+                                sub3=payload["params"].get("sub3", "callback_offer"),
+                                sub4=payload["params"].get("sub4", str(user_id)),
+                                sub5=payload["params"].get("sub5", "premium_offer"),
+                                click_id=query_params.get('click_id', [None])[0],
+                                extra={
+                                    'landing_page_id': str(payload.get('landing_page_id')) if payload.get('landing_page_id') else None,
+                                    'offer_id': str(payload.get('offer_id')) if payload.get('offer_id') else None
+                                }
+                            )
 
-                        # Auto-select optimal strategy based on parameters
-                        strategy = EncodingStrategy.SEQUENTIAL  # Default for telegram bot
-                        param_count = len([v for v in url_params.to_dict().values() if v])
+                            # Validate required cid parameter
+                            if not url_params.cid:
+                                raise ValueError("Campaign ID (cid) is required for URL encoding")
 
-                        if param_count > 3:
-                            strategy = EncodingStrategy.COMPRESSED
-                        elif param_count > 5:  # Many parameters -> hybrid for better compression
-                            strategy = EncodingStrategy.HYBRID
+                        except Exception as params_error:
+                            logger.warning(f"Error creating URLParams: {params_error}")
+                            # Fallback to manual URL building
+                            logger.info("Falling back to manual URL generation due to params error")
+                            click_id = self._generate_click_id(user_id, time.time())
+                            return self._build_tracking_url(click_id, additional_params)
 
-                        # Generate ultra-short code (max 10 chars)
-                        short_code = url_shortener.encode(url_params, strategy)
+                        # Auto-select optimal strategy based on parameters (SMART mode)
+                        try:
+                            short_code = url_shortener.encode(url_params, EncodingStrategy.SMART)
+                        except Exception as encode_error:
+                            logger.warning(f"Error encoding tracking parameters: {encode_error}")
+                            # Fallback to manual URL building
+                            logger.info("Falling back to manual URL generation due to encoding error")
+                            click_id = self._generate_click_id(user_id, time.time())
+                            return self._build_tracking_url(click_id, additional_params)
                         short_url = f"{self.local_landing_url}/s/{short_code}"
 
                         # Detailed logging of encoding strategy and parameters
-                        strategy_names = {
-                            EncodingStrategy.SEQUENTIAL: "Sequential (повторяющиеся параметры)",
-                            EncodingStrategy.COMPRESSED: "Compressed (сжатие с кампаниями)",
-                            EncodingStrategy.HYBRID: "Hybrid (битовая упаковка)"
-                        }
+                        strategy_info = url_shortener.get_strategy_info(short_code)
+                        param_count = len([v for v in url_params.to_dict().values() if v])
 
                         logger.info(f"Generated ultra-short tracking URL: {short_url}")
-                        logger.info(f"Encoding strategy: {strategy_names.get(strategy, strategy.value)} ({strategy.value})")
+                        logger.info(f"Encoding strategy: {strategy_info}")
                         logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
                         logger.info(f"Tracking params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
                         return short_url
