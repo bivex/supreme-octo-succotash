@@ -176,7 +176,7 @@ class CampaignRoutes:
 
     def _register_create_campaign(self, app):
         """Register create campaign route."""
-        def create_campaign(res, req):
+        async def create_campaign(res, req):
             """Create a new campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -185,23 +185,11 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                # Parse request body - debug logging
+                # Parse request body using socketify's res.get_json()
                 logger.info("Starting campaign creation")
-                try:
-                    # Try socketify's method first
-                    raw_body = req.get_raw_body()
-                    logger.info(f"Raw body: {raw_body}")
-                    if raw_body:
-                        decoded = raw_body.decode('utf-8') if isinstance(raw_body, bytes) else raw_body
-                        logger.info(f"Decoded body: {decoded}")
-                        body_data = json.loads(decoded)
-                        logger.info(f"Parsed body_data: {body_data}")
-                    else:
-                        body_data = {}
-                        logger.info("No raw body")
-                except Exception as e:
-                    logger.error(f"Body parsing error: {e}")
-                    body_data = {}
+                body_data = await res.get_json()
+                
+                logger.info(f"Parsed body data: {body_data}")
 
                 if not body_data:
                     logger.warning("Body data is empty")
@@ -232,13 +220,13 @@ class CampaignRoutes:
                     description=body_data.get('description'),
                     cost_model=body_data.get('costModel', 'CPA'),
                     payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
                     white_url=body_data.get('whiteUrl'),  # safe page URL
                     black_url=body_data.get('blackUrl'),  # offer page URL
                     daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
                     total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
                     start_date=body_data.get('startDate'),
                     end_date=body_data.get('endDate')
                 )
@@ -387,7 +375,7 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        def update_campaign(res, req):
+        async def update_campaign(res, req):
             """Update a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -405,17 +393,8 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Parse request body
-                try:
-                    # Try socketify's method first
-                    raw_body = req.get_raw_body()
-                    if raw_body:
-                        body_data = json.loads(raw_body.decode('utf-8') if isinstance(raw_body, bytes) else raw_body)
-                    else:
-                        body_data = {}
-                except (AttributeError, json.JSONDecodeError):
-                    # Fallback - assume empty body
-                    body_data = {}
+                # Parse request body using socketify's res.get_json()
+                body_data = await res.get_json()
 
                 if not body_data:
                     error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
@@ -435,13 +414,13 @@ class CampaignRoutes:
                     description=body_data.get('description'),
                     cost_model=body_data.get('costModel'),
                     payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
                     safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
                     offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
                     daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
                     total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
                     start_date=body_data.get('startDate'),
                     end_date=body_data.get('endDate')
                 )
@@ -795,7 +774,7 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
 
-        def create_campaign_landing_page(res, req):
+        async def create_campaign_landing_page(res, req):
             """Create a landing page for a campaign."""
             logger.info("DEBUG: create_campaign_landing_page function called!")
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -815,17 +794,8 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Parse request body
-                try:
-                    # Try socketify's method first
-                    raw_body = req.get_raw_body()
-                    if raw_body:
-                        body_data = json.loads(raw_body.decode('utf-8') if isinstance(raw_body, bytes) else raw_body)
-                    else:
-                        body_data = {}
-                except (AttributeError, json.JSONDecodeError):
-                    # Fallback - assume empty body
-                    body_data = {}
+                # Parse request body using socketify's res.get_json()
+                body_data = await res.get_json()
 
                 if not body_data:
                     error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
@@ -958,7 +928,7 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
 
-        def create_campaign_offer(res, req):
+        async def create_campaign_offer(res, req):
             """Create an offer for a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
             import json
@@ -1015,7 +985,7 @@ class CampaignRoutes:
                                 name=body_data['name'],
                                 url=Url(body_data['url']),
                                 offer_type=body_data.get('offerType', 'direct'),
-                                payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']),
+                                payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
                                 revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
                                 cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
                                 weight=body_data.get('weight', 100),
