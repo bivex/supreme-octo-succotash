@@ -14,6 +14,11 @@ from .click_validation_handler import ClickValidationHandler
 from .fraud_handler import FraudHandler
 from .system_handler import SystemHandler
 from .analytics_handler import AnalyticsHandler
+from .ltv_handler import LTVHandler
+from .retention_handler import RetentionHandler
+from .form_handler import FormHandler
+from .cohort_analysis_handler import CohortAnalysisHandler
+from .segmentation_handler import SegmentationHandler
 
 __all__ = [
     'CreateCampaignHandler',
@@ -29,5 +34,10 @@ __all__ = [
     'ClickValidationHandler',
     'FraudHandler',
     'SystemHandler',
-    'AnalyticsHandler'
+    'AnalyticsHandler',
+    'LTVHandler',
+    'RetentionHandler',
+    'FormHandler',
+    'CohortAnalysisHandler',
+    'SegmentationHandler'
 ]

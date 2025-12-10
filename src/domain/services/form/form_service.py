@@ -289,6 +289,7 @@ class FormService:
                 id="email_required",
                 field_name="email",
                 rule_type="required",
+                rule_value=None,
                 error_message="Email is required",
                 is_active=True,
                 created_at=datetime.now()
@@ -297,6 +298,7 @@ class FormService:
                 id="email_format",
                 field_name="email",
                 rule_type="email",
+                rule_value=None,
                 error_message="Invalid email format",
                 is_active=True,
                 created_at=datetime.now()
@@ -305,6 +307,7 @@ class FormService:
                 id="first_name_required",
                 field_name="first_name",
                 rule_type="required",
+                rule_value=None,
                 error_message="First name is required",
                 is_active=True,
                 created_at=datetime.now()
@@ -313,6 +316,7 @@ class FormService:
                 id="phone_format",
                 field_name="phone",
                 rule_type="phone",
+                rule_value=None,
                 error_message="Invalid phone number format",
                 is_active=True,
                 created_at=datetime.now()
