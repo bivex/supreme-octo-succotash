@@ -185,65 +185,101 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                # Parse request body
-                body_data = req.get_json()
-                if not body_data:
-                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
-                    res.write_status(400)
-                    res.write_header("Content-Type", "application/json")
-                    res.end(json.dumps(error_response))
-                    return
+                # Buffer for request body
+                data_parts = []
 
-                # Validate required fields
-                required_fields = ['name']
-                for field in required_fields:
-                    if field not in body_data:
-                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
-                        res.write_status(400)
+                def on_data(res, chunk, is_last, *args):
+                    try:
+                        if chunk:
+                            data_parts.append(chunk)
+
+                        if is_last:
+                            # Parse body
+                            body_data = {}
+                            if data_parts:
+                                full_body = b"".join(data_parts)
+                                if full_body:
+                                    try:
+                                        body_data = json.loads(full_body)
+                                    except (ValueError, json.JSONDecodeError):
+                                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON in request body"}}
+                                        res.write_status(400)
+                                        res.write_header("Content-Type", "application/json")
+                                        add_security_headers(res)
+                                        res.end(json.dumps(error_response))
+                                        return
+
+                            if not body_data:
+                                error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                                res.write_status(400)
+                                res.write_header("Content-Type", "application/json")
+                                add_security_headers(res)
+                                res.end(json.dumps(error_response))
+                                return
+
+                            # Validate required fields
+                            required_fields = ['name']
+                            for field in required_fields:
+                                if field not in body_data:
+                                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                                    res.write_status(400)
+                                    res.write_header("Content-Type", "application/json")
+                                    add_security_headers(res)
+                                    res.end(json.dumps(error_response))
+                                    return
+
+                            # Create command
+                            from ...application.commands.create_campaign_command import CreateCampaignCommand
+                            from ...domain.value_objects import Url, Money
+
+                            command = CreateCampaignCommand(
+                                name=body_data['name'],
+                                description=body_data.get('description'),
+                                cost_model=body_data.get('costModel', 'CPA'),
+                                payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                                      body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                                white_url=body_data.get('whiteUrl'),  # safe page URL
+                                black_url=body_data.get('blackUrl'),  # offer page URL
+                                daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                            body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                                total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                            body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                                start_date=body_data.get('startDate'),
+                                end_date=body_data.get('endDate')
+                            )
+
+                            # Handle command
+                            campaign = self.create_campaign_handler.handle(command)
+
+                            # Convert to response
+                            response = {
+                                "id": campaign.id.value,
+                                "name": campaign.name,
+                                "status": campaign.status.value,
+                                "urls": {
+                                    "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                                    "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
+                                },
+                                "createdAt": campaign.created_at.isoformat(),
+                                "updatedAt": campaign.updated_at.isoformat()
+                            }
+
+                            res.write_status(201)
+                            res.write_header('Location', f'http://localhost:5000/v1/campaigns/{response["id"]}')
+                            res.write_header('Content-Type', 'application/json')
+                            add_security_headers(res)
+                            res.end(json.dumps(response))
+
+                    except Exception as e:
+                        logger.error(f"Error processing request data: {e}", exc_info=True)
+                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        res.write_status(500)
                         res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
                         res.end(json.dumps(error_response))
-                        return
 
-                # Create command
-                from ...application.commands.create_campaign_command import CreateCampaignCommand
-                from ...domain.value_objects import Url, Money
-
-                command = CreateCampaignCommand(
-                    name=body_data['name'],
-                    description=body_data.get('description'),
-                    cost_model=body_data.get('costModel', 'CPA'),
-                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
-                    white_url=body_data.get('whiteUrl'),  # safe page URL
-                    black_url=body_data.get('blackUrl'),  # offer page URL
-                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
-                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
-                    start_date=body_data.get('startDate'),
-                    end_date=body_data.get('endDate')
-                )
-
-                # Handle command
-                campaign = self.create_campaign_handler.handle(command)
-
-                # Convert to response
-                response = {
-                    "id": campaign.id.value,
-                    "name": campaign.name,
-                    "status": campaign.status.value,
-                    "urls": {
-                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
-                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
-                    },
-                    "createdAt": campaign.created_at.isoformat(),
-                    "updatedAt": campaign.updated_at.isoformat()
-                }
-
-                res.write_status(201)
-                res.write_header('Location', f'http://localhost:5000/v1/campaigns/{response["id"]}')
-                res.write_header('Content-Type', 'application/json')
-                res.end(json.dumps(response))
+                # Read request body
+                req.on_data(on_data)
 
             except ValueError as e:
                 error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
@@ -385,57 +421,90 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Parse request body
-                body_data = req.get_json()
-                if not body_data:
-                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
-                    res.write_status(400)
-                    res.write_header("Content-Type", "application/json")
-                    add_security_headers(res)
-                    res.end(json.dumps(error_response))
-                    return
+                # Buffer for request body
+                data_parts = []
 
-                # Create command
-                from ...application.commands.update_campaign_command import UpdateCampaignCommand
-                from ...domain.value_objects import CampaignId, Url, Money
+                def on_data(res, chunk, is_last, *args):
+                    try:
+                        if chunk:
+                            data_parts.append(chunk)
 
-                command = UpdateCampaignCommand(
-                    campaign_id=CampaignId.from_string(campaign_id),
-                    name=body_data.get('name'),
-                    description=body_data.get('description'),
-                    cost_model=body_data.get('costModel'),
-                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
-                    safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
-                    offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
-                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
-                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
-                    start_date=body_data.get('startDate'),
-                    end_date=body_data.get('endDate')
-                )
+                        if is_last:
+                            # Parse body
+                            body_data = {}
+                            if data_parts:
+                                full_body = b"".join(data_parts)
+                                if full_body:
+                                    try:
+                                        body_data = json.loads(full_body)
+                                    except (ValueError, json.JSONDecodeError):
+                                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON in request body"}}
+                                        res.write_status(400)
+                                        res.write_header("Content-Type", "application/json")
+                                        add_security_headers(res)
+                                        res.end(json.dumps(error_response))
+                                        return
 
-                # Handle command
-                campaign = self.update_campaign_handler.handle(command)
+                            if not body_data:
+                                error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                                res.write_status(400)
+                                res.write_header("Content-Type", "application/json")
+                                add_security_headers(res)
+                                res.end(json.dumps(error_response))
+                                return
 
-                # Convert to response
-                response = {
-                    "id": campaign.id.value,
-                    "name": campaign.name,
-                    "status": campaign.status.value,
-                    "urls": {
-                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
-                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
-                    },
-                    "createdAt": campaign.created_at.isoformat(),
-                    "updatedAt": campaign.updated_at.isoformat()
-                }
+                            # Create command
+                            from ...application.commands.update_campaign_command import UpdateCampaignCommand
+                            from ...domain.value_objects import CampaignId, Url, Money
 
-                res.write_status(200)
-                res.write_header('Content-Type', 'application/json')
-                add_security_headers(res)
-                res.end(json.dumps(response))
+                            command = UpdateCampaignCommand(
+                                campaign_id=CampaignId.from_string(campaign_id),
+                                name=body_data.get('name'),
+                                description=body_data.get('description'),
+                                cost_model=body_data.get('costModel'),
+                                payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                                      body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                                safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
+                                offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
+                                daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                            body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                                total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                            body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                                start_date=body_data.get('startDate'),
+                                end_date=body_data.get('endDate')
+                            )
+
+                            # Handle command
+                            campaign = self.update_campaign_handler.handle(command)
+
+                            # Convert to response
+                            response = {
+                                "id": campaign.id.value,
+                                "name": campaign.name,
+                                "status": campaign.status.value,
+                                "urls": {
+                                    "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                                    "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
+                                },
+                                "createdAt": campaign.created_at.isoformat(),
+                                "updatedAt": campaign.updated_at.isoformat()
+                            }
+
+                            res.write_status(200)
+                            res.write_header('Content-Type', 'application/json')
+                            add_security_headers(res)
+                            res.end(json.dumps(response))
+
+                    except Exception as e:
+                        logger.error(f"Error processing request data: {e}", exc_info=True)
+                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        res.write_status(500)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+
+                # Read request body
+                req.on_data(on_data)
 
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
@@ -785,71 +854,106 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Parse request body
-                body_data = req.get_json()
-                if not body_data:
-                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
-                    res.write_status(400)
-                    res.write_header("Content-Type", "application/json")
-                    add_security_headers(res)
-                    res.end(json.dumps(error_response))
-                    return
+                # Buffer for request body
+                data_parts = []
 
-                # Validate required fields
-                required_fields = ['name', 'url']
-                for field in required_fields:
-                    if field not in body_data:
-                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
-                        res.write_status(400)
+                def on_data(res, chunk, is_last, *args):
+                    try:
+                        if chunk:
+                            data_parts.append(chunk)
+
+                        if is_last:
+                            # Parse body
+                            body_data = {}
+                            if data_parts:
+                                full_body = b"".join(data_parts)
+                                if full_body:
+                                    try:
+                                        body_data = json.loads(full_body)
+                                    except (ValueError, json.JSONDecodeError):
+                                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON in request body"}}
+                                        res.write_status(400)
+                                        res.write_header("Content-Type", "application/json")
+                                        add_security_headers(res)
+                                        res.end(json.dumps(error_response))
+                                        return
+
+                            if not body_data:
+                                error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                                res.write_status(400)
+                                res.write_header("Content-Type", "application/json")
+                                add_security_headers(res)
+                                res.end(json.dumps(error_response))
+                                return
+
+                            # Validate required fields
+                            required_fields = ['name', 'url']
+                            for field in required_fields:
+                                if field not in body_data:
+                                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                                    res.write_status(400)
+                                    res.write_header("Content-Type", "application/json")
+                                    add_security_headers(res)
+                                    res.end(json.dumps(error_response))
+                                    return
+
+                            # Create command
+                            from ...application.commands.create_landing_page_command import CreateLandingPageCommand
+                            from ...domain.value_objects import Url
+
+                            command = CreateLandingPageCommand(
+                                campaign_id=campaign_id,
+                                name=body_data['name'],
+                                url=Url(body_data['url']),
+                                page_type=body_data.get('pageType', 'squeeze'),
+                                weight=body_data.get('weight', 100),
+                                is_control=body_data.get('isControl', False)
+                            )
+
+                            # Handle command
+                            landing_page = self.create_landing_page_handler.handle(command)
+
+                            # Convert to response
+                            response = {
+                                "id": landing_page.id,
+                                "campaignId": landing_page.campaign_id,
+                                "name": landing_page.name,
+                                "url": landing_page.url.value,
+                                "pageType": landing_page.page_type,
+                                "weight": landing_page.weight,
+                                "isActive": landing_page.is_active,
+                                "isControl": landing_page.is_control,
+                                "createdAt": landing_page.created_at.isoformat(),
+                                "updatedAt": landing_page.updated_at.isoformat()
+                            }
+
+                            res.write_status(201)
+                            res.write_header('Content-Type', 'application/json')
+                            add_security_headers(res)
+                            res.end(json.dumps(response))
+
+                    except Exception as e:
+                        logger.error(f"Error processing request data: {e}", exc_info=True)
+                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        res.write_status(500)
                         res.write_header("Content-Type", "application/json")
                         add_security_headers(res)
                         res.end(json.dumps(error_response))
-                        return
 
-                # Create command
-                from ...application.commands.create_landing_page_command import CreateLandingPageCommand
-                from ...domain.value_objects import Url
+                # Read request body
+                req.on_data(on_data)
 
-                command = CreateLandingPageCommand(
-                    campaign_id=campaign_id,
-                    name=body_data['name'],
-                    url=Url(body_data['url']),
-                    page_type=body_data.get('pageType', 'squeeze'),
-                    weight=body_data.get('weight', 100),
-                    is_control=body_data.get('isControl', False)
-                )
-
-                # Handle command
-                landing_page = self.create_landing_page_handler.handle(command)
-
-                # Convert to response
-                response = {
-                    "id": landing_page.id,
-                    "campaignId": landing_page.campaign_id,
-                    "name": landing_page.name,
-                    "url": landing_page.url.value,
-                    "pageType": landing_page.page_type,
-                    "weight": landing_page.weight,
-                    "isActive": landing_page.is_active,
-                    "isControl": landing_page.is_control,
-                    "createdAt": landing_page.created_at.isoformat(),
-                    "updatedAt": landing_page.updated_at.isoformat()
-                }
-
-                res.write_status(201)
-                res.write_header('Content-Type', 'application/json')
-                add_security_headers(res)
-                res.end(json.dumps(response))
-
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error in create_campaign_landing_page: {e}", exc_info=True)
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        app.get('/v1/campaigns/:campaign_id/landing-pages', get_campaign_landing_pages)
-        app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
+        # TODO: Add route registration here
+        # app.get('/v1/campaigns/:campaign_id/landing-pages', get_campaign_landing_pages)
+        # app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
 
     def _register_campaign_offers(self, app):
         """Register campaign offers route."""
