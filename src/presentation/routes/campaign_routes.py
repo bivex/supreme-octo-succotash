@@ -209,18 +209,45 @@ class CampaignRoutes:
                 # Get campaigns from repository
                 offset = (page - 1) * page_size
                 campaign_repo = self.create_campaign_handler._campaign_repository
-                campaigns = campaign_repo.find_all(limit=page_size, offset=offset)
-                total_count = campaign_repo.count_all()
+                logger.debug(f"About to call find_all with limit={page_size}, offset={offset}")
+                try:
+                    campaigns = campaign_repo.find_all(limit=page_size, offset=offset)
+                    logger.debug(f"find_all returned {len(campaigns)} campaigns")
+                except Exception as db_error:
+                    logger.error(f"Database error in find_all: {db_error}")
+                    import traceback
+                    logger.error(f"Database traceback: {traceback.format_exc()}")
+                    raise
+
+                try:
+                    total_count = campaign_repo.count_all()
+                    logger.debug(f"count_all returned {total_count}")
+                except Exception as count_error:
+                    logger.error(f"Database error in count_all: {count_error}")
+                    import traceback
+                    logger.error(f"Count traceback: {traceback.format_exc()}")
+                    raise
+
                 logger.debug(f"campaigns count={len(campaigns)}, total_count={total_count}")
 
-                pagination = self._build_pagination_info(page, page_size, total_count)
-                logger.debug(f"pagination={pagination}")
+                try:
+                    pagination = self._build_pagination_info(page, page_size, total_count)
+                    logger.debug(f"pagination={pagination}")
+                except Exception as pagination_error:
+                    logger.error(f"Error building pagination: {pagination_error}")
+                    raise
 
-                response = {
-                    "campaigns": [{"id": c.id.value, "name": c.name, "status": c.status.value} for c in campaigns],
-                    "pagination": pagination
-                }
-                logger.debug(f"response created, campaigns in response={len(response['campaigns'])}")
+                try:
+                    response = {
+                        "campaigns": [{"id": c.id.value, "name": c.name, "status": c.status.value} for c in campaigns],
+                        "pagination": pagination
+                    }
+                    logger.debug(f"response created, campaigns in response={len(response['campaigns'])}")
+                except Exception as response_error:
+                    logger.error(f"Error creating response: {response_error}")
+                    import traceback
+                    logger.error(f"Response traceback: {traceback.format_exc()}")
+                    raise
                 res.write_header("Content-Type", "application/json")
                 # Add CORS headers
                 res.write_header('Access-Control-Allow-Origin', '*')

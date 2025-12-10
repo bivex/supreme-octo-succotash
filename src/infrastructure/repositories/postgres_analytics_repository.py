@@ -36,40 +36,45 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema for analytics caching."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        # Create analytics cache table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS analytics_cache (
-                cache_key TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                start_date DATE NOT NULL,
-                end_date DATE NOT NULL,
-                granularity TEXT NOT NULL,
-                clicks INTEGER DEFAULT 0,
-                unique_clicks INTEGER DEFAULT 0,
-                conversions INTEGER DEFAULT 0,
-                revenue_amount DECIMAL(10,2) DEFAULT 0.0,
-                revenue_currency TEXT DEFAULT 'USD',
-                cost_amount DECIMAL(10,2) DEFAULT 0.0,
-                cost_currency TEXT DEFAULT 'USD',
-                ctr DECIMAL(5,4) DEFAULT 0.0,
-                cr DECIMAL(5,4) DEFAULT 0.0,
-                epc_amount DECIMAL(10,2) DEFAULT 0.0,
-                epc_currency TEXT DEFAULT 'USD',
-                roi DECIMAL(10,4) DEFAULT 0.0,
-                breakdowns JSONB,
-                created_at TIMESTAMP NOT NULL,
-                expires_at TIMESTAMP NOT NULL
-            )
-        """)
+            # Create analytics cache table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS analytics_cache (
+                    cache_key TEXT PRIMARY KEY,
+                    campaign_id TEXT NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    granularity TEXT NOT NULL,
+                    clicks INTEGER DEFAULT 0,
+                    unique_clicks INTEGER DEFAULT 0,
+                    conversions INTEGER DEFAULT 0,
+                    revenue_amount DECIMAL(10,2) DEFAULT 0.0,
+                    revenue_currency TEXT DEFAULT 'USD',
+                    cost_amount DECIMAL(10,2) DEFAULT 0.0,
+                    cost_currency TEXT DEFAULT 'USD',
+                    ctr DECIMAL(5,4) DEFAULT 0.0,
+                    cr DECIMAL(5,4) DEFAULT 0.0,
+                    epc_amount DECIMAL(10,2) DEFAULT 0.0,
+                    epc_currency TEXT DEFAULT 'USD',
+                    roi DECIMAL(10,4) DEFAULT 0.0,
+                    breakdowns JSONB,
+                    created_at TIMESTAMP NOT NULL,
+                    expires_at TIMESTAMP NOT NULL
+                )
+            """)
 
-        # Create indexes for performance
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_campaign_id ON analytics_cache(campaign_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_cache_key ON analytics_cache(cache_key)")
+            # Create indexes for performance
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_campaign_id ON analytics_cache(campaign_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_cache_key ON analytics_cache(cache_key)")
 
-        conn.commit()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
                               end_date: date, granularity: str = "day") -> Analytics:

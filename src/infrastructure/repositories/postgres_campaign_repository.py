@@ -43,185 +43,247 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        # Create campaigns table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS campaigns (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT,
-                status TEXT NOT NULL,
-                cost_model TEXT NOT NULL,
-                payout_amount DECIMAL(10,2) NOT NULL,
-                payout_currency TEXT NOT NULL,
-                safe_page_url TEXT NOT NULL,
-                offer_page_url TEXT NOT NULL,
-                daily_budget_amount DECIMAL(10,2) NOT NULL,
-                daily_budget_currency TEXT NOT NULL,
-                total_budget_amount DECIMAL(10,2) NOT NULL,
-                total_budget_currency TEXT NOT NULL,
-                start_date TIMESTAMP NOT NULL,
-                end_date TIMESTAMP NOT NULL,
-                clicks_count INTEGER DEFAULT 0,
-                conversions_count INTEGER DEFAULT 0,
-                spent_amount DECIMAL(10,2) DEFAULT 0.0,
-                spent_currency TEXT,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL,
-                is_deleted BOOLEAN DEFAULT FALSE
-            )
-        """)
+            # Create campaigns table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS campaigns (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    status TEXT NOT NULL,
+                    cost_model TEXT NOT NULL,
+                    payout_amount DECIMAL(10,2) NOT NULL,
+                    payout_currency TEXT NOT NULL,
+                    safe_page_url TEXT NOT NULL,
+                    offer_page_url TEXT NOT NULL,
+                    daily_budget_amount DECIMAL(10,2) NOT NULL,
+                    daily_budget_currency TEXT NOT NULL,
+                    total_budget_amount DECIMAL(10,2) NOT NULL,
+                    total_budget_currency TEXT NOT NULL,
+                    start_date TIMESTAMP NOT NULL,
+                    end_date TIMESTAMP NOT NULL,
+                    clicks_count INTEGER DEFAULT 0,
+                    conversions_count INTEGER DEFAULT 0,
+                    spent_amount DECIMAL(10,2) DEFAULT 0.0,
+                    spent_currency TEXT,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    is_deleted BOOLEAN DEFAULT FALSE
+                )
+            """)
 
-        conn.commit()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def _row_to_campaign(self, row) -> Campaign:
         """Convert database row to Campaign entity."""
-        return Campaign(
-            id=CampaignId.from_string(row["id"]),
-            name=row["name"],
-            description=row["description"],
-            status=CampaignStatus(row["status"]),
-            cost_model=row["cost_model"],
-            payout=Money.from_float(float(row["payout_amount"]), row["payout_currency"]) if row["payout_amount"] is not None else None,
-            safe_page_url=Url(row["safe_page_url"]) if row["safe_page_url"] else None,
-            offer_page_url=Url(row["offer_page_url"]) if row["offer_page_url"] else None,
-            daily_budget=Money.from_float(float(row["daily_budget_amount"]), row["daily_budget_currency"]) if row["daily_budget_amount"] is not None else None,
-            total_budget=Money.from_float(float(row["total_budget_amount"]), row["total_budget_currency"]) if row["total_budget_amount"] is not None else None,
-            start_date=row["start_date"],
-            end_date=row["end_date"],
-            clicks_count=row["clicks_count"],
-            conversions_count=row["conversions_count"],
-            spent_amount=Money.from_float(float(row["spent_amount"] or 0.0), row["spent_currency"] or "USD"),
-            created_at=row["created_at"],
-            updated_at=row["updated_at"],
-        )
+        try:
+            # Safely parse Money objects
+            def safe_money_from_float(amount, currency, default_amount=0.0, default_currency="USD"):
+                try:
+                    if amount is not None and amount != "":
+                        return Money.from_float(float(amount), currency or default_currency)
+                except (ValueError, TypeError):
+                    pass
+                return Money.from_float(default_amount, default_currency)
+
+            # Safely create URLs
+            def safe_url(url_str):
+                try:
+                    if url_str and url_str.strip():
+                        return Url(url_str.strip())
+                except Exception:
+                    pass
+                return None
+
+            return Campaign(
+                id=CampaignId.from_string(str(row["id"])),
+                name=str(row["name"] or ""),
+                description=row["description"],
+                status=CampaignStatus(str(row["status"] or "draft")),
+                cost_model=str(row["cost_model"] or "CPA"),
+                payout=safe_money_from_float(row["payout_amount"], row["payout_currency"]) if row["payout_amount"] is not None else None,
+                safe_page_url=safe_url(row["safe_page_url"]),
+                offer_page_url=safe_url(row["offer_page_url"]),
+                daily_budget=safe_money_from_float(row["daily_budget_amount"], row["daily_budget_currency"]) if row["daily_budget_amount"] is not None else None,
+                total_budget=safe_money_from_float(row["total_budget_amount"], row["total_budget_currency"]) if row["total_budget_amount"] is not None else None,
+                start_date=row["start_date"],
+                end_date=row["end_date"],
+                clicks_count=int(row["clicks_count"] or 0),
+                conversions_count=int(row["conversions_count"] or 0),
+                spent_amount=safe_money_from_float(row["spent_amount"], row["spent_currency"], 0.0, "USD"),
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+        except Exception as e:
+            raise ValueError(f"Failed to convert database row to Campaign: {e}") from e
 
     def save(self, campaign: Campaign) -> None:
         """Save a campaign."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO campaigns
-            (id, name, description, status, cost_model, payout_amount, payout_currency,
-             safe_page_url, offer_page_url, daily_budget_amount, daily_budget_currency,
-             total_budget_amount, total_budget_currency, start_date, end_date,
-             clicks_count, conversions_count, spent_amount, spent_currency,
-             created_at, updated_at, is_deleted)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                description = EXCLUDED.description,
-                status = EXCLUDED.status,
-                cost_model = EXCLUDED.cost_model,
-                payout_amount = EXCLUDED.payout_amount,
-                payout_currency = EXCLUDED.payout_currency,
-                safe_page_url = EXCLUDED.safe_page_url,
-                offer_page_url = EXCLUDED.offer_page_url,
-                daily_budget_amount = EXCLUDED.daily_budget_amount,
-                daily_budget_currency = EXCLUDED.daily_budget_currency,
-                total_budget_amount = EXCLUDED.total_budget_amount,
-                total_budget_currency = EXCLUDED.total_budget_currency,
-                start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date,
-                clicks_count = EXCLUDED.clicks_count,
-                conversions_count = EXCLUDED.conversions_count,
-                spent_amount = EXCLUDED.spent_amount,
-                spent_currency = EXCLUDED.spent_currency,
-                updated_at = EXCLUDED.updated_at,
-                is_deleted = EXCLUDED.is_deleted
-        """, (
-            campaign.id.value, campaign.name, campaign.description, campaign.status.value,
-            campaign.cost_model,
-            campaign.payout.amount if campaign.payout else None,
-            campaign.payout.currency if campaign.payout else None,
-            campaign.safe_page_url.value if campaign.safe_page_url else None,
-            campaign.offer_page_url.value if campaign.offer_page_url else None,
-            campaign.daily_budget.amount if campaign.daily_budget else None,
-            campaign.daily_budget.currency if campaign.daily_budget else None,
-            campaign.total_budget.amount if campaign.total_budget else None,
-            campaign.total_budget.currency if campaign.total_budget else None,
-            campaign.start_date, campaign.end_date,
-            campaign.clicks_count, campaign.conversions_count,
-            campaign.spent_amount.amount if campaign.spent_amount else 0.0,
-            campaign.spent_amount.currency if campaign.spent_amount else "USD",
-            campaign.created_at, campaign.updated_at, False
-        ))
+            cursor.execute("""
+                INSERT INTO campaigns
+                (id, name, description, status, cost_model, payout_amount, payout_currency,
+                 safe_page_url, offer_page_url, daily_budget_amount, daily_budget_currency,
+                 total_budget_amount, total_budget_currency, start_date, end_date,
+                 clicks_count, conversions_count, spent_amount, spent_currency,
+                 created_at, updated_at, is_deleted)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    description = EXCLUDED.description,
+                    status = EXCLUDED.status,
+                    cost_model = EXCLUDED.cost_model,
+                    payout_amount = EXCLUDED.payout_amount,
+                    payout_currency = EXCLUDED.payout_currency,
+                    safe_page_url = EXCLUDED.safe_page_url,
+                    offer_page_url = EXCLUDED.offer_page_url,
+                    daily_budget_amount = EXCLUDED.daily_budget_amount,
+                    daily_budget_currency = EXCLUDED.daily_budget_currency,
+                    total_budget_amount = EXCLUDED.total_budget_amount,
+                    total_budget_currency = EXCLUDED.total_budget_currency,
+                    start_date = EXCLUDED.start_date,
+                    end_date = EXCLUDED.end_date,
+                    clicks_count = EXCLUDED.clicks_count,
+                    conversions_count = EXCLUDED.conversions_count,
+                    spent_amount = EXCLUDED.spent_amount,
+                    spent_currency = EXCLUDED.spent_currency,
+                    updated_at = EXCLUDED.updated_at,
+                    is_deleted = EXCLUDED.is_deleted
+            """, (
+                campaign.id.value, campaign.name, campaign.description, campaign.status.value,
+                campaign.cost_model,
+                campaign.payout.amount if campaign.payout else None,
+                campaign.payout.currency if campaign.payout else None,
+                campaign.safe_page_url.value if campaign.safe_page_url else None,
+                campaign.offer_page_url.value if campaign.offer_page_url else None,
+                campaign.daily_budget.amount if campaign.daily_budget else None,
+                campaign.daily_budget.currency if campaign.daily_budget else None,
+                campaign.total_budget.amount if campaign.total_budget else None,
+                campaign.total_budget.currency if campaign.total_budget else None,
+                campaign.start_date, campaign.end_date,
+                campaign.clicks_count, campaign.conversions_count,
+                campaign.spent_amount.amount if campaign.spent_amount else 0.0,
+                campaign.spent_amount.currency if campaign.spent_amount else "USD",
+                campaign.created_at, campaign.updated_at, False
+            ))
 
-        conn.commit()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def find_by_id(self, campaign_id: CampaignId) -> Optional[Campaign]:
         """Find campaign by ID."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT * FROM campaigns
-            WHERE id = %s AND is_deleted = FALSE
-        """, (campaign_id.value,))
+            cursor.execute("""
+                SELECT * FROM campaigns
+                WHERE id = %s AND is_deleted = FALSE
+            """, (campaign_id.value,))
 
-        row = cursor.fetchone()
-        if row:
-            # Convert tuple to dict for easier access
-            columns = [desc[0] for desc in cursor.description]
-            row_dict = dict(zip(columns, row))
-            return self._row_to_campaign(row_dict)
-        return None
+            row = cursor.fetchone()
+            if row:
+                # Convert tuple to dict for easier access
+                columns = [desc[0] for desc in cursor.description]
+                row_dict = dict(zip(columns, row))
+                return self._row_to_campaign(row_dict)
+            return None
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def find_all(self, limit: int = 50, offset: int = 0) -> List[Campaign]:
         """Find all campaigns with pagination."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT * FROM campaigns
-            WHERE is_deleted = FALSE
-            ORDER BY created_at DESC
-            LIMIT %s OFFSET %s
-        """, (limit, offset))
+            cursor.execute("""
+                SELECT * FROM campaigns
+                WHERE is_deleted = FALSE
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            """, (limit, offset))
 
-        campaigns = []
-        columns = [desc[0] for desc in cursor.description]
-        for row in cursor.fetchall():
-            row_dict = dict(zip(columns, row))
-            campaigns.append(self._row_to_campaign(row_dict))
+            campaigns = []
+            columns = [desc[0] for desc in cursor.description]
+            for i, row in enumerate(cursor.fetchall()):
+                try:
+                    row_dict = dict(zip(columns, row))
+                    campaign = self._row_to_campaign(row_dict)
+                    campaigns.append(campaign)
+                except Exception as row_error:
+                    print(f"Error processing campaign row {i} with ID {row[0] if row else 'unknown'}: {row_error}")
+                    # Skip this row and continue
+                    continue
 
-        return campaigns
+            return campaigns
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def exists_by_id(self, campaign_id: CampaignId) -> bool:
         """Check if campaign exists by ID."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 1 FROM campaigns
-            WHERE id = %s AND is_deleted = FALSE
-        """, (campaign_id.value,))
+            cursor.execute("""
+                SELECT 1 FROM campaigns
+                WHERE id = %s AND is_deleted = FALSE
+            """, (campaign_id.value,))
 
-        return cursor.fetchone() is not None
+            return cursor.fetchone() is not None
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def delete_by_id(self, campaign_id: CampaignId) -> None:
         """Delete campaign by ID."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            UPDATE campaigns SET is_deleted = TRUE, updated_at = %s
-            WHERE id = %s
-        """, (datetime.now(), campaign_id.value))
+            cursor.execute("""
+                UPDATE campaigns SET is_deleted = TRUE, updated_at = %s
+                WHERE id = %s
+            """, (datetime.now(), campaign_id.value))
 
-        conn.commit()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def count_all(self) -> int:
         """Count total campaigns."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT COUNT(*) FROM campaigns
-            WHERE is_deleted = FALSE
-        """)
+            cursor.execute("""
+                SELECT COUNT(*) FROM campaigns
+                WHERE is_deleted = FALSE
+            """)
 
-        return cursor.fetchone()[0]
+            return cursor.fetchone()[0]
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)

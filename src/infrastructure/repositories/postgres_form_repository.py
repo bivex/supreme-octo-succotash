@@ -28,282 +28,309 @@ class PostgresFormRepository(FormRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        # Enable UUID extension for potential future use
-        cursor.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+            # Enable UUID extension for potential future use
+            cursor.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-        # Create form_submissions table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS form_submissions (
-                id TEXT PRIMARY KEY,
-                form_id TEXT NOT NULL,
-                campaign_id TEXT,
-                click_id TEXT,
-                ip_address INET NOT NULL,
-                user_agent TEXT,
-                referrer TEXT,
-                form_data JSONB NOT NULL,
-                validation_errors JSONB DEFAULT '[]'::jsonb,
-                is_valid BOOLEAN NOT NULL DEFAULT false,
-                is_duplicate BOOLEAN NOT NULL DEFAULT false,
-                duplicate_of TEXT,
-                submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                processed_at TIMESTAMP
-            )
-        """)
+            # Create form_submissions table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS form_submissions (
+                    id TEXT PRIMARY KEY,
+                    form_id TEXT NOT NULL,
+                    campaign_id TEXT,
+                    click_id TEXT,
+                    ip_address INET NOT NULL,
+                    user_agent TEXT,
+                    referrer TEXT,
+                    form_data JSONB NOT NULL,
+                    validation_errors JSONB DEFAULT '[]'::jsonb,
+                    is_valid BOOLEAN NOT NULL DEFAULT false,
+                    is_duplicate BOOLEAN NOT NULL DEFAULT false,
+                    duplicate_of TEXT,
+                    submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    processed_at TIMESTAMP
+                )
+            """)
 
-        # Create leads table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS leads (
-                id TEXT PRIMARY KEY,
-                email TEXT NOT NULL UNIQUE,
-                first_name TEXT,
-                last_name TEXT,
-                phone TEXT,
-                company TEXT,
-                job_title TEXT,
-                source TEXT NOT NULL,
-                source_campaign TEXT,
-                status TEXT NOT NULL DEFAULT 'new',
-                tags JSONB DEFAULT '[]'::jsonb,
-                custom_fields JSONB DEFAULT '{}'::jsonb,
-                first_submission_id TEXT NOT NULL,
-                last_submission_id TEXT NOT NULL,
-                submission_count INTEGER NOT NULL DEFAULT 1,
-                converted_at TIMESTAMP,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            # Create leads table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS leads (
+                    id TEXT PRIMARY KEY,
+                    email TEXT NOT NULL UNIQUE,
+                    first_name TEXT,
+                    last_name TEXT,
+                    phone TEXT,
+                    company TEXT,
+                    job_title TEXT,
+                    source TEXT NOT NULL,
+                    source_campaign TEXT,
+                    status TEXT NOT NULL DEFAULT 'new',
+                    tags JSONB DEFAULT '[]'::jsonb,
+                    custom_fields JSONB DEFAULT '{}'::jsonb,
+                    first_submission_id TEXT NOT NULL,
+                    last_submission_id TEXT NOT NULL,
+                    submission_count INTEGER NOT NULL DEFAULT 1,
+                    converted_at TIMESTAMP,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
-        # Create lead_scores table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lead_scores (
-                lead_id TEXT PRIMARY KEY,
-                total_score INTEGER NOT NULL DEFAULT 0,
-                scores JSONB DEFAULT '{}'::jsonb,
-                grade TEXT NOT NULL DEFAULT 'F',
-                is_hot_lead BOOLEAN NOT NULL DEFAULT false,
-                reasons JSONB DEFAULT '[]'::jsonb,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
-            )
-        """)
+            # Create lead_scores table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS lead_scores (
+                    lead_id TEXT PRIMARY KEY,
+                    total_score INTEGER NOT NULL DEFAULT 0,
+                    scores JSONB DEFAULT '{}'::jsonb,
+                    grade TEXT NOT NULL DEFAULT 'F',
+                    is_hot_lead BOOLEAN NOT NULL DEFAULT false,
+                    reasons JSONB DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
+                )
+            """)
 
-        # Create validation_rules table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS validation_rules (
-                id TEXT PRIMARY KEY,
-                form_id TEXT NOT NULL,
-                field_name TEXT NOT NULL,
-                rule_type TEXT NOT NULL,
-                rule_value TEXT,
-                error_message TEXT NOT NULL,
-                is_active BOOLEAN NOT NULL DEFAULT true,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            # Create validation_rules table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS validation_rules (
+                    id TEXT PRIMARY KEY,
+                    form_id TEXT NOT NULL,
+                    field_name TEXT NOT NULL,
+                    rule_type TEXT NOT NULL,
+                    rule_value TEXT,
+                    error_message TEXT NOT NULL,
+                    is_active BOOLEAN NOT NULL DEFAULT true,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
-        # Create indexes
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_form ON form_submissions(form_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_ip ON form_submissions(ip_address)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions((form_data->>'email'))")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_date ON form_submissions(submitted_at)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scores_lead ON lead_scores(lead_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_rules_form ON validation_rules(form_id)")
+            # Create indexes
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_form ON form_submissions(form_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_ip ON form_submissions(ip_address)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions((form_data->>'email'))")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_date ON form_submissions(submitted_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_scores_lead ON lead_scores(lead_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_rules_form ON validation_rules(form_id)")
 
-        conn.commit()
-        cursor.close()
-        conn.close()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def save_form_submission(self, submission: FormSubmission) -> None:
         """Save form submission."""
         import json
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO form_submissions
-            (id, form_id, campaign_id, click_id, ip_address, user_agent, referrer,
-             form_data, validation_errors, is_valid, is_duplicate, duplicate_of,
-             submitted_at, processed_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                processed_at = EXCLUDED.processed_at
-        """, (
-            submission.id,
-            submission.form_id,
-            submission.campaign_id,
-            submission.click_id,
-            submission.ip_address,
-            submission.user_agent,
-            submission.referrer,
-            json.dumps(submission.form_data),
-            json.dumps(submission.validation_errors),
-            submission.is_valid,
-            submission.is_duplicate,
-            submission.duplicate_of,
-            submission.submitted_at,
-            submission.processed_at
-        ))
+            cursor.execute("""
+                INSERT INTO form_submissions
+                (id, form_id, campaign_id, click_id, ip_address, user_agent, referrer,
+                 form_data, validation_errors, is_valid, is_duplicate, duplicate_of,
+                 submitted_at, processed_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    processed_at = EXCLUDED.processed_at
+            """, (
+                submission.id,
+                submission.form_id,
+                submission.campaign_id,
+                submission.click_id,
+                submission.ip_address,
+                submission.user_agent,
+                submission.referrer,
+                json.dumps(submission.form_data),
+                json.dumps(submission.validation_errors),
+                submission.is_valid,
+                submission.is_duplicate,
+                submission.duplicate_of,
+                submission.submitted_at,
+                submission.processed_at
+            ))
 
-        conn.commit()
-        cursor.close()
-        conn.close()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_form_submission(self, submission_id: str) -> Optional[FormSubmission]:
         """Get form submission by ID."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM form_submissions WHERE id = %s", (submission_id,))
+            cursor.execute("SELECT * FROM form_submissions WHERE id = %s", (submission_id,))
 
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
+            row = cursor.fetchone()
 
-        return self._row_to_submission(row) if row else None
+            return self._row_to_submission(row) if row else None
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_submissions_by_form(self, form_id: str, limit: int = 100) -> List[FormSubmission]:
         """Get submissions for a specific form."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT * FROM form_submissions
-            WHERE form_id = %s
-            ORDER BY submitted_at DESC
-            LIMIT %s
-        """, (form_id, limit))
+            cursor.execute("""
+                SELECT * FROM form_submissions
+                WHERE form_id = %s
+                ORDER BY submitted_at DESC
+                LIMIT %s
+            """, (form_id, limit))
 
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+            rows = cursor.fetchall()
 
-        return [self._row_to_submission(row) for row in rows]
+            return [self._row_to_submission(row) for row in rows]
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_submissions_by_ip(self, ip_address: str, time_window_minutes: int = 60) -> List[FormSubmission]:
         """Get submissions from IP address within time window."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cutoff_time = datetime.now() - timedelta(minutes=time_window_minutes)
+            cutoff_time = datetime.now() - timedelta(minutes=time_window_minutes)
 
-        cursor.execute("""
-            SELECT * FROM form_submissions
-            WHERE ip_address = %s AND submitted_at >= %s
-            ORDER BY submitted_at DESC
-        """, (ip_address, cutoff_time))
+            cursor.execute("""
+                SELECT * FROM form_submissions
+                WHERE ip_address = %s AND submitted_at >= %s
+                ORDER BY submitted_at DESC
+            """, (ip_address, cutoff_time))
 
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+            rows = cursor.fetchall()
 
-        return [self._row_to_submission(row) for row in rows]
+            return [self._row_to_submission(row) for row in rows]
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def save_lead(self, lead: Lead) -> None:
         """Save lead data."""
         import json
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO leads
-            (id, email, first_name, last_name, phone, company, job_title, source,
-             source_campaign, status, tags, custom_fields, first_submission_id,
-             last_submission_id, submission_count, converted_at, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                email = EXCLUDED.email,
-                first_name = EXCLUDED.first_name,
-                last_name = EXCLUDED.last_name,
-                phone = EXCLUDED.phone,
-                company = EXCLUDED.company,
-                job_title = EXCLUDED.job_title,
-                source = EXCLUDED.source,
-                source_campaign = EXCLUDED.source_campaign,
-                status = EXCLUDED.status,
-                tags = EXCLUDED.tags,
-                custom_fields = EXCLUDED.custom_fields,
-                last_submission_id = EXCLUDED.last_submission_id,
-                submission_count = EXCLUDED.submission_count,
-                converted_at = EXCLUDED.converted_at,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            lead.id,
-            lead.email,
-            lead.first_name,
-            lead.last_name,
-            lead.phone,
-            lead.company,
-            lead.job_title,
-            lead.source.value,
-            lead.source_campaign,
-            lead.status.value,
-            json.dumps(lead.tags),
-            json.dumps(lead.custom_fields),
-            lead.first_submission_id,
-            lead.last_submission_id,
-            lead.submission_count,
-            lead.converted_at,
-            lead.created_at,
-            lead.updated_at
-        ))
+            cursor.execute("""
+                INSERT INTO leads
+                (id, email, first_name, last_name, phone, company, job_title, source,
+                 source_campaign, status, tags, custom_fields, first_submission_id,
+                 last_submission_id, submission_count, converted_at, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    first_name = EXCLUDED.first_name,
+                    last_name = EXCLUDED.last_name,
+                    phone = EXCLUDED.phone,
+                    company = EXCLUDED.company,
+                    job_title = EXCLUDED.job_title,
+                    source = EXCLUDED.source,
+                    source_campaign = EXCLUDED.source_campaign,
+                    status = EXCLUDED.status,
+                    tags = EXCLUDED.tags,
+                    custom_fields = EXCLUDED.custom_fields,
+                    last_submission_id = EXCLUDED.last_submission_id,
+                    submission_count = EXCLUDED.submission_count,
+                    converted_at = EXCLUDED.converted_at,
+                    updated_at = CURRENT_TIMESTAMP
+            """, (
+                lead.id,
+                lead.email,
+                lead.first_name,
+                lead.last_name,
+                lead.phone,
+                lead.company,
+                lead.job_title,
+                lead.source.value,
+                lead.source_campaign,
+                lead.status.value,
+                json.dumps(lead.tags),
+                json.dumps(lead.custom_fields),
+                lead.first_submission_id,
+                lead.last_submission_id,
+                lead.submission_count,
+                lead.converted_at,
+                lead.created_at,
+                lead.updated_at
+            ))
 
-        conn.commit()
-        cursor.close()
-        conn.close()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_lead(self, lead_id: str) -> Optional[Lead]:
         """Get lead by ID."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM leads WHERE id = %s", (lead_id,))
+            cursor.execute("SELECT * FROM leads WHERE id = %s", (lead_id,))
 
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
+            row = cursor.fetchone()
 
-        return self._row_to_lead(row) if row else None
+            return self._row_to_lead(row) if row else None
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_lead_by_email(self, email: str) -> Optional[Lead]:
         """Get lead by email address."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM leads WHERE email = %s", (email.lower().strip(),))
+            cursor.execute("SELECT * FROM leads WHERE email = %s", (email.lower().strip(),))
 
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
+            row = cursor.fetchone()
 
-        return self._row_to_lead(row) if row else None
+            return self._row_to_lead(row) if row else None
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_leads_by_status(self, status: LeadStatus, limit: int = 100) -> List[Lead]:
         """Get leads by status."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT * FROM leads
-            WHERE status = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (status.value, limit))
+            cursor.execute("""
+                SELECT * FROM leads
+                WHERE status = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (status.value, limit))
 
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+            rows = cursor.fetchall()
 
-        return [self._row_to_lead(row) for row in rows]
+            return [self._row_to_lead(row) for row in rows]
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_leads_by_source(self, source: LeadSource, limit: int = 100) -> List[Lead]:
         """Get leads by source."""

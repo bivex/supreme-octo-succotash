@@ -17,8 +17,6 @@ class GetCampaignOffersQuery:
 
     def __post_init__(self) -> None:
         """Validate query data."""
-        print(f"DEBUG: GetCampaignOffersQuery __post_init__: campaign_id={self.campaign_id}, limit={self.limit}, offset={self.offset}")
-
         if not self.campaign_id or not self.campaign_id.strip():
             raise ValueError("Campaign ID is required")
 
