@@ -785,6 +785,14 @@ class Container:
             self._singletons['postgres_upholder'] = create_default_upholder(connection_pool)
         return self._singletons['postgres_upholder']
 
+    def get_postgres_cache_monitor(self):
+        """Get PostgreSQL cache monitor instance."""
+        if 'postgres_cache_monitor' not in self._singletons:
+            from .infrastructure.monitoring.postgres_cache_monitor import create_default_cache_monitor
+            connection_pool = self.get_db_connection_pool()
+            self._singletons['postgres_cache_monitor'] = create_default_cache_monitor(connection_pool)
+        return self._singletons['postgres_cache_monitor']
+
 
 # Global container instance
 from .config.settings import settings
