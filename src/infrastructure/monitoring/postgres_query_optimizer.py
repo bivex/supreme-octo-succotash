@@ -62,10 +62,19 @@ class PostgresQueryOptimizer:
     def analyze_slow_queries(self, min_avg_time: float = 100,
                            min_calls: int = 10) -> List[QueryPerformanceIssue]:
         """Analyze slow queries and identify performance issues."""
+        import time
+        logger.info("🐌 START: analyze_slow_queries()")
+
         try:
+            logger.info("🐌 Getting database cursor")
+            cursor_start = time.time()
             conn, cursor = self._get_cursor()
+            cursor_time = time.time() - cursor_start
+            logger.info(".3f")       
             try:
                 # Get slow queries from pg_stat_statements
+                logger.info("🐌 Executing slow queries analysis query")
+                query_start = time.time()
                 cursor.execute("""
                     SELECT
                         queryid,
@@ -85,9 +94,17 @@ class PostgresQueryOptimizer:
                     ORDER BY mean_time DESC
                     LIMIT 50
                 """, (min_avg_time, min_calls))
+                query_time = time.time() - query_start
+                logger.info(".3f")
+                logger.info("🐌 Fetching query results")
+                fetch_start = time.time()
+                rows = cursor.fetchall()
+                fetch_time = time.time() - fetch_start
+                logger.info(".3f")
+                logger.info(f"🐌 Found {len(rows)} slow queries")
 
                 issues = []
-                for row in cursor.fetchall():
+                for row in rows:
                     issue = self._analyze_single_query(row)
                     if issue:
                         issues.append(issue)
@@ -382,8 +399,15 @@ class PostgresQueryOptimizer:
 
     def get_performance_dashboard(self) -> Dict[str, Any]:
         """Get comprehensive performance dashboard."""
+        import time
+        logger.info("🔍 START: get_performance_dashboard()")
+
         try:
+            logger.info("🔍 Analyzing slow queries...")
+            analyze_start = time.time()
             issues = self.analyze_slow_queries()
+            analyze_time = time.time() - analyze_start
+            logger.info(".3f")
 
             # Group issues by type and severity
             issue_stats = {}

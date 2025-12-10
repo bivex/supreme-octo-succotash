@@ -462,17 +462,17 @@ class PostgresAutoUpholder:
         cache_start = time.time()
         cache_report = self.cache_monitor.get_monitoring_report()
         cache_time = time.time() - cache_start
-        logger.info(".3f"
+        logger.info(".3f")
         logger.info("📊 Getting query performance dashboard")
         query_start = time.time()
         query_report = self.query_optimizer.get_performance_dashboard()
         query_time = time.time() - query_start
-        logger.info(".3f"
+        logger.info(".3f")
         logger.info("📊 Getting connection pool status")
         pool_start = time.time()
         pool_report = self.connection_pool_monitor.get_pool_status()
         pool_time = time.time() - pool_start
-        logger.info(".3f"
+        logger.info(".3f")
         logger.info("📊 Building dashboard response")
         dashboard = {
             'upholder_status': upholder_status,
