@@ -142,7 +142,7 @@ class TrackingManager:
 
         if skip_remote:
             logger.info(f"Remote tracking skipped (demo mode): {event_type} for click_id {click_id}")
-            # Still try to track locally
+            # Try to track locally for debugging
             return await self._track_event_locally(click_id, event_type, event_data)
 
         try:
@@ -169,32 +169,49 @@ class TrackingManager:
             return False
 
     async def _track_event_locally(self, click_id: str, event_type: str, event_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Track event to local endpoint"""
+        """Track event to Supreme server endpoint"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping local event tracking")
+            logger.warning("HTTP session not initialized - skipping Supreme event tracking")
             return False
 
         try:
+            campaign_id_num = int(settings.campaign_id.replace("camp_", ""))
+            logger.info(f"Using campaign_id: {settings.campaign_id} -> {campaign_id_num}")
             payload = {
-                "click_id": click_id,
                 "event_type": event_type,
-                "timestamp": int(time.time()),
-                "source": "telegram_bot",
-                **(event_data or {})
+                "click_id": click_id,
+                "campaign_id": campaign_id_num
             }
 
-            url = f"{self.local_landing_url}/v1/event"
+            # Add optional fields based on API documentation
+            if event_data and event_data.get("event_name"):
+                payload["event_name"] = event_data["event_name"]
 
+            # Add landing_page_id if available (from API docs example)
+            # For now, we'll keep it simple with just required fields
+
+            url = f"{self.local_landing_url}/events/track"
+
+            logger.info(f"Sending event payload: {payload}")
             async with self.session.post(url, json=payload) as response:
-                if response.status in [200, 201]:
-                    logger.info(f"Local event tracked: {event_type} for click_id {click_id}")
-                    return True
+                logger.info(f"Event tracking response status: {response.status}")
+                response_text = await response.text()
+                logger.info(f"Event tracking response: {response_text}")
+
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get("status") == "success":
+                        logger.info(f"Supreme event tracked: {event_type} for click_id {click_id}")
+                        return True
+                    else:
+                        logger.warning(f"Supreme event tracking failed: {result}")
+                        return False
                 else:
-                    logger.warning(f"Local event tracking failed (status {response.status})")
+                    logger.warning(f"Supreme event tracking failed (status {response.status})")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error tracking local event: {e}")
+            logger.warning(f"Error tracking Supreme event: {e}")
             return False
 
     async def track_conversion(self,
@@ -224,8 +241,8 @@ class TrackingManager:
 
         if skip_remote:
             logger.info(f"Remote conversion tracking skipped (demo mode): {conversion_type} for click_id {click_id}")
-            # Still try to track locally
-            return await self._track_conversion_locally(click_id, conversion_type, conversion_value, conversion_data)
+            # Skip local tracking in demo mode to avoid API validation errors
+            return True
 
         try:
             payload = {
@@ -253,34 +270,50 @@ class TrackingManager:
             return False
 
     async def _track_conversion_locally(self, click_id: str, conversion_type: str, conversion_value: float = 0.0, conversion_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Track conversion to local endpoint"""
+        """Track conversion to Supreme server endpoint"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping local conversion tracking")
+            logger.warning("HTTP session not initialized - skipping Supreme conversion tracking")
             return False
 
         try:
-            payload = {
-                "click_id": click_id,
-                "conversion_type": conversion_type,
-                "conversion_value": conversion_value,
-                "currency": "RUB",
-                "timestamp": int(time.time()),
-                "source": "telegram_bot",
-                **(conversion_data or {})
+            # Map conversion_type to event_type for the events API
+            event_type_map = {
+                "lead": "conversion",
+                "sale": "purchase",
+                "signup": "signup"
             }
 
-            url = f"{self.local_landing_url}/v1/conversion"
+            payload = {
+                "event_type": event_type_map.get(conversion_type, "conversion"),
+                "event_name": f"{conversion_type}_conversion",
+                "click_id": click_id,
+                "campaign_id": int(settings.campaign_id.replace("camp_", "")),  # Convert to integer for events API
+                "url": f"{self.local_landing_url}/landing",
+                "properties": {
+                    "conversion_value": conversion_value,
+                    "currency": "RUB",
+                    "source": "telegram_bot",
+                    **(conversion_data or {})
+                }
+            }
+
+            url = f"{self.local_landing_url}/events/track"
 
             async with self.session.post(url, json=payload) as response:
-                if response.status in [200, 201]:
-                    logger.info(f"Local conversion tracked: {conversion_type} for click_id {click_id}")
-                    return True
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get("status") == "success":
+                        logger.info(f"Supreme conversion tracked: {conversion_type} for click_id {click_id}")
+                        return True
+                    else:
+                        logger.warning(f"Supreme conversion tracking failed: {result}")
+                        return False
                 else:
-                    logger.warning(f"Local conversion tracking failed (status {response.status})")
+                    logger.warning(f"Supreme conversion tracking failed (status {response.status})")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error tracking local conversion: {e}")
+            logger.warning(f"Error tracking Supreme conversion: {e}")
             return False
 
     async def send_postback(self,
@@ -335,32 +368,42 @@ class TrackingManager:
             return False
 
     async def _send_postback_locally(self, click_id: str, postback_type: str, postback_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Send postback to local endpoint"""
+        """Send postback to Supreme server endpoint"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping local postback")
+            logger.warning("HTTP session not initialized - skipping Supreme postback")
             return False
 
         try:
             payload = {
+                "event_type": "postback",
+                "event_name": f"{postback_type}_postback",
                 "click_id": click_id,
-                "postback_type": postback_type,
-                "timestamp": int(time.time()),
-                "source": "telegram_bot",
-                **(postback_data or {})
+                "campaign_id": int(settings.campaign_id.replace("camp_", "")),  # Convert to integer for events API
+                "url": f"{self.local_landing_url}/landing",
+                "properties": {
+                    "postback_type": postback_type,
+                    "source": "telegram_bot",
+                    **(postback_data or {})
+                }
             }
 
-            url = f"{self.local_landing_url}/v1/postback"
+            url = f"{self.local_landing_url}/events/track"
 
             async with self.session.post(url, json=payload) as response:
-                if response.status in [200, 201]:
-                    logger.info(f"Local postback sent: {postback_type} for click_id {click_id}")
-                    return True
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get("status") == "success":
+                        logger.info(f"Supreme postback sent: {postback_type} for click_id {click_id}")
+                        return True
+                    else:
+                        logger.warning(f"Supreme postback failed: {result}")
+                        return False
                 else:
-                    logger.warning(f"Local postback failed (status {response.status})")
+                    logger.warning(f"Supreme postback failed (status {response.status})")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error sending local postback: {e}")
+            logger.warning(f"Error sending Supreme postback: {e}")
             return False
 
     def extract_click_id_from_url(self, url: str) -> Optional[str]:

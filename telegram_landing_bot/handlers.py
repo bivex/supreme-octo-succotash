@@ -135,7 +135,7 @@ async def callback_get_offer(callback: CallbackQuery):
         # Mark link generation event
         await get_tracking_manager().track_event(
             click_id=click_id,
-            event_type="link_generated",
+            event_type="click",
             event_data={
                 "user_id": user_id,
                 "username": username,
