@@ -702,6 +702,11 @@ def expand_url(short_url: str) -> tuple[str | None, dict | None]:
     return full_url, params_dict
 
 
+# ==================== PUBLIC API ====================
+
+# Main public instance for import
+url_shortener = _url_shortener
+
 # ==================== COMPATIBILITY BINDINGS ====================
 
 def short_url(original_url: str) -> str:
