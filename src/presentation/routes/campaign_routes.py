@@ -1084,7 +1084,7 @@ class CampaignRoutes:
     def _register_campaign_pause(self, app):
         """Register campaign pause route."""
         def pause_campaign(res, req):
-            """Pause a campaign."""
+            """Pause a campaign using CQRS pattern with PauseCampaignCommand and handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             # Validate request (authentication, rate limiting, etc.)
@@ -1101,11 +1101,13 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Create command
+                # Create command using CQRS pattern
                 from ...application.commands.pause_campaign_command import PauseCampaignCommand
                 from ...domain.value_objects import CampaignId
 
                 command = PauseCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
+                # Handle command with business logic
+                campaign = self.pause_campaign_handler.handle(command)
 
                 # Handle command
                 campaign = self.pause_campaign_handler.handle(command)

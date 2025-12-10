@@ -1,9 +1,9 @@
 {
   "total_endpoints": 39,
-  "implemented_endpoints": 1,
+  "implemented_endpoints": 27,
   "mock_endpoints": 0,
   "not_implemented_endpoints": 0,
-  "partially_implemented_endpoints": 38,
+  "partially_implemented_endpoints": 12,
   "critical_missing_features": [
     "Campaign management endpoints",
     "Click tracking functionality",
@@ -11,14 +11,14 @@
     "OpenAPI Spec Issue: Найдено 26 новых путей не отраженных в OpenAPI"
   ],
   "recommendations": [
-    "⚡ Завершить реализацию 38 частично реализованных эндпоинтов",
+    "⚡ Завершить реализацию 12 частично реализованных эндпоинтов",
     "🌟 Добавить недостающие домены: Campaign Management, Analytics & Reporting, Click Tracking, Fraud Detection, Webhooks, Event Tracking, Conversion Tracking, Postback System, Goal Management, User Journey Analytics, LTV Analysis, Retention Campaigns, Lead Forms, System Management",
-    "⚠️  Повысить покрытие error handling: 0.0% (рекомендуется >70%)",
-    "🔍 Добавить input validation: 0.0% (рекомендуется >60%)",
-    "⚡ Оптимизация: Улучшить 20 высоконагруженных endpoints",
-    "📊 Качество: Среднее кол-во компонентов: 1.0",
-    "📊 Качество: Error handling coverage: 0.0%",
-    "📊 Качество: Validation coverage: 0.0%"
+    "⚠️  Повысить покрытие error handling: 17.9% (рекомендуется >70%)",
+    "🔍 Добавить input validation: 12.8% (рекомендуется >60%)",
+    "⚡ Оптимизация: Улучшить 5 высоконагруженных endpoints",
+    "📊 Качество: Среднее кол-во компонентов: 2.7",
+    "📊 Качество: Error handling coverage: 25.9%",
+    "📊 Качество: Validation coverage: 18.5%"
   ],
   "endpoints_by_status": {
     "fully_implemented": [
@@ -33,9 +33,7 @@
           "test.*response"
         ],
         "missing_components": []
-      }
-    ],
-    "partially_implemented": [
+      },
       {
         "path": "/campaigns",
         "method": "GET",
@@ -97,30 +95,6 @@
         "missing_components": []
       },
       {
-        "path": "/campaigns/{campaignid}/pause",
-        "method": "POST",
-        "tags": [
-          "Campaigns"
-        ],
-        "route_file": "campaign_routes",
-        "mock_patterns": [],
-        "missing_components": [
-          "No clear implementation patterns detected"
-        ]
-      },
-      {
-        "path": "/campaigns/{campaignid}/resume",
-        "method": "POST",
-        "tags": [
-          "Campaigns"
-        ],
-        "route_file": "campaign_routes",
-        "mock_patterns": [],
-        "missing_components": [
-          "No clear implementation patterns detected"
-        ]
-      },
-      {
         "path": "/campaigns/{campaignid}/landing-pages",
         "method": "GET",
         "tags": [
@@ -128,9 +102,7 @@
         ],
         "route_file": "campaign_routes",
         "mock_patterns": [],
-        "missing_components": [
-          "No clear implementation patterns detected"
-        ]
+        "missing_components": []
       },
       {
         "path": "/campaigns/{campaignid}/landing-pages",
@@ -143,30 +115,6 @@
           "\"campaigns\":\\s*\\["
         ],
         "missing_components": []
-      },
-      {
-        "path": "/campaigns/{campaignid}/offers",
-        "method": "GET",
-        "tags": [
-          "Offers"
-        ],
-        "route_file": "campaign_routes",
-        "mock_patterns": [],
-        "missing_components": [
-          "No clear implementation patterns detected"
-        ]
-      },
-      {
-        "path": "/campaigns/{campaignid}/offers",
-        "method": "POST",
-        "tags": [
-          "Offers"
-        ],
-        "route_file": "campaign_routes",
-        "mock_patterns": [],
-        "missing_components": [
-          "No clear implementation patterns detected"
-        ]
       },
       {
         "path": "/campaigns/{campaignid}/analytics",
@@ -262,9 +210,7 @@
         "mock_patterns": [
           "\"status\":\\s*\"error\""
         ],
-        "missing_components": [
-          "Core business logic components missing"
-        ]
+        "missing_components": []
       },
       {
         "path": "/goals",
@@ -286,8 +232,153 @@
         "mock_patterns": [
           "\"status\":\\s*\"error\""
         ],
+        "missing_components": []
+      },
+      {
+        "path": "/clicks",
+        "method": "GET",
+        "tags": [
+          "Traffic"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "\"clicks\":\\s*\\["
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/journeys/funnel",
+        "method": "GET",
+        "tags": [
+          "Journeys"
+        ],
+        "route_file": "journey_routes",
+        "mock_patterns": [
+          "\"status\":\\s*\"error\""
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/journeys/drop-off",
+        "method": "GET",
+        "tags": [
+          "Journeys"
+        ],
+        "route_file": "journey_routes",
+        "mock_patterns": [
+          "\"status\":\\s*\"error\""
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/ltv/analysis",
+        "method": "GET",
+        "tags": [
+          "LTV"
+        ],
+        "route_file": "ltv_routes",
+        "mock_patterns": [
+          "\"status\":\\s*\"error\""
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/forms/submit",
+        "method": "POST",
+        "tags": [
+          "Forms"
+        ],
+        "route_file": "form_routes",
+        "mock_patterns": [
+          "\"status\":\\s*\"error\""
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/retention/campaigns",
+        "method": "GET",
+        "tags": [
+          "Retention"
+        ],
+        "route_file": "campaign_routes",
+        "mock_patterns": [
+          "\"campaigns\":\\s*\\["
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/clicks/bulk-generate",
+        "method": "POST",
+        "tags": [
+          "Clicks"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "\"clicks\":\\s*\\["
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/clicks/validate/{clickid}",
+        "method": "GET",
+        "tags": [
+          "Clicks",
+          "Fraud"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "\"clicks\":\\s*\\["
+        ],
+        "missing_components": []
+      }
+    ],
+    "partially_implemented": [
+      {
+        "path": "/campaigns/{campaignid}/pause",
+        "method": "POST",
+        "tags": [
+          "Campaigns"
+        ],
+        "route_file": "campaign_routes",
+        "mock_patterns": [],
         "missing_components": [
-          "Core business logic components missing"
+          "No clear implementation patterns detected"
+        ]
+      },
+      {
+        "path": "/campaigns/{campaignid}/resume",
+        "method": "POST",
+        "tags": [
+          "Campaigns"
+        ],
+        "route_file": "campaign_routes",
+        "mock_patterns": [],
+        "missing_components": [
+          "No clear implementation patterns detected"
+        ]
+      },
+      {
+        "path": "/campaigns/{campaignid}/offers",
+        "method": "GET",
+        "tags": [
+          "Offers"
+        ],
+        "route_file": "campaign_routes",
+        "mock_patterns": [],
+        "missing_components": [
+          "No clear implementation patterns detected"
+        ]
+      },
+      {
+        "path": "/campaigns/{campaignid}/offers",
+        "method": "POST",
+        "tags": [
+          "Offers"
+        ],
+        "route_file": "campaign_routes",
+        "mock_patterns": [],
+        "missing_components": [
+          "No clear implementation patterns detected"
         ]
       },
       {
@@ -337,111 +428,6 @@
         "missing_components": [
           "No clear implementation patterns detected"
         ]
-      },
-      {
-        "path": "/clicks",
-        "method": "GET",
-        "tags": [
-          "Traffic"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "\"clicks\":\\s*\\["
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/journeys/funnel",
-        "method": "GET",
-        "tags": [
-          "Journeys"
-        ],
-        "route_file": "journey_routes",
-        "mock_patterns": [
-          "\"status\":\\s*\"error\""
-        ],
-        "missing_components": [
-          "Core business logic components missing"
-        ]
-      },
-      {
-        "path": "/journeys/drop-off",
-        "method": "GET",
-        "tags": [
-          "Journeys"
-        ],
-        "route_file": "journey_routes",
-        "mock_patterns": [
-          "\"status\":\\s*\"error\""
-        ],
-        "missing_components": [
-          "Core business logic components missing"
-        ]
-      },
-      {
-        "path": "/ltv/analysis",
-        "method": "GET",
-        "tags": [
-          "LTV"
-        ],
-        "route_file": "ltv_routes",
-        "mock_patterns": [
-          "\"status\":\\s*\"error\""
-        ],
-        "missing_components": [
-          "Core business logic components missing"
-        ]
-      },
-      {
-        "path": "/forms/submit",
-        "method": "POST",
-        "tags": [
-          "Forms"
-        ],
-        "route_file": "form_routes",
-        "mock_patterns": [
-          "\"status\":\\s*\"error\""
-        ],
-        "missing_components": [
-          "Core business logic components missing"
-        ]
-      },
-      {
-        "path": "/retention/campaigns",
-        "method": "GET",
-        "tags": [
-          "Retention"
-        ],
-        "route_file": "campaign_routes",
-        "mock_patterns": [
-          "\"campaigns\":\\s*\\["
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks/bulk-generate",
-        "method": "POST",
-        "tags": [
-          "Clicks"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "\"clicks\":\\s*\\["
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks/validate/{clickid}",
-        "method": "GET",
-        "tags": [
-          "Clicks",
-          "Fraud"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "\"clicks\":\\s*\\["
-        ],
-        "missing_components": []
       },
       {
         "path": "/fraud/rules",

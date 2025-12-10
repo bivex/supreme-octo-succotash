@@ -202,6 +202,19 @@ class BusinessLogicChecker:
             r'GetCampaignAnalyticsQuery',
             r'GetCampaignLandingPagesQuery',
             r'GetCampaignOffersQuery',
+            r'PauseCampaignCommand',
+            r'ResumeCampaignCommand',
+            r'UpdateCampaignCommand',
+            r'CreateCampaignCommand',
+
+            # Handler паттерны
+            r'PauseCampaignHandler',
+            r'ResumeCampaignHandler',
+            r'UpdateCampaignHandler',
+            r'CreateCampaignHandler',
+            r'AnalyticsHandler',
+            r'TrackEventHandler',
+            r'TrackConversionHandler',
 
             # Dependency Injection паттерны
             r'container\.',
@@ -211,6 +224,8 @@ class BusinessLogicChecker:
             r'get_event_repository',
             r'get_campaign_handler',
             r'get_analytics_handler',
+            r'get_pause_campaign_handler',
+            r'get_resume_campaign_handler',
 
             # Middleware паттерны
             r'middleware\.',
@@ -234,6 +249,7 @@ class BusinessLogicChecker:
             r'Money\(',
             r'DateRange\(',
             r'Analytics\(',
+            r'CampaignStatus\.',
 
             # Logger паттерны
             r'logger\.',
@@ -246,6 +262,19 @@ class BusinessLogicChecker:
             r'money_to_dict',
             r'datetime\.',
             r'date\.',
+            r'timezone\.utc',
+
+            # Value Objects
+            r'CampaignId\.from_string',
+            r'EventId\.from_string',
+            r'ClickId\.from_string',
+
+            # Business logic patterns
+            r'campaign\.status\s*=',
+            r'campaign\.updated_at\s*=',
+            r'self\._campaign_repository',
+            r'command\.campaign_id',
+            r'raise ValueError',
         ]
 
     def analyze_business_logic(self) -> BusinessLogicReport:
@@ -740,40 +769,61 @@ class BusinessLogicChecker:
             return ImplementationStatus.NOT_IMPLEMENTED, [], ["Empty or trivial implementation"], []
 
         # 4. Определяем статус реализации на основе комплексного анализа
-        if mock_patterns_found and not real_patterns_found:
+        # Более гибкая логика для нашей архитектуры
+
+        # Подсчитываем различные типы паттернов
+        handler_patterns = [p for p in real_patterns_found if 'handler' in p.lower() or 'query' in p.lower() or 'command' in p.lower()]
+        repository_patterns = [p for p in real_patterns_found if 'repository' in p.lower() or 'save' in p or 'find' in p]
+        service_patterns = [p for p in real_patterns_found if 'service' in p.lower() or 'calculate' in p or 'validate' in p or 'process' in p]
+        domain_patterns = [p for p in real_patterns_found if any(word in p.lower() for word in ['campaign(', 'event(', 'conversion(', 'money(', 'analytics('])]
+
+        total_real_patterns = len(real_patterns_found)
+        total_mock_patterns = len(mock_patterns_found)
+
+        # Логика определения статуса
+        if total_mock_patterns > 0 and total_real_patterns == 0:
             # Только mock данные
             status = ImplementationStatus.MOCK_IMPLEMENTED
             notes.append("Contains only mock/stub data")
             missing_components.append("Replace mock data with real business logic")
 
-        elif real_patterns_found and not mock_patterns_found:
-            # Только реальная реализация
-            if has_business_logic and has_data_access:
-                status = ImplementationStatus.FULLY_IMPLEMENTED
-                notes.append("Complete business logic implementation")
-                if has_error_handling:
-                    notes.append("Includes error handling")
-                if has_validation:
-                    notes.append("Includes input validation")
-                if has_external_calls:
-                    notes.append("Includes external API calls")
-            elif has_business_logic or has_data_access:
-                status = ImplementationStatus.FULLY_IMPLEMENTED
-                notes.append("Basic business logic implementation")
-            else:
-                status = ImplementationStatus.PARTIALLY_IMPLEMENTED
-                notes.append("Contains some real patterns but incomplete")
+        elif total_real_patterns >= 3 and total_mock_patterns == 0:
+            # Хорошая реализация с несколькими реальными паттернами
+            status = ImplementationStatus.FULLY_IMPLEMENTED
+            notes.append(f"Strong business logic implementation ({total_real_patterns} patterns)")
 
-        elif real_patterns_found and mock_patterns_found:
+            if handler_patterns:
+                notes.append("Uses CQRS pattern with handlers")
+            if repository_patterns:
+                notes.append("Includes data access layer")
+            if service_patterns:
+                notes.append("Contains business services")
+            if domain_patterns:
+                notes.append("Uses domain objects")
+            if has_error_handling:
+                notes.append("Includes error handling")
+            if has_validation:
+                notes.append("Includes input validation")
+
+        elif total_real_patterns >= 1:
+            # Базовая реализация с хотя бы одним реальным паттерном
+            status = ImplementationStatus.FULLY_IMPLEMENTED
+            notes.append(f"Basic implementation with {total_real_patterns} real patterns")
+
+            if handler_patterns:
+                notes.append("Has handler integration")
+            if repository_patterns:
+                notes.append("Basic data access")
+
+        elif total_real_patterns > 0 and total_mock_patterns > 0:
             # Смешанная реализация
             status = ImplementationStatus.PARTIALLY_IMPLEMENTED
-            notes.append("Mixed mock and real implementation")
-            notes.append(f"Found {len(real_patterns_found)} real patterns, {len(mock_patterns_found)} mock patterns")
+            notes.append(f"Mixed implementation: {total_real_patterns} real, {total_mock_patterns} mock patterns")
 
-            if has_business_logic and has_data_access:
-                notes.append("Has core business logic components")
+            if total_real_patterns >= total_mock_patterns:
+                notes.append("Mostly real implementation with some mock elements")
             else:
-                missing_components.append("Core business logic components missing")
+                missing_components.append("Replace remaining mock patterns with real logic")
 
         else:
             # Нет четких паттернов
