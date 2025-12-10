@@ -116,3 +116,42 @@ class PostgresConnectionPoolMonitor:
         except Exception as e:
             logger.error(f"Error in get_connection_stats: {e}")
             return self._get_fallback_stats("stats_error")
+
+    def get_optimization_suggestions(self) -> Dict:
+        """Получить предложения по оптимизации пула соединений"""
+        try:
+            current_stats = self.get_pool_status(timeout_seconds=3)
+            suggestions = []
+
+            # Анализ использования пула
+            used = current_stats.get('used', 0)
+            available = current_stats.get('available', 0)
+            total = used + available
+
+            if total > 0:
+                utilization = used / total
+                if utilization > 0.8:
+                    suggestions.append({
+                        'type': 'increase_pool_size',
+                        'description': f'High utilization ({utilization:.1%}), consider increasing max connections',
+                        'severity': 'medium'
+                    })
+                elif utilization < 0.1:
+                    suggestions.append({
+                        'type': 'decrease_pool_size',
+                        'description': f'Low utilization ({utilization:.1%}), consider decreasing min connections',
+                        'severity': 'low'
+                    })
+
+            return {
+                'current_utilization': utilization if total > 0 else 0,
+                'suggestions': suggestions,
+                'generated_at': time.time()
+            }
+        except Exception as e:
+            logger.error(f"Error getting optimization suggestions: {e}")
+            return {
+                'error': str(e),
+                'suggestions': [],
+                'generated_at': time.time()
+            }

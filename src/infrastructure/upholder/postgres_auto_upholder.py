@@ -200,11 +200,13 @@ class PostgresAutoUpholder:
             if health_status in ['CRITICAL', 'WARNING']:
                 alerts_generated.append(f"Connection pool health: {health_status}")
 
-            if pool_suggestions:
-                recommendations_pending.extend([
-                    f"Connection pool: {sug['action']} - {sug['reason']} (confidence: {sug['confidence_score']}%)"
-                    for sug in pool_suggestions[:3]  # Top 3 suggestions
-                ])
+            if pool_suggestions and 'suggestions' in pool_suggestions:
+                pool_sug_list = pool_suggestions['suggestions']
+                if pool_sug_list:
+                    recommendations_pending.extend([
+                        f"Connection pool: {sug['type']} - {sug['description']} (severity: {sug['severity']})"
+                        for sug in pool_sug_list[:3]  # Top 3 suggestions
+                    ])
 
             # 4. Query Optimization Suggestions
             logger.info("Generating optimization suggestions...")
