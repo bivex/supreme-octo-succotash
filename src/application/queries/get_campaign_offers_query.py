@@ -17,11 +17,13 @@ class GetCampaignOffersQuery:
 
     def __post_init__(self) -> None:
         """Validate query data."""
+        print(f"DEBUG: GetCampaignOffersQuery __post_init__: campaign_id={self.campaign_id}, limit={self.limit}, offset={self.offset}")
+
         if not self.campaign_id or not self.campaign_id.strip():
             raise ValueError("Campaign ID is required")
 
         if self.limit < 1 or self.limit > 100:
-            raise ValueError("Limit must be between 1 and 100")
+            raise ValueError(f"Limit must be between 1 and 100, got {self.limit}")
 
         if self.offset < 0:
             raise ValueError("Offset must be non-negative")
