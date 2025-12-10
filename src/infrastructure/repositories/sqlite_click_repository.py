@@ -16,7 +16,6 @@ class SQLiteClickRepository(ClickRepository):
         self.db_path = db_path
         self._connection = None
         self._initialize_db()
-        self._initialize_mock_data()
 
     def _get_connection(self):
         """Get database connection."""
@@ -63,83 +62,6 @@ class SQLiteClickRepository(ClickRepository):
 
         conn.commit()
 
-    def _initialize_mock_data(self) -> None:
-        """Initialize with mock click data."""
-        # Check if data already exists
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM clicks")
-        if cursor.fetchone()[0] > 0:
-            return  # Data already exists
-
-        mock_clicks = [
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "campaign_id": "camp_123",
-                "ip_address": "192.168.1.100",
-                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "referrer": "https://facebook.com/ad/123",
-                "is_valid": True,
-                "sub1": "fb_ad_15",
-                "sub2": "facebook",
-                "sub3": "adset_12",
-                "sub4": "video1",
-                "sub5": "lookalike78",
-                "click_id_param": "USERCLICK123",
-                "affiliate_sub": "aff_sub_123",
-                "affiliate_sub2": None,
-                "landing_page_id": 456,
-                "campaign_offer_id": 789,
-                "traffic_source_id": 101,
-                "conversion_type": None,
-                "converted_at": None,
-                "created_at": "2024-01-02T10:00:00+00:00"
-            },
-            {
-                "id": "456e7890-e89b-12d3-a456-426614174001",
-                "campaign_id": "camp_456",
-                "ip_address": "10.0.0.50",
-                "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
-                "referrer": "https://google.com/search?q=test",
-                "is_valid": True,
-                "sub1": "google_search",
-                "sub2": "google",
-                "sub3": "brand_campaign",
-                "sub4": "text_ad",
-                "sub5": "keyword_123",
-                "click_id_param": "GOOGLE_CLICK_456",
-                "affiliate_sub": "network_a",
-                "affiliate_sub2": "sub_a1",
-                "landing_page_id": 457,
-                "campaign_offer_id": 790,
-                "traffic_source_id": 102,
-                "conversion_type": "lead",
-                "converted_at": datetime.now(timezone.utc).isoformat(),
-                "created_at": "2024-01-03T08:00:00+00:00"
-            }
-        ]
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        for click_data in mock_clicks:
-            cursor.execute("""
-                INSERT OR REPLACE INTO clicks
-                (id, campaign_id, ip_address, user_agent, referrer, is_valid,
-                 sub1, sub2, sub3, sub4, sub5, click_id_param, affiliate_sub, affiliate_sub2,
-                 landing_page_id, campaign_offer_id, traffic_source_id,
-                 conversion_type, converted_at, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                click_data["id"], click_data["campaign_id"], click_data["ip_address"],
-                click_data["user_agent"], click_data["referrer"], click_data["is_valid"],
-                click_data["sub1"], click_data["sub2"], click_data["sub3"], click_data["sub4"], click_data["sub5"],
-                click_data["click_id_param"], click_data["affiliate_sub"], click_data["affiliate_sub2"],
-                click_data["landing_page_id"], click_data["campaign_offer_id"], click_data["traffic_source_id"],
-                click_data["conversion_type"], click_data["converted_at"], click_data["created_at"]
-            ))
-
-        conn.commit()
 
     def _row_to_click(self, row) -> Click:
         """Convert database row to Click entity."""

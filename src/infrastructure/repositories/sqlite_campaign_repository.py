@@ -17,7 +17,6 @@ class SQLiteCampaignRepository(CampaignRepository):
         self.db_path = db_path
         self._connection = None
         self._initialize_db()
-        self._initialize_mock_data()
 
     def _get_connection(self):
         """Get database connection."""
@@ -61,90 +60,6 @@ class SQLiteCampaignRepository(CampaignRepository):
 
         conn.commit()
 
-    def _initialize_mock_data(self) -> None:
-        """Initialize with mock campaign data."""
-        # Check if data already exists
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM campaigns WHERE is_deleted = 0")
-        if cursor.fetchone()[0] > 0:
-            return  # Data already exists
-
-        mock_campaigns = [
-            {
-                "id": "camp_123",
-                "name": "Summer Sale Campaign",
-                "description": "High-converting summer promotion",
-                "status": "active",
-                "cost_model": "CPA",
-                "payout_amount": 25.50,
-                "payout_currency": "USD",
-                "safe_page_url": "https://example.com/safe-landing",
-                "offer_page_url": "https://example.com/offer",
-                "daily_budget_amount": 500.00,
-                "daily_budget_currency": "USD",
-                "total_budget_amount": 15000.00,
-                "total_budget_currency": "USD",
-                "start_date": "2024-01-01T00:00:00+00:00",
-                "end_date": "2024-12-31T00:00:00+00:00",
-                "clicks_count": 5000,
-                "conversions_count": 150,
-                "spent_amount": 1250.75,
-                "spent_currency": "USD",
-                "created_at": "2024-01-01T10:00:00+00:00",
-                "updated_at": "2024-01-15T15:00:00+00:00",
-                "is_deleted": 0
-            },
-            {
-                "id": "camp_456",
-                "name": "Winter Promotion",
-                "description": "Holiday season marketing campaign",
-                "status": "active",
-                "cost_model": "CPC",
-                "payout_amount": 15.00,
-                "payout_currency": "USD",
-                "safe_page_url": "https://example.com/winter-landing",
-                "offer_page_url": "https://example.com/winter-offer",
-                "daily_budget_amount": 300.00,
-                "daily_budget_currency": "USD",
-                "total_budget_amount": 9000.00,
-                "total_budget_currency": "USD",
-                "start_date": "2024-11-01T00:00:00+00:00",
-                "end_date": "2024-12-31T00:00:00+00:00",
-                "clicks_count": 8000,
-                "conversions_count": 240,
-                "spent_amount": 2100.00,
-                "spent_currency": "USD",
-                "created_at": "2024-11-01T08:00:00+00:00",
-                "updated_at": "2024-11-20T12:00:00+00:00",
-                "is_deleted": 0
-            }
-        ]
-
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        for campaign_data in mock_campaigns:
-            cursor.execute("""
-                INSERT OR REPLACE INTO campaigns
-                (id, name, description, status, cost_model, payout_amount, payout_currency,
-                 safe_page_url, offer_page_url, daily_budget_amount, daily_budget_currency,
-                 total_budget_amount, total_budget_currency, start_date, end_date,
-                 clicks_count, conversions_count, spent_amount, spent_currency,
-                 created_at, updated_at, is_deleted)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                campaign_data["id"], campaign_data["name"], campaign_data["description"],
-                campaign_data["status"], campaign_data["cost_model"], campaign_data["payout_amount"],
-                campaign_data["payout_currency"], campaign_data["safe_page_url"], campaign_data["offer_page_url"],
-                campaign_data["daily_budget_amount"], campaign_data["daily_budget_currency"],
-                campaign_data["total_budget_amount"], campaign_data["total_budget_currency"],
-                campaign_data["start_date"], campaign_data["end_date"], campaign_data["clicks_count"],
-                campaign_data["conversions_count"], campaign_data["spent_amount"], campaign_data["spent_currency"],
-                campaign_data["created_at"], campaign_data["updated_at"], campaign_data["is_deleted"]
-            ))
-
-        conn.commit()
 
     def _row_to_campaign(self, row) -> Campaign:
         """Convert database row to Campaign entity."""
