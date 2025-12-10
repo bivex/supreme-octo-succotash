@@ -7,6 +7,7 @@ from ...entities.conversion import Conversion
 from ...entities.click import Click
 from ...repositories.click_repository import ClickRepository
 from ...value_objects.identifiers.click_id import ClickId
+from ....utils.encoding import safe_string_for_logging
 
 
 class ConversionService:
@@ -55,8 +56,8 @@ class ConversionService:
             return True, None
 
         except Exception as e:
-            logger.error(f"Error validating conversion data: {e}")
-            return False, str(e)
+            logger.error(f"Error validating conversion data: {safe_string_for_logging(str(e))}")
+            return False, safe_string_for_logging(str(e))
 
     def enrich_conversion_data(self, conversion_data: Dict[str, Any], click: Click) -> Dict[str, Any]:
         """Enrich conversion data with information from the original click."""

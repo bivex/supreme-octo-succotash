@@ -6,6 +6,7 @@ from loguru import logger
 from ...domain.repositories.event_repository import EventRepository
 from ...domain.services.event.event_service import EventService
 from ...domain.entities.event import Event
+from ...utils.encoding import safe_string_for_logging
 
 
 class TrackEventHandler:
@@ -70,9 +71,9 @@ class TrackEventHandler:
             }
 
         except Exception as e:
-            logger.error(f"Error tracking event: {e}", exc_info=True)
+            logger.error(f"Error tracking event: {safe_string_for_logging(str(e))}", exc_info=True)
             return {
                 "status": "error",
-                "message": str(e),
+                "message": safe_string_for_logging(str(e)),
                 "event_id": None
             }

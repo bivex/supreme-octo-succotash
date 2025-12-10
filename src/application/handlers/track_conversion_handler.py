@@ -7,6 +7,7 @@ from ...domain.repositories.conversion_repository import ConversionRepository
 from ...domain.repositories.click_repository import ClickRepository
 from ...domain.services.conversion.conversion_service import ConversionService
 from ...domain.entities.conversion import Conversion
+from ...utils.encoding import safe_string_for_logging
 
 
 class TrackConversionHandler:
@@ -25,12 +26,12 @@ class TrackConversionHandler:
     def handle(self, conversion_data: Dict[str, Any]) -> Dict[str, Any]:
         """Track a conversion."""
         try:
-            logger.info(f"Tracking conversion: {conversion_data.get('conversion_type')} for click {conversion_data.get('click_id')}")
+            logger.info(f"Tracking conversion: {safe_string_for_logging(conversion_data.get('conversion_type'))} for click {safe_string_for_logging(conversion_data.get('click_id'))}")
 
             # Validate conversion data
             is_valid, error_message = self.conversion_service.validate_conversion_data(conversion_data)
             if not is_valid:
-                logger.warning(f"Invalid conversion data: {error_message}")
+                logger.warning(f"Invalid conversion data: {safe_string_for_logging(error_message)}")
                 return {
                     "status": "error",
                     "message": error_message,
@@ -56,7 +57,7 @@ class TrackConversionHandler:
 
             # Check for duplicates
             if self.conversion_service.detect_duplicate_conversion(conversion):
-                logger.warning(f"Duplicate conversion detected for click {conversion.click_id}")
+                logger.warning(f"Duplicate conversion detected for click {safe_string_for_logging(str(conversion.click_id))}")
                 return {
                     "status": "duplicate",
                     "message": "Conversion already tracked",
@@ -70,13 +71,13 @@ class TrackConversionHandler:
             # Check for fraud
             fraud_reason = self.conversion_service.validate_fraud_risk(conversion, click)
             if fraud_reason:
-                logger.warning(f"Fraud detected in conversion: {fraud_reason}")
+                logger.warning(f"Fraud detected in conversion: {safe_string_for_logging(fraud_reason)}")
                 conversion.metadata['fraud_reason'] = fraud_reason
                 conversion.metadata['is_fraudulent'] = True
 
             # Save conversion
             self.conversion_repository.save(conversion)
-            logger.info(f"Conversion tracked successfully: {conversion.id}")
+            logger.info(f"Conversion tracked successfully: {safe_string_for_logging(str(conversion.id))}")
 
             # Check if postback should be triggered
             should_postback = self.conversion_service.should_trigger_postback(conversion)
@@ -90,9 +91,9 @@ class TrackConversionHandler:
             }
 
         except Exception as e:
-            logger.error(f"Error tracking conversion: {e}", exc_info=True)
+            logger.error(f"Error tracking conversion: {safe_string_for_logging(str(e))}", exc_info=True)
             return {
                 "status": "error",
-                "message": str(e),
+                "message": safe_string_for_logging(str(e)),
                 "conversion_id": None
             }

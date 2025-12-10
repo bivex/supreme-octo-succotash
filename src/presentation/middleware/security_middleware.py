@@ -5,6 +5,7 @@ import json
 from loguru import logger
 
 from ...domain.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
+from ...utils.encoding import safe_string_for_logging
 
 
 # Rate limiting storage (simple in-memory for demo)
@@ -239,7 +240,7 @@ def _validate_authentication_socketify(req, res):
     )
 
     if not valid_auth:
-        logger.warning(f"Invalid authentication: auth_header={auth_header}, api_key={api_key}")
+        logger.warning(f"Invalid authentication: auth_header={safe_string_for_logging(auth_header)}, api_key={safe_string_for_logging(api_key)}")
         error_response = {
             'error': {
                 'code': 'UNAUTHENTICATED',
