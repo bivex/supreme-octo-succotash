@@ -11,16 +11,23 @@ from decimal import Decimal
 from .config.settings import settings
 from .container import container
 
-# Setup custom JSON encoder immediately
+# Custom JSON encoder for Decimal objects
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
             return float(obj)
         return super().default(obj)
 
-# Monkey patch json.dumps globally
+# Monkey patch json.dumps to handle Decimal objects
 _original_dumps = json.dumps
-json.dumps = lambda obj, **kwargs: _original_dumps(obj, cls=CustomJSONEncoder, **kwargs)
+def custom_dumps(obj, **kwargs):
+    """Custom json.dumps that handles Decimal objects."""
+    # If cls is already specified, don't override it
+    if 'cls' not in kwargs:
+        kwargs['cls'] = CustomJSONEncoder
+    return _original_dumps(obj, **kwargs)
+
+json.dumps = custom_dumps
 
 
 def create_app() -> socketify.App:
@@ -130,58 +137,11 @@ def _setup_global_exception_handler() -> None:
     # Set the global exception handler
     sys.excepthook = global_exception_handler
 
-    # Custom JSON encoder to handle Decimal objects
-    class CustomJSONEncoder(json.JSONEncoder):
-        def default(self, obj):
-            if isinstance(obj, Decimal):
-                return float(obj)
-            return super().default(obj)
+    # Note: Custom JSON encoder is already set up globally at module level
 
-    # Monkey patch json.dumps to use custom encoder globally
-    original_dumps = json.dumps
-    json.dumps = lambda obj, **kwargs: original_dumps(obj, cls=CustomJSONEncoder, **kwargs)
+    # Note: Exception handling is done in individual route handlers with try/catch blocks
 
-    # Decorator to wrap route handlers with exception handling
-    def exception_handler_wrapper(func):
-        @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
-            try:
-                return await func(*args, **kwargs)
-            except Exception as e:
-                import traceback
-                logger.error(f"Exception in route handler {func.__name__}: {e}")
-                logger.error(f"Full traceback: {traceback.format_exc()}")
-
-                # Try to get response object from args
-                res = None
-                for arg in args:
-                    if hasattr(arg, 'write_status'):
-                        res = arg
-                        break
-
-                if res:
-                    try:
-                        from .presentation.middleware.security_middleware import add_security_headers
-                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
-                        res.write_status(500)
-                        res.write_header("Content-Type", "application/json")
-                        add_security_headers(res)
-                        res.end(json.dumps(error_response))
-                    except Exception as response_error:
-                        logger.error(f"Failed to send error response: {response_error}")
-                else:
-                    logger.error("Could not find response object to send error")
-
-                # Re-raise to let global handler catch it
-                raise
-
-        return wrapper
-
-    # Store the decorator globally so routes can use it
-    import builtins
-    builtins.exception_handler = exception_handler_wrapper
-
-    logger.info("Global exception handler, custom JSON encoder, and route wrapper configured")
+    logger.info("Global exception handler configured (JSON encoder already set up)")
 
 
 def _register_routes(app: socketify.App) -> None:
