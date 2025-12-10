@@ -14,7 +14,7 @@
     "🌟 Добавить недостающие домены: Campaign Management, Analytics & Reporting, Click Tracking, Fraud Detection, Webhooks, Event Tracking, Conversion Tracking, Postback System, Goal Management, User Journey Analytics, LTV Analysis, Retention Campaigns, Lead Forms, System Management",
     "⚠️  Повысить покрытие error handling: 17.9% (рекомендуется >70%)",
     "🔍 Добавить input validation: 12.8% (рекомендуется >60%)",
-    "📊 Качество: Среднее кол-во компонентов: 3.2",
+    "📊 Качество: Среднее кол-во компонентов: 3.1",
     "📊 Качество: Error handling coverage: 17.9%",
     "📊 Качество: Validation coverage: 12.8%"
   ],
@@ -169,9 +169,7 @@
           "Analytics"
         ],
         "route_file": "campaign_routes",
-        "mock_patterns": [
-          "\"campaigns\":\\s*\\["
-        ],
+        "mock_patterns": [],
         "missing_components": []
       },
       {
