@@ -53,7 +53,7 @@ class TrackingManager:
         params = {
             "click_id": click_id,
             "source": "telegram_bot",
-            "campaign_id": settings.campaign_id,
+            "cid": settings.campaign_id,
             **DEFAULT_TRACKING_PARAMS
         }
 

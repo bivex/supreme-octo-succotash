@@ -35,8 +35,8 @@ class ClickRoutes:
                 command = TrackClickCommand(
                     campaign_id=campaign_id,
                     ip_address=self._get_client_ip(req),
-                    user_agent=req.headers.get('User-Agent'),
-                    referrer=req.headers.get('Referer'),
+                    user_agent=req.get_header('user-agent') or req.get_header('User-Agent') or '',
+                    referrer=req.get_header('referer') or req.get_header('Referer') or None,
                     sub1=req.get_query('sub1'),
                     sub2=req.get_query('sub2'),
                     sub3=req.get_query('sub3'),
@@ -419,13 +419,18 @@ class ClickRoutes:
     def _get_client_ip(self, request) -> str:
         """Get real client IP address."""
         # Check proxy headers
-        ip_headers = ['X-Forwarded-For', 'X-Real-IP', 'CF-Connecting-IP', 'X-Client-IP']
+        ip_headers = ['x-forwarded-for', 'x-real-ip', 'cf-connecting-ip', 'x-client-ip']
 
         for header in ip_headers:
-            ip = request.headers.get(header)
+            ip = request.get_header(header)
             if ip:
                 # X-Forwarded-For can contain multiple IPs
                 ip = ip.split(',')[0].strip()
                 return ip
 
-        return request.remote_addr or '127.0.0.1'
+        # Fallback for socketify - remote address access may vary
+        try:
+            return request.get_remote_address() or '127.0.0.1'
+        except AttributeError:
+            # Socketify may not provide direct remote address access
+            return '127.0.0.1'
