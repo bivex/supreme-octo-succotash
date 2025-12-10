@@ -74,10 +74,10 @@ class PostgresOfferRepository(OfferRepository):
             )
         """)
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_offers_campaign_id ON offers(campaign_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_offers_active ON offers(is_active)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_offers_campaign_id ON offers(campaign_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_offers_active ON offers(is_active)")
 
-        conn.commit()
+            conn.commit()
         finally:
             if conn:
                 self._container.release_db_connection(conn)

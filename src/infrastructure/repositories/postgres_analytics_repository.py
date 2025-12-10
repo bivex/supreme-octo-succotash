@@ -1,6 +1,5 @@
 """PostgreSQL analytics repository implementation."""
 
-import psycopg2
 import json
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta, date
@@ -169,90 +168,100 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
     def save_analytics_snapshot(self, analytics: Analytics) -> None:
         """Save analytics snapshot for caching."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cache_key = f"{analytics.campaign_id}_{analytics.time_range['start_date']}_{analytics.time_range['end_date']}_{analytics.time_range['granularity']}"
-        expires_at = datetime.now() + timedelta(hours=1)
+            cache_key = f"{analytics.campaign_id}_{analytics.time_range['start_date']}_{analytics.time_range['end_date']}_{analytics.time_range['granularity']}"
+            expires_at = datetime.now() + timedelta(hours=1)
 
-        cursor.execute("""
-            INSERT INTO analytics_cache
-            (cache_key, campaign_id, start_date, end_date, granularity,
-             clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
-             cost_amount, cost_currency, ctr, cr, epc_amount, epc_currency, roi,
-             breakdowns, created_at, expires_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (cache_key) DO UPDATE SET
-                clicks = EXCLUDED.clicks,
-                unique_clicks = EXCLUDED.unique_clicks,
-                conversions = EXCLUDED.conversions,
-                revenue_amount = EXCLUDED.revenue_amount,
-                revenue_currency = EXCLUDED.revenue_currency,
-                cost_amount = EXCLUDED.cost_amount,
-                cost_currency = EXCLUDED.cost_currency,
-                ctr = EXCLUDED.ctr,
-                cr = EXCLUDED.cr,
-                epc_amount = EXCLUDED.epc_amount,
-                epc_currency = EXCLUDED.epc_currency,
-                roi = EXCLUDED.roi,
-                breakdowns = EXCLUDED.breakdowns,
-                expires_at = EXCLUDED.expires_at
-        """, (
-            cache_key, analytics.campaign_id, analytics.time_range['start_date'],
-            analytics.time_range['end_date'], analytics.time_range['granularity'],
-            analytics.clicks, analytics.unique_clicks, analytics.conversions,
-            analytics.revenue.amount, analytics.revenue.currency,
-            analytics.cost.amount, analytics.cost.currency,
-            analytics.ctr, analytics.cr,
-            analytics.epc.amount, analytics.epc.currency,
-            analytics.roi,
-            json.dumps(analytics.breakdowns),
-            datetime.now(),
-            expires_at
-        ))
+            cursor.execute("""
+                INSERT INTO analytics_cache
+                (cache_key, campaign_id, start_date, end_date, granularity,
+                 clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
+                 cost_amount, cost_currency, ctr, cr, epc_amount, epc_currency, roi,
+                 breakdowns, created_at, expires_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (cache_key) DO UPDATE SET
+                    clicks = EXCLUDED.clicks,
+                    unique_clicks = EXCLUDED.unique_clicks,
+                    conversions = EXCLUDED.conversions,
+                    revenue_amount = EXCLUDED.revenue_amount,
+                    revenue_currency = EXCLUDED.revenue_currency,
+                    cost_amount = EXCLUDED.cost_amount,
+                    cost_currency = EXCLUDED.cost_currency,
+                    ctr = EXCLUDED.ctr,
+                    cr = EXCLUDED.cr,
+                    epc_amount = EXCLUDED.epc_amount,
+                    epc_currency = EXCLUDED.epc_currency,
+                    roi = EXCLUDED.roi,
+                    breakdowns = EXCLUDED.breakdowns,
+                    expires_at = EXCLUDED.expires_at
+            """, (
+                cache_key, analytics.campaign_id, analytics.time_range['start_date'],
+                analytics.time_range['end_date'], analytics.time_range['granularity'],
+                analytics.clicks, analytics.unique_clicks, analytics.conversions,
+                analytics.revenue.amount, analytics.revenue.currency,
+                analytics.cost.amount, analytics.cost.currency,
+                analytics.ctr, analytics.cr,
+                analytics.epc.amount, analytics.epc.currency,
+                analytics.roi,
+                json.dumps(analytics.breakdowns),
+                datetime.now(),
+                expires_at
+            ))
 
-        conn.commit()
+            conn.commit()
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
 
     def get_cached_analytics(self, campaign_id: str, start_date: date,
                            end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
-        conn = self._container.get_db_connection()
-        cursor = conn.cursor()
+        conn = None
+        try:
+            conn = self._container.get_db_connection()
+            cursor = conn.cursor()
 
-        cache_key = f"{campaign_id}_{start_date}_{end_date}_day"
-        now = datetime.now()
+            cache_key = f"{campaign_id}_{start_date}_{end_date}_day"
+            now = datetime.now()
 
-        cursor.execute("""
-            SELECT * FROM analytics_cache
-            WHERE cache_key = %s AND expires_at > %s
-        """, (cache_key, now))
+            cursor.execute("""
+                SELECT * FROM analytics_cache
+                WHERE cache_key = %s AND expires_at > %s
+            """, (cache_key, now))
 
-        row = cursor.fetchone()
-        if not row:
-            return None
+            row = cursor.fetchone()
+            if not row:
+                return None
 
-        # Convert tuple to dict for easier access
-        columns = [desc[0] for desc in cursor.description]
-        row_dict = dict(zip(columns, row))
+            # Convert tuple to dict for easier access
+            columns = [desc[0] for desc in cursor.description]
+            row_dict = dict(zip(columns, row))
 
-        # Reconstruct analytics object from cache
-        analytics = Analytics(
-            campaign_id=row_dict["campaign_id"],
-            time_range={
-                'start_date': row_dict["start_date"].isoformat(),
-                'end_date': row_dict["end_date"].isoformat(),
-                'granularity': row_dict["granularity"]
-            },
-            clicks=row_dict["clicks"],
-            unique_clicks=row_dict["unique_clicks"],
-            conversions=row_dict["conversions"],
-            revenue=Money.from_float(float(row_dict["revenue_amount"]), row_dict["revenue_currency"]),
-            cost=Money.from_float(float(row_dict["cost_amount"]), row_dict["cost_currency"]),
-            ctr=float(row_dict["ctr"]),
-            cr=float(row_dict["cr"]),
-            epc=Money.from_float(float(row_dict["epc_amount"]), row_dict["epc_currency"]),
-            roi=float(row_dict["roi"]),
-            breakdowns=row_dict["breakdowns"]
-        )
+            # Reconstruct analytics object from cache
+            analytics = Analytics(
+                campaign_id=row_dict["campaign_id"],
+                time_range={
+                    'start_date': row_dict["start_date"].isoformat(),
+                    'end_date': row_dict["end_date"].isoformat(),
+                    'granularity': row_dict["granularity"]
+                },
+                clicks=row_dict["clicks"],
+                unique_clicks=row_dict["unique_clicks"],
+                conversions=row_dict["conversions"],
+                revenue=Money.from_float(float(row_dict["revenue_amount"]), row_dict["revenue_currency"]),
+                cost=Money.from_float(float(row_dict["cost_amount"]), row_dict["cost_currency"]),
+                ctr=float(row_dict["ctr"]),
+                cr=float(row_dict["cr"]),
+                epc=Money.from_float(float(row_dict["epc_amount"]), row_dict["epc_currency"]),
+                roi=float(row_dict["roi"]),
+                breakdowns=row_dict["breakdowns"]
+            )
 
-        return analytics
+            return analytics
+        finally:
+            if conn:
+                self._container.release_db_connection(conn)
