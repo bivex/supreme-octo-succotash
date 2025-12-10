@@ -1,7 +1,7 @@
 """Analytics handler."""
 
 import time
-import random
+from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from loguru import logger
 
@@ -9,20 +9,11 @@ from loguru import logger
 class AnalyticsHandler:
     """Handler for analytics operations."""
 
-    def __init__(self):
+    def __init__(self, click_repository=None, campaign_repository=None, analytics_repository=None):
         """Initialize analytics handler."""
-        # Mock data for real-time analytics
-        self._mock_campaigns = [
-            {"id": "camp_123", "name": "Summer Sale Campaign"},
-            {"id": "camp_456", "name": "Black Friday Deal"},
-            {"id": "camp_789", "name": "Newsletter Signup"}
-        ]
-
-        self._mock_landing_pages = [
-            {"id": "lp_001", "name": "Main Squeeze Page"},
-            {"id": "lp_002", "name": "Product Demo Page"},
-            {"id": "lp_003", "name": "Thank You Page"}
-        ]
+        self._click_repository = click_repository
+        self._campaign_repository = campaign_repository
+        self._analytics_repository = analytics_repository
 
     def get_real_time_analytics(self) -> Dict[str, Any]:
         """Get real-time analytics data for the last 5 minutes.
@@ -33,61 +24,68 @@ class AnalyticsHandler:
         try:
             logger.info("Generating real-time analytics data")
 
-            current_time = time.time()
-            five_minutes_ago = current_time - 300  # 5 minutes in seconds
+            current_time = datetime.now()
+            five_minutes_ago = current_time - timedelta(minutes=5)
 
-            # Generate mock real-time data
-            # In a real implementation, this would query Redis/cache for live metrics
-            active_users = random.randint(800, 1500)
-            clicks = random.randint(50, 150)
-            conversions = random.randint(5, 25)
-            revenue = round(random.uniform(100, 500), 2)
-            fraud_events = random.randint(0, 10)
-            blocked_clicks = random.randint(0, 15)
+            # Get real-time metrics from repositories
+            total_clicks = 0
+            total_conversions = 0
+            total_revenue = 0.0
+            active_users = 0
+            fraud_events = 0
+            blocked_clicks = 0
 
-            # Generate top campaigns data
             top_campaigns = []
-            for campaign in self._mock_campaigns[:3]:  # Top 3 campaigns
-                campaign_clicks = random.randint(10, 50)
-                campaign_conversions = random.randint(1, 8)
-                top_campaigns.append({
-                    "campaignId": campaign["id"],
-                    "campaignName": campaign["name"],
-                    "clicks": campaign_clicks,
-                    "conversions": campaign_conversions
-                })
-
-            # Generate top landing pages data
             top_landing_pages = []
-            for lp in self._mock_landing_pages[:3]:  # Top 3 landing pages
-                lp_clicks = random.randint(15, 60)
-                lp_conversions = random.randint(2, 12)
-                top_landing_pages.append({
-                    "landingPageId": lp["id"],
-                    "pageName": lp["name"],
-                    "clicks": lp_clicks,
-                    "conversions": lp_conversions
-                })
+
+            # Get active campaigns for real-time analysis
+            if self._campaign_repository:
+                try:
+                    campaigns = self._campaign_repository.find_all(limit=10)
+                    for campaign in campaigns[:3]:  # Top 3 campaigns
+                        # In real implementation, would get real-time metrics for each campaign
+                        campaign_clicks = campaign.clicks_count if hasattr(campaign, 'clicks_count') else 0
+                        campaign_conversions = campaign.conversions_count if hasattr(campaign, 'conversions_count') else 0
+
+                        top_campaigns.append({
+                            "campaignId": str(campaign.id),
+                            "campaignName": campaign.name,
+                            "clicks": campaign_clicks,
+                            "conversions": campaign_conversions
+                        })
+
+                        total_clicks += campaign_clicks
+                        total_conversions += campaign_conversions
+
+                        # Calculate revenue from campaign data
+                        if hasattr(campaign, 'payout') and campaign.payout and campaign_conversions > 0:
+                            total_revenue += float(campaign.payout.amount) * campaign_conversions
+
+                except Exception as e:
+                    logger.warning(f"Could not load campaign data for real-time analytics: {e}")
+
+            # Estimate active users (simplified - would need real session tracking)
+            active_users = max(1, total_clicks // 3)  # Rough estimate: 1 active user per 3 clicks
 
             result = {
                 "timeRange": {
-                    "startTime": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(five_minutes_ago)),
-                    "endTime": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(current_time))
+                    "startTime": five_minutes_ago.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    "endTime": current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
                 },
                 "activeUsers": active_users,
-                "clicks": clicks,
-                "conversions": conversions,
+                "clicks": total_clicks,
+                "conversions": total_conversions,
                 "revenue": {
-                    "amount": revenue,
+                    "amount": round(total_revenue, 2),
                     "currency": "USD"
                 },
                 "topCampaigns": top_campaigns,
-                "topLandingPages": top_landing_pages,
-                "fraudEvents": fraud_events,
-                "blockedClicks": blocked_clicks
+                "topLandingPages": top_landing_pages,  # Would need landing page repository
+                "fraudEvents": fraud_events,  # Would need fraud monitoring
+                "blockedClicks": blocked_clicks  # Would need fraud monitoring
             }
 
-            logger.info(f"Real-time analytics generated: {clicks} clicks, {conversions} conversions, ${revenue} revenue")
+            logger.info(f"Real-time analytics generated: {total_clicks} clicks, {total_conversions} conversions, ${total_revenue} revenue")
 
             return result
 
@@ -96,8 +94,8 @@ class AnalyticsHandler:
             # Return fallback data
             return {
                 "timeRange": {
-                    "startTime": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time() - 300)),
-                    "endTime": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                    "startTime": (datetime.now() - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    "endTime": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
                 },
                 "activeUsers": 0,
                 "clicks": 0,

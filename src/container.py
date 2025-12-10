@@ -789,7 +789,11 @@ class Container:
     def get_analytics_handler(self):
         """Get analytics handler."""
         if 'analytics_handler' not in self._singletons:
-            self._singletons['analytics_handler'] = AnalyticsHandler()
+            self._singletons['analytics_handler'] = AnalyticsHandler(
+                click_repository=self.get_click_repository(),
+                campaign_repository=self.get_campaign_repository(),
+                analytics_repository=self.get_analytics_repository()
+            )
         return self._singletons['analytics_handler']
 
     def get_ltv_handler(self):

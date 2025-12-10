@@ -10,14 +10,8 @@ class SystemHandler:
 
     def __init__(self):
         """Initialize system handler."""
-        # Mock cache statistics
-        self._cache_stats = {
-            'campaigns': {'keys': 150, 'size_mb': 2.5},
-            'landing_pages': {'keys': 75, 'size_mb': 1.2},
-            'offers': {'keys': 200, 'size_mb': 3.1},
-            'analytics': {'keys': 500, 'size_mb': 8.7},
-            'total': {'keys': 925, 'size_mb': 15.5}
-        }
+        # TODO: Implement real cache monitoring when caching is added
+        pass
 
     def flush_cache(self, cache_types: List[str]) -> Dict[str, Any]:
         """Flush cache with specified types.
@@ -73,6 +67,38 @@ class SystemHandler:
             return {
                 "status": "error",
                 "message": "Cache flush failed",
+                "error": str(e),
+                "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+            }
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache statistics.
+
+        Returns:
+            Dict containing cache statistics
+        """
+        try:
+            logger.info("Getting cache statistics")
+
+            # TODO: Implement real cache monitoring when caching is added
+            return {
+                "status": "success",
+                "message": "Cache monitoring not yet implemented",
+                "cache_types": {
+                    "campaigns": {"enabled": False, "keys": 0, "size_mb": 0.0},
+                    "landing_pages": {"enabled": False, "keys": 0, "size_mb": 0.0},
+                    "offers": {"enabled": False, "keys": 0, "size_mb": 0.0},
+                    "analytics": {"enabled": False, "keys": 0, "size_mb": 0.0}
+                },
+                "total": {"keys": 0, "size_mb": 0.0},
+                "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting cache stats: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "message": "Failed to get cache statistics",
                 "error": str(e),
                 "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
             }

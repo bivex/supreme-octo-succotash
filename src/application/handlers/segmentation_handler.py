@@ -252,34 +252,14 @@ class SegmentationHandler:
                 profiles = self._retention_repository.get_users_by_segment(segment, limit=200)
                 all_profiles.extend(profiles)
 
-            # For demonstration, create some mock migration patterns
-            # In real implementation, this would be based on historical data
-            migration_patterns = {
-                UserSegment.NEW_USERS.value: {
-                    UserSegment.ACTIVE_USERS.value: 0.7,
-                    UserSegment.AT_RISK.value: 0.2,
-                    UserSegment.LOW_ENGAGEMENT.value: 0.1
-                },
-                UserSegment.ACTIVE_USERS.value: {
-                    UserSegment.HIGH_VALUE.value: 0.3,
-                    UserSegment.AT_RISK.value: 0.4,
-                    UserSegment.LOW_ENGAGEMENT.value: 0.3
-                },
-                UserSegment.AT_RISK.value: {
-                    UserSegment.ACTIVE_USERS.value: 0.4,
-                    UserSegment.CHURNED.value: 0.6
-                },
-                UserSegment.LOW_ENGAGEMENT.value: {
-                    UserSegment.AT_RISK.value: 0.5,
-                    UserSegment.CHURNED.value: 0.5
-                }
-            }
-
+            # TODO: Implement real segment migration analysis based on historical user data
+            # This would analyze how users move between segments over time
             result = {
                 "status": "success",
-                "migration_patterns": migration_patterns,
-                "description": "Estimated migration probabilities between segments based on historical patterns",
-                "analysis_period": "last_30_days",
+                "migration_patterns": {},
+                "description": "Segment migration analysis not yet implemented",
+                "message": "Real migration patterns would be calculated from historical user segment transitions",
+                "analysis_period": "not_available",
                 "analysis_timestamp": datetime.now().isoformat()
             }
 

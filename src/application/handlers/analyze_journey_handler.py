@@ -1,7 +1,7 @@
 """Customer journey analysis handler."""
 
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from loguru import logger
 from ...domain.services.journey.journey_service import JourneyService
 

@@ -113,9 +113,9 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         # Calculate financial metrics
         currency = campaign.payout.currency if campaign and campaign.payout else "USD"
 
-        # Simplified cost calculation (would need actual cost data)
-        cost_per_click = 0.50  # Placeholder
-        cost_amount = total_clicks * cost_per_click
+        # TODO: Implement real cost calculation from traffic source data or campaign settings
+        # For now, cost data is not available, so we use 0.0
+        cost_amount = 0.0  # Cost data not implemented yet
         cost = Money.from_float(cost_amount, currency)
 
         # Calculate revenue from conversions
