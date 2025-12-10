@@ -1186,8 +1186,6 @@ class CampaignRoutes:
                 from ...domain.value_objects import CampaignId
 
                 command = PauseCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
-                # Handle command with business logic
-                campaign = self.pause_campaign_handler.handle(command)
 
                 # Handle command
                 campaign = self.pause_campaign_handler.handle(command)
@@ -1208,9 +1206,16 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(response))
+            except ValueError as e:
+                # Handle business logic validation errors (e.g., campaign already paused)
+                error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
+                res.write_status(400)
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+                res.end(json.dumps(error_response))
             except Exception as e:
                 import traceback
-                logger.error(f"Error in get_campaign: {e}")
+                logger.error(f"Error in pause_campaign: {e}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
