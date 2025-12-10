@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-Create minimal test data for cache hit ratio testing
+Create test data for cache testing
 """
 
 import psycopg2
 from datetime import datetime, timedelta
 import random
-import string
 
 def create_test_data():
-    """Create minimal test data for cache testing"""
+    """Create test campaigns for cache testing"""
     try:
-        print("Connecting to database...")
+        print("Connecting to database")
         conn = psycopg2.connect(
             host="localhost",
             port=5432,
@@ -20,14 +19,12 @@ def create_test_data():
             password="app_password"
         )
         cursor = conn.cursor()
-        print("Connected successfully")
+        print("Connected")
 
-        print("Creating test data for cache hit ratio testing...")
+        print("Creating test campaigns")
 
-        # Create test campaigns
-        print("Creating campaigns...")
         campaigns_data = []
-        for i in range(100):  # 100 campaigns for cache testing
+        for i in range(100):
             campaign = {
                 'id': f'camp_{i:03d}',
                 'name': f'Test Campaign {i}',
@@ -57,13 +54,12 @@ def create_test_data():
                     campaign['created_at'], campaign['created_at'] + timedelta(days=30),
                     campaign['created_at'], campaign['updated_at']
                 ))
-                print(f"  Created campaign {campaign['id']}")
+                print(f"Created campaign {campaign['id']}")
             except Exception as e:
-                print(f"  Failed to create campaign {campaign['id']}: {e}")
+                print(f"Failed to create campaign {campaign['id']}: {e}")
                 continue
 
-        # Run several queries to warm up the cache
-        print("Warming up cache with queries...")
+        print("Warming up cache")
         for _ in range(10):
             cursor.execute("SELECT id, name FROM campaigns WHERE status = 'active' LIMIT 50")
             cursor.fetchall()
@@ -72,16 +68,16 @@ def create_test_data():
         cursor.close()
         conn.close()
 
-        print("Test data created and cache warmed up successfully!")
+        print("Test data ready")
         print("Summary:")
-        print(f"  - {len(campaigns_data)} campaigns")
-        print("  - Cache warmed up with 10 queries")
+        print(f"Created {len(campaigns_data)} campaigns")
+        print("Ran 10 warmup queries")
 
-        print("\nNow run: POST /v1/system/upholder/audit")
-        print("   to see improved cache hit ratio!")
+        print("\nRun: POST /v1/system/upholder/audit")
+        print("to check cache performance")
 
     except Exception as e:
-        print(f"Error creating test data: {e}")
+        print(f"Error: {e}")
     finally:
         if 'conn' in locals() and not conn.closed:
             conn.commit()
@@ -89,58 +85,52 @@ def create_test_data():
             conn.close()
 
 def test_count_caching():
-    """Test the COUNT(*) caching in repository"""
+    """Test repository caching"""
     import sys
     import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
     from src.container import Container
 
-    print("Testing COUNT(*) caching...")
+    print("Testing count caching")
 
     container = Container()
     campaign_repo = container.get_campaign_repository()
 
     import time
 
-    # First call - should hit database
-    print("First count_all() call (should hit DB)...")
+    print("First call")
     start_time = time.time()
     count1 = campaign_repo.count_all()
     first_call_time = time.time() - start_time
     print(f"Time: {first_call_time:.4f}s")
-    # Wait a bit
-    # time.sleep(1)
 
-    # Second call - should use cache
-    print("Second count_all() call (should use cache)...")
+    print("Second call")
     start_time = time.time()
     count2 = campaign_repo.count_all()
     second_call_time = time.time() - start_time
     print(f"Time: {second_call_time:.4f}s")
-    print(f"Count1: {count1}, Count2: {count2}")
+    print(f"Results: {count1}, {count2}")
 
     if count1 == count2:
-        print("Counts match!")
+        print("Counts match")
 
-        # Check if caching worked (second call should be much faster)
-        if second_call_time < first_call_time * 0.1:  # At least 10x faster
-            print("Caching works! Second call was much faster than first.")
+        if second_call_time < first_call_time * 0.1:
+            print("Cache working")
             if second_call_time > 0:
-                print(f"Speed improvement: {first_call_time/second_call_time:.1f}x faster")
+                print(f"Speed up: {first_call_time/second_call_time:.1f}x")
             else:
-                print("Speed improvement: INSTANT (second call took 0.0000s)")
+                print("Instant response")
         else:
-            print("Caching may not be working - times are similar")
-            print(f"First call: {first_call_time:.4f}s, Second call: {second_call_time:.4f}s")
+            print("Cache may not work")
+            print(f"First: {first_call_time:.4f}s, Second: {second_call_time:.4f}s")
     else:
-        print("Counts don't match - something is wrong!")
+        print("Counts differ")
 
 def test_pg_stat_calls():
-    """Test that count_all() calls don't hit database after caching"""
+    """Check database calls after caching"""
     import psycopg2
 
-    # Get initial call count
     conn = psycopg2.connect(host='localhost', port=5432, database='supreme_octosuccotash_db', user='app_user', password='app_password')
     cursor = conn.cursor()
     cursor.execute("SELECT calls FROM pg_stat_statements WHERE query LIKE '%WHERE is_deleted = $1'")
@@ -148,9 +138,8 @@ def test_pg_stat_calls():
     cursor.close()
     conn.close()
 
-    print(f"Initial calls in pg_stat_statements: {initial_calls}")
+    print(f"Initial database calls: {initial_calls}")
 
-    # Make several count_all() calls
     import sys
     sys.path.insert(0, 'src')
     from src.container import Container
@@ -165,7 +154,6 @@ def test_pg_stat_calls():
         elapsed = time.time() - start
         print(f"Call {i+1}: count={count}, time={elapsed:.4f}s")
 
-    # Get final call count
     conn = psycopg2.connect(host='localhost', port=5432, database='supreme_octosuccotash_db', user='app_user', password='app_password')
     cursor = conn.cursor()
     cursor.execute("SELECT calls FROM pg_stat_statements WHERE query LIKE '%WHERE is_deleted = $1'")
@@ -173,19 +161,18 @@ def test_pg_stat_calls():
     cursor.close()
     conn.close()
 
-    print(f"Final calls in pg_stat_statements: {final_calls}")
-    print(f"Call difference: {final_calls - initial_calls}")
+    print(f"Final database calls: {final_calls}")
+    print(f"Difference: {final_calls - initial_calls}")
 
     if final_calls == initial_calls:
-        print("Caching works perfectly! No additional database calls!")
+        print("Cache working perfectly")
     else:
-        print("Caching may not be working - database calls increased")
+        print("Cache may not work")
 
 def load_test_campaigns_api():
-    """Load testing for campaigns API with COUNT(*) caching"""
+    """Load test campaigns API"""
     import requests
     import time
-    import threading
     import statistics
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -195,11 +182,9 @@ def load_test_campaigns_api():
     BASE_URL = 'http://localhost:5000'
     ENDPOINT = '/v1/campaigns?page=1&page_size=10'
 
-    # Function to execute a single request
     def make_request(request_id):
         start_time = time.time()
         try:
-            # Use test token from middleware
             headers = {
                 'Authorization': 'Bearer test_jwt_token_12345'
             }
@@ -216,37 +201,31 @@ def load_test_campaigns_api():
             elapsed = time.time() - start_time
             return {'id': request_id, 'status': 'exception', 'time': elapsed, 'error': str(e)}
 
-    # Test parameters
-    NUM_REQUESTS = 50  # total number of requests
-    CONCURRENT_REQUESTS = 10  # concurrent requests
+    NUM_REQUESTS = 50
+    CONCURRENT_REQUESTS = 10
 
     print(f'Test parameters:')
-    print(f'   - Total requests: {NUM_REQUESTS}')
-    print(f'   - Concurrent: {CONCURRENT_REQUESTS}')
-    print(f'   - Endpoint: {ENDPOINT}')
+    print(f'Total requests: {NUM_REQUESTS}')
+    print(f'Concurrent: {CONCURRENT_REQUESTS}')
+    print(f'Endpoint: {ENDPOINT}')
     print()
 
-    # Execute load testing
     results = []
     start_test = time.time()
 
     with ThreadPoolExecutor(max_workers=CONCURRENT_REQUESTS) as executor:
-        # Create request pool
         futures = [executor.submit(make_request, i) for i in range(NUM_REQUESTS)]
 
-        # Collect results
         for future in as_completed(futures):
             result = future.result()
             results.append(result)
 
-            # Show progress
             completed = len(results)
             if completed % 10 == 0:
-                print(f'   Completed {completed}/{NUM_REQUESTS} requests...')
+                print(f'Completed {completed}/{NUM_REQUESTS} requests')
 
     total_test_time = time.time() - start_test
 
-    # Analyze results
     print()
     print('Test results:')
     print('=' * 60)
@@ -255,18 +234,18 @@ def load_test_campaigns_api():
     auth_failed = [r for r in results if r['status'] == 'auth_failed']
     errors = [r for r in results if r['status'] in ['error', 'exception']]
 
-    print(f'Successful requests: {len(successful)}')
-    print(f'Authentication errors: {len(auth_failed)}')
+    print(f'Successful: {len(successful)}')
+    print(f'Auth errors: {len(auth_failed)}')
     print(f'Other errors: {len(errors)}')
     print()
 
     if successful:
         times = [r['time'] for r in successful]
-        print('Execution time (successful requests):')
-        print(f'   - Average: {statistics.mean(times):.4f}s')
-        print(f'   - Minimum: {min(times):.4f}s')
-        print(f'   - Maximum: {max(times):.4f}s')
-        print(f'   - Median: {statistics.median(times):.4f}s')
+        print('Response times:')
+        print(f'Average: {statistics.mean(times):.4f}s')
+        print(f'Min: {min(times):.4f}s')
+        print(f'Max: {max(times):.4f}s')
+        print(f'Median: {statistics.median(times):.4f}s')
         print()
 
     print('Performance analysis:')
@@ -274,25 +253,24 @@ def load_test_campaigns_api():
 
     if successful:
         avg_time = statistics.mean(times)
-        print(f'   Average response time: {avg_time:.4f}s')
+        print(f'Average time: {avg_time:.4f}s')
         if avg_time < 0.1:
-            print('Excellent performance - requests execute instantly!')
-            print('   This confirms that COUNT(*) caching works perfectly!')
+            print('Excellent performance')
+            print('Cache works perfectly')
         elif avg_time < 0.5:
-            print('Good performance - requests execute quickly!')
+            print('Good performance')
         else:
-            print('Performance could be improved')
+            print('Needs improvement')
     else:
-        print('All requests failed authentication')
-        print('   Token may be invalid or endpoint protected')
+        print('All requests failed auth')
+        print('Check token or endpoint')
 
     print()
-    print(f'   Total test time: {total_test_time:.1f}s')
-    print(f'   Requests per second: {NUM_REQUESTS/total_test_time:.1f}')
+    print(f'Total time: {total_test_time:.1f}s')
+    print(f'Requests/sec: {NUM_REQUESTS/total_test_time:.1f}')
 
-    # Check database statistics
     print()
-    print('Database statistics check:')
+    print('Database check:')
     print('=' * 60)
 
     try:
@@ -308,31 +286,29 @@ def load_test_campaigns_api():
 
         if count_result:
             count_calls = count_result[0]
-            print(f'Database count_all() calls: {count_calls}')
+            print(f'Database calls: {count_calls}')
             print(f'API requests: {NUM_REQUESTS}')
             print(f'Cache efficiency: {((NUM_REQUESTS - count_calls) / NUM_REQUESTS * 100):.1f}%')
 
-            if count_calls <= 2:  # only 1-2 database calls during entire test
-                print('Caching works perfectly!')
-                print('   Database received minimal load despite 50 API requests!')
+            if count_calls <= 2:
+                print('Cache working perfectly')
+                print('Minimal database load')
         else:
-            print('count_all() statistics not found')
+            print('No statistics found')
 
         cursor.close()
         conn.close()
 
     except Exception as e:
-        print(f'Error checking statistics: {e}')
+        print(f'Error: {e}')
 
 def create_mass_campaigns_api():
-    """Mass creation of campaigns via API - maximum speed"""
+    """Create many campaigns via API"""
     import requests
-    import json
-    import random
     import time
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    print('Maximum speed mass campaign creation')
+    print('Mass campaign creation')
     print('=' * 60)
 
     BASE_URL = 'http://localhost:5000'
@@ -343,51 +319,43 @@ def create_mass_campaigns_api():
         'Content-Type': 'application/json'
     }
 
-    # Optimized parameters for maximum speed
     TOTAL_CAMPAIGNS = 5000
-    CONCURRENT_REQUESTS = 20  # Increased concurrent requests
-    BATCH_SIZE = 100  # Increased batch size
+    CONCURRENT_REQUESTS = 20
     SUCCESSFUL = 0
     FAILED = 0
 
-    print(f'Maximum speed settings:')
-    print(f'   - Total campaigns: {TOTAL_CAMPAIGNS}')
-    print(f'   - Concurrent: {CONCURRENT_REQUESTS} threads')
-    print(f'   - Batches of: {BATCH_SIZE} campaigns')
-    print(f'   - Total batches: {TOTAL_CAMPAIGNS // BATCH_SIZE}')
+    print(f'Settings:')
+    print(f'Total campaigns: {TOTAL_CAMPAIGNS}')
+    print(f'Concurrent threads: {CONCURRENT_REQUESTS}')
     print()
 
-    # Pre-generate all data (no random in loop)
-    print('Generating campaign data...')
+    print('Generating data')
     cost_models = ["CPA", "CPC", "CPM"]
 
     def generate_campaign_data(index):
-        """Optimized data generation"""
         return {
             "name": f"Campaign_{index:04d}",
             "description": f"Mass test campaign #{index}",
-            "costModel": cost_models[index % 3],  # Cycle through, no random
-            "payout": {"amount": 5.0, "currency": "USD"},  # Fixed values
+            "costModel": cost_models[index % 3],
+            "payout": {"amount": 5.0, "currency": "USD"},
             "whiteUrl": f"https://safe.example.com/{index}",
             "blackUrl": f"https://offer.example.com/{index}",
-            "dailyBudget": {"amount": 100.0, "currency": "USD"},  # Fixed values
-            "totalBudget": {"amount": 1000.0, "currency": "USD"}   # Fixed values
+            "dailyBudget": {"amount": 100.0, "currency": "USD"},
+            "totalBudget": {"amount": 1000.0, "currency": "USD"}
         }
 
-    # Generate all data upfront
     all_campaigns_data = [generate_campaign_data(i) for i in range(TOTAL_CAMPAIGNS)]
     print(f'Generated {len(all_campaigns_data)} data sets')
     print()
 
     def create_single_campaign(campaign_data):
-        """Creates a single campaign"""
         nonlocal SUCCESSFUL, FAILED
         try:
             response = requests.post(
                 f'{BASE_URL}{ENDPOINT}',
                 json=campaign_data,
                 headers=headers,
-                timeout=10  # Reduced timeout
+                timeout=10
             )
 
             if response.status_code == 201:
@@ -401,45 +369,37 @@ def create_mass_campaigns_api():
             FAILED += 1
             return {'status': 'exception'}
 
-    # Main process - maximum speed
     start_time = time.time()
-    last_progress_time = start_time
 
     with ThreadPoolExecutor(max_workers=CONCURRENT_REQUESTS) as executor:
-        # Launch all requests simultaneously
         futures = [executor.submit(create_single_campaign, data) for data in all_campaigns_data]
 
-        # Process results as they complete
         for i, future in enumerate(as_completed(futures)):
             result = future.result()
 
-            # Show progress every 500 campaigns
             if (i + 1) % 500 == 0:
                 current_time = time.time()
                 elapsed = current_time - start_time
                 progress = (i + 1) / TOTAL_CAMPAIGNS * 100
                 rate = (i + 1) / elapsed
 
-                print(f'PROGRESS: {progress:.1f}% | '
+                print(f'Progress: {progress:.1f}% | '
                       f'{SUCCESSFUL}/{SUCCESSFUL + FAILED} successful | '
                       f'Speed: {rate:.1f} campaigns/sec')
 
-    # Final statistics
     total_time = time.time() - start_time
 
     print()
     print('Final results:')
     print('=' * 60)
-    print(f'SUCCESSFULLY CREATED: {SUCCESSFUL} campaigns')
-    print(f'ERRORS: {FAILED} campaigns')
-    print(f'TOTAL TIME: {total_time:.2f} seconds')
-    print(f'SPEED: {TOTAL_CAMPAIGNS/total_time:.1f} campaigns/second')
-    print(f'MAXIMUM PERFORMANCE: {CONCURRENT_REQUESTS} concurrent threads')
-    print(f'EFFICIENCY: {SUCCESSFUL/TOTAL_CAMPAIGNS*100:.1f}%')
+    print(f'Created: {SUCCESSFUL} campaigns')
+    print(f'Errors: {FAILED} campaigns')
+    print(f'Total time: {total_time:.2f} seconds')
+    print(f'Speed: {TOTAL_CAMPAIGNS/total_time:.1f} campaigns/second')
+    print(f'Efficiency: {SUCCESSFUL/TOTAL_CAMPAIGNS*100:.1f}%')
 
-    # Check COUNT(*) cache impact
     print()
-    print('COUNT(*) cache impact:')
+    print('Cache impact:')
     print('=' * 60)
 
     try:
@@ -457,20 +417,20 @@ def create_mass_campaigns_api():
             count_calls = count_result[0]
             print(f'Database calls: {count_calls} (out of {TOTAL_CAMPAIGNS} API requests)')
             print(f'Cache efficiency: {((TOTAL_CAMPAIGNS - count_calls) / TOTAL_CAMPAIGNS * 100):.1f}%')
-            print('Cache works perfectly!')
+            print('Cache working')
         else:
-            print('Statistics not found')
+            print('No statistics found')
 
         cursor.close()
         conn.close()
 
     except Exception as e:
-        print(f'Error checking statistics: {e}')
+        print(f'Error: {e}')
 
     print()
-    print('RESULT: MAXIMUM SPEED ACHIEVED!')
-    print(f'   Created {SUCCESSFUL} campaigns in {total_time:.2f} seconds!')
-    print('   System is production-ready!')
+    print('Done')
+    print(f'Created {SUCCESSFUL} campaigns in {total_time:.2f} seconds')
+    print('System ready for production')
 
 if __name__ == "__main__":
     import sys
