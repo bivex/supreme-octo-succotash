@@ -4,6 +4,11 @@ import json
 from loguru import logger
 
 from ...application.handlers.create_campaign_handler import CreateCampaignHandler
+from ...application.handlers.update_campaign_handler import UpdateCampaignHandler
+from ...application.handlers.pause_campaign_handler import PauseCampaignHandler
+from ...application.handlers.resume_campaign_handler import ResumeCampaignHandler
+from ...application.handlers.create_landing_page_handler import CreateLandingPageHandler
+from ...application.handlers.create_offer_handler import CreateOfferHandler
 from ...application.queries.get_campaign_query import GetCampaignHandler
 from ..dto.campaign_dto import CampaignSummaryResponse
 
@@ -13,8 +18,18 @@ class CampaignRoutes:
 
     def __init__(self,
                  create_campaign_handler: CreateCampaignHandler,
+                 update_campaign_handler: UpdateCampaignHandler,
+                 pause_campaign_handler: PauseCampaignHandler,
+                 resume_campaign_handler: ResumeCampaignHandler,
+                 create_landing_page_handler: CreateLandingPageHandler,
+                 create_offer_handler: CreateOfferHandler,
                  get_campaign_handler: GetCampaignHandler):
         self.create_campaign_handler = create_campaign_handler
+        self.update_campaign_handler = update_campaign_handler
+        self.pause_campaign_handler = pause_campaign_handler
+        self.resume_campaign_handler = resume_campaign_handler
+        self.create_landing_page_handler = create_landing_page_handler
+        self.create_offer_handler = create_offer_handler
         self.get_campaign_handler = get_campaign_handler
 
 
@@ -170,20 +185,61 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                # TEMPORARY: Simple mock response for testing
-                import uuid
-                mock_id = str(uuid.uuid4())[:8]
+                # Parse request body
+                body_data = req.get_json()
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Validate required fields
+                required_fields = ['name']
+                for field in required_fields:
+                    if field not in body_data:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        res.write_status(400)
+                        res.write_header("Content-Type", "application/json")
+                        res.end(json.dumps(error_response))
+                        return
+
+                # Create command
+                from ...application.commands.create_campaign_command import CreateCampaignCommand
+                from ...domain.value_objects import Url, Money
+
+                command = CreateCampaignCommand(
+                    name=body_data['name'],
+                    description=body_data.get('description'),
+                    cost_model=body_data.get('costModel', 'CPA'),
+                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                    white_url=body_data.get('whiteUrl'),  # safe page URL
+                    black_url=body_data.get('blackUrl'),  # offer page URL
+                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                    start_date=body_data.get('startDate'),
+                    end_date=body_data.get('endDate')
+                )
+
+                # Handle command
+                campaign = self.create_campaign_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": f"camp_{mock_id}",
-                    "name": "Test Campaign",
-                    "status": "draft",
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_status(201)
                 res.write_header('Location', f'http://localhost:5000/v1/campaigns/{response["id"]}')
                 res.write_header('Content-Type', 'application/json')
@@ -320,21 +376,65 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                # Simple mock response matching schema requirements
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Parse request body
+                body_data = req.get_json()
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Create command
+                from ...application.commands.update_campaign_command import UpdateCampaignCommand
+                from ...domain.value_objects import CampaignId, Url, Money
+
+                command = UpdateCampaignCommand(
+                    campaign_id=CampaignId.from_string(campaign_id),
+                    name=body_data.get('name'),
+                    description=body_data.get('description'),
+                    cost_model=body_data.get('costModel'),
+                    payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
+                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') else None,
+                    safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
+                    offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
+                    daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
+                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') else None,
+                    total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
+                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') else None,
+                    start_date=body_data.get('startDate'),
+                    end_date=body_data.get('endDate')
+                )
+
+                # Handle command
+                campaign = self.update_campaign_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": campaign_id,
-                    "name": "Updated Campaign",
-                    "status": "active",
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_status(200)
                 res.write_header('Content-Type', 'application/json')
+                add_security_headers(res)
                 res.end(json.dumps(response))
 
             except Exception:
@@ -677,26 +777,68 @@ class CampaignRoutes:
 
             try:
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
+                # Parse request body
+                body_data = req.get_json()
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
+                # Validate required fields
+                required_fields = ['name', 'url']
+                for field in required_fields:
+                    if field not in body_data:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        res.write_status(400)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+                        return
 
-                # Simple mock response matching schema requirements
-                import uuid
-                landing_page_id = str(uuid.uuid4())[:8]
+                # Create command
+                from ...application.commands.create_landing_page_command import CreateLandingPageCommand
+                from ...domain.value_objects import Url
+
+                command = CreateLandingPageCommand(
+                    campaign_id=campaign_id,
+                    name=body_data['name'],
+                    url=Url(body_data['url']),
+                    page_type=body_data.get('pageType', 'squeeze'),
+                    weight=body_data.get('weight', 100),
+                    is_control=body_data.get('isControl', False)
+                )
+
+                # Handle command
+                landing_page = self.create_landing_page_handler.handle(command)
+
+                # Convert to response
                 response = {
-                    "id": f"lp_{landing_page_id}",
-                    "campaignId": campaign_id,
-                    "name": "Test Landing Page",
-                    "url": "https://example.com/page",
-                    "pageType": "squeeze",
-                    "weight": 100,
-                    "isActive": True,
-                    "isControl": False,
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T00:00:00Z"
+                    "id": landing_page.id,
+                    "campaignId": landing_page.campaign_id,
+                    "name": landing_page.name,
+                    "url": landing_page.url.value,
+                    "pageType": landing_page.page_type,
+                    "weight": landing_page.weight,
+                    "isActive": landing_page.is_active,
+                    "isControl": landing_page.is_control,
+                    "createdAt": landing_page.created_at.isoformat(),
+                    "updatedAt": landing_page.updated_at.isoformat()
                 }
+
                 res.write_status(201)
                 res.write_header('Content-Type', 'application/json')
+                add_security_headers(res)
                 res.end(json.dumps(response))
 
             except Exception:
@@ -821,28 +963,52 @@ class CampaignRoutes:
                                 res.end(json.dumps(error_response))
                                 return
 
-                            # Use provided data or defaults
-                            if not body_data:
-                                body_data = {"name": "Premium Product", "url": "https://affiliate.com/offer/123", "offerType": "direct", "weight": 60, "isActive": True, "isControl": False, "payout": {"amount": 25.50, "currency": "USD"}}
+                            # Create command
+                            from ...application.commands.create_offer_command import CreateOfferCommand
+                            from ...domain.value_objects import Money, Url
+                            from decimal import Decimal
 
-                            # Simple mock response matching schema requirements
-                            import uuid
-                            offer_id = str(uuid.uuid4())[:8]
+                            command = CreateOfferCommand(
+                                campaign_id=campaign_id,
+                                name=body_data['name'],
+                                url=Url(body_data['url']),
+                                offer_type=body_data.get('offerType', 'direct'),
+                                payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']),
+                                revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
+                                cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
+                                weight=body_data.get('weight', 100),
+                                is_control=body_data.get('isControl', False)
+                            )
+
+                            # Handle command
+                            offer = self.create_offer_handler.handle(command)
+
+                            # Convert to response
                             response = {
-                                "id": f"offer_{offer_id}",
-                                "campaignId": campaign_id,
-                                "name": body_data.get('name', 'Test Offer'),
-                                "url": body_data.get('url', 'https://example.com/offer'),
-                                "offerType": body_data.get('offerType', 'direct'),
-                                "weight": body_data.get('weight', 100),
-                                "isActive": body_data.get('isActive', True),
-                                "isControl": body_data.get('isControl', False),
-                                "payout": body_data.get('payout', {"amount": 25.50, "currency": "USD"}),
-                                "createdAt": "2024-01-01T00:00:00Z",
-                                "updatedAt": "2024-01-01T00:00:00Z"
+                                "id": offer.id,
+                                "campaignId": offer.campaign_id,
+                                "name": offer.name,
+                                "url": offer.url.value,
+                                "offerType": offer.offer_type,
+                                "weight": offer.weight,
+                                "isActive": offer.is_active,
+                                "isControl": offer.is_control,
+                                "payout": {
+                                    "amount": float(offer.payout.amount),
+                                    "currency": offer.payout.currency.value
+                                },
+                                "revenueShare": float(offer.revenue_share),
+                                "costPerClick": {
+                                    "amount": float(offer.cost_per_click.amount),
+                                    "currency": offer.cost_per_click.currency.value
+                                } if offer.cost_per_click else None,
+                                "createdAt": offer.created_at.isoformat(),
+                                "updatedAt": offer.updated_at.isoformat()
                             }
+
                             res.write_status(201)
                             res.write_header('Content-Type', 'application/json')
+                            add_security_headers(res)
                             res.end(json.dumps(response))
 
                     except Exception as e:
@@ -878,22 +1044,39 @@ class CampaignRoutes:
 
             try:
                 campaign_id = req.get_parameter(0)
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
-                # Mock pause response
-                mock_response = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "status": "paused",
+                # Create command
+                from ...application.commands.pause_campaign_command import PauseCampaignCommand
+                from ...domain.value_objects import CampaignId
+
+                command = PauseCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
+
+                # Handle command
+                campaign = self.pause_campaign_handler.handle(command)
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:00:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_response))
+                res.end(json.dumps(response))
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
@@ -925,21 +1108,31 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock resume response
-                mock_response = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "status": "active",
+                # Create command
+                from ...application.commands.resume_campaign_command import ResumeCampaignCommand
+                from ...domain.value_objects import CampaignId
+
+                command = ResumeCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
+
+                # Handle command
+                campaign = self.resume_campaign_handler.handle(command)
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "status": campaign.status.value,
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:30:00Z"
+                    "createdAt": campaign.created_at.isoformat(),
+                    "updatedAt": campaign.updated_at.isoformat()
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_response))
+                res.end(json.dumps(response))
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)

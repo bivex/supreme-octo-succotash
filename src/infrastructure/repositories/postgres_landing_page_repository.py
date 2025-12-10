@@ -1,0 +1,168 @@
+"""PostgreSQL landing page repository implementation."""
+
+import psycopg2
+from typing import Optional, List
+from datetime import datetime
+
+from ...domain.entities.landing_page import LandingPage
+from ...domain.repositories.landing_page_repository import LandingPageRepository
+from ...domain.value_objects import Url
+
+
+class PostgresLandingPageRepository(LandingPageRepository):
+    """PostgreSQL implementation of LandingPageRepository."""
+
+    def __init__(self, host: str = "localhost", port: int = 5432, database: str = "supreme_octosuccotash_db",
+                 user: str = "app_user", password: str = "app_password"):
+        self.connection_params = {
+            'host': host,
+            'port': port,
+            'database': database,
+            'user': user,
+            'password': password,
+            'client_encoding': 'utf8'
+        }
+        self._connection = None
+        self._initialize_db()
+
+    def _get_connection(self):
+        """Get database connection."""
+        if self._connection is None:
+            self._connection = psycopg2.connect(**self.connection_params)
+        return self._connection
+
+    def _initialize_db(self) -> None:
+        """Initialize database schema."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS landing_pages (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                page_type TEXT NOT NULL,
+                weight INTEGER DEFAULT 100,
+                is_active BOOLEAN DEFAULT TRUE,
+                is_control BOOLEAN DEFAULT FALSE,
+                impressions INTEGER DEFAULT 0,
+                clicks INTEGER DEFAULT 0,
+                conversions INTEGER DEFAULT 0,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            )
+        """)
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_landing_pages_campaign_id ON landing_pages(campaign_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_landing_pages_active ON landing_pages(is_active)")
+
+        conn.commit()
+
+    def _row_to_landing_page(self, row) -> LandingPage:
+        """Convert database row to LandingPage entity."""
+        return LandingPage(
+            id=row["id"],
+            campaign_id=row["campaign_id"],
+            name=row["name"],
+            url=Url(row["url"]),
+            page_type=row["page_type"],
+            weight=row["weight"],
+            is_active=row["is_active"],
+            is_control=row["is_control"],
+            impressions=row["impressions"],
+            clicks=row["clicks"],
+            conversions=row["conversions"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"]
+        )
+
+    def save(self, landing_page: LandingPage) -> None:
+        """Save a landing page."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO landing_pages
+            (id, campaign_id, name, url, page_type, weight, is_active, is_control,
+             impressions, clicks, conversions, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                name = EXCLUDED.name,
+                url = EXCLUDED.url,
+                page_type = EXCLUDED.page_type,
+                weight = EXCLUDED.weight,
+                is_active = EXCLUDED.is_active,
+                is_control = EXCLUDED.is_control,
+                impressions = EXCLUDED.impressions,
+                clicks = EXCLUDED.clicks,
+                conversions = EXCLUDED.conversions,
+                updated_at = EXCLUDED.updated_at
+        """, (
+            landing_page.id, landing_page.campaign_id, landing_page.name,
+            landing_page.url.value, landing_page.page_type, landing_page.weight,
+            landing_page.is_active, landing_page.is_control,
+            landing_page.impressions, landing_page.clicks, landing_page.conversions,
+            landing_page.created_at, landing_page.updated_at
+        ))
+
+        conn.commit()
+
+    def find_by_id(self, landing_page_id: str) -> Optional[LandingPage]:
+        """Get landing page by ID."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM landing_pages WHERE id = %s", (landing_page_id,))
+
+        row = cursor.fetchone()
+        if row:
+            # Convert tuple to dict for easier access
+            columns = [desc[0] for desc in cursor.description]
+            row_dict = dict(zip(columns, row))
+            return self._row_to_landing_page(row_dict)
+        return None
+
+    def find_by_campaign_id(self, campaign_id: str) -> List[LandingPage]:
+        """Get landing pages by campaign ID."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM landing_pages
+            WHERE campaign_id = %s
+            ORDER BY weight DESC, created_at DESC
+        """, (campaign_id,))
+
+        landing_pages = []
+        columns = [desc[0] for desc in cursor.description]
+        for row in cursor.fetchall():
+            row_dict = dict(zip(columns, row))
+            landing_pages.append(self._row_to_landing_page(row_dict))
+
+        return landing_pages
+
+    def update(self, landing_page: LandingPage) -> None:
+        """Update a landing page."""
+        self.save(landing_page)  # UPSERT handles updates
+
+    def delete_by_id(self, landing_page_id: str) -> bool:
+        """Delete landing page by ID."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM landing_pages WHERE id = %s", (landing_page_id,))
+
+        deleted = cursor.rowcount > 0
+        conn.commit()
+
+        return deleted
+
+    def exists_by_id(self, landing_page_id: str) -> bool:
+        """Check if landing page exists by ID."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT 1 FROM landing_pages WHERE id = %s", (landing_page_id,))
+
+        return cursor.fetchone() is not None

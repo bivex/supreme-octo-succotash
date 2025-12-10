@@ -30,6 +30,8 @@ from .postgres_event_repository import PostgresEventRepository
 from .postgres_conversion_repository import PostgresConversionRepository
 from .postgres_postback_repository import PostgresPostbackRepository
 from .postgres_goal_repository import PostgresGoalRepository
+from .postgres_landing_page_repository import PostgresLandingPageRepository
+from .postgres_offer_repository import PostgresOfferRepository
 from .postgres_ltv_repository import PostgresLTVRepository
 from .postgres_retention_repository import PostgresRetentionRepository
 from .postgres_form_repository import PostgresFormRepository
@@ -64,6 +66,8 @@ __all__ = [
     'PostgresConversionRepository',
     'PostgresPostbackRepository',
     'PostgresGoalRepository',
+    'PostgresLandingPageRepository',
+    'PostgresOfferRepository',
     'PostgresLTVRepository',
     'PostgresRetentionRepository',
     'PostgresFormRepository'

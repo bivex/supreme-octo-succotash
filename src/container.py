@@ -21,6 +21,8 @@ from .infrastructure.repositories import (
     PostgresConversionRepository,
     PostgresPostbackRepository,
     PostgresGoalRepository,
+    PostgresLandingPageRepository,
+    PostgresOfferRepository,
     PostgresLTVRepository,
     PostgresRetentionRepository,
     PostgresFormRepository,
@@ -43,7 +45,14 @@ from .domain.services.goal import GoalService
 from .domain.services.journey import JourneyService
 
 # Application handlers
-from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler, BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler, LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
+from .application.handlers import (
+    CreateCampaignHandler, UpdateCampaignHandler, PauseCampaignHandler, ResumeCampaignHandler,
+    CreateLandingPageHandler, CreateOfferHandler,
+    TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler,
+    SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler,
+    BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler,
+    LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
+)
 
 # Application queries
 from .application.queries import GetCampaignHandler
@@ -125,6 +134,46 @@ class Container:
             )
         return self._singletons['create_campaign_handler']
 
+    def get_update_campaign_handler(self):
+        """Get update campaign handler."""
+        if 'update_campaign_handler' not in self._singletons:
+            self._singletons['update_campaign_handler'] = UpdateCampaignHandler(
+                campaign_repository=self.get_campaign_repository()
+            )
+        return self._singletons['update_campaign_handler']
+
+    def get_pause_campaign_handler(self):
+        """Get pause campaign handler."""
+        if 'pause_campaign_handler' not in self._singletons:
+            self._singletons['pause_campaign_handler'] = PauseCampaignHandler(
+                campaign_repository=self.get_campaign_repository()
+            )
+        return self._singletons['pause_campaign_handler']
+
+    def get_resume_campaign_handler(self):
+        """Get resume campaign handler."""
+        if 'resume_campaign_handler' not in self._singletons:
+            self._singletons['resume_campaign_handler'] = ResumeCampaignHandler(
+                campaign_repository=self.get_campaign_repository()
+            )
+        return self._singletons['resume_campaign_handler']
+
+    def get_create_landing_page_handler(self):
+        """Get create landing page handler."""
+        if 'create_landing_page_handler' not in self._singletons:
+            self._singletons['create_landing_page_handler'] = CreateLandingPageHandler(
+                landing_page_repository=self.get_postgres_landing_page_repository()
+            )
+        return self._singletons['create_landing_page_handler']
+
+    def get_create_offer_handler(self):
+        """Get create offer handler."""
+        if 'create_offer_handler' not in self._singletons:
+            self._singletons['create_offer_handler'] = CreateOfferHandler(
+                offer_repository=self.get_postgres_offer_repository()
+            )
+        return self._singletons['create_offer_handler']
+
     def get_track_click_handler(self):
         """Get track click handler."""
         if 'track_click_handler' not in self._singletons:
@@ -152,10 +201,20 @@ class Container:
         """Get campaign routes."""
         if 'campaign_routes' not in self._singletons:
             create_handler = self.get_create_campaign_handler()
+            update_handler = self.get_update_campaign_handler()
+            pause_handler = self.get_pause_campaign_handler()
+            resume_handler = self.get_resume_campaign_handler()
+            landing_page_handler = self.get_create_landing_page_handler()
+            offer_handler = self.get_create_offer_handler()
             get_handler = self.get_get_campaign_handler()
 
             campaign_routes = CampaignRoutes(
                 create_campaign_handler=create_handler,
+                update_campaign_handler=update_handler,
+                pause_campaign_handler=pause_handler,
+                resume_campaign_handler=resume_handler,
+                create_landing_page_handler=landing_page_handler,
+                create_offer_handler=offer_handler,
                 get_campaign_handler=get_handler,
             )
             self._singletons['campaign_routes'] = campaign_routes
@@ -476,6 +535,30 @@ class Container:
                 password="app_password"
             )
         return self._singletons['postgres_form_repository']
+
+    def get_postgres_landing_page_repository(self):
+        """Get PostgreSQL landing page repository."""
+        if 'postgres_landing_page_repository' not in self._singletons:
+            self._singletons['postgres_landing_page_repository'] = PostgresLandingPageRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_landing_page_repository']
+
+    def get_postgres_offer_repository(self):
+        """Get PostgreSQL offer repository."""
+        if 'postgres_offer_repository' not in self._singletons:
+            self._singletons['postgres_offer_repository'] = PostgresOfferRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_offer_repository']
 
     def get_goal_service(self):
         """Get goal service."""
