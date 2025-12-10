@@ -5,6 +5,9 @@
 # Testing and coverage
 .hypothesis/
 .pytest_cache/
+advi_survey/ 
+advi_threading_final/
+advi_threading_final_clean/
 
 # Environment files
 .env

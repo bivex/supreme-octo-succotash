@@ -29,6 +29,10 @@ from .infrastructure.repositories import (
     PostgresRetentionRepository,
     PostgresFormRepository,
 )
+from .infrastructure.repositories.optimized_analytics_repository import OptimizedAnalyticsRepository
+from .infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer
+from .infrastructure.monitoring.vectorized_cache_monitor import VectorizedCacheMonitor
+from .infrastructure.async_io_processor import AsyncIOProcessor
 from .infrastructure.database.advanced_connection_pool import AdvancedConnectionPool
 from .infrastructure.external import MockIpGeolocationService
 
@@ -146,7 +150,11 @@ class Container:
         if 'analytics_repository' not in self._singletons:
             # Try PostgreSQL first, fallback to SQLite
             try:
-                self._singletons['analytics_repository'] = self.get_postgres_analytics_repository()
+                # Use optimized version if performance mode is enabled
+                if self._is_performance_mode():
+                    self._singletons['analytics_repository'] = self.get_optimized_analytics_repository()
+                else:
+                    self._singletons['analytics_repository'] = self.get_postgres_analytics_repository()
             except Exception:
                 click_repo = self.get_click_repository()
                 campaign_repo = self.get_campaign_repository()
@@ -158,6 +166,42 @@ class Container:
                 )
                 self._singletons['analytics_repository'] = analytics_repo
         return self._singletons['analytics_repository']
+
+    def _is_performance_mode(self) -> bool:
+        """Check if performance optimization mode is enabled."""
+        # Check environment variable or settings
+        import os
+        return os.getenv('PERFORMANCE_MODE', 'false').lower() == 'true'
+
+    def get_optimized_analytics_repository(self):
+        """Get optimized analytics repository with vectorization."""
+        if 'optimized_analytics_repository' not in self._singletons:
+            self._singletons['optimized_analytics_repository'] = OptimizedAnalyticsRepository(
+                click_repository=self.get_postgres_click_repository(),
+                campaign_repository=self.get_postgres_campaign_repository(),
+                container=self
+            )
+        return self._singletons['optimized_analytics_repository']
+
+    def get_bulk_optimizer(self):
+        """Get PostgreSQL bulk optimizer."""
+        if 'bulk_optimizer' not in self._singletons:
+            connection_pool = self.get_connection_pool()
+            self._singletons['bulk_optimizer'] = PostgresBulkOptimizer(connection_pool)
+        return self._singletons['bulk_optimizer']
+
+    def get_vectorized_cache_monitor(self):
+        """Get vectorized cache monitor."""
+        if 'vectorized_cache_monitor' not in self._singletons:
+            connection_pool = self.get_connection_pool()
+            self._singletons['vectorized_cache_monitor'] = VectorizedCacheMonitor(connection_pool)
+        return self._singletons['vectorized_cache_monitor']
+
+    def get_async_io_processor(self):
+        """Get asynchronous I/O processor."""
+        if 'async_io_processor' not in self._singletons:
+            self._singletons['async_io_processor'] = AsyncIOProcessor()
+        return self._singletons['async_io_processor']
 
     def get_ip_geolocation_service(self):
         """Get IP geolocation service."""

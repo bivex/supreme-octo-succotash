@@ -243,6 +243,26 @@ def _initialize_postgres_upholder(app: socketify.App) -> None:
         upholder.start()
         logger.info("✅ PostgreSQL Auto Upholder started successfully")
 
+        # Initialize vectorized cache monitor if performance mode is enabled
+        import os
+        if os.getenv('PERFORMANCE_MODE', 'false').lower() == 'true':
+            try:
+                logger.info("🚀 Initializing vectorized cache monitor...")
+                vectorized_monitor = container.get_vectorized_cache_monitor()
+
+                # Add alert handler for vectorized monitor
+                def vectorized_alert_handler(alert):
+                    logger.warning(f"🚨 Vectorized Cache Alert [{alert.severity.upper()}]: {alert.message}")
+                    for rec in alert.recommendations:
+                        logger.info(f"💡 Recommendation: {rec}")
+
+                vectorized_monitor.add_alert_handler(vectorized_alert_handler)
+                vectorized_monitor.start_monitoring()
+                logger.info("✅ Vectorized cache monitor started successfully")
+
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize vectorized cache monitor: {e}")
+
         # Add upholder management endpoints
         _add_upholder_endpoints(app, upholder)
 
@@ -493,14 +513,10 @@ if __name__ == "__main__":
     app = create_app()
     app_create_time = time.time() - main_start
 
-    # Maximum performance listen options
+    # Compatible listen options for current socketify version
     listen_options = socketify.AppListenOptions(
         port=settings.api.port,
         host=settings.api.host,
-        reuse_port=True,                    # Enable SO_REUSEPORT for multi-process scaling
-        compression=socketify.CompressOptions.DISABLED,  # Disable expensive compression
-        max_backlog=16384,                  # Huge connection backlog for request spikes
-        idle_timeout=0,                     # Don't disconnect idle clients
     )
 
     logger.info(f"🏁 Starting high-performance server on {settings.api.host}:{settings.api.port}...")
