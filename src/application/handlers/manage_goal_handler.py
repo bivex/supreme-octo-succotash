@@ -80,8 +80,8 @@ class ManageGoalHandler:
             if campaign_id:
                 goals = self.goal_repository.get_by_campaign_id(campaign_id, active_only)
             else:
-                # This would need a method to get all goals - for now return empty
-                goals = []
+                # Getting all goals without campaign filter is not supported yet
+                raise ValueError("Listing all goals without campaign filter is not supported. Please provide a campaign_id parameter.")
 
             return {
                 "status": "success",

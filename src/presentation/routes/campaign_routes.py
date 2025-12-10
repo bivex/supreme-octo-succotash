@@ -803,15 +803,11 @@ class CampaignRoutes:
                     offset=offset
                 )
 
-                try:
-                    landing_pages = self.get_campaign_landing_pages_handler.handle(query)
-                    logger.debug("Landing pages query executed successfully")
-                    logger.debug(f"Type: {type(landing_pages)}")
-                    if hasattr(landing_pages, '__len__'):
-                        logger.debug(f"Length: {len(landing_pages)}")
-                except Exception as handler_error:
-                    logger.error(f"Handler error: {handler_error}")
-                    landing_pages = []
+                landing_pages = self.get_campaign_landing_pages_handler.handle(query)
+                logger.debug("Landing pages query executed successfully")
+                logger.debug(f"Type: {type(landing_pages)}")
+                if hasattr(landing_pages, '__len__'):
+                    logger.debug(f"Length: {len(landing_pages)}")
 
                 # For now, assume we have some landing pages for pagination
                 # TODO: Implement proper count query
@@ -989,15 +985,11 @@ class CampaignRoutes:
                     offset=offset
                 )
 
-                try:
-                    offers = self.get_campaign_offers_handler.handle(query)
-                    logger.debug("Offers query executed successfully")
-                    logger.debug(f"Type: {type(offers)}")
-                    if hasattr(offers, '__len__'):
-                        logger.debug(f"Length: {len(offers)}")
-                except Exception as handler_error:
-                    logger.error(f"Handler error: {handler_error}")
-                    offers = []
+                offers = self.get_campaign_offers_handler.handle(query)
+                logger.debug("Offers query executed successfully")
+                logger.debug(f"Type: {type(offers)}")
+                if hasattr(offers, '__len__'):
+                    logger.debug(f"Length: {len(offers)}")
 
                 # For now, assume we have some offers for pagination
                 # TODO: Implement proper count query

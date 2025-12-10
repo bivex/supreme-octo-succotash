@@ -228,13 +228,7 @@ class ClickRoutes:
 
                 except Exception as e:
                     logger.error(f"Error listing clicks: {e}")
-                    response = {
-                        "clicks": [],
-                        "total": 0,
-                        "limit": limit,
-                        "offset": offset,
-                        "error": "Failed to retrieve clicks"
-                    }
+                    raise
 
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
