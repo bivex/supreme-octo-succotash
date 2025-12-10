@@ -399,3 +399,6 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
             logger.error(f"Cache storage failed: {e}")
             # Don't fail the main operation if caching fails
 
+
+
+

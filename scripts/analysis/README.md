@@ -22,3 +22,6 @@ python query_analyzer.py
 
 
 
+
+
+
