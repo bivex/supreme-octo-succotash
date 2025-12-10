@@ -1,0 +1,98 @@
+🔍 PostgreSQL Query Analysis Report
+==================================================
+
+📊 Summary:
+   Total queries analyzed: 11
+   Successful: 2
+   Failed: 9
+
+❌ Failed Queries:
+   - SELECT * FROM clicks WHERE created_at > 'test2' ORDER BY cre...: ПОМИЛКА:  неприпустимий синтаксис для типу timestamp: "test2"
+LINE 1: ...MAT JSON) SELECT * FROM clicks WHERE created_at > 'test2' OR...
+                                                             ^
+
+   - SELECT * FROM events WHERE click_id = 'test2' ORDER BY creat...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT COUNT(*) FROM events WHERE campaign_id = 'test2'...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT * FROM conversions WHERE click_id = 'test2'...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT COUNT(*) FROM conversions WHERE campaign_id = 'test2'...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT * FROM campaigns WHERE id = 'test2'...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT * FROM campaigns WHERE status = 'active'...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT COUNT(*) FROM clicks WHERE campaign_id = 'test2' AND ...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+   - SELECT campaign_id, COUNT(*) as clicks FROM clicks GROUP BY ...: ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+
+📋 Database Tables (0):
+
+📋 Database Indexes (0):
+
+💡 Recommendations:
+   - Add indexes on frequently queried columns (campaign_id, click_id, created_at)
+   - Consider partitioning large tables by date
+   - Monitor slow queries with pg_stat_statements (requires superuser)
+   - Enable auto_explain for automatic query plan logging
+
+=== Detailed Results ===
+
+Query: SELECT * FROM clicks WHERE id = 'test2'
+Status: SUCCESS
+Explain: [{'Plan': {'Node Type': 'Index Scan', 'Parallel Aware': False, 'Async Capable': False, 'Scan Direction': 'Forward', 'Index Name': 'clicks_pkey', 'Relation Name': 'clicks', 'Alias': 'clicks', 'Startup Cost': 0.14, 'Total Cost': 8.16, 'Plan Rows': 1, 'Plan Width': 477, 'Disabled': False, 'Index Cond': "(id = 'test2'::text)"}}]
+--------------------------------------------------
+
+Query: SELECT COUNT(*) FROM clicks WHERE campaign_id = 'test2'
+Status: SUCCESS
+Explain: [{'Plan': {'Node Type': 'Aggregate', 'Strategy': 'Plain', 'Partial Mode': 'Simple', 'Parallel Aware': False, 'Async Capable': False, 'Startup Cost': 8.16, 'Total Cost': 8.17, 'Plan Rows': 1, 'Plan Width': 8, 'Disabled': False, 'Plans': [{'Node Type': 'Index Only Scan', 'Parent Relationship': 'Outer', 'Parallel Aware': False, 'Async Capable': False, 'Scan Direction': 'Forward', 'Index Name': 'idx_clicks_campaign_id', 'Relation Name': 'clicks', 'Alias': 'clicks', 'Startup Cost': 0.14, 'Total Cost': 8.16, 'Plan Rows': 1, 'Plan Width': 0, 'Disabled': False, 'Index Cond': "(campaign_id = 'test2'::text)"}]}}]
+--------------------------------------------------
+
+Query: SELECT * FROM clicks WHERE created_at > 'test2' ORDER BY created_at DESC LIMIT 100
+Status: FAILED - ПОМИЛКА:  неприпустимий синтаксис для типу timestamp: "test2"
+LINE 1: ...MAT JSON) SELECT * FROM clicks WHERE created_at > 'test2' OR...
+                                                             ^
+
+--------------------------------------------------
+
+Query: SELECT * FROM events WHERE click_id = 'test2' ORDER BY created_at DESC
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT COUNT(*) FROM events WHERE campaign_id = 'test2'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT * FROM conversions WHERE click_id = 'test2'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT COUNT(*) FROM conversions WHERE campaign_id = 'test2' AND created_at > 'test2'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT * FROM campaigns WHERE id = 'test2'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT * FROM campaigns WHERE status = 'active'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT COUNT(*) FROM clicks WHERE campaign_id = 'test2' AND created_at BETWEEN 'test2' AND 'test2'
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------
+
+Query: SELECT campaign_id, COUNT(*) as clicks FROM clicks GROUP BY campaign_id ORDER BY clicks DESC LIMIT 10
+Status: FAILED - ПОМИЛКА:  поточна транзакція перервана, команди до кінця блока транзакції пропускаються
+
+--------------------------------------------------

@@ -1,73 +1,96 @@
 # Scripts Directory
 
-This directory contains utility scripts for the Affiliate Marketing API project.
+Этот каталог содержит все скрипты проекта, организованные по категориям для удобства навигации.
 
-## Available Scripts
+## Структура каталогов
 
-### clean_cache.bat
-**Windows Batch script** for cleaning Python cache files.
-- Removes all `__pycache__` directories recursively
-- Removes all `.pyc`, `.pyo`, and `.pyd` files
-- Use when you need to clear Python bytecode cache
+### 📊 `analysis/` - Анализ и оптимизация
+Скрипты для анализа производительности и оптимизации базы данных.
 
-**Usage:**
-```batch
-clean_cache.bat
-```
+**Ключевые скрипты:**
+- `postgres_query_analysis_final.py` - Полный анализ PostgreSQL с рекомендациями
+- `query_analyzer.py` - Детальный анализатор запросов
+- `simple_query_analysis.py` - Быстрый анализ состояния БД
+- `analyze_profile.py` - Анализ профилирования Python кода
 
-### clean_cache.ps1
-**PowerShell script** for cleaning Python cache files (recommended).
-- Removes all `__pycache__` directories recursively
-- Removes all `.pyc`, `.pyo`, and `.pyd` files
-- Shows detailed output of removed files
-- Automatically finds project root directory
+### 💾 `database/` - Работа с БД
+Скрипты для работы с PostgreSQL: настройка, мониторинг, индексы, разрешения.
 
-**Usage:**
-```powershell
-.\scripts\clean_cache.ps1
-```
+**Ключевые скрипты:**
+- `setup_postgres_monitoring.py` - Настройка мониторинга PostgreSQL
+- `enable_pg_stat_statements.py` - Включение сбора статистики запросов
+- `create_indexes_simple.py` - Создание индексов производительности
+- `check_postgres_config.py` - Проверка конфигурации PostgreSQL
 
-### kill_port_5000.bat
-**Windows Batch script** for killing processes listening on port 5000.
-- Finds all processes listening on port 5000
-- Terminates them forcefully
-- Useful when server doesn't shut down cleanly
+### 📈 `performance/` - Тестирование производительности
+Скрипты для тестирования производительности, нагрузки и профилирования.
 
-**Usage:**
-```batch
-scripts\kill_port_5000.bat
-```
+**Ключевые скрипты:**
+- `run_performance_tests.py` - Полный набор тестов производительности
+- `load_test_with_profiling.py` - Нагрузочное тестирование с профилированием
+- `simple_load_test.py` - Простое нагрузочное тестирование
+- `simple_profile.py` - Профилирование Python кода
 
-### kill_port_5000.ps1
-**PowerShell script** for killing processes listening on port 5000 (recommended).
-- Finds all processes listening on port 5000
-- Terminates them forcefully
-- Shows detailed output of terminated processes
-- More reliable than batch version
+### 🔧 `setup/` - Настройка среды
+Скрипты для настройки и развертывания.
 
-**Usage:**
-```powershell
-.\scripts\kill_port_5000.ps1
-```
+**Ключевые скрипты:**
+- `setup_dev.bat` - Настройка среды разработки
+- `clean_cache.bat/.ps1` - Очистка кеша
+- `kill_port_5000.bat/.ps1` - Освобождение порта 5000
 
-### test_endpoints.py
-**Python script** for testing all API endpoints.
-- Tests health check, campaigns, clicks, and analytics endpoints
-- Validates HTTP status codes and JSON responses
-- Provides detailed test results and summary
+### 📊 `monitoring/` - Мониторинг
+Скрипты для мониторинга системных ресурсов и производительности.
 
-**Usage:**
+**Ключевые скрипты:**
+- `system_monitor.py` - Мониторинг CPU, памяти, сети, дисков
+
+### 🧪 `testing/` - Функциональное тестирование
+Скрипты для тестирования функциональности, API и бизнес-логики.
+
+**Ключевые скрипты:**
+- `run_tests.py` - Запуск полного набора тестов
+- `test_api.py` - Тестирование REST API
+- `test_business_logic.py` - Тестирование бизнес-логики
+- `test_imports.py` - Проверка импортов модулей
+- `test_pool_monitor.py` - Тестирование пула соединений
+
+## Использование
+
+### Запуск скриптов
+
 ```bash
-python scripts/test_endpoints.py
+# Анализ производительности БД
+python scripts/analysis/postgres_query_analysis_final.py
+
+# Нагрузочное тестирование
+python scripts/performance/run_performance_tests.py
+
+# Мониторинг системы
+python scripts/monitoring/system_monitor.py
+
+# Настройка БД
+python scripts/database/setup_postgres_monitoring.py
 ```
 
-**Requirements:**
-- Server must be running on `http://127.0.0.1:5000`
-- Start server first: `python main_clean.py`
+### Категории скриптов
 
-## Maintenance Notes
+- **database/** - Для DBA и настройки БД
+- **analysis/** - Для анализа и оптимизации
+- **performance/** - Для тестирования производительности
+- **monitoring/** - Для мониторинга в production
+- **setup/** - Для первоначальной настройки
+- **testing/** - Для разработчиков и QA
 
-- Run `kill_port_5000.ps1` when server doesn't shut down cleanly and port 5000 is still occupied
-- Run `clean_cache.ps1` when switching between Python versions
-- Run `clean_cache.ps1` when moving/renaming files to avoid import issues
-- Run `test_endpoints.py` after code changes to verify API functionality
+## Полезные команды
+
+```bash
+# Просмотр всех скриптов
+find scripts/ -name "*.py" -o -name "*.bat" -o -name "*.ps1" | sort
+
+# Поиск скрипта по имени
+find scripts/ -name "*postgres*" -type f
+
+# Проверка синтаксиса всех Python скриптов
+python -m py_compile scripts/**/*.py
+```
