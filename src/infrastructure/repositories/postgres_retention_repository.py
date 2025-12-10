@@ -28,7 +28,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Create retention_campaigns table
@@ -102,7 +102,7 @@ class PostgresRetentionRepository(RetentionRepository):
     def save_retention_campaign(self, campaign: RetentionCampaign) -> None:
         """Save retention campaign."""
         import json
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -153,7 +153,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_retention_campaign(self, campaign_id: str) -> Optional[RetentionCampaign]:
         """Get retention campaign by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM retention_campaigns WHERE id = %s", (campaign_id,))
@@ -166,7 +166,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_all_retention_campaigns(self, status_filter: Optional[str] = None) -> List[RetentionCampaign]:
         """Get all retention campaigns, optionally filtered by status."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         query = "SELECT * FROM retention_campaigns"
@@ -187,7 +187,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_active_retention_campaigns(self) -> List[RetentionCampaign]:
         """Get currently active retention campaigns."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -206,7 +206,7 @@ class PostgresRetentionRepository(RetentionRepository):
     def update_campaign_metrics(self, campaign_id: str, sent_count: int,
                                opened_count: int, clicked_count: int, converted_count: int) -> None:
         """Update campaign performance metrics."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -223,7 +223,7 @@ class PostgresRetentionRepository(RetentionRepository):
     def save_churn_prediction(self, prediction: ChurnPrediction) -> None:
         """Save churn prediction."""
         import json
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -257,7 +257,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_churn_prediction(self, customer_id: str) -> Optional[ChurnPrediction]:
         """Get churn prediction for customer."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM churn_predictions WHERE customer_id = %s", (customer_id,))
@@ -270,7 +270,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_high_risk_customers(self, limit: int = 100) -> List[ChurnPrediction]:
         """Get customers with high churn risk."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -289,7 +289,7 @@ class PostgresRetentionRepository(RetentionRepository):
     def save_user_engagement_profile(self, profile: UserEngagementProfile) -> None:
         """Save user engagement profile."""
         import json
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -327,7 +327,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_user_engagement_profile(self, customer_id: str) -> Optional[UserEngagementProfile]:
         """Get user engagement profile by customer ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM user_engagement_profiles WHERE customer_id = %s", (customer_id,))
@@ -340,7 +340,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_users_by_segment(self, segment: UserSegment, limit: int = 100) -> List[UserEngagementProfile]:
         """Get users by engagement segment."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -358,7 +358,7 @@ class PostgresRetentionRepository(RetentionRepository):
 
     def get_retention_analytics(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """Get retention analytics for date range."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Get campaign metrics

@@ -42,7 +42,7 @@ class PostgresClickRepository(ClickRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Create clicks table
@@ -105,7 +105,7 @@ class PostgresClickRepository(ClickRepository):
 
     def save(self, click: Click) -> None:
         """Save a click."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -146,7 +146,7 @@ class PostgresClickRepository(ClickRepository):
 
     def find_by_id(self, click_id: ClickId) -> Optional[Click]:
         """Find click by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM clicks WHERE id = %s", (click_id.value,))
@@ -162,7 +162,7 @@ class PostgresClickRepository(ClickRepository):
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
                            offset: int = 0) -> List[Click]:
         """Find clicks by campaign ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -182,7 +182,7 @@ class PostgresClickRepository(ClickRepository):
 
     def find_by_filters(self, filters) -> List[Click]:
         """Find clicks by filter criteria."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         query = "SELECT * FROM clicks WHERE 1=1"
@@ -219,7 +219,7 @@ class PostgresClickRepository(ClickRepository):
 
     def count_by_campaign_id(self, campaign_id: str) -> int:
         """Count clicks for a campaign."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT COUNT(*) FROM clicks WHERE campaign_id = %s", (campaign_id,))
@@ -227,7 +227,7 @@ class PostgresClickRepository(ClickRepository):
 
     def count_conversions(self, campaign_id: str) -> int:
         """Count conversions for a campaign."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -239,7 +239,7 @@ class PostgresClickRepository(ClickRepository):
     def get_clicks_in_date_range(self, campaign_id: str,
                                 start_date: date, end_date: date) -> List[Click]:
         """Get clicks within date range for analytics."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""

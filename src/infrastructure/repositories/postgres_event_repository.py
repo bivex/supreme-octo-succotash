@@ -42,7 +42,7 @@ class PostgresEventRepository(EventRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -73,7 +73,7 @@ class PostgresEventRepository(EventRepository):
 
     def save(self, event: Event) -> None:
         """Save an event."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -93,7 +93,7 @@ class PostgresEventRepository(EventRepository):
 
     def get_by_id(self, event_id: str) -> Optional[Event]:
         """Get event by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM events WHERE id = %s", (event_id,))
@@ -108,7 +108,7 @@ class PostgresEventRepository(EventRepository):
 
     def get_by_user_id(self, user_id: str, limit: int = 100) -> List[Event]:
         """Get events by user ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -128,7 +128,7 @@ class PostgresEventRepository(EventRepository):
 
     def get_by_session_id(self, session_id: str, limit: int = 100) -> List[Event]:
         """Get events by session ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -148,7 +148,7 @@ class PostgresEventRepository(EventRepository):
 
     def get_by_click_id(self, click_id: str, limit: int = 100) -> List[Event]:
         """Get events by click ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -168,7 +168,7 @@ class PostgresEventRepository(EventRepository):
 
     def get_by_campaign_id(self, campaign_id: int, limit: int = 100) -> List[Event]:
         """Get events by campaign ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -194,7 +194,7 @@ class PostgresEventRepository(EventRepository):
         limit: int = 1000
     ) -> List[Event]:
         """Get events within a time range."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if event_type:
@@ -227,7 +227,7 @@ class PostgresEventRepository(EventRepository):
         group_by: str = 'event_type'
     ) -> Dict[str, int]:
         """Get event counts grouped by specified field."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if group_by == 'event_type':

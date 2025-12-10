@@ -27,7 +27,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Create customer_ltv table
@@ -95,7 +95,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def save_customer_ltv(self, customer_ltv: CustomerLTV) -> None:
         """Save customer LTV data."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -141,7 +141,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_customer_ltv(self, customer_id: str) -> Optional[CustomerLTV]:
         """Get customer LTV by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM customer_ltv WHERE customer_id = %s", (customer_id,))
@@ -154,7 +154,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_customers_by_segment(self, segment: str, limit: int = 100) -> List[CustomerLTV]:
         """Get customers by LTV segment."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -172,7 +172,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_customers_by_cohort(self, cohort_id: str) -> List[CustomerLTV]:
         """Get customers by cohort ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -190,7 +190,7 @@ class PostgresLTVRepository(LTVRepository):
     def save_cohort(self, cohort: Cohort) -> None:
         """Save cohort data."""
         import json
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -224,7 +224,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_cohort(self, cohort_id: str) -> Optional[Cohort]:
         """Get cohort by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM cohorts WHERE id = %s", (cohort_id,))
@@ -237,7 +237,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_all_cohorts(self, limit: int = 100) -> List[Cohort]:
         """Get all cohorts."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -254,7 +254,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def save_ltv_segment(self, segment: LTVSegment) -> None:
         """Save LTV segment data."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -292,7 +292,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_ltv_segment(self, segment_id: str) -> Optional[LTVSegment]:
         """Get LTV segment by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM ltv_segments WHERE id = %s", (segment_id,))
@@ -305,7 +305,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_all_ltv_segments(self) -> List[LTVSegment]:
         """Get all LTV segments."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM ltv_segments ORDER BY min_ltv DESC")
@@ -318,7 +318,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def get_ltv_analytics(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """Get LTV analytics for date range."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Get total metrics

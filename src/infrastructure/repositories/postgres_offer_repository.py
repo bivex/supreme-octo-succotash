@@ -43,7 +43,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -101,7 +101,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def save(self, offer: Offer) -> None:
         """Save an offer."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -146,7 +146,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def find_by_id(self, offer_id: str) -> Optional[Offer]:
         """Get offer by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM offers WHERE id = %s", (offer_id,))
@@ -161,7 +161,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def find_by_campaign_id(self, campaign_id: str) -> List[Offer]:
         """Get offers by campaign ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -184,7 +184,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def delete_by_id(self, offer_id: str) -> bool:
         """Delete offer by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("DELETE FROM offers WHERE id = %s", (offer_id,))
@@ -196,7 +196,7 @@ class PostgresOfferRepository(OfferRepository):
 
     def exists_by_id(self, offer_id: str) -> bool:
         """Check if offer exists by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT 1 FROM offers WHERE id = %s", (offer_id,))

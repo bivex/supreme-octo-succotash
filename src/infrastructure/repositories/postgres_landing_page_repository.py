@@ -42,7 +42,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -88,7 +88,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def save(self, landing_page: LandingPage) -> None:
         """Save a landing page."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -119,7 +119,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def find_by_id(self, landing_page_id: str) -> Optional[LandingPage]:
         """Get landing page by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM landing_pages WHERE id = %s", (landing_page_id,))
@@ -134,7 +134,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def find_by_campaign_id(self, campaign_id: str) -> List[LandingPage]:
         """Get landing pages by campaign ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -157,7 +157,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def delete_by_id(self, landing_page_id: str) -> bool:
         """Delete landing page by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("DELETE FROM landing_pages WHERE id = %s", (landing_page_id,))
@@ -169,7 +169,7 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def exists_by_id(self, landing_page_id: str) -> bool:
         """Check if landing page exists by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT 1 FROM landing_pages WHERE id = %s", (landing_page_id,))

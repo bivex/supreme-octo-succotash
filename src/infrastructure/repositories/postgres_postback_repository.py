@@ -42,7 +42,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -91,7 +91,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def save(self, postback: Postback) -> None:
         """Save a postback."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -125,7 +125,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def get_by_id(self, postback_id: str) -> Optional[Postback]:
         """Get postback by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM postbacks WHERE id = %s", (postback_id,))
@@ -140,7 +140,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def get_by_conversion_id(self, conversion_id: str) -> List[Postback]:
         """Get postbacks by conversion ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -159,7 +159,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def get_pending(self, limit: int = 100) -> List[Postback]:
         """Get pending postbacks ready for delivery."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -179,7 +179,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def get_by_status(self, status: PostbackStatus, limit: int = 100) -> List[Postback]:
         """Get postbacks by status."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -199,7 +199,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def update_status(self, postback_id: str, status: PostbackStatus) -> None:
         """Update postback status."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -211,7 +211,7 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def get_retry_candidates(self, current_time: datetime, limit: int = 50) -> List[Postback]:
         """Get postbacks that should be retried now."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""

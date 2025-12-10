@@ -43,7 +43,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Create campaigns table
@@ -100,7 +100,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def save(self, campaign: Campaign) -> None:
         """Save a campaign."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -154,7 +154,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def find_by_id(self, campaign_id: CampaignId) -> Optional[Campaign]:
         """Find campaign by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -172,7 +172,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def find_all(self, limit: int = 50, offset: int = 0) -> List[Campaign]:
         """Find all campaigns with pagination."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -192,7 +192,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def exists_by_id(self, campaign_id: CampaignId) -> bool:
         """Check if campaign exists by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -204,7 +204,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def delete_by_id(self, campaign_id: CampaignId) -> None:
         """Delete campaign by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -216,7 +216,7 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def count_all(self) -> int:
         """Count total campaigns."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""

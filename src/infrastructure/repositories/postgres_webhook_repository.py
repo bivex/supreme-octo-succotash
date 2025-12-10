@@ -41,7 +41,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -81,7 +81,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def save(self, webhook: TelegramWebhook) -> None:
         """Save a webhook message."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -107,7 +107,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def get_by_id(self, webhook_id: str) -> Optional[TelegramWebhook]:
         """Get webhook by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM webhooks WHERE id = %s", (webhook_id,))
@@ -122,7 +122,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def get_unprocessed(self, limit: int = 100) -> List[TelegramWebhook]:
         """Get unprocessed webhook messages."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -142,7 +142,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def mark_processed(self, webhook_id: str) -> None:
         """Mark webhook as processed."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -154,7 +154,7 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def get_by_chat_id(self, chat_id: int, limit: int = 50) -> List[TelegramWebhook]:
         """Get webhooks by chat ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""

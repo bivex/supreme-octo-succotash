@@ -36,7 +36,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema for analytics caching."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Create analytics cache table
@@ -164,7 +164,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
     def save_analytics_snapshot(self, analytics: Analytics) -> None:
         """Save analytics snapshot for caching."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cache_key = f"{analytics.campaign_id}_{analytics.time_range['start_date']}_{analytics.time_range['end_date']}_{analytics.time_range['granularity']}"
@@ -211,7 +211,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
     def get_cached_analytics(self, campaign_id: str, start_date: date,
                            end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cache_key = f"{campaign_id}_{start_date}_{end_date}_day"

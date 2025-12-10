@@ -42,7 +42,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -85,7 +85,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def save(self, conversion: Conversion) -> None:
         """Save a conversion."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -114,7 +114,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def get_by_id(self, conversion_id: str) -> Optional[Conversion]:
         """Get conversion by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM conversions WHERE id = %s", (conversion_id,))
@@ -129,7 +129,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def get_by_click_id(self, click_id: str) -> List[Conversion]:
         """Get conversions by click ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -148,7 +148,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def get_by_order_id(self, order_id: str) -> Optional[Conversion]:
         """Get conversion by order ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM conversions WHERE external_id = %s", (order_id,))
@@ -163,7 +163,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def get_unprocessed(self, limit: int = 100) -> List[Conversion]:
         """Get unprocessed conversions for postback sending."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -183,7 +183,7 @@ class PostgresConversionRepository(ConversionRepository):
 
     def mark_processed(self, conversion_id: str) -> None:
         """Mark conversion as processed (postbacks sent)."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -201,7 +201,7 @@ class PostgresConversionRepository(ConversionRepository):
         limit: int = 1000
     ) -> List[Conversion]:
         """Get conversions within a time range."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if conversion_type:
@@ -234,7 +234,7 @@ class PostgresConversionRepository(ConversionRepository):
         group_by: str = 'conversion_type'
     ) -> Dict[str, Any]:
         """Get conversion statistics grouped by specified field."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if group_by == 'conversion_type':
@@ -288,7 +288,7 @@ class PostgresConversionRepository(ConversionRepository):
         conversion_type: Optional[str] = None
     ) -> float:
         """Get total revenue from conversions in time range."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if conversion_type:

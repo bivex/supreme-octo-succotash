@@ -42,7 +42,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def _initialize_db(self) -> None:
         """Initialize database schema."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -87,7 +87,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def save(self, goal: Goal) -> None:
         """Save a goal."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -117,7 +117,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def get_by_id(self, goal_id: str) -> Optional[Goal]:
         """Get goal by ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM goals WHERE id = %s", (goal_id,))
@@ -132,7 +132,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def get_by_campaign_id(self, campaign_id: int, active_only: bool = True) -> List[Goal]:
         """Get goals by campaign ID."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if active_only:
@@ -158,7 +158,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def get_by_type(self, goal_type: GoalType, campaign_id: Optional[int] = None) -> List[Goal]:
         """Get goals by type, optionally filtered by campaign."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if campaign_id is not None:
@@ -184,7 +184,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def update_goal(self, goal_id: str, updates: dict) -> Optional[Goal]:
         """Update goal with new data."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         # Build dynamic update query
@@ -222,7 +222,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def delete_goal(self, goal_id: str) -> bool:
         """Delete a goal."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("DELETE FROM goals WHERE id = %s", (goal_id,))
@@ -238,7 +238,7 @@ class PostgresGoalRepository(GoalRepository):
 
     def get_goals_by_tag(self, tag: str, campaign_id: Optional[int] = None) -> List[Goal]:
         """Get goals by tag, optionally filtered by campaign."""
-        conn = self._get_connection()
+        conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         if campaign_id is not None:
