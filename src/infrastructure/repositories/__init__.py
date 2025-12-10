@@ -17,6 +17,7 @@ from .sqlite_event_repository import SQLiteEventRepository
 from .sqlite_conversion_repository import SQLiteConversionRepository
 from .sqlite_postback_repository import SQLitePostbackRepository
 from .sqlite_goal_repository import SQLiteGoalRepository
+from .sqlite_ltv_repository import SQLiteLTVRepository
 
 __all__ = [
     'InMemoryCampaignRepository',
@@ -34,5 +35,6 @@ __all__ = [
     'SQLiteEventRepository',
     'SQLiteConversionRepository',
     'SQLitePostbackRepository',
-    'SQLiteGoalRepository'
+    'SQLiteGoalRepository',
+    'SQLiteLTVRepository'
 ]
