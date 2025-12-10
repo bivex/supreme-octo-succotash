@@ -272,7 +272,15 @@ class PostgresCampaignRepository(CampaignRepository):
                 self._container.release_db_connection(conn)
 
     def count_all(self) -> int:
-        """Count total campaigns."""
+        """Count total campaigns with caching."""
+        import time
+
+        # Простое кеширование на 30 секунд
+        current_time = time.time()
+        if hasattr(self, '_count_cache') and hasattr(self, '_count_cache_time'):
+            if current_time - self._count_cache_time < 30:  # 30 секунд TTL
+                return self._count_cache
+
         conn = None
         try:
             conn = self._container.get_db_connection()
@@ -283,7 +291,13 @@ class PostgresCampaignRepository(CampaignRepository):
                 WHERE is_deleted = FALSE
             """)
 
-            return cursor.fetchone()[0]
+            count = cursor.fetchone()[0]
+
+            # Кешируем результат
+            self._count_cache = count
+            self._count_cache_time = current_time
+
+            return count
         finally:
             if conn:
                 self._container.release_db_connection(conn)
