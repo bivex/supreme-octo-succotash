@@ -36,8 +36,8 @@ def run_once(connection) -> None:
     try:
         report = upholder.run_full_audit()
 
-        print("
-✅ Audit completed!"        print(f"⏱️  Duration: {report.duration_seconds:.2f} seconds")
+        print("\n✅ Audit completed!")
+        print(f"⏱️  Duration: {report.duration_seconds:.2f} seconds")
         print(f"🔧 Optimizations applied: {len(report.optimizations_applied)}")
         print(f"🚨 Alerts generated: {len(report.alerts_generated)}")
         print(f"💡 Recommendations pending: {len(report.recommendations_pending)}")
@@ -123,22 +123,23 @@ def get_dashboard(connection) -> None:
 
         # Cache metrics
         cache = dashboard['current_metrics']['cache']
-        print("
-💾 Cache Performance:"        print(".1f"        print(".1f"
+        print("\n💾 Cache Performance:")
+        print(f"  Heap hit ratio: {cache['average_metrics'].get('heap_hit_ratio', 0):.1f}%")
+        print(f"  Index hit ratio: {cache['average_metrics'].get('index_hit_ratio', 0):.1f}%")
         # Query performance
         query_perf = dashboard['current_metrics']['query_performance']
         if 'total_issues' in query_perf:
-            print("
-🔍 Query Performance:"            print(f"  Issues found: {query_perf['total_issues']}")
+            print("\n🔍 Query Performance:")
+            print(f"  Issues found: {query_perf['total_issues']}")
 
             if query_perf.get('top_slow_queries'):
                 print("  Top slow queries:")
                 for i, query in enumerate(query_perf['top_slow_queries'][:3], 1):
-                    print(".1f"
+                    print(f"    {i}. {query.get('query', 'N/A')} ({query.get('mean_time', 0):.1f}ms)")
         # Recent alerts
         if dashboard.get('recent_alerts'):
-            print("
-🚨 Recent Alerts:"            for alert_info in dashboard['recent_alerts']:
+            print("\n🚨 Recent Alerts:")
+            for alert_info in dashboard['recent_alerts']:
                 timestamp = alert_info['timestamp'][:19]  # YYYY-MM-DDTHH:MM:SS
                 alerts = alert_info['alerts']
                 if alerts:

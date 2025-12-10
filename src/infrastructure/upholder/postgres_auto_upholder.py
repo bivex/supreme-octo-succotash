@@ -34,6 +34,11 @@ class UpholderReport:
     recommendations_pending: List[str]
     performance_improvements: Dict[str, Any]
     next_run_scheduled: datetime
+    indexes_deleted: List[str] = None  # Track automatically deleted indexes
+
+    def __post_init__(self):
+        if self.indexes_deleted is None:
+            self.indexes_deleted = []
 
 
 @dataclass
@@ -52,7 +57,12 @@ class UpholderConfig:
 
     # Auto-apply settings
     auto_apply_safe_optimizations: bool = False  # Only safe optimizations
+    auto_delete_unused_indexes: bool = False  # Auto-delete unused indexes (dangerous!)
     dry_run_mode: bool = True  # Don't actually apply changes
+
+    # Index deletion safety settings
+    unused_index_age_days: int = 30  # Minimum age before considering deletion
+    unused_index_max_size_mb: int = 100  # Don't delete indexes larger than this
 
     # Alert settings
     enable_alerts: bool = True
@@ -207,10 +217,18 @@ class PostgresAutoUpholder:
                     ])
 
                 if audit.unused_indexes:
+                    unused_count = len(audit.unused_indexes)
+                    alerts_generated.append(f"Table {table}: {unused_count} unused indexes detected")
                     recommendations_pending.extend([
                         f"Consider dropping unused index: {idx['name']} on {table}"
                         for idx in audit.unused_indexes[:2]  # Top 2 per table
                     ])
+
+            # 2.5. Automatic Index Deletion (if enabled)
+            deleted_indexes = self._delete_unused_indexes(index_audit_results)
+            if deleted_indexes:
+                optimizations_applied.extend(deleted_indexes)
+                alerts_generated.append(f"Automatically deleted {len(deleted_indexes)} unused indexes")
 
             # 3. Cache Analysis
             logger.info("Analyzing cache performance...")
@@ -273,7 +291,8 @@ class PostgresAutoUpholder:
             alerts_generated=alerts_generated,
             recommendations_pending=recommendations_pending,
             performance_improvements=performance_improvements,
-            next_run_scheduled=datetime.now() + timedelta(minutes=self.config.query_analysis_interval)
+            next_run_scheduled=datetime.now() + timedelta(minutes=self.config.query_analysis_interval),
+            indexes_deleted=deleted_indexes
         )
 
         # Store report
@@ -381,6 +400,96 @@ class PostgresAutoUpholder:
         # For now, just log that it's running
         logger.debug("Bulk optimization check completed")
 
+    def _delete_unused_indexes(self, index_audit_results: Dict[str, Any]) -> List[str]:
+        """Automatically delete unused indexes with safety checks."""
+        if not self.config.auto_delete_unused_indexes:
+            return []
+
+        deleted_indexes = []
+        logger.info("🔍 Checking for unused indexes eligible for automatic deletion")
+
+        try:
+            with self.connection_pool.getconn() as conn:
+                with conn.cursor() as cursor:
+                    for table, audit in index_audit_results.items():
+                        for unused_index in audit.unused_indexes:
+                            index_name = unused_index.get('name', '')
+                            if not index_name:
+                                continue
+
+                            # Safety check 1: Skip if dry-run mode
+                            if self.config.dry_run_mode:
+                                logger.info(f"DRY RUN: Would delete unused index {index_name} on {table}")
+                                continue
+
+                            # Safety check 2: Check index age
+                            cursor.execute("""
+                                SELECT
+                                    pg_stat_get_last_scan_time(indexrelid) as last_scan,
+                                    pg_relation_size(indexrelid) as size_bytes,
+                                    schemaname,
+                                    tablename
+                                FROM pg_stat_user_indexes
+                                WHERE indexrelname = %s
+                            """, (index_name,))
+
+                            result = cursor.fetchone()
+                            if not result:
+                                logger.warning(f"Index {index_name} not found in statistics")
+                                continue
+
+                            last_scan, size_bytes, schema, table_name = result
+                            size_mb = size_bytes / 1024 / 1024
+
+                            # Safety check 3: Index age (must be unused for minimum period)
+                            if last_scan:
+                                age_days = (datetime.now() - last_scan).days
+                                if age_days < self.config.unused_index_age_days:
+                                    logger.info(f"Skipping {index_name}: only {age_days} days unused "
+                                              f"(minimum {self.config.unused_index_age_days})")
+                                    continue
+
+                            # Safety check 4: Index size (don't delete very large indexes automatically)
+                            if size_mb > self.config.unused_index_max_size_mb:
+                                logger.warning(f"Skipping {index_name}: too large ({size_mb:.1f}MB > "
+                                             f"{self.config.unused_index_max_size_mb}MB limit)")
+                                continue
+
+                            # Safety check 5: Don't delete primary key or unique indexes
+                            cursor.execute("""
+                                SELECT indisprimary, indisunique
+                                FROM pg_index
+                                WHERE indexrelid = (SELECT oid FROM pg_class WHERE relname = %s)
+                            """, (index_name,))
+                            index_props = cursor.fetchone()
+                            if index_props and (index_props[0] or index_props[1]):  # primary or unique
+                                logger.warning(f"Skipping {index_name}: primary key or unique index")
+                                continue
+
+                            # All safety checks passed - delete the index
+                            try:
+                                drop_statement = f"DROP INDEX IF EXISTS {schema}.{index_name}"
+                                logger.warning(f"🗑️ AUTO-DELETING unused index: {index_name} on {table} "
+                                             f"(age: {age_days if last_scan else 'unknown'} days, "
+                                             f"size: {size_mb:.1f}MB)")
+
+                                cursor.execute(drop_statement)
+                                deleted_indexes.append(f"Dropped unused index: {index_name}")
+                                conn.commit()
+
+                            except Exception as e:
+                                logger.error(f"Failed to drop index {index_name}: {e}")
+                                conn.rollback()
+                                continue
+
+        except Exception as e:
+            logger.error(f"Error during automatic index deletion: {e}")
+
+        if deleted_indexes:
+            logger.info(f"✅ Automatically deleted {len(deleted_indexes)} unused indexes")
+
+        return deleted_indexes
+
     def _apply_safe_optimizations(self, issues: List) -> List[str]:
         """Apply safe optimizations automatically."""
         applied = []
@@ -474,6 +583,9 @@ class PostgresAutoUpholder:
                 'index_audit_interval': self.config.index_audit_interval,
                 'cache_monitoring_interval': self.config.cache_monitoring_interval,
                 'auto_apply_optimizations': self.config.auto_apply_safe_optimizations,
+                'auto_delete_unused_indexes': self.config.auto_delete_unused_indexes,
+                'unused_index_age_days': self.config.unused_index_age_days,
+                'unused_index_max_size_mb': self.config.unused_index_max_size_mb,
                 'dry_run_mode': self.config.dry_run_mode
             },
             'performance_baseline': self.performance_baseline,
