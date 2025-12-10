@@ -1,6 +1,7 @@
 """Dependency injection container and composition root."""
 
 import psycopg2.pool
+import threading
 
 # Infrastructure
 from .infrastructure.repositories import (
@@ -74,33 +75,35 @@ from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, Eve
 
 
 class Container:
-    """Dependency injection container."""
+    """Dependency injection container with thread-safe singleton management."""
 
     def __init__(self, settings=None):
         self._singletons = {}
         self._settings = settings
+        self._lock = threading.RLock()  # Reentrant lock for thread safety
 
     def get_db_connection_pool(self):
-        """Get optimized PostgreSQL connection pool with advanced monitoring."""
-        if 'db_connection_pool' not in self._singletons:
-            self._singletons['db_connection_pool'] = AdvancedConnectionPool(
-                minconn=5,          # Увеличено для лучшей производительности
-                maxconn=32,         # Оптимально для большинства приложений
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password",
-                client_encoding='utf8',
-                # Оптимизации соединения для лучшей производительности
-                connect_timeout=10,
-                keepalives=1,
-                keepalives_idle=30,
-                keepalives_interval=10,
-                keepalives_count=5,
-                tcp_user_timeout=60000,
-            )
-        return self._singletons['db_connection_pool']
+        """Get optimized PostgreSQL connection pool with advanced monitoring and thread-safe creation."""
+        with self._lock:
+            if 'db_connection_pool' not in self._singletons:
+                self._singletons['db_connection_pool'] = AdvancedConnectionPool(
+                    minconn=5,          # Увеличено для лучшей производительности
+                    maxconn=32,         # Оптимально для большинства приложений
+                    host="localhost",
+                    port=5432,
+                    database="supreme_octosuccotash_db",
+                    user="app_user",
+                    password="app_password",
+                    client_encoding='utf8',
+                    # Оптимизации соединения для лучшей производительности
+                    connect_timeout=10,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=10,
+                    keepalives_count=5,
+                    tcp_user_timeout=60000,
+                )
+            return self._singletons['db_connection_pool']
 
     def get_pool_stats(self):
         """Get database connection pool statistics."""
@@ -822,20 +825,22 @@ class Container:
         return self._singletons['analytics_routes']
 
     def get_postgres_upholder(self):
-        """Get PostgreSQL Auto Upholder instance."""
-        if 'postgres_upholder' not in self._singletons:
-            from .infrastructure.upholder.postgres_auto_upholder import create_default_upholder
-            connection_pool = self.get_db_connection_pool()
-            self._singletons['postgres_upholder'] = create_default_upholder(connection_pool)
-        return self._singletons['postgres_upholder']
+        """Get PostgreSQL Auto Upholder instance with thread-safe creation."""
+        with self._lock:
+            if 'postgres_upholder' not in self._singletons:
+                from .infrastructure.upholder.postgres_auto_upholder import create_default_upholder
+                connection_pool = self.get_db_connection_pool()
+                self._singletons['postgres_upholder'] = create_default_upholder(connection_pool)
+            return self._singletons['postgres_upholder']
 
     def get_postgres_cache_monitor(self):
-        """Get PostgreSQL cache monitor instance."""
-        if 'postgres_cache_monitor' not in self._singletons:
-            from .infrastructure.monitoring.postgres_cache_monitor import create_default_cache_monitor
-            connection_pool = self.get_db_connection_pool()
-            self._singletons['postgres_cache_monitor'] = create_default_cache_monitor(connection_pool)
-        return self._singletons['postgres_cache_monitor']
+        """Get PostgreSQL cache monitor instance with thread-safe creation."""
+        with self._lock:
+            if 'postgres_cache_monitor' not in self._singletons:
+                from .infrastructure.monitoring.postgres_cache_monitor import create_default_cache_monitor
+                connection_pool = self.get_db_connection_pool()
+                self._singletons['postgres_cache_monitor'] = create_default_cache_monitor(connection_pool)
+            return self._singletons['postgres_cache_monitor']
 
 
 # Global container instance

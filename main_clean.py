@@ -112,34 +112,49 @@ class BackgroundServiceManager:
 
 
 class DatabaseConnectionTester:
-    """Tests database connectivity and determines driver information."""
+    """Tests database connectivity using connection pool and determines driver information."""
 
-    @staticmethod
-    def test_postgresql_connection() -> tuple[bool, str]:
-        """Test PostgreSQL connection and return (is_connected, driver_info)."""
-        try:
-            import psycopg2
+    def __init__(self, container_instance):
+        """Initialize with container instance for thread-safe connection testing."""
+        self.container = container_instance
+        self._connection_lock = threading.Lock()  # Protect connection testing
 
-            # Use configuration settings instead of hardcoded values
-            conn_params = {
-                'host': getattr(settings.database, 'host', 'localhost'),
-                'port': getattr(settings.database, 'port', 5432),
-                'database': getattr(settings.database, 'name', 'supreme_octosuccotash_db'),
-                'user': getattr(settings.database, 'user', 'app_user'),
-                'password': getattr(settings.database, 'password', 'app_password'),
-                'connect_timeout': 5
-            }
+    def test_postgresql_connection(self) -> tuple[bool, str]:
+        """Test PostgreSQL connection using connection pool with thread safety."""
+        with self._connection_lock:
+            try:
+                import psycopg2
 
-            with psycopg2.connect(**conn_params) as conn:
-                return True, "PostgreSQL"
+                # Use connection pool from container for thread-safe testing
+                pool = self.container.get_db_connection_pool()
+                conn = None
 
-        except ImportError:
-            logger.warning("psycopg2 not available, falling back to SQLite")
-            return False, "SQLite (psycopg2 not installed)"
-        except Exception as e:
-            error_msg = str(e)[:100] + "..." if len(str(e)) > 100 else str(e)
-            logger.warning(f"PostgreSQL connection failed: {error_msg}")
-            return False, "SQLite (PostgreSQL unavailable)"
+                try:
+                    # Get connection from pool with timeout
+                    conn = pool.getconn()
+
+                    # Test connection with simple query
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT 1")
+                        result = cursor.fetchone()
+
+                        if result and result[0] == 1:
+                            return True, "PostgreSQL"
+                        else:
+                            return False, "SQLite (PostgreSQL test query failed)"
+
+                finally:
+                    # Always return connection to pool
+                    if conn:
+                        pool.putconn(conn)
+
+            except ImportError:
+                logger.warning("psycopg2 not available, falling back to SQLite")
+                return False, "SQLite (psycopg2 not installed)"
+            except Exception as e:
+                error_msg = str(e)[:100] + "..." if len(str(e)) > 100 else str(e)
+                logger.warning(f"PostgreSQL connection failed: {error_msg}")
+                return False, "SQLite (PostgreSQL unavailable)"
 
     @staticmethod
     def log_database_info(driver_info: str) -> None:
@@ -152,7 +167,7 @@ class ServerRunner:
 
     def __init__(self):
         self.service_manager = BackgroundServiceManager()
-        self.db_tester = DatabaseConnectionTester()
+        self.db_tester = DatabaseConnectionTester(container)
 
     def setup_signal_handlers(self) -> None:
         """Setup signal handlers for graceful shutdown."""
