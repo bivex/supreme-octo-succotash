@@ -383,7 +383,17 @@ class URLShortener:
             pass
         except Exception:
             return None
-    
+
+    # ==================== LEGACY COMPATIBILITY METHODS ====================
+
+    def shorten_url(self, original_url: str) -> tuple[str, dict]:
+        """Legacy method for backward compatibility"""
+        return shorten_url(original_url)
+
+    def expand_url(self, short_url: str) -> tuple[str | None, dict | None]:
+        """Legacy method for backward compatibility"""
+        return expand_url(short_url)
+
     # ==================== STATISTICS & MONITORING ====================
     
     def get_stats(self) -> Dict:
@@ -407,13 +417,83 @@ class URLShortener:
         return total / (1024 * 1024)
 
 
+# ==================== LEGACY COMPATIBILITY ====================
+
+def shorten_url(original_url: str) -> tuple[str, dict]:
+    """
+    Legacy interface compatibility - extracts params from URL and encodes
+    """
+    from urllib.parse import urlparse, parse_qs
+
+    parsed = urlparse(original_url)
+    query_params = parse_qs(parsed.query)
+
+    # Convert to URLParams
+    params_dict = {}
+    for k, v in query_params.items():
+        if len(v) == 1:
+            params_dict[k] = v[0]
+        else:
+            params_dict[k] = v
+
+    url_params = URLParams(
+        cid=params_dict.get('cid', 'unknown'),
+        sub1=params_dict.get('sub1'),
+        sub2=params_dict.get('sub2'),
+        sub3=params_dict.get('sub3'),
+        sub4=params_dict.get('sub4'),
+        sub5=params_dict.get('sub5'),
+        click_id=params_dict.get('click_id'),
+        extra={k: v for k, v in params_dict.items()
+               if k not in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']}
+    )
+
+    # Auto-select strategy based on parameters
+    strategy = EncodingStrategy.SEQUENTIAL
+    if len(params_dict) > 3:  # Many parameters -> compressed
+        strategy = EncodingStrategy.COMPRESSED
+
+    code = url_shortener.encode(url_params, strategy)
+    short_url = f"{parsed.scheme}://{parsed.netloc}/s/{code}"
+
+    return short_url, url_params.to_dict()
+
+
+def expand_url(short_url: str) -> tuple[str | None, dict | None]:
+    """
+    Legacy interface compatibility - decodes and reconstructs URL
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(short_url)
+    path_parts = parsed.path.strip('/').split('/')
+
+    if len(path_parts) < 2 or path_parts[-2] != 's':
+        return None, None
+
+    short_code = path_parts[-1]
+    url_params = url_shortener.decode(short_code)
+
+    if not url_params:
+        return None, None
+
+    # Reconstruct URL
+    params_dict = url_params.to_dict()
+    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items())
+    full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
+
+    return full_url, params_dict
+
+
+# Global instance
+url_shortener = URLShortener()
+
+
 # ==================== USAGE EXAMPLES ====================
 
 def demo():
     """Демонстрация работы URL shortener"""
-    
-    shortener = URLShortener()
-    
+
     # Пример 1: Sequential strategy (для повторяющихся параметров)
     params1 = URLParams(
         cid="summer_promo_2024",
@@ -421,13 +501,13 @@ def demo():
         sub2="feed",
         click_id="abc123xyz"
     )
-    
-    code1 = shortener.encode(params1, EncodingStrategy.SEQUENTIAL)
+
+    code1 = url_shortener.encode(params1, EncodingStrategy.SEQUENTIAL)
     print(f"Sequential: {code1} (длина: {len(code1)})")
-    
-    decoded1 = shortener.decode(code1)
-    print(f"Decoded: {decoded1.to_dict()}\n")
-    
+
+    decoded1 = url_shortener.decode(code1)
+    print(f"Decoded: {decoded1.to_dict() if decoded1 else 'None'}\n")
+
     # Пример 2: Compressed strategy
     params2 = URLParams(
         cid="winter_sale",
@@ -437,32 +517,42 @@ def demo():
         sub4="ad_group_5",
         sub5="creative_v2"
     )
-    
-    code2 = shortener.encode(params2, EncodingStrategy.COMPRESSED)
+
+    code2 = url_shortener.encode(params2, EncodingStrategy.COMPRESSED)
     print(f"Compressed: {code2} (длина: {len(code2)})")
-    
-    decoded2 = shortener.decode(code2)
+
+    decoded2 = url_shortener.decode(code2)
     print(f"Decoded: {decoded2.to_dict() if decoded2 else 'None'}\n")
-    
+
     # Пример 3: Hybrid strategy
-    code3 = shortener.encode(params2, EncodingStrategy.HYBRID)
+    code3 = url_shortener.encode(params2, EncodingStrategy.HYBRID)
     print(f"Hybrid: {code3} (длина: {len(code3)})")
-    
+
+    # Legacy compatibility test
+    print("\n=== Legacy Compatibility Test ===")
+    test_url = "https://example.com/v1/click?cid=test_campaign&sub1=facebook&sub2=feed"
+    short, params = shorten_url(test_url)
+    print(f"Legacy shorten: {short}")
+
+    expanded, exp_params = expand_url(short)
+    print(f"Legacy expand: {expanded}")
+    print(f"Params match: {params == exp_params}")
+
     # Статистика
     print("\nStatistics:")
-    for key, val in shortener.get_stats().items():
+    for key, val in url_shortener.get_stats().items():
         print(f"  {key}: {val}")
-    
+
     # Производительность
     import time
-    
+
     iterations = 10000
     start = time.time()
     for i in range(iterations):
         params = URLParams(cid=f"campaign_{i % 100}", sub1=f"source_{i % 10}")
-        shortener.encode(params)
+        url_shortener.encode(params)
     elapsed = time.time() - start
-    
+
     print(f"\nPerformance: {iterations} encodings in {elapsed:.3f}s")
     print(f"  {iterations/elapsed:.0f} ops/sec")
 

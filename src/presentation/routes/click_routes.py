@@ -429,24 +429,26 @@ class ClickRoutes:
                     res.end(error_html)
                     return
 
-                # Create short URL for expansion
-                short_url = f"{self.local_landing_url}/s/{short_code}"
+                # Decode short link using new URLShortener
+                url_params = url_shortener.decode(short_code)
 
-                # Expand the URL
-                expanded_url, params = url_shortener.expand_url(short_url)
-
-                if not expanded_url or not params:
+                if not url_params:
                     error_html = "<html><body><h1>Error</h1><p>Short link not found or expired</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
                     res.end(error_html)
                     return
 
-                logger.info(f"Short link {short_code} redirecting to: {expanded_url}")
+                # Reconstruct tracking URL from decoded parameters
+                params_dict = url_params.to_dict()
+                query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
+                tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
+
+                logger.info(f"Short link {short_code} redirecting to: {tracking_url}")
 
                 # Redirect to the click tracking endpoint
                 res.write_status(302)
-                res.write_header("Location", expanded_url)
+                res.write_header("Location", tracking_url)
                 res.end('')
 
             except Exception as e:

@@ -153,10 +153,39 @@ class TrackingManager:
                     if result.get("status") == "success" and result.get("tracking_url"):
                         api_tracking_url = result["tracking_url"]
 
-                        # Use URLShortener to create short URL
-                        short_url, params = url_shortener.shorten_url(api_tracking_url)
+                        # Use new URLShortener to create optimized short URL
+                        from shared_url_shortener import URLParams, EncodingStrategy
 
-                        logger.info(f"Generated short tracking URL: {short_url}")
+                        # Extract parameters from API tracking URL
+                        from urllib.parse import urlparse, parse_qs
+                        parsed = urlparse(api_tracking_url)
+                        query_params = parse_qs(parsed.query)
+
+                        # Create URLParams object for optimal encoding
+                        url_params = URLParams(
+                            cid=str(payload["campaign_id"]),
+                            sub1=payload["params"].get("sub1", "telegram_bot"),
+                            sub2=payload["params"].get("sub2", "telegram"),
+                            sub3=payload["params"].get("sub3", "callback_offer"),
+                            sub4=payload["params"].get("sub4", str(user_id)),
+                            sub5=payload["params"].get("sub5", "premium_offer"),
+                            click_id=query_params.get('click_id', [None])[0],
+                            extra={
+                                'landing_page_id': str(payload.get('landing_page_id')) if payload.get('landing_page_id') else None,
+                                'offer_id': str(payload.get('offer_id')) if payload.get('offer_id') else None
+                            }
+                        )
+
+                        # Auto-select optimal strategy based on parameters
+                        strategy = EncodingStrategy.SEQUENTIAL  # Default for telegram bot
+                        if len([v for v in url_params.to_dict().values() if v]) > 3:
+                            strategy = EncodingStrategy.COMPRESSED
+
+                        # Generate ultra-short code (max 10 chars)
+                        short_code = url_shortener.encode(url_params, strategy)
+                        short_url = f"{self.local_landing_url}/s/{short_code}"
+
+                        logger.info(f"Generated ultra-short tracking URL: {short_url} (strategy: {strategy.value})")
                         return short_url
                     else:
                         logger.warning(f"API returned error: {result}")
