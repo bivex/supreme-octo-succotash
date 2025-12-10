@@ -119,9 +119,10 @@ class TrackingManager:
 
         try:
             # Prepare payload for API URL generation
+            # API expects campaign_id as integer without "camp-" prefix
             campaign_id_num = int(settings.campaign_id.replace("camp_", ""))
             payload = {
-                "campaign_id": campaign_id_num,
+                "campaign_id": campaign_id_num,  # Send as integer for API
                 "base_url": self.local_landing_url,
                 "source": source,
                 "sub1": additional_params.get("sub1", source),

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # Supreme Tracker
     tracker_domain: str = Field(..., env="TRACKER_DOMAIN")
-    campaign_id: str = "camp_9061"  # Hardcoded for Supreme Company campaign
+    campaign_id: str = Field("camp_9061", env="CAMPAIGN_ID")  # Fixed to correct campaign ID
 
     # Landing Page
     landing_url: str = Field(..., env="LANDING_URL")
