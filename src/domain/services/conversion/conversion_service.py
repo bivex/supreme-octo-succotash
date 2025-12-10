@@ -84,7 +84,7 @@ class ConversionService:
             'sub3': click.sub3,
             'sub4': click.sub4,
             'sub5': click.sub5,
-            'click_timestamp': click.created_at,
+            'click_timestamp': click.created_at.isoformat() if click.created_at else None,
             'fraud_score': click.fraud_score
         })
 
