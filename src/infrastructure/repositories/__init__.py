@@ -9,6 +9,15 @@ from .in_memory_conversion_repository import InMemoryConversionRepository
 from .in_memory_postback_repository import InMemoryPostbackRepository
 from .in_memory_goal_repository import InMemoryGoalRepository
 
+from .sqlite_campaign_repository import SQLiteCampaignRepository
+from .sqlite_click_repository import SQLiteClickRepository
+from .sqlite_analytics_repository import SQLiteAnalyticsRepository
+from .sqlite_webhook_repository import SQLiteWebhookRepository
+from .sqlite_event_repository import SQLiteEventRepository
+from .sqlite_conversion_repository import SQLiteConversionRepository
+from .sqlite_postback_repository import SQLitePostbackRepository
+from .sqlite_goal_repository import SQLiteGoalRepository
+
 __all__ = [
     'InMemoryCampaignRepository',
     'InMemoryClickRepository',
@@ -17,5 +26,13 @@ __all__ = [
     'InMemoryEventRepository',
     'InMemoryConversionRepository',
     'InMemoryPostbackRepository',
-    'InMemoryGoalRepository'
+    'InMemoryGoalRepository',
+    'SQLiteCampaignRepository',
+    'SQLiteClickRepository',
+    'SQLiteAnalyticsRepository',
+    'SQLiteWebhookRepository',
+    'SQLiteEventRepository',
+    'SQLiteConversionRepository',
+    'SQLitePostbackRepository',
+    'SQLiteGoalRepository'
 ]

@@ -14,12 +14,17 @@ class DatabaseSettings:
     user: str = "affiliate_user"
     password: str = ""
     connection_string: Optional[str] = None
+    sqlite_path: str = ":memory:"  # For stress testing with SQLite
 
     def get_connection_string(self) -> str:
         """Get database connection string."""
         if self.connection_string:
             return self.connection_string
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+
+    def get_sqlite_path(self) -> str:
+        """Get SQLite database path."""
+        return self.sqlite_path
 
 
 @dataclass
@@ -105,14 +110,15 @@ def load_settings() -> Settings:
     return Settings(
         environment=os.getenv("ENVIRONMENT", "development"),
         # Comment out database for mock server testing
-        # database=DatabaseSettings(
-        #     host=os.getenv("DB_HOST", "localhost"),
-        #     port=int(os.getenv("DB_PORT", "5432")),
-        #     database=os.getenv("DB_NAME", "affiliate_db"),
-        #     user=os.getenv("DB_USER", "affiliate_user"),
-        #     password=os.getenv("DB_PASSWORD", ""),
-        #     connection_string=os.getenv("DATABASE_URL"),
-        # ),
+        database=DatabaseSettings(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=int(os.getenv("DB_PORT", "5432")),
+            database=os.getenv("DB_NAME", "affiliate_db"),
+            user=os.getenv("DB_USER", "affiliate_user"),
+            password=os.getenv("DB_PASSWORD", ""),
+            connection_string=os.getenv("DATABASE_URL"),
+            sqlite_path=os.getenv("SQLITE_PATH", ":memory:"),
+        ),
         api=APISettings(
             host=os.getenv("API_HOST", "localhost"),
             port=int(os.getenv("API_PORT", "5000")),

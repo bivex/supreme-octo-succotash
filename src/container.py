@@ -2,14 +2,14 @@
 
 # Infrastructure
 from .infrastructure.repositories import (
-    InMemoryCampaignRepository,
-    InMemoryClickRepository,
-    InMemoryAnalyticsRepository,
-    InMemoryWebhookRepository,
-    InMemoryEventRepository,
-    InMemoryConversionRepository,
-    InMemoryPostbackRepository,
-    InMemoryGoalRepository,
+    SQLiteCampaignRepository,
+    SQLiteClickRepository,
+    SQLiteAnalyticsRepository,
+    SQLiteWebhookRepository,
+    SQLiteEventRepository,
+    SQLiteConversionRepository,
+    SQLitePostbackRepository,
+    SQLiteGoalRepository,
 )
 from .infrastructure.external import MockIpGeolocationService
 
@@ -41,19 +41,22 @@ from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, Eve
 class Container:
     """Dependency injection container."""
 
-    def __init__(self):
+    def __init__(self, settings=None):
         self._singletons = {}
+        self._settings = settings
 
     def get_campaign_repository(self):
         """Get campaign repository."""
         if 'campaign_repository' not in self._singletons:
-            self._singletons['campaign_repository'] = InMemoryCampaignRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['campaign_repository'] = SQLiteCampaignRepository(db_path)
         return self._singletons['campaign_repository']
 
     def get_click_repository(self):
         """Get click repository."""
         if 'click_repository' not in self._singletons:
-            self._singletons['click_repository'] = InMemoryClickRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['click_repository'] = SQLiteClickRepository(db_path)
         return self._singletons['click_repository']
 
     def get_analytics_repository(self):
@@ -61,9 +64,11 @@ class Container:
         if 'analytics_repository' not in self._singletons:
             click_repo = self.get_click_repository()
             campaign_repo = self.get_campaign_repository()
-            analytics_repo = InMemoryAnalyticsRepository(
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            analytics_repo = SQLiteAnalyticsRepository(
                 click_repository=click_repo,
                 campaign_repository=campaign_repo,
+                db_path=db_path,
             )
             self._singletons['analytics_repository'] = analytics_repo
         return self._singletons['analytics_repository']
@@ -153,7 +158,8 @@ class Container:
     def get_webhook_repository(self):
         """Get webhook repository."""
         if 'webhook_repository' not in self._singletons:
-            self._singletons['webhook_repository'] = InMemoryWebhookRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['webhook_repository'] = SQLiteWebhookRepository(db_path)
         return self._singletons['webhook_repository']
 
     def get_webhook_service(self):
@@ -182,7 +188,8 @@ class Container:
     def get_event_repository(self):
         """Get event repository."""
         if 'event_repository' not in self._singletons:
-            self._singletons['event_repository'] = InMemoryEventRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['event_repository'] = SQLiteEventRepository(db_path)
         return self._singletons['event_repository']
 
     def get_event_service(self):
@@ -211,7 +218,8 @@ class Container:
     def get_conversion_repository(self):
         """Get conversion repository."""
         if 'conversion_repository' not in self._singletons:
-            self._singletons['conversion_repository'] = InMemoryConversionRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['conversion_repository'] = SQLiteConversionRepository(db_path)
         return self._singletons['conversion_repository']
 
     def get_conversion_service(self):
@@ -243,7 +251,8 @@ class Container:
     def get_postback_repository(self):
         """Get postback repository."""
         if 'postback_repository' not in self._singletons:
-            self._singletons['postback_repository'] = InMemoryPostbackRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['postback_repository'] = SQLitePostbackRepository(db_path)
         return self._singletons['postback_repository']
 
     def get_postback_service(self):
@@ -295,7 +304,8 @@ class Container:
     def get_goal_repository(self):
         """Get goal repository."""
         if 'goal_repository' not in self._singletons:
-            self._singletons['goal_repository'] = InMemoryGoalRepository()
+            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+            self._singletons['goal_repository'] = SQLiteGoalRepository(db_path)
         return self._singletons['goal_repository']
 
     def get_goal_service(self):
@@ -422,4 +432,5 @@ class Container:
 
 
 # Global container instance
-container = Container()
+from .config.settings import settings
+container = Container(settings)
