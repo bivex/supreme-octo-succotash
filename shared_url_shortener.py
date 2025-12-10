@@ -537,7 +537,8 @@ def decode_tracking_url(code: str) -> dict:
 
 def create_tracking_link(base_url: str, cid: str, sub1: str = None, sub2: str = None,
                         sub3: str = None, sub4: str = None, sub5: str = None,
-                        click_id: str = None, strategy: EncodingStrategy = None) -> str:
+                        click_id: str = None, extra: dict = None,
+                        strategy: EncodingStrategy = None) -> str:
     """
     Create complete tracking link with short code.
 
@@ -546,6 +547,7 @@ def create_tracking_link(base_url: str, cid: str, sub1: str = None, sub2: str = 
         cid: Campaign ID
         sub1-sub5: Sub-parameters
         click_id: Click identifier
+        extra: Additional parameters dict
         strategy: Encoding strategy
 
     Returns:
@@ -595,10 +597,23 @@ def create_click_url(base_url: str, campaign_id: str, **kwargs) -> str:
         url = create_click_url('https://landing.com', 'camp_9061',
                               sub1='telegram', sub2='bot', user_id='123')
     """
+    # Map Telegram-specific params to standard tracking params
+    tracking_kwargs = {}
+    for key, value in kwargs.items():
+        if key == 'user_id':
+            tracking_kwargs['sub4'] = str(value)  # user_id -> sub4
+        elif key in ['sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']:
+            tracking_kwargs[key] = str(value)
+        else:
+            # Extra params go to extra dict
+            if 'extra' not in tracking_kwargs:
+                tracking_kwargs['extra'] = {}
+            tracking_kwargs['extra'][key] = str(value)
+
     return create_tracking_link(
         base_url=base_url,
         cid=campaign_id,
-        **kwargs
+        **tracking_kwargs
     )
 
 
