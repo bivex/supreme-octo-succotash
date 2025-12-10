@@ -71,8 +71,12 @@ class Container:
     def get_campaign_repository(self):
         """Get campaign repository."""
         if 'campaign_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['campaign_repository'] = SQLiteCampaignRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['campaign_repository'] = self.get_postgres_campaign_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['campaign_repository'] = SQLiteCampaignRepository(db_path)
         return self._singletons['campaign_repository']
 
     def get_click_repository(self):

@@ -33,6 +33,7 @@ class CreateCampaignHandler:
             'start_date': command.start_date,
             'end_date': command.end_date,
         }
+
         campaign = Campaign(**campaign_data)
 
         # Save to repository

@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 from datetime import datetime
 import json
 
-from ...domain.entities.campaign import Campaign
+from ...domain.entities.campaign import Campaign, CampaignStatus
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.value_objects import CampaignId, Money, Url
 
@@ -73,13 +73,13 @@ class PostgresCampaignRepository(CampaignRepository):
             id=CampaignId.from_string(row["id"]),
             name=row["name"],
             description=row["description"],
-            status=row["status"],
+            status=CampaignStatus(row["status"]),
             cost_model=row["cost_model"],
-            payout=Money.from_float(float(row["payout_amount"]), row["payout_currency"]),
-            safe_page_url=Url(row["safe_page_url"]),
-            offer_page_url=Url(row["offer_page_url"]),
-            daily_budget=Money.from_float(float(row["daily_budget_amount"]), row["daily_budget_currency"]),
-            total_budget=Money.from_float(float(row["total_budget_amount"]), row["total_budget_currency"]),
+            payout=Money.from_float(float(row["payout_amount"]), row["payout_currency"]) if row["payout_amount"] is not None else None,
+            safe_page_url=Url(row["safe_page_url"]) if row["safe_page_url"] else None,
+            offer_page_url=Url(row["offer_page_url"]) if row["offer_page_url"] else None,
+            daily_budget=Money.from_float(float(row["daily_budget_amount"]), row["daily_budget_currency"]) if row["daily_budget_amount"] is not None else None,
+            total_budget=Money.from_float(float(row["total_budget_amount"]), row["total_budget_currency"]) if row["total_budget_amount"] is not None else None,
             start_date=row["start_date"],
             end_date=row["end_date"],
             clicks_count=row["clicks_count"],
@@ -124,15 +124,20 @@ class PostgresCampaignRepository(CampaignRepository):
                 updated_at = EXCLUDED.updated_at,
                 is_deleted = EXCLUDED.is_deleted
         """, (
-            campaign.id.value, campaign.name, campaign.description, campaign.status,
-            campaign.cost_model, campaign.payout.amount, campaign.payout.currency.value,
-            campaign.safe_page_url.value, campaign.offer_page_url.value,
-            campaign.daily_budget.amount, campaign.daily_budget.currency.value,
-            campaign.total_budget.amount, campaign.total_budget.currency.value,
+            campaign.id.value, campaign.name, campaign.description, campaign.status.value,
+            campaign.cost_model,
+            campaign.payout.amount if campaign.payout else None,
+            campaign.payout.currency if campaign.payout else None,
+            campaign.safe_page_url.value if campaign.safe_page_url else None,
+            campaign.offer_page_url.value if campaign.offer_page_url else None,
+            campaign.daily_budget.amount if campaign.daily_budget else None,
+            campaign.daily_budget.currency if campaign.daily_budget else None,
+            campaign.total_budget.amount if campaign.total_budget else None,
+            campaign.total_budget.currency if campaign.total_budget else None,
             campaign.start_date, campaign.end_date,
             campaign.clicks_count, campaign.conversions_count,
             campaign.spent_amount.amount if campaign.spent_amount else 0.0,
-            campaign.spent_amount.currency.value if campaign.spent_amount else "USD",
+            campaign.spent_amount.currency if campaign.spent_amount else "USD",
             campaign.created_at, campaign.updated_at, False
         ))
 

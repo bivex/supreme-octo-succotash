@@ -259,8 +259,10 @@ class CampaignRoutes:
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
             except Exception as e:
+                import traceback
                 logger.error(f"Error creating campaign: {e}", exc_info=True)
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -280,47 +282,76 @@ class CampaignRoutes:
             try:
                 campaign_id = req.get_parameter(0)  # Get path parameter
 
-                # Mock campaign response
-                mock_campaign = {
-                    "id": campaign_id,
-                    "name": "Summer Sale Campaign",
-                    "description": "High-converting summer promotion",
-                    "status": "active",
+                # Get campaign from repository
+                from ...domain.value_objects import CampaignId
+                campaign = self.campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
+
+                if not campaign:
+                    error_response = {"error": {"code": "NOT_FOUND", "message": "Campaign not found"}}
+                    res.write_status(404)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Convert to response
+                response = {
+                    "id": campaign.id.value,
+                    "name": campaign.name,
+                    "description": campaign.description,
+                    "status": campaign.status.value,
                     "schedule": {
-                        "startDate": "2024-01-01T00:00:00Z",
-                        "endDate": "2024-01-31T23:59:59Z"
+                        "startDate": campaign.start_date.isoformat() + "Z" if campaign.start_date else None,
+                        "endDate": campaign.end_date.isoformat() + "Z" if campaign.end_date else None
                     },
                     "urls": {
-                        "safePage": "https://example.com/safe-landing",
-                        "offerPage": "https://example.com/offer"
+                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
+                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
                     },
                     "financial": {
-                        "costModel": "CPA",
-                        "payout": {"amount": 25.00, "currency": "USD"},
-                        "dailyBudget": {"amount": 100.00, "currency": "USD"},
-                        "totalBudget": {"amount": 3000.00, "currency": "USD"},
-                        "spent": {"amount": 750.00, "currency": "USD"}
+                        "costModel": campaign.cost_model,
+                        "payout": {
+                            "amount": campaign.payout.amount,
+                            "currency": campaign.payout.currency
+                        } if campaign.payout else None,
+                        "dailyBudget": {
+                            "amount": campaign.daily_budget.amount,
+                            "currency": campaign.daily_budget.currency
+                        } if campaign.daily_budget else None,
+                        "totalBudget": {
+                            "amount": campaign.total_budget.amount,
+                            "currency": campaign.total_budget.currency
+                        } if campaign.total_budget else None,
+                        "spent": {
+                            "amount": campaign.spent_amount.amount,
+                            "currency": campaign.spent_amount.currency
+                        } if campaign.spent_amount else None
                     },
                     "performance": {
-                        "clicks": 1250,
-                        "conversions": 45,
-                        "ctr": 0.032,
-                        "cr": 0.036,
-                        "epc": {"amount": 16.67, "currency": "USD"},
-                        "roi": 2.45
+                        "clicks": campaign.clicks_count,
+                        "conversions": campaign.conversions_count,
+                        "ctr": round(campaign.clicks_count / max(campaign.clicks_count, 1), 3),  # Mock CTR calculation
+                        "cr": round(campaign.conversions_count / max(campaign.clicks_count, 1), 3),  # Mock CR calculation
+                        "epc": {
+                            "amount": round(campaign.spent_amount.amount / max(campaign.conversions_count, 1), 2) if campaign.spent_amount else 0.0,
+                            "currency": campaign.spent_amount.currency if campaign.spent_amount else "USD"
+                        },
+                        "roi": round(campaign.spent_amount.amount / max(campaign.spent_amount.amount, 1), 2) if campaign.spent_amount else 0.0  # Mock ROI
                     },
-                    "createdAt": "2024-01-01T00:00:00Z",
-                    "updatedAt": "2024-01-01T12:00:00Z",
+                    "createdAt": campaign.created_at.isoformat() + "Z",
+                    "updatedAt": campaign.updated_at.isoformat() + "Z",
                     "_links": {
-                        "self": f"/v1/campaigns/{campaign_id}",
-                        "landingPages": f"/v1/campaigns/{campaign_id}/landing-pages",
-                        "offers": f"/v1/campaigns/{campaign_id}/offers",
-                        "analytics": f"/v1/campaigns/{campaign_id}/analytics"
+                        "self": f"/v1/campaigns/{campaign.id.value}",
+                        "landingPages": f"/v1/campaigns/{campaign.id.value}/landing-pages",
+                        "offers": f"/v1/campaigns/{campaign.id.value}/offers",
+                        "analytics": f"/v1/campaigns/{campaign.id.value}/analytics"
                     }
                 }
+
+                res.write_status(200)
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_campaign))
+                res.end(json.dumps(response))
 
             except ValueError as e:
                 error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
