@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""
+Quick PostgreSQL performance test script.
+Measures basic database performance metrics.
+"""
+
+import psycopg2
+import time
+import statistics
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
+def test_connection_pooling():
+    """Test connection pooling performance."""
+    print("🔗 Testing connection pooling...")
+
+    start_time = time.time()
+    connections_created = 0
+
+    # Create 50 connections quickly
+    for i in range(50):
+        try:
+            conn = psycopg2.connect(
+                host='localhost',
+                port=5432,
+                database='supreme_octosuccotash_db',
+                user='app_user',
+                password='app_password'
+            )
+            conn.close()
+            connections_created += 1
+        except Exception as e:
+            print(f"Connection failed: {e}")
+            break
+
+    connection_time = time.time() - start_time
+    print(f"✅ Created {connections_created} connections in {connection_time:.2f}s")
+    print(f"    Rate: {connections_created/connection_time:.1f} connections/second")
+def test_simple_queries():
+    """Test simple query performance."""
+    print("\n🔍 Testing simple queries...")
+
+    conn = psycopg2.connect(
+        host='localhost',
+        port=5432,
+        database='supreme_octosuccotash_db',
+        user='app_user',
+        password='app_password'
+    )
+    cursor = conn.cursor()
+
+    # Test different query types
+    queries = [
+        ("SELECT COUNT(*) FROM campaigns", "Count campaigns"),
+        ("SELECT COUNT(*) FROM clicks", "Count clicks"),
+        ("SELECT COUNT(*) FROM events", "Count events"),
+        ("SELECT * FROM campaigns LIMIT 10", "Select 10 campaigns"),
+        ("SELECT * FROM clicks LIMIT 10", "Select 10 clicks"),
+        ("SELECT id, name FROM campaigns WHERE status = 'active' LIMIT 5", "Filter active campaigns"),
+    ]
+
+    for query, description in queries:
+        start_time = time.time()
+        cursor.execute(query)
+        result = cursor.fetchall()
+        exec_time = time.time() - start_time
+
+        print("30")
+
+    conn.close()
+
+def test_concurrent_reads():
+    """Test concurrent read performance."""
+    print("\n⚡ Testing concurrent reads...")
+
+    def worker_read(worker_id):
+        conn = psycopg2.connect(
+            host='localhost',
+            port=5432,
+            database='supreme_octosuccotash_db',
+            user='app_user',
+            password='app_password'
+        )
+        cursor = conn.cursor()
+
+        start_time = time.time()
+        queries = 0
+
+        # Run queries for 10 seconds
+        while time.time() - start_time < 10:
+            cursor.execute("SELECT COUNT(*) FROM campaigns")
+            cursor.fetchone()
+            queries += 1
+
+        conn.close()
+        return queries
+
+    # Test with different concurrency levels
+    for concurrency in [1, 2, 4, 8]:
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            start_time = time.time()
+            futures = [executor.submit(worker_read, i) for i in range(concurrency)]
+            results = [future.result() for future in futures]
+            total_time = time.time() - start_time
+
+        total_queries = sum(results)
+        qps = total_queries / total_time
+
+        print(f"  {concurrency} concurrent: {total_queries} queries in {total_time:.1f}s = {qps:.0f} QPS")
+
+def test_index_performance():
+    """Test index performance."""
+    print("\n📊 Testing index performance...")
+
+    conn = psycopg2.connect(
+        host='localhost',
+        port=5432,
+        database='supreme_octosuccotash_db',
+        user='app_user',
+        password='app_password'
+    )
+    cursor = conn.cursor()
+
+    # Test indexed vs non-indexed queries
+    test_queries = [
+        ("SELECT * FROM campaigns WHERE id = 'test_campaign_1'", "Primary key lookup"),
+        ("SELECT * FROM clicks WHERE campaign_id = 'test_campaign_1' LIMIT 5", "Foreign key lookup"),
+        ("SELECT COUNT(*) FROM campaigns WHERE status = 'active'", "Status filter"),
+        ("SELECT * FROM events ORDER BY created_at DESC LIMIT 10", "Ordered by timestamp"),
+    ]
+
+    for query, description in test_queries:
+        # Run query multiple times and average
+        times = []
+        for _ in range(5):
+            start_time = time.time()
+            cursor.execute(query)
+            cursor.fetchall()
+            times.append(time.time() - start_time)
+
+        avg_time = statistics.mean(times)
+        print("30")
+
+    conn.close()
+
+def test_write_performance():
+    """Test write performance."""
+    print("\n✍️  Testing write performance...")
+
+    conn = psycopg2.connect(
+        host='localhost',
+        port=5432,
+        database='supreme_octosuccotash_db',
+        user='app_user',
+        password='app_password'
+    )
+    cursor = conn.cursor()
+
+    # Test INSERT performance
+    start_time = time.time()
+    inserts = 0
+
+    try:
+        for i in range(100):
+            cursor.execute("""
+                INSERT INTO events (
+                    id, click_id, event_type, event_data, created_at
+                ) VALUES (%s, %s, %s, %s, %s)
+            """, (
+                f'perf_test_event_{i}',
+                'test_click_1' if i % 2 == 0 else None,
+                'page_view',
+                '{"url": "/test", "duration": 100}',
+                datetime.now()
+            ))
+            inserts += 1
+
+        conn.commit()
+        insert_time = time.time() - start_time
+
+        print(f"✅ Inserted {inserts} events in {insert_time:.2f}s")
+        print(f"    Rate: {inserts/insert_time:.0f} inserts/second")
+    finally:
+        # Cleanup
+        cursor.execute("DELETE FROM events WHERE id LIKE 'perf_test_event_%'")
+        conn.commit()
+
+    conn.close()
+
+def main():
+    print("🚀 Quick PostgreSQL Performance Test")
+    print("=" * 50)
+    print(f"Started: {datetime.now()}")
+    print()
+
+    test_connection_pooling()
+    test_simple_queries()
+    test_concurrent_reads()
+    test_index_performance()
+    test_write_performance()
+
+    print("\n✅ Performance test completed!")
+    print(f"Finished: {datetime.now()}")
+
+if __name__ == "__main__":
+    main()
