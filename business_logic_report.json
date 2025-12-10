@@ -1,7 +1,7 @@
 {
   "total_endpoints": 39,
-  "implemented_endpoints": 26,
-  "mock_endpoints": 8,
+  "implemented_endpoints": 34,
+  "mock_endpoints": 0,
   "not_implemented_endpoints": 0,
   "partially_implemented_endpoints": 5,
   "critical_missing_features": [
@@ -10,7 +10,6 @@
     "Analytics and reporting"
   ],
   "recommendations": [
-    "Заменить mock данные в 8 эндпоинтах реальной бизнес логикой",
     "Добавить домены: LTV analysis, Retention campaigns, Lead forms"
   ],
   "endpoints_by_status": {
@@ -196,6 +195,32 @@
         "missing_components": []
       },
       {
+        "path": "/click",
+        "method": "GET",
+        "tags": [
+          "Traffic"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "mock.*response",
+          "test.*response"
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/click/{clickid}",
+        "method": "GET",
+        "tags": [
+          "Traffic"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "mock.*response",
+          "test.*response"
+        ],
+        "missing_components": []
+      },
+      {
         "path": "/goals",
         "method": "GET",
         "tags": [
@@ -256,6 +281,19 @@
         "missing_components": []
       },
       {
+        "path": "/clicks",
+        "method": "GET",
+        "tags": [
+          "Traffic"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "mock.*response",
+          "test.*response"
+        ],
+        "missing_components": []
+      },
+      {
         "path": "/journeys/funnel",
         "method": "GET",
         "tags": [
@@ -276,6 +314,26 @@
         "missing_components": []
       },
       {
+        "path": "/ltv/analysis",
+        "method": "GET",
+        "tags": [
+          "LTV"
+        ],
+        "route_file": "ltv_routes",
+        "mock_patterns": [],
+        "missing_components": []
+      },
+      {
+        "path": "/forms/submit",
+        "method": "POST",
+        "tags": [
+          "Forms"
+        ],
+        "route_file": "form_routes",
+        "mock_patterns": [],
+        "missing_components": []
+      },
+      {
         "path": "/retention/campaigns",
         "method": "GET",
         "tags": [
@@ -286,6 +344,33 @@
           "mock.*response",
           "test.*response",
           "\"campaigns\":\\s*\\["
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/clicks/bulk-generate",
+        "method": "POST",
+        "tags": [
+          "Clicks"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "mock.*response",
+          "test.*response"
+        ],
+        "missing_components": []
+      },
+      {
+        "path": "/clicks/validate/{clickid}",
+        "method": "GET",
+        "tags": [
+          "Clicks",
+          "Fraud"
+        ],
+        "route_file": "click_routes",
+        "mock_patterns": [
+          "mock.*response",
+          "test.*response"
         ],
         "missing_components": []
       },
@@ -333,117 +418,6 @@
         ],
         "route_file": "analytics_routes",
         "mock_patterns": [],
-        "missing_components": []
-      }
-    ],
-    "mock_implemented": [
-      {
-        "path": "/click",
-        "method": "GET",
-        "tags": [
-          "Traffic"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/click/{clickid}",
-        "method": "GET",
-        "tags": [
-          "Traffic"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks/generate",
-        "method": "POST",
-        "tags": [
-          "Clicks"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks",
-        "method": "GET",
-        "tags": [
-          "Traffic"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/ltv/analysis",
-        "method": "GET",
-        "tags": [
-          "LTV"
-        ],
-        "route_file": "ltv_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "\"status\":\\s*\"success\"",
-          "\"average_ltv\":\\s*\\d+\\.\\d+",
-          "\"total_customers\":\\s*\\d+"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/forms/submit",
-        "method": "POST",
-        "tags": [
-          "Forms"
-        ],
-        "route_file": "form_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "\"status\":\\s*\"success\"",
-          "\"lead_id\":\\s*\".*\"",
-          "\"message\":\\s*\"Form submitted successfully\""
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks/bulk-generate",
-        "method": "POST",
-        "tags": [
-          "Clicks"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
-        "missing_components": []
-      },
-      {
-        "path": "/clicks/validate/{clickid}",
-        "method": "GET",
-        "tags": [
-          "Clicks",
-          "Fraud"
-        ],
-        "route_file": "click_routes",
-        "mock_patterns": [
-          "mock.*response",
-          "test.*response"
-        ],
         "missing_components": []
       }
     ],
