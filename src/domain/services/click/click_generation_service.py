@@ -32,7 +32,7 @@ class ClickGenerationService:
 
             # Build tracking parameters
             tracking_data = {
-                'cid': str(campaign_id),
+                'cid': f"camp_{campaign_id}",
                 'ts': str(int(__import__('time').time())),  # timestamp
             }
 
