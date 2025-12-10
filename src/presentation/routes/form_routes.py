@@ -24,81 +24,58 @@ class FormRoutes:
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             try:
-                # Buffer for request body
-                data_parts = []
+                # Parse request body
+                try:
+                    # Try socketify's method first
+                    raw_body = req.get_raw_body()
+                    if raw_body:
+                        body = json.loads(raw_body.decode('utf-8') if isinstance(raw_body, bytes) else raw_body)
+                    else:
+                        body = {}
+                except (AttributeError, json.JSONDecodeError):
+                    # Fallback - assume empty body
+                    body = {}
 
-                def on_data(res, chunk, is_last, *args):
-                    try:
-                        if chunk:
-                            data_parts.append(chunk)
+                if not body:
+                    error_response = {"status": "error", "message": "Request body is required"}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
-                        if is_last:
-                            # Parse body
-                            body = {}
-                            if data_parts:
-                                full_body = b"".join(data_parts)
-                                if full_body:
-                                    try:
-                                        body = json.loads(full_body)
-                                    except (ValueError, json.JSONDecodeError):
-                                        error_response = {"status": "error", "message": "Invalid JSON in request body"}
-                                        res.write_status(400)
-                                        res.write_header("Content-Type", "application/json")
-                                        add_security_headers(res)
-                                        res.end(json.dumps(error_response))
-                                        return
+                # Extract form data and context
+                form_data = body.get('form_data', {})
+                campaign_id = body.get('campaign_id')
+                click_id = body.get('click_id')
 
-                            if not body:
-                                error_response = {"status": "error", "message": "Request body is required"}
-                                res.write_status(400)
-                                res.write_header("Content-Type", "application/json")
-                                add_security_headers(res)
-                                res.end(json.dumps(error_response))
-                                return
+                # Get IP address and user agent
+                ip_address = req.get_header('x-forwarded-for') or req.get_header('x-real-ip') or '127.0.0.1'
+                user_agent = req.get_header('user-agent') or ''
+                referrer = req.get_header('referer') or None
 
-                            # Extract form data and context
-                            form_data = body.get('form_data', {})
-                            campaign_id = body.get('campaign_id')
-                            click_id = body.get('click_id')
+                # Submit form through handler
+                result = self._form_handler.submit_form(
+                    form_data=form_data,
+                    campaign_id=campaign_id,
+                    click_id=click_id,
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
 
-                            # Get IP address and user agent
-                            ip_address = req.get_header('x-forwarded-for') or req.get_header('x-real-ip') or '127.0.0.1'
-                            user_agent = req.get_header('user-agent') or ''
-                            referrer = req.get_header('referer') or None
+                # Determine HTTP status code
+                status_code = 200
+                if result["status"] == "duplicate":
+                    status_code = 409  # Conflict
+                elif result["status"] == "spam":
+                    status_code = 400  # Bad Request
+                elif result["status"] == "error":
+                    status_code = 500
 
-                            # Submit form through handler
-                            result = self._form_handler.submit_form(
-                                form_data=form_data,
-                                campaign_id=campaign_id,
-                                click_id=click_id,
-                                ip_address=ip_address,
-                                user_agent=user_agent
-                            )
-
-                            # Determine HTTP status code
-                            status_code = 200
-                            if result["status"] == "duplicate":
-                                status_code = 409  # Conflict
-                            elif result["status"] == "spam":
-                                status_code = 400  # Bad Request
-                            elif result["status"] == "error":
-                                status_code = 500
-
-                            res.write_header("Content-Type", "application/json")
-                            add_security_headers(res)
-                            res.write_status(status_code)
-                            res.end(json.dumps(result))
-
-                    except Exception as e:
-                        logger.error(f"Error processing request data: {e}", exc_info=True)
-                        error_response = {"status": "error", "message": "Internal server error"}
-                        res.write_status(500)
-                        res.write_header("Content-Type", "application/json")
-                        add_security_headers(res)
-                        res.end(json.dumps(error_response))
-
-                # Read request body
-                req.on_data(on_data)
+                res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
+                res.write_status(status_code)
+                res.end(json.dumps(result))
 
             except Exception as e:
                 logger.error(f"Error in form submission: {e}")
