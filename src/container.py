@@ -55,7 +55,12 @@ from .application.handlers import (
 )
 
 # Application queries
-from .application.queries import GetCampaignHandler
+from .application.queries import (
+    GetCampaignHandler,
+    GetCampaignAnalyticsHandler,
+    GetCampaignLandingPagesHandler,
+    GetCampaignOffersHandler
+)
 
 # Presentation
 from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes
@@ -201,6 +206,30 @@ class Container:
             )
         return self._singletons['get_campaign_handler']
 
+    def get_get_campaign_analytics_handler(self):
+        """Get campaign analytics handler."""
+        if 'get_campaign_analytics_handler' not in self._singletons:
+            self._singletons['get_campaign_analytics_handler'] = GetCampaignAnalyticsHandler(
+                analytics_repository=self.get_postgres_analytics_repository()
+            )
+        return self._singletons['get_campaign_analytics_handler']
+
+    def get_get_campaign_landing_pages_handler(self):
+        """Get campaign landing pages handler."""
+        if 'get_campaign_landing_pages_handler' not in self._singletons:
+            self._singletons['get_campaign_landing_pages_handler'] = GetCampaignLandingPagesHandler(
+                landing_page_repository=self.get_postgres_landing_page_repository()
+            )
+        return self._singletons['get_campaign_landing_pages_handler']
+
+    def get_get_campaign_offers_handler(self):
+        """Get campaign offers handler."""
+        if 'get_campaign_offers_handler' not in self._singletons:
+            self._singletons['get_campaign_offers_handler'] = GetCampaignOffersHandler(
+                offer_repository=self.get_postgres_offer_repository()
+            )
+        return self._singletons['get_campaign_offers_handler']
+
     def get_campaign_routes(self):
         """Get campaign routes."""
         if 'campaign_routes' not in self._singletons:
@@ -211,6 +240,9 @@ class Container:
             landing_page_handler = self.get_create_landing_page_handler()
             offer_handler = self.get_create_offer_handler()
             get_handler = self.get_get_campaign_handler()
+            analytics_handler = self.get_get_campaign_analytics_handler()
+            landing_pages_handler = self.get_get_campaign_landing_pages_handler()
+            offers_handler = self.get_get_campaign_offers_handler()
 
             campaign_routes = CampaignRoutes(
                 create_campaign_handler=create_handler,
@@ -220,6 +252,9 @@ class Container:
                 create_landing_page_handler=landing_page_handler,
                 create_offer_handler=offer_handler,
                 get_campaign_handler=get_handler,
+                get_campaign_analytics_handler=analytics_handler,
+                get_campaign_landing_pages_handler=landing_pages_handler,
+                get_campaign_offers_handler=offers_handler,
             )
             self._singletons['campaign_routes'] = campaign_routes
         return self._singletons['campaign_routes']

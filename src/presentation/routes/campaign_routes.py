@@ -10,6 +10,9 @@ from ...application.handlers.resume_campaign_handler import ResumeCampaignHandle
 from ...application.handlers.create_landing_page_handler import CreateLandingPageHandler
 from ...application.handlers.create_offer_handler import CreateOfferHandler
 from ...application.queries.get_campaign_query import GetCampaignHandler
+from ...application.queries.get_campaign_analytics_query import GetCampaignAnalyticsHandler
+from ...application.queries.get_campaign_landing_pages_query import GetCampaignLandingPagesHandler
+from ...application.queries.get_campaign_offers_query import GetCampaignOffersHandler
 from ..dto.campaign_dto import CampaignSummaryResponse
 
 
@@ -23,7 +26,10 @@ class CampaignRoutes:
                  resume_campaign_handler: ResumeCampaignHandler,
                  create_landing_page_handler: CreateLandingPageHandler,
                  create_offer_handler: CreateOfferHandler,
-                 get_campaign_handler: GetCampaignHandler):
+                 get_campaign_handler: GetCampaignHandler,
+                 get_campaign_analytics_handler: GetCampaignAnalyticsHandler,
+                 get_campaign_landing_pages_handler: GetCampaignLandingPagesHandler,
+                 get_campaign_offers_handler: GetCampaignOffersHandler):
         self.create_campaign_handler = create_campaign_handler
         self.update_campaign_handler = update_campaign_handler
         self.pause_campaign_handler = pause_campaign_handler
@@ -31,6 +37,9 @@ class CampaignRoutes:
         self.create_landing_page_handler = create_landing_page_handler
         self.create_offer_handler = create_offer_handler
         self.get_campaign_handler = get_campaign_handler
+        self.get_campaign_analytics_handler = get_campaign_analytics_handler
+        self.get_campaign_landing_pages_handler = get_campaign_landing_pages_handler
+        self.get_campaign_offers_handler = get_campaign_offers_handler
 
 
     def _validate_query_parameters(self, req, allowed_params: set):
@@ -560,127 +569,37 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Generate mock data based on breakdown
-                breakdowns_data = {
-                    "byDate": [],
-                    "byTrafficSource": [],
-                    "byLandingPage": [],
-                    "byOffer": [],
-                    "byGeography": [],
-                    "byDevice": []
-                }
+                # Create analytics query
+                from ...application.queries.get_campaign_analytics_query import GetCampaignAnalyticsQuery
+                from datetime import datetime
 
-                # Fill the appropriate breakdown with sample data
+                query = GetCampaignAnalyticsQuery(
+                    campaign_id=campaign_id,
+                    start_date=datetime.fromisoformat(start_date).date(),
+                    end_date=datetime.fromisoformat(end_date).date(),
+                    granularity=granularity
+                )
+
+                # Get analytics from business logic
+                analytics = self.get_campaign_analytics_handler.handle(query)
+
+                # Convert to response format based on breakdown
                 if breakdown == "date":
-                    breakdowns_data["byDate"] = [
-                        {
-                            "date": "2024-01-15",
-                            "metrics": {
-                                "clicks": 1250,
-                                "uniqueClicks": 1200,
-                                "conversions": 38,
-                                "revenue": {"amount": 190.00, "currency": "USD"},
-                                "cost": {"amount": 62.50, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byDate": analytics.get_breakdown_by_date()}
                 elif breakdown == "traffic_source":
-                    breakdowns_data["byTrafficSource"] = [
-                        {
-                            "trafficSourceId": "ts_google",
-                            "name": "Google Ads",
-                            "metrics": {
-                                "clicks": 2500,
-                                "uniqueClicks": 2400,
-                                "conversions": 75,
-                                "revenue": {"amount": 375.00, "currency": "USD"},
-                                "cost": {"amount": 125.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byTrafficSource": analytics.get_breakdown_by_traffic_source()}
                 elif breakdown == "landing_page":
-                    breakdowns_data["byLandingPage"] = [
-                        {
-                            "landingPageId": "lp_456",
-                            "name": "Main Squeeze Page",
-                            "url": "https://example.com/page1",
-                            "metrics": {
-                                "clicks": 3000,
-                                "uniqueClicks": 2880,
-                                "conversions": 90,
-                                "revenue": {"amount": 450.00, "currency": "USD"},
-                                "cost": {"amount": 150.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byLandingPage": analytics.get_breakdown_by_landing_page()}
                 elif breakdown == "offer":
-                    breakdowns_data["byOffer"] = [
-                        {
-                            "offerId": "offer_789",
-                            "name": "Premium Product",
-                            "metrics": {
-                                "clicks": 2000,
-                                "uniqueClicks": 1920,
-                                "conversions": 60,
-                                "revenue": {"amount": 300.00, "currency": "USD"},
-                                "cost": {"amount": 100.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byOffer": analytics.get_breakdown_by_offer()}
                 elif breakdown == "geography":
-                    breakdowns_data["byGeography"] = [
-                        {
-                            "country": "US",
-                            "countryName": "United States",
-                            "metrics": {
-                                "clicks": 3500,
-                                "uniqueClicks": 3360,
-                                "conversions": 105,
-                                "revenue": {"amount": 525.00, "currency": "USD"},
-                                "cost": {"amount": 175.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byGeography": analytics.get_breakdown_by_geography()}
                 elif breakdown == "device":
-                    breakdowns_data["byDevice"] = [
-                        {
-                            "device": "desktop",
-                            "metrics": {
-                                "clicks": 3000,
-                                "uniqueClicks": 2880,
-                                "conversions": 90,
-                                "revenue": {"amount": 450.00, "currency": "USD"},
-                                "cost": {"amount": 150.00, "currency": "USD"},
-                                "ctr": 0.025,
-                                "cr": 0.03,
-                                "epc": {"amount": 5.00, "currency": "USD"},
-                                "roi": 2.0
-                            }
-                        }
-                    ]
+                    breakdowns_data = {"byDevice": analytics.get_breakdown_by_device()}
+                else:
+                    breakdowns_data = {}
 
-                # Mock analytics data
-                mock_analytics = {
+                response = {
                     "campaignId": campaign_id,
                     "timeRange": {
                         "startDate": start_date,
@@ -688,21 +607,22 @@ class CampaignRoutes:
                         "granularity": granularity
                     },
                     "metrics": {
-                        "clicks": 5000,
-                        "uniqueClicks": 4800,
-                        "conversions": 150,
-                        "revenue": {"amount": 750.00, "currency": "USD"},
-                        "cost": {"amount": 250.00, "currency": "USD"},
-                        "ctr": 0.025,
-                        "cr": 0.03,
-                        "epc": {"amount": 5.00, "currency": "USD"},
-                        "roi": 2.0
+                        "clicks": analytics.clicks,
+                        "uniqueClicks": analytics.unique_clicks,
+                        "conversions": analytics.conversions,
+                        "revenue": analytics.revenue,
+                        "cost": analytics.cost,
+                        "ctr": analytics.ctr,
+                        "cr": analytics.cr,
+                        "epc": analytics.epc,
+                        "roi": analytics.roi
                     },
                     "breakdowns": breakdowns_data
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_analytics))
+                res.end(json.dumps(response))
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
@@ -768,42 +688,46 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Mock landing pages data
-                mock_landing_pages = {
+                # Get landing pages from business logic
+                from ...application.queries.get_campaign_landing_pages_query import GetCampaignLandingPagesQuery
+
+                query = GetCampaignLandingPagesQuery(
+                    campaign_id=campaign_id,
+                    limit=page_size,
+                    offset=(page - 1) * page_size
+                )
+
+                landing_pages = self.get_campaign_landing_pages_handler.handle(query)
+
+                # Get total count for pagination
+                all_landing_pages = self.get_campaign_landing_pages_handler.handle(
+                    GetCampaignLandingPagesQuery(campaign_id=campaign_id, limit=1000, offset=0)
+                )
+                total_count = len(all_landing_pages)
+
+                # Convert to response format
+                response = {
                     "landingPages": [
                         {
-                            "id": "lp_456",
-                            "campaignId": campaign_id,
-                            "name": "Main Squeeze Page",
-                            "url": "https://example.com/page1",
-                            "pageType": "squeeze",
-                            "weight": 70,
-                            "isActive": True,
-                            "isControl": False,
-                            "performance": {
-                                "impressions": 5000,
-                                "clicks": 250,
-                                "conversions": 15,
-                                "ctr": 0.05,
-                                "cr": 0.06,
-                                "epc": {"amount": 3.50, "currency": "USD"}
-                            },
-                            "createdAt": "2024-01-01T00:00:00Z",
-                            "updatedAt": "2024-01-01T00:00:00Z"
+                            "id": lp.id,
+                            "campaignId": lp.campaign_id,
+                            "name": lp.name,
+                            "url": lp.url.value,
+                            "pageType": lp.page_type,
+                            "weight": lp.weight,
+                            "isActive": lp.is_active,
+                            "isControl": lp.is_control,
+                            "createdAt": lp.created_at.isoformat() + "Z",
+                            "updatedAt": lp.updated_at.isoformat() + "Z"
                         }
+                        for lp in landing_pages
                     ],
-                    "pagination": {
-                        "page": 1,
-                        "pageSize": 20,
-                        "totalItems": 1,
-                        "totalPages": 1,
-                        "hasNext": False,
-                        "hasPrev": False
-                    }
+                    "pagination": self._build_pagination_info(page, page_size, total_count)
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_landing_pages))
+                res.end(json.dumps(response))
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
@@ -895,9 +819,8 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        # TODO: Add route registration here
-        # app.get('/v1/campaigns/:campaign_id/landing-pages', get_campaign_landing_pages)
-        # app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
+        app.get('/v1/campaigns/:campaign_id/landing-pages', get_campaign_landing_pages)
+        app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
 
     def _register_campaign_offers(self, app):
         """Register campaign offers route."""
@@ -912,52 +835,81 @@ class CampaignRoutes:
             try:
                 campaign_id = req.get_parameter(0)
 
-                # Mock offers data
-                mock_offers = {
+                # Validate and parse query parameters for pagination
+                try:
+                    page_str = req.get_query('page')
+                    if page_str is not None:
+                        page = int(page_str)
+                        if page < 1:
+                            raise ValueError("Page must be >= 1")
+                    else:
+                        page = 1
+
+                    page_size_str = req.get_query('pageSize')
+                    if page_size_str is not None:
+                        page_size = int(page_size_str)
+                        if page_size < 1 or page_size > 100:
+                            raise ValueError("Page size must be between 1 and 100")
+                    else:
+                        page_size = 20
+
+                except ValueError as e:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
+
+                # Get offers from business logic
+                from ...application.queries.get_campaign_offers_query import GetCampaignOffersQuery
+
+                query = GetCampaignOffersQuery(
+                    campaign_id=campaign_id,
+                    limit=page_size,
+                    offset=(page - 1) * page_size
+                )
+
+                offers = self.get_campaign_offers_handler.handle(query)
+
+                # Get total count for pagination
+                all_offers = self.get_campaign_offers_handler.handle(
+                    GetCampaignOffersQuery(campaign_id=campaign_id, limit=1000, offset=0)
+                )
+                total_count = len(all_offers)
+
+                # Convert to response format
+                response = {
                     "offers": [
                         {
-                            "id": "offer_789",
-                            "campaignId": campaign_id,
-                            "name": "Premium Product",
-                            "url": "https://affiliate.com/offer/123",
-                            "offerType": "direct",
-                            "weight": 60,
-                            "isActive": True,
-                            "isControl": False,
-                            "payout": {"amount": 25.00, "currency": "USD"},
-                            "revenueShare": 0.15,
-                            "costPerClick": {"amount": 0.50, "currency": "USD"},
-                            "performance": {
-                                "clicks": 1000,
-                                "conversions": 30,
-                                "revenue": {"amount": 750.00, "currency": "USD"},
-                                "cost": {"amount": 500.00, "currency": "USD"},
-                                "cr": 0.03,
-                                "epc": {"amount": 25.00, "currency": "USD"},
-                                "roi": 1.5
+                            "id": offer.id,
+                            "campaignId": offer.campaign_id,
+                            "name": offer.name,
+                            "url": offer.url.value,
+                            "offerType": offer.offer_type,
+                            "weight": offer.weight,
+                            "isActive": offer.is_active,
+                            "isControl": offer.is_control,
+                            "payout": {
+                                "amount": float(offer.payout.amount),
+                                "currency": offer.payout.currency.value
                             },
-                            "autoPause": {
-                                "threshold": 0.02,
-                                "minClicksBeforePause": 1000
-                            },
-                            "externalId": "AFF_123",
-                            "partnerNetwork": "MaxBounty",
-                            "createdAt": "2024-01-01T00:00:00Z",
-                            "updatedAt": "2024-01-01T00:00:00Z"
+                            "revenueShare": float(offer.revenue_share),
+                            "costPerClick": {
+                                "amount": float(offer.cost_per_click.amount),
+                                "currency": offer.cost_per_click.currency.value
+                            } if offer.cost_per_click else None,
+                            "createdAt": offer.created_at.isoformat() + "Z",
+                            "updatedAt": offer.updated_at.isoformat() + "Z"
                         }
+                        for offer in offers
                     ],
-                    "pagination": {
-                        "page": 1,
-                        "pageSize": 20,
-                        "totalItems": 1,
-                        "totalPages": 1,
-                        "hasNext": False,
-                        "hasPrev": False
-                    }
+                    "pagination": self._build_pagination_info(page, page_size, total_count)
                 }
+
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
-                res.end(json.dumps(mock_offers))
+                res.end(json.dumps(response))
             except Exception:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
