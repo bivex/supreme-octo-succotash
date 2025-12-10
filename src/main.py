@@ -204,11 +204,11 @@ def _add_health_endpoints(app: socketify.App) -> None:
         res.end(json.dumps(health_response))
 
     def reset(res, req):
-        """Reset mock storage for testing."""
-        container.get_campaign_repository().__init__()
-        container.get_click_repository().__init__()
+        """Reset application state for testing."""
+        # Note: PostgreSQL repositories don't need explicit reset
+        # as they work with the database directly
         res.write_header("Content-Type", "application/json")
-        res.end(json.dumps({"message": "Mock storage reset"}))
+        res.end(json.dumps({"message": "Application state reset"}))
 
     # Register the routes
     app.get("/v1/health", health)

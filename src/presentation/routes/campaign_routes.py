@@ -1055,6 +1055,16 @@ class CampaignRoutes:
 
             try:
                 campaign_id = req.get_parameter(0)
+                logger.debug(f"create_campaign_offer: campaign_id from URL: '{campaign_id}'")
+
+                # Validate campaign_id
+                if not campaign_id:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Campaign ID is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
                 # Buffer for request body
                 data_parts = []
@@ -1097,8 +1107,9 @@ class CampaignRoutes:
                             from decimal import Decimal
 
                             # Build command with business logic validation
+                            from ...domain.value_objects import CampaignId
                             command = CreateOfferCommand(
-                                campaign_id=campaign_id,
+                                campaign_id=CampaignId(campaign_id),
                                 name=body_data['name'],
                                 url=Url(body_data['url']),
                                 offer_type=body_data.get('offerType', 'direct'),

@@ -29,6 +29,7 @@ from .infrastructure.repositories import (
     PostgresRetentionRepository,
     PostgresFormRepository,
 )
+from .infrastructure.database.advanced_connection_pool import AdvancedConnectionPool
 from .infrastructure.external import MockIpGeolocationService
 
 # Domain services
@@ -76,17 +77,24 @@ class Container:
         self._settings = settings
 
     def get_db_connection_pool(self):
-        """Get PostgreSQL connection pool."""
+        """Get optimized PostgreSQL connection pool with advanced monitoring."""
         if 'db_connection_pool' not in self._singletons:
-            self._singletons['db_connection_pool'] = psycopg2.pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=100,
+            self._singletons['db_connection_pool'] = AdvancedConnectionPool(
+                minconn=5,          # Увеличено для лучшей производительности
+                maxconn=32,         # Оптимально для большинства приложений
                 host="localhost",
                 port=5432,
                 database="supreme_octosuccotash_db",
                 user="app_user",
                 password="app_password",
-                client_encoding='utf8'
+                client_encoding='utf8',
+                # Оптимизации соединения для лучшей производительности
+                connect_timeout=10,
+                keepalives=1,
+                keepalives_idle=30,
+                keepalives_interval=10,
+                keepalives_count=5,
+                tcp_user_timeout=60000,
             )
         return self._singletons['db_connection_pool']
 

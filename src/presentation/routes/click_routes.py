@@ -81,7 +81,8 @@ class ClickRoutes:
                     return
 
                 # Get click from repository
-                click = self.track_click_handler.click_repository.find_by_id(uuid.UUID(click_id))
+                from ...domain.value_objects import ClickId
+                click = self.track_click_handler._click_repository.find_by_id(ClickId.from_string(click_id))
 
                 if not click:
                     error_response = {"error": {"code": "NOT_FOUND", "message": "Click not found"}}
@@ -93,7 +94,7 @@ class ClickRoutes:
 
                 # Convert click to response format
                 click_data = {
-                    "id": str(click.id.value),
+                    "id": str(click.id),
                     "campaign_id": click.campaign_id,
                     "ip_address": click.ip_address,
                     "user_agent": click.user_agent,
@@ -195,11 +196,12 @@ class ClickRoutes:
 
                 # Get clicks from repository
                 try:
-                    clicks = self.track_click_handler.click_repository.find_by_filters(
+                    clicks = self.track_click_handler._click_repository.find_by_filters(
                         filters=None  # TODO: Implement proper filter object
                     )
 
-                    # Apply pagination manually since filters don't support it yet
+                    # Filter out None values and apply pagination
+                    clicks = [click for click in clicks if click is not None]
                     total_clicks = len(clicks)
                     paginated_clicks = clicks[offset:offset + limit]
 
@@ -207,7 +209,7 @@ class ClickRoutes:
                     click_list = []
                     for click in paginated_clicks:
                         click_list.append({
-                            "id": str(click.id.value),
+                            "id": str(click.id),
                             "campaign_id": click.campaign_id,
                             "ip_address": click.ip_address,
                             "user_agent": click.user_agent,
@@ -339,7 +341,7 @@ class ClickRoutes:
 
                                 response = {
                                     "status": "success",
-                                    "click_id": str(click.id.value),
+                                    "click_id": str(click.id),
                                     "campaign_id": click.campaign_id,
                                     "created_at": click.created_at.isoformat()
                                 }
