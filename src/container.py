@@ -13,6 +13,9 @@ from .infrastructure.repositories import (
     SQLiteLTVRepository,
     SQLiteRetentionRepository,
     SQLiteFormRepository,
+    PostgresLTVRepository,
+    PostgresRetentionRepository,
+    PostgresFormRepository,
 )
 from .infrastructure.external import MockIpGeolocationService
 
@@ -332,6 +335,42 @@ class Container:
             self._singletons['form_repository'] = SQLiteFormRepository(db_path)
         return self._singletons['form_repository']
 
+    def get_postgres_ltv_repository(self):
+        """Get PostgreSQL LTV repository."""
+        if 'postgres_ltv_repository' not in self._singletons:
+            self._singletons['postgres_ltv_repository'] = PostgresLTVRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_ltv_repository']
+
+    def get_postgres_retention_repository(self):
+        """Get PostgreSQL retention repository."""
+        if 'postgres_retention_repository' not in self._singletons:
+            self._singletons['postgres_retention_repository'] = PostgresRetentionRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_retention_repository']
+
+    def get_postgres_form_repository(self):
+        """Get PostgreSQL form repository."""
+        if 'postgres_form_repository' not in self._singletons:
+            self._singletons['postgres_form_repository'] = PostgresFormRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_form_repository']
+
     def get_goal_service(self):
         """Get goal service."""
         if 'goal_service' not in self._singletons:
@@ -456,8 +495,9 @@ class Container:
     def get_ltv_handler(self):
         """Get LTV handler."""
         if 'ltv_handler' not in self._singletons:
+            # Use PostgreSQL repository for production
             self._singletons['ltv_handler'] = LTVHandler(
-                ltv_repository=self.get_ltv_repository()
+                ltv_repository=self.get_postgres_ltv_repository()
             )
         return self._singletons['ltv_handler']
 
@@ -465,7 +505,7 @@ class Container:
         """Get retention handler."""
         if 'retention_handler' not in self._singletons:
             self._singletons['retention_handler'] = RetentionHandler(
-                retention_repository=self.get_retention_repository(),
+                retention_repository=self.get_postgres_retention_repository(),
                 click_repository=self.get_click_repository(),
                 conversion_repository=self.get_conversion_repository()
             )
@@ -475,7 +515,7 @@ class Container:
         """Get form handler."""
         if 'form_handler' not in self._singletons:
             self._singletons['form_handler'] = FormHandler(
-                form_repository=self.get_form_repository()
+                form_repository=self.get_postgres_form_repository()
             )
         return self._singletons['form_handler']
 
@@ -483,7 +523,7 @@ class Container:
         """Get cohort analysis handler."""
         if 'cohort_analysis_handler' not in self._singletons:
             self._singletons['cohort_analysis_handler'] = CohortAnalysisHandler(
-                ltv_repository=self.get_ltv_repository()
+                ltv_repository=self.get_postgres_ltv_repository()
             )
         return self._singletons['cohort_analysis_handler']
 
@@ -491,7 +531,7 @@ class Container:
         """Get segmentation handler."""
         if 'segmentation_handler' not in self._singletons:
             self._singletons['segmentation_handler'] = SegmentationHandler(
-                retention_repository=self.get_retention_repository(),
+                retention_repository=self.get_postgres_retention_repository(),
                 click_repository=self.get_click_repository(),
                 conversion_repository=self.get_conversion_repository()
             )

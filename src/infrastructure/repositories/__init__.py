@@ -22,6 +22,9 @@ from .sqlite_goal_repository import SQLiteGoalRepository
 from .sqlite_ltv_repository import SQLiteLTVRepository
 from .sqlite_retention_repository import SQLiteRetentionRepository
 from .sqlite_form_repository import SQLiteFormRepository
+from .postgres_ltv_repository import PostgresLTVRepository
+from .postgres_retention_repository import PostgresRetentionRepository
+from .postgres_form_repository import PostgresFormRepository
 
 __all__ = [
     'InMemoryCampaignRepository',
@@ -44,5 +47,8 @@ __all__ = [
     'SQLiteGoalRepository',
     'SQLiteLTVRepository',
     'SQLiteRetentionRepository',
-    'SQLiteFormRepository'
+    'SQLiteFormRepository',
+    'PostgresLTVRepository',
+    'PostgresRetentionRepository',
+    'PostgresFormRepository'
 ]
