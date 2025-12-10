@@ -398,3 +398,4 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
         except Exception as e:
             logger.error(f"Cache storage failed: {e}")
             # Don't fail the main operation if caching fails
+

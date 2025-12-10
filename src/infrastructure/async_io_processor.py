@@ -357,3 +357,4 @@ class AsyncIOProcessor:
             'completed_tasks': self.completed_tasks,
             'http_session_active': self.http_session is not None
         }
+

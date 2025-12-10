@@ -1,0 +1,734 @@
+C:\Program Files (x86)\Intel\oneAPI\advisor\2025.4>advixe-cl  --help collect
+Intel(R) Advisor Command Line Tool
+Copyright (C) 2009-2025 Intel Corporation. All rights reserved.
+
+-c, --collect=<string>        Run the specified analysis and collect data. Tip:
+                              Specify the search-dir when collecting data.
+
+
+Usage: advisor --collect=<string> [--action-option] [--global-option] [[--]
+        <target> [<target options>]]
+
+        <string> is one of the following analysis types:
+
+            survey        - Discover where efficient vectorization and/or threading pays off the most.
+            dcfg          - Analyze data control flow graph.
+            dependencies  - Identify and explore loop-carried dependencies for marked loops.
+            map           - Identify and explore complex memory accesses for marked loops.
+            offload       - Run Offload Modeling perspective analyses with a single command.
+            projection    - Project performance on a target device.
+            roofline      - Run the Survey analysis immediately followed by the Trip Counts & FLOP analysis to visualize actual performance against hardware-imposed performance ceilings.
+            suitability   - Check predicted parallel performance in an annotated <target>.
+            tripcounts    - Identify the number of loop iterations.
+
+Action Options:
+
+--app-working-dir=<string>    Specify a directory where the application will be
+                              run.
+--assume-dependencies (default) | --no-assume-dependencies
+                              Assume that a loop has dependencies if the loop
+                              dependency type is unknown.
+--assume-hide-taxes | --no-assume-hide-taxes (default)
+                              Use an optimistic approach to estimate invocation
+                              taxes: assume the invocation tax is "hidden"
+                              and/or paid only for the first kernel launch.
+                              Important: Enable this option to analyze oneAPI
+                              (DPC++ or OpenMP target) applications running on
+                              CPU.
+--assume-ndim-dependency (default) | --no-assume-ndim-dependency
+                              When searching for an optimal N-dimensional
+                              offload, assume there are dependencies between
+                              inner and outer loops.
+--assume-single-data-transfer | --no-assume-single-data-transfer (default)
+                              Use an optimistic approach to estimate data
+                              transfer taxes: assume data is only transferred
+                              once for each offload, and all instances share
+                              that data (default).
+                              Use a pessimistic approach to estimate data
+                              transfer taxes: assume each data object is
+                              transferred for every instance of an offload that
+                              uses it. This method assumes no data re-use
+                              between calls to the same kernel. JIT-compiled
+                              loops (DPC++, OpenMP Target, or OpenCL CPU device
+                              code) are still counted only once because the
+                              call count for those loops is usually inflated.
+--auto-finalize (default) | --no-auto-finalize
+                              Finalize Survey and Trip Counts & FLOP analysis
+                              data after collection is complete.
+                              Tip: Disabling can temporarily minimize overhead
+                              when you plan to view collected data on a
+                              different machine.
+--auto-finalize (default) | --no-auto-finalize
+--batching | --no-batching (default)
+                              Enable job batching for a top-level offload.
+                              Emulate the execution of more than one instance
+                              simultaneously. This option is equivalent to
+                              --threads=total_EU_count*threads_per_EU.
+--benchmarks-sync (default) | --no-benchmarks-sync
+                              Run benchmarks on only one concurrently executing
+                              Intel Advisor instance to avoid concurrency
+                              issues with regard to platform limits.
+                              Tip: Use to generate accurate Roofline analysis
+                              results for MPI targets.
+--cache-config=<string>       Specify configuration for the selected cache
+                              simulation mode during Trip Counts & FLOP
+                              analysis:
+                              For single-device or GRF cache simulation:
+                              Set cache hierarchy for a single device. If not
+                              specified, cache configuration for the current
+                              CPU is used.
+                              Usage:
+                              --cache-config=[num_of_level1_caches]:[num_of_way
+                              s_level1_connected]:[level1_cache_size]:[level1_c
+                              acheline_size]/[num_of_level2_caches]:[num_of_way
+                              s_level2_connected]:[level2_cache_size]:[level2_c
+                              acheline_size]/[num_of_level3_caches]:[num_of_way
+                              s_level3_connected]:[level3_cache_size]:[level3_c
+                              acheline_size]
+                              Example:
+                              --cache-config=4:8w:32k:64l/4:4w:256k:64l/1:16w:6
+                              m:64l
+                              For multiple-device cache simulation:
+                              Specify device configurations. If not specified,
+                              cache configuration for all supported devices is
+                              used.
+                              Usage:
+                              --cache-config=[level1_cache1_size][level2_cache1
+                              _size][level3_cache1_size]/[level1_cache2_size][l
+                              evel2_cache2_size][level3_cache2_size]
+                              Example: --cache-config=32k:256k:6m/64k:512k:256m
+
+--cache-simulation=off | single | multi | grf (off)
+                              Simulate device cache behavior for your
+                              application during Trip Counts & FLOP analysis.
+                              Tip: Enabling can increase overhead.
+                              Off - Disable cache simulation.
+                              Single - Simulate GPU memory hierarchy behavior
+                              for the selected target device or CPU cache
+                              behavior if no target device is selected.
+                              Multi - Simulate cache behavior for all available
+                              target devices to remodel performance without
+                              re-running the collection.
+                              GRF - Simulate general register file (GRF)
+                              behavior. Use with --stacks.
+--cache-sources | --no-cache-sources (default)
+                              Enable source code visibility in a read-only
+                              snapshot you can view any time.
+--cachesim (default) | --no-cachesim
+                              Cache simulation data is not available for some
+                              loops. Performance projection result may be
+                              incorrect. Use the --enable-cache-simulation and
+                              --cache-config command line arguments to improve
+                              projection accuracy.
+--cachesim-associativity=1 | 2 | 4 | 8 | 16 (8)
+                              Set the cache associativity for modeling CPU
+                              cache behavior during Memory Access Patterns
+                              analysis. Use with --enable-cache-simulation.
+--cachesim-cacheline-size=4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768 | 65536 (64)
+                              Set the cache line size (in bytes) for modeling
+                              CPU cache behavior during Memory Access Patterns
+                              analysis. Use with --enable-cache-simulation.
+--cachesim-mode=cache-misses | footprint | utilization (utilization)
+                              Set the focus for modeling CPU cache behavior
+                              during Memory Access Patterns analysis. Use with
+                              --enable-cache-simulation.
+                              Modes:
+                              cache-misses - Model cache misses only.
+                              footprint - Model cache misses and memory
+                              footprint of a loop. Calculation: Cache line size
+                              x Number of unique cache lines accessed during
+                              simulation.
+                              utilization - Model cache misses and cache lines.
+                              Tip: Usage can increase overhead.
+--cachesim-sampling-factor=10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100 (10)
+                              Specify percentage of total memory accesses to
+                              process during cache simulation.
+                              Use with -cache-simulation=single.
+--cachesim-sets=256 | 512 | 1024 | 2048 | 4096 | 8192 (4096)
+                              Set cache set size (in bytes) for modeling CPU
+                              cache behavior during Memory Access Patterns
+                              analysis. Use with --enable-cache-simulation.
+--check-profitability (default) | --no-check-profitability
+                              Check the profitability of offloading regions.
+                              Only regions that can benefit from the increased
+                              speed are added to the report.
+--config=<string>             Specify a device configuration.
+                              Use with --cache-simulation=single.
+--count-logical-instructions (default) | --no-count-logical-instructions
+                              Use the projection of x86 logical instructions to
+                              GPU logical instructions (default).
+--count-memory-instructions (default) | --no-count-memory-instructions
+                              Use the projection of x86 instructions with
+                              memory to GPU SEND/SENDS instructions.
+--count-memory-objects-accesses | --no-count-memory-objects-accesses (default)
+                              Count the number of accesses to memory objects
+                              created by regions.
+                              Use with --data-reuse-analysis.
+--count-mov-instructions | --no-count-mov-instructions (default)
+                              Use the projection of x86 MOV instructions to GPU
+                              MOV instructions.
+--count-send-latency=all | first | off (all)
+                              Select how to model SEND instruction latency.
+                              all - Assume each SEND instruction has an
+                              uncovered latency.
+                              first - Assume only the first SEND instruction in
+                              a thread has an uncovered latency.
+                              off - Do not model SEND instruction latency.
+--cpu-scale-factor=<double> (1)
+                              Approximate a host CPU that is cpu_scale_factor
+                              times faster than the original CPU that the data
+                              was collected on. Divide all original CPU times
+                              by the cpu_scale_factor.
+--custom-config=<string>      Specify a configuration file by its absolute path
+                              or name. If you specify the name, the model
+                              configuration directory will be searched for the
+                              file first, then the current directory.
+                              Use with --cache-simulation=single.
+--data-limit=<integer> (500)  Limit the maximum amount (in MB) of raw data
+                              collected during Survey analysis.
+                              Tip: A smaller value can minimize overhead.
+--data-reuse-analysis | --no-data-reuse-analysis (default)
+                              Analyze potential data reuse between code
+                              regions.
+                              Use with --track-memory-objects.
+--data-transfer=off | light | medium | full (off)
+                              Select one of available modes:
+                              Off - Disable data transfer simulation.
+                              Light - Model data transfer between host and
+                              device memory.
+                              Medium - Model data transfer between host and
+                              device memory, attribute memory objects to the
+                              analyzed loops that accessed the objects, and
+                              track accesses to stack memory.
+                              Full - Model data transfer between host and
+                              device memory, attribute memory objects to the
+                              analyzed loops that accessed the objects, track
+                              accesses to stack memory and analyze potential
+                              data reuse between code regions.
+--data-transfer-histogram | --no-data-transfer-histogram (default)
+                              Estimate fine grained data transfer, adding
+                              latencies for each object transferred. This
+                              option requires track-mem-objs to be enabled.
+--data-transfer-page-size=4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 (4096)
+                              Set the traffic measurement granularity in the
+                              data transfer simulator by specifying memory page
+                              size. Choose a power-of-two value, ranging from 4
+                              to 8192.
+--delete-tripcounts (default) | --no-delete-tripcounts
+                              Remove previously collected trip counts data when
+                              re-running the Survey analysis with changed
+                              binaries.
+--disable-fp64-math-optimization | --no-disable-fp64-math-optimization (default)
+                              Disable accounting for optimized traffic for
+                              transcendentals on the GPU.
+--dry-run | --no-dry-run (default)
+                              List all steps in a batch collection without
+                              running them.
+-d, --duration=<string>       Specify a duration for collection (in seconds).
+                              Required for system-wide collection. Can also be
+                              'unlimited'.
+--enable-cache-simulation | --no-enable-cache-simulation (default)
+                              Model device cache behavior for your application.
+                              Tip: Enabling can increase overhead.
+
+--enable-data-transfer-analysis | --no-enable-data-transfer-analysis (default)
+                              Enable the simulator to model data transfer
+                              between host memory and device memory.
+--enforce-baseline-decomposition | --no-enforce-baseline-decomposition (default)
+                              Use the same local size and SIMD width as
+                              measured on the baseline.
+                              This is for the GPU-to-GPU modeling flow only.
+--enforce-fallback | --no-enforce-fallback (default)
+                              Enable low overhead collection and analysis mode.
+                              Reduce collection overhead and may reduce
+                              analysis accuracy.
+--enforce-offloads | --no-enforce-offloads (default)
+                              Skip the profitability check, disable analyzing
+                              child loops and functions, and ensure that the
+                              rows marked for offload are offloaded even if
+                              offloading child rows is more profitable.
+--estimate-max-speedup (default) | --no-estimate-max-speedup
+                              Estimate region speedup with relaxed constraints.
+                              This may increase performance model overhead
+                              (default).
+--evaluate-min-speedup | --no-evaluate-min-speedup (default)
+                              Enable offload fraction estimation that reaches
+                              minimum speedup defined in configuration file.
+--exclude-files=<string>      Exclude the specified files or directories from
+                              annotation scanning during analysis.
+                              Usage: --exclude-files=path1,path2,path3
+--executable-of-interest=<string>
+                              Specify an application that is not the starting
+                              application.
+                              For example: Inspect the application identified
+                              in <path> called by a script identified in the
+                              <target>.
+--exp-dir=<string>            Specify the experiment directory.
+--filter-by-scope (default) | --no-filter-by-scope
+                              Enable filtering detected stack variables by
+                              scope (warning vs. error) in the Dependencies
+                              analysis: variables initialized inside a loop are
+                              considered potential dependencies (warning),
+                              while variables initialized outside a loop are
+                              considered dependencies (error).
+                              Tip: Disabling can minimize overhead.
+--filter-reductions | --no-filter-reductions (default)
+                              Mark all potential reductions with a specific
+                              diagnostic when analyzing dependencies.
+                              Tip: Enabling can increase overhead.
+--flop | --no-flop (default)  Collect data about floating-point and integer
+                              operations, L1 memory traffic, and mask
+                              utilization metrics for AVX-512 platforms during
+                              the Trip Counts & FLOP analysis.
+--force-32bit-arithmetics | --no-force-32bit-arithmetics (default)
+                              Force all arithmetic operations to be considered
+                              single-precision FPs or int32.
+--force-64bit-arithmetics | --no-force-64bit-arithmetics (default)
+                              Force all arithmetic operations to be considered
+                              double-precision FPs or int64.
+--gpu-kernel-matching-mode=strict | relaxed (strict)
+                              Selected GPU kernels matching mode is used to
+                              match results between the "Survey" and
+                              "Tripcounts" collections.
+--gpu-kernel-of-interest=<string>
+                              Specify kernels to collect data. Use search
+                              string (* and . characters are supported). To
+                              combine several search strings, use a
+                              comma-separated list. In this case, a kernel is
+                              selected for analysis if at least one string is
+                              found in its name.
+                              Default value is *.
+--gpu-sampling-interval=<double> (1)
+                              Specify an interval (in milliseconds) between GPU
+                              samples.
+--hide-data-transfer-tax | --no-hide-data-transfer-tax (default)
+                              Disable data transfer tax estimation.
+--ignore=<string>             Ignore time spent in regions from the runtimes or
+                              libraries specified when calculating per-program
+                              speedup. This option does not affect individual
+                              offloads.
+--ignore-app-mismatch | --no-ignore-app-mismatch (default)
+                              Ignore mismatched target or application parameter
+                              errors before starting analysis.
+--ignore-checksums | --no-ignore-checksums (default)
+                              Ignore mismatched module checksums before
+                              starting analysis.
+--instance-of-interest=<integer> (0)
+                              Analyze the Nth child process during Memory
+                              Access Patterns and Dependencies analysis. 0 =
+                              analyze all processes.
+--integrated | --no-integrated (default)
+                              Model traffic on all levels of memory hierarchy
+                              for a downstream Roofline interactive HTML
+                              report.
+--interval=<integer> (10)     Specify an interval (in milliseconds) between CPU
+                              samples during Survey analysis.
+                              Tip: A larger value can minimize overhead.
+--jit | --no-jit (default)    Collect data for applications with DPC++, OpenMP
+                              'target', and OpenCL code running on CPU.
+--loop-call-count-limit=<integer> (0)
+                              Set the maximum number of instances to analyze
+                              for all marked loops during the Memory Access
+                              Patterns and Dependencies analysis. 0 = analyze
+                              all instances of all marked loops.
+                              Tip: A smaller value (but greater than 0) can
+                              minimize overhead.
+--loop-filter-threshold=<integer> (20)
+                              Specify the loop filter threshold in
+                              milliseconds. Loopnests with total time less than
+                              the threshold will be ignored.
+--loops=<string>              Select loops (by criteria instead of human input)
+                              for deeper analysis. Useful for automated
+                              scripts.
+                              Usage: --loops="criteria1,criteria2,criteria3"
+                              Criteria for Dependencies analysis (default =
+                              "scalar,loop-height=0,total-time>0.1"):
+                              scalar        - Include scalar serial loops.
+                              total-time>N  - Include loops above N% of total
+                              CPU time.
+                              has-source    - Exclude loops without source
+                              location.
+                              has-issue     - Include loops with Vector
+                              Dependence Prevent Vectorization issue.
+                              loop-height=N - Include loops by hierarchical
+                              position. 0 = Innermost loops.
+                              top=N         - Include loops with the largest
+                              self-time.
+                              Criteria for Memory Access Patterns analysis
+                              (default = "loop-height=0,total-time>0.1"):
+                              total-time>N  - Include loops above N% of total
+                              CPU time.
+                              has-source    - Exclude loops without source
+                              location.
+                              has-issue     - Include loops with Possible
+                              Inefficient Memory Access Pattern issue.
+                              top=N         - Include loops with the largest
+                              self-time.
+                              Tip: Usage can decrease overhead.
+--mark-up (default) | --no-mark-up
+                              Enable/disable user selection as a way to control
+                              loops/functions identified for Memory Access
+                              Patterns and Dependencies analyses. Use --mark-up
+                              to use both source annotations and user
+                              selection. Use --no-mark-up to use only source
+                              annotations.
+--mark-up-list=<string>       After running a Survey analysis and identifying
+                              loops of interest, select loops (by file and line
+                              number or ID) for Roofline, Trip Counts & FLOP,
+                              Dependencies, and Memory Access Patterns
+                              analyses.
+                              Usage: --mark-up-list=loopID1,loopID2,file1:line1
+                              Prerequisite: Identify loop IDs using the report
+                              action.
+                              Tip: Loop selection persists only for the
+                              duration of the collect action.
+--mkl-user-mode (default) | --no-mkl-user-mode
+                              Collect Intel(R) Math Kernel Library (Intel(R)
+                              MKL) loops and functions data to show during the
+                              Survey analysis.
+                              Tip: Disabling can minimize overhead.
+--model-baseline-gpu | --no-model-baseline-gpu (default)
+                              Use the baseline GPU configuration as a target
+                              device for modeling.
+--model-children (default) | --no-model-children
+                              Analyze child loops of the region head to find if
+                              some of the child loops provide more profitable
+                              offload.
+--model-extended-math (default) | --no-model-extended-math
+                              Model calls to math functions such as EXP, LOG,
+                              SIN, and COS as extended math instructions, if
+                              possible.
+--model-system-calls (default) | --no-model-system-calls
+                              Analyze code regions with system calls (default).
+                              The presence of system calls inside a region may
+                              reduce model accuracy.
+--module-filter=<string>      Specify application (or child application)
+                              module(s) to include in or exclude from
+                              inspection. Use with --module-filter-mode=include
+                              | exclude.
+                              Usage: --module-filter=module1,module2
+                              Tip: Usage can minimize overhead.
+--module-filter-mode=include | exclude (exclude)
+                              Limit, by inclusion or exclusion, application (or
+                              child application) module(s) for analysis. Use
+                              with --module-filter=<string>.
+                              Tip: Usage can minimize overhead.
+--mpi-rank=<integer>          Specify MPI process data to import.
+                              Tip: Use when data collections are on a shared
+                              partition.
+--mrte-mode=auto | native | mixed | managed (auto)
+                              Set the Microsoft* runtime environment mode for
+                              analysis.
+                              Note: Applied to Windows* OS only.
+                              Modes:
+                              auto - Automatically detect the type of target
+                              executable and switch to that mode.
+                              native - Collect data for native code and do not
+                              attribute data to managed code.
+                              mixed - Collect data for both native and managed
+                              code, and attribute data to managed code as
+                              appropriate. Use this option when analyzing a
+                              native executable that makes calls to the managed
+                              code.
+                              managed - Collect data for both native and
+                              managed code, resolve samples attributed to
+                              native code, attribute data to managed source
+                              only. Display analysis result for managed code
+                              only.
+--ndim-depth-limit=<integer> (0)
+                              When searching for an optimal N-dimensional
+                              offload, limit the maximum loop depth that can be
+                              converted to one offload. The limit must be in
+                              the range 1 <= N <= 6. The default value is 3.
+--option-file=<string>        Specify the path to a UTF-8 text file containing
+                              command line arguments.
+                              Tip: Enter one option on each line. No spaces are
+                              allowed in the option entry; use a new line
+                              instead.
+                              Caution: Arguments specified in an option file
+                              are processed before any arguments specified on
+                              the command line; therefore, options specified on
+                              the command line can override options in the
+                              option file. If multiple option files are used,
+                              they are processed in the order in which they are
+                              specified on the command line.
+--overlap-taxes | --no-overlap-taxes (default)
+                              Enable asynchronous execution to overlap offload
+                              overhead with execution time.
+--profile-cpu (default) | --no-profile-cpu
+                              Analyze programs running on Intel(R) CPU
+--profile-gpu | --no-profile-gpu (default)
+                              Analyze OpenCL and Level Zero programs running on
+                              Intel Processor Graphics.
+                              Tip: Enabling may affect the performance of your
+                              application on the CPU side.
+--gpu, --profile-gpu | --no-profile-gpu
+                              Analyze OpenCL and Level Zero programs running on
+                              Intel Processor Graphics.
+                              Tip: Enabling may affect the performance of your
+                              application on the CPU side.
+--profile-intel-perf-libs (default) | --no-profile-intel-perf-libs
+                              Select to show Intel performance libraries loops
+                              and functions in Advisor reports.
+--profile-jit (default) | --no-profile-jit
+                              Collect metrics for dynamic loops and functions.
+--profile-python=off | stacks | full (off)
+                              Collect Python* loops and functions data during
+                              the Survey analysis.
+                              Tip: Enabling can increase overhead.
+--profile-stripped-binaries | --no-profile-stripped-binaries (default)
+                              Collect metrics for stripped binaries.
+                              Tip: Enabling can increase overhead.
+--project-dir=<string>        Specify the top-level directory where a result is
+                              saved if you want to save the collection
+                              somewhere other than the current working
+                              directory.
+--record-mem-allocations (default) | --no-record-mem-allocations
+                              Enable heap allocation tracking to identify
+                              heap-allocated variables for which access strides
+                              are detected during Memory Access Patterns
+                              analysis.
+                              Tip: Disabling can minimize overhead.
+--record-stack-frame (default) | --no-record-stack-frame
+                              Capture stack frame pointers to identify stack
+                              variables for which access strides are detected
+                              during Memory Access Patterns analysis.
+                              Tip: Disabling can minimize overhead.
+--refinalize-survey | --no-refinalize-survey (default)
+                              Refinalize a survey result collected with a
+                              previous Intel Advisor version or if you need to
+                              correct or update source and binary search paths.
+--resume-after=<integer>      Resume collection after the specified number of
+                              milliseconds. Collection automatically starts in
+                              the paused state.
+                              Note: The value in the corresponding GUI property
+                              is in seconds, not milliseconds.
+                              Tip: Usage can minimize overhead.
+--resume-after=<double>       Specify time (in seconds, with fractions allowed)
+                              to delay data collection after the application
+                              starts. For example, 1.56 is 1 sec 560 msec.
+--return-app-exitcode | --no-return-app-exitcode (default)
+                              Return the target exit code instead of the
+                              command line interface exit code.
+--save-all-estimations | --no-save-all-estimations (default)
+                              Save all performance estimations generated with
+                              different kernel software parameters, such as
+                              local size and SIMD width, and their combinations
+                              to all_estimations.csv file.
+--search-dir=<string>         <all | bin | src | sym[:<p | r>]>=<directory>.
+                              <directory> is the name of the search directory
+                              for binaries (bin), sources (src), symbols (sym),
+                              or all these file types (all). Use ':r' to
+                              perform a recursive search of all subdirectories.
+                              Use ':p' to indicate highest priority search
+                              directories (directories that should be searched
+                              prior to others, including environment paths and
+                              absolute paths). You can use these options
+                              together as ':rp'.
+--search-n-dim (default) | --no-search-n-dim
+                              Enable search for optimal N-dimensional offload.
+-s, --select=<string>         Select loops (by file and line number, ID, or
+                              criteria) for deeper analysis.
+                              Usage:
+                              --select=[(r|recursive):]id|file:line|criteria[,i
+                              d|file:line|criteria,..]
+                              Criteria:
+                              scalar        - Include scalar serial loops.
+                              total-time>N  - Include loops above N% of total
+                              CPU time.
+                              has-source    - Exclude loops without source
+                              location.
+                              has-issue     - Include loops with "Vector
+                              Dependence Prevent Vectorization" or "Possible
+                              Inefficient Memory Access Pattern" issue.
+                              loop-height=N - Include loops at a specific
+                              hierarchical position. 0 = Innermost loops.
+                              markup=name - Select loops using a pre-defined
+                              mark-up algorithm. Supported algorithms are:
+                              gpu_generic, omp, dpcpp, ocl, daal, tbb.
+                              kernel=name - Select kernels by searching
+                              specified substring in kernel name.
+                              Use + to combine criteria with AND logic.
+                              Add r: (recursive:) prefix to select all loops in
+                              call trees starting from heads selected by
+                              criteria, source location or ID.
+                              Tip: Usage can decrease overhead.
+
+--set-dependency=<string>     Assume loops have a dependency if they have IDs
+                              or source locations from a specified
+                              comma-separated list. If the list is empty,
+                              assume all loops have a dependency. Note:
+                              --set-dependency option takes precendence over
+                              --set-parallel, so if the loop is listed in both,
+                              it will be considered as having a dependency.
+--set-parallel=<string>       Assume loops are parallel if they have IDs or
+                              source locations from a specified comma-separated
+                              list. If the list is empty, assume all loops are
+                              parallel. Note: --set-dependency option takes
+                              precendence over --set-parallel, so if the loop
+                              is listed in both, it will be considered as
+                              having a dependency.
+--set-parameter=<string>      Specify a single-line configuration parameter to
+                              modify in a format
+                              "<group>.<parameter>=<new-value>".
+                              Examples: "min_required_speed_up=0",
+                              "scale.Tiles_per_process=0.5".
+--show-report (default) | --no-show-report
+                              Generate a command-line report from data
+                              collected during Survey, Trip Counts analyses (on
+                              GPU), and/or Performance Modeling analysis.
+--small-node-filter=<integer> (0)
+                              Specify the total time threshold, in
+                              milliseconds, to filter out nodes in the
+                              program_tree.dot/program_tree.pdf that fall below
+                              this value.
+--spill-analysis | --no-spill-analysis (default)
+                              Register flow analysis to calculate the number of
+                              consecutive load/store operations in registers
+                              and related memory traffic in bytes during the
+                              Survey analysis.
+                              Tip: Enabling can increase overhead.
+--stack-access-granularity=<integer> (1048576)
+                              Set stack memory access measurement granularity
+                              in the data transfer simulator by specifying
+                              stack access size. Choose a power-of-two value,
+                              ranging from 16 to 1048576.
+--stack-stitching (default) | --no-stack-stitching
+                              Restructure the call flow during Survey analysis
+                              to attach stacks to a point introducing a
+                              parallel workload.
+                              Tip: Disabling can minimize overhead.
+--stack-unwind-limit=<integer> (8388608)
+                              Set stack size limit for the After Collection
+                              (offline) unwinding mode.
+--stacks | --no-stacks (default)
+                              Perform advanced collection of callstack data
+                              during the Roofline and Trip Counts & FLOP
+                              analyses.
+                              Tip: Enabling can increase overhead.
+--stackwalk-mode=online | offline (offline)
+                              Choose to analyze callstacks during collection
+                              (online mode) or after collection (offline mode)
+                              for the Survey analysis.
+                              Tip: Online mode can minimize overhead, offline
+                              mode can improve stack quality for C++
+                              applications.
+                              Important: For oneAPI (DPC++ or OpenMP target)
+                              applications running on CPU, use the offline
+                              mode.
+--start-paused                Start data collection paused.
+--static-instruction-mix | --no-static-instruction-mix (default)
+                              Statically calculate the number of specific
+                              instructions present in the binary during the
+                              Survey analysis.
+                              Tip: Use this option in scenarios involving
+                              Python* API. Disabling can minimize overhead.
+--strategy=<string>           Specify processes and/or children for
+                              instrumentation during the Survey analysis.
+                              Usage:
+                              --strategy=[process1|child1:]profiling_mode1,[pro
+                              cess2|child2]:profiling_mode2,..
+                              Profiling modes:
+                              trace:trace - Instrument process and all
+                              children.
+                              trace:notrace - Instrument process but not
+                              children.
+                              notrace:trace - Instrument children but not
+                              process.
+                              notrace:notrace - Do not instrument process or
+                              children.
+--support-multi-isa-binaries | --no-support-multi-isa-binaries (default)
+                              Collect a variety of data for loops that reside
+                              in non-executed code paths, including loop
+                              assembly code, instruction set architecture
+                              (ISA), and vector length.
+                              Supported in the Survey analysis for binaries
+                              compiled using the ax (Linux* OS)/Qax (Windows*
+                              OS) option with an Intel compiler.
+                              Tip: Disabling can minimize overhead.
+--target-device=<string>      Select a device to model cache behavior during
+                              Trip Counts & FLOP analysis.
+                              Use with --cache-simulation=single.
+
+--target-gpu=<string>         The target GPU adapter option that will be used
+                              to collect GPU profiling data.
+                              Default behavior - If no value is provided all
+                              available adapters will be used for collection.
+                              Multi-GPU adapter strings can be provided as a
+                              comma-separated list.
+                              --target-gpu=0:77:0.0,0:154:0.0
+--target-pid=<unsigned integer>
+                              Attach collection to a running process specified
+                              by process ID.
+--target-process=<string>     Attach collection to a running process specified
+                              by process name.
+--threads=<integer> (0)       Specify the number of parallel threads to use for
+                              offload heads. Specify 0 to let the model decide
+                              based on the selected target device
+                              configuration.
+--trace-mode=full | linear | fibo
+                              Set how to trace loop iterations during the
+                              Memory Access Patterns analysis.
+                              Arguments:
+                              full - Trace all loop iterations.
+                              linear - Trace loop iterations using linear step.
+                              fibo - Trace loop iterations in Fibonacci
+                              sequence.
+                              Tip: A less extensive tracing method can minimize
+                              overhead.
+--trace-mpi | --no-trace-mpi (default)
+                              Configure collectors to trace MPI code and
+                              determine MPI rank IDs in the case of a non-Intel
+                              MPI library implementation.
+--track-memory-objects | --no-track-memory-objects (default)
+                              Attribute memory objects to the analyzed loops
+                              that accessed the objects.
+                              Enabling can increase overhead.
+--track-stack-accesses | --no-track-stack-accesses (default)
+                              Track accesses to stack memory.
+                              Enabling can increase overhead.
+--track-stack-variables (default) | --no-track-stack-variables
+                              Enable parallel data sharing analysis for stack
+                              variables during the Dependencies analysis.
+                              Tip: Disabling can minimize overhead.
+--trip-counts (default) | --no-trip-counts
+                              Identify the number of times loop executes and
+                              collect loop trip counts data.
+
+
+Global Options:
+
+-q, --quiet                   Suppress non-essential messages
+-v, --verbose                 Print additional information
+
+
+Examples:
+
+ Perform a Survey analysis to determine hotspots.
+
+        advisor --collect=survey --project-dir=./advi --search-dir src:r=./src
+                -- ./bin/myApplication
+
+ Perform a Memory Access Patterns analysis on the specified loops.
+
+        advisor --collect=map --mark-up-list=5,10,12 --project-dir=./advi --search-dir src:r=./src
+                -- ./bin/myApplication
+
+ Perform a Survey analysis on four nodes of the MPI cluster and store the collected data in the shared ./advi project directory.
+
+        mpirun -n 4 advisor --project-dir=./advi --collect=survey
+                -- <PATH>/mpi-sample/1_mpi_sample_serial
+
+ Perform a Dependencies analysis on all innermost loops that run above 2% of the total CPU time.
+
+        advisor --collect=dependencies --project-dir=./advi --loops="loop-height=0,total-time>2"
+                 -- ./bin/myApplication
+
+ Perform a Roofline analysis.
+
+        advisor --collect=roofline --project-dir=./advi -- ./bin/myApplication
+
+
+
+C:\Program Files (x86)\Intel\oneAPI\advisor\2025.4>
+

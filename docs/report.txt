@@ -1,0 +1,300 @@
+C:\Program Files (x86)\Intel\oneAPI\advisor\2025.4>advixe-cl  --help report
+Intel(R) Advisor Command Line Tool
+Copyright (C) 2009-2025 Intel Corporation. All rights reserved.
+
+-R, --report=<string>         Generate a report from data collected during a
+                              previous analysis.
+
+
+Generates a formatted data report with the specified type and action options.
+
+ Usage: advisor --report=<string> [--action-option] [--global-option] [[--]
+        <target> [<target options>]]
+
+        <string> is one of the following reports:
+
+            survey        - Report results of a Survey analysis.
+            all           - Generate an interactive HTML report for all collected results.
+            annotations   - Report the annotations in the source code.
+            custom        - Generate a custom report
+            dependencies  - Report results of a Dependencies analysis.
+            hotspots      - Report results of a Survey analysis.
+            joined        - Combine results for several analyses into a single report.
+            map           - Report results of a Memory Access Patterns analysis.
+            roofline      - Report results of a Roofline analysis.
+            roofs         - Report roof values.
+            suitability   - Report results of a Suitability analysis.
+            summary       - Report the analysis summary.
+            threads       - Report on threads.
+            top-down      - Report results of a Survey analysis in top-down view.
+            tripcounts    - Add trip counts data to a Survey report.
+
+Action Options:
+
+--bottom-up (default) | --no-bottom-up
+                              Generate a Survey report in bottom-up view.
+--csv-delimiter=comma | semicolon | tab (comma)
+                              Set the delimiter for a report in CSV format. Use
+                              with --format=csv.
+--data-type=float | int | mixed (float)
+                              Show only floating-point data, only integer data,
+                              or data for the sum of both data types in a
+                              Roofline interactive HTML report.
+--display-callstack           Show a callstack for each loop/function call in a
+                              report.
+--dynamic (default) | --no-dynamic
+                              Show (in a Survey report) how many instructions
+                              of a given type actually executed during Trip
+                              Counts & FLOP analysis.
+--enable-task-chunking=<string>
+                              Examine specified annotated sites for
+                              opportunities to perform task-chunking modeling
+                              in a Suitability report.
+                              Usage: --enable-task-chunking=site1,site2,site3
+--exp-dir=<string>            Specify the experiment directory.
+--filter=<string>             Filter data by the specified column name and
+                              value in a Survey and Trips Counts & FLOP report.
+                              Usage: --filter="[column name]"="[value]"
+                              Example: --filter="Vectorization
+                              Message(s)"="loop was not vectorized: not inner
+                              loop"
+--format=text | csv | xml (text)
+                              Set a report output format.
+--gpu                         Generate an interactive Roofline HTML report and
+                              a Survey report for data collected on GPUs. By
+                              default, the reports are created for data
+                              collected on CPUs.
+--limit=<unsigned integer>    Set the maximum number of top items to show in a
+                              report.
+--memory-level=<string>       Model specific memory level(s) in a Roofline
+                              interactive HTML report, including L1 (default),
+                              L2, L3, and DRAM.
+                              Usage: --memory-level=level1_level2_level3
+                              Examples:
+                              --memory-level=DRAM
+                              --memory-level=L1_L2
+--memory-operation-type=load | store | all
+                              Model only load memory operations, store memory
+                              operations, or both (default), in a Roofline
+                              interactive HTML report.
+--mix | --no-mix (default)    Show dynamic or static instruction mix data in a
+                              Survey report.
+--mpi-rank=<integer>          Specify MPI process data to import.
+                              Tip: Use when data collections are on a shared
+                              partition.
+--option-file=<string>        Specify the path to a UTF-8 text file containing
+                              command line arguments.
+                              Tip: Enter one option on each line. No spaces are
+                              allowed in the option entry; use a new line
+                              instead.
+                              Caution: Arguments specified in an option file
+                              are processed before any arguments specified on
+                              the command line; therefore, options specified on
+                              the command line can override options in the
+                              option file. If multiple option files are used,
+                              they are processed in the order in which they are
+                              specified on the command line.
+--project-dir=<string>        Specify the top-level directory where a result is
+                              saved if you want to save the collection
+                              somewhere other than the current working
+                              directory.
+--recalculate-time (default) | --no-recalculate-time
+                              Recalculate total time after filtering a report.
+--reduce-lock-contention=<string>
+                              Examine specified annotated sites for
+                              opportunities to reduce lock contention or find
+                              deadlocks in a Suitability report.
+                              Usage: --reduce-lock-contention=site1,site2,site3
+--reduce-lock-overhead=<string>
+                              Examine specified annotated sites for
+                              opportunities to reduce lock overhead in a
+                              Suitability report.
+                              Usage: --reduce-lock-overhead=site1,site2,site3
+--reduce-site-overhead=<string>
+                              Examine specified annotated sites for
+                              opportunities to reduce site overhead in a
+                              Suitability report.
+                              Usage: --reduce-site-overhead=site1,site2,site3
+--reduce-task-overhead=<string>
+                              Examine specified annotated sites for
+                              opportunities to reduce task overhead in a
+                              Suitability report.
+                              Usage: --reduce-task-overhead=site1,site2,site3
+--refinalize-survey | --no-refinalize-survey (default)
+                              Refinalize a survey result collected with a
+                              previous Intel Advisor version or if you need to
+                              correct or update source and binary search paths.
+--report-output=<string>      Redirect report output from stdout to another
+                              location.
+--report-template=<string>    Specify the PATH/name of a custom report template
+                              file. Supported in custom reports.
+--search-dir=<string>         <all | bin | src | sym[:<p | r>]>=<directory>.
+                              <directory> is the name of the search directory
+                              for binaries (bin), sources (src), symbols (sym),
+                              or all these file types (all). Use ':r' to
+                              perform a recursive search of all subdirectories.
+                              Use ':p' to indicate highest priority search
+                              directories (directories that should be searched
+                              prior to others, including environment paths and
+                              absolute paths). You can use these options
+                              together as ':rp'.
+--show-all-columns | --no-show-all-columns (default)
+                              Show data for all available columns in a Survey
+                              report.
+--show-all-rows (default) | --no-show-all-rows
+                              Show data for all available rows, including data
+                              for child loops, in a Survey report.
+--show-functions | --no-show-functions (default)
+                              Show only functions in a report.
+--show-loops (default) | --no-show-loops
+                              Show only loops in a report.
+--show-not-executed | --no-show-not-executed (default)
+                              Show not-executed child loops in a Survey report.
+--sort-asc=<string>           Sort data in ascending order (by specified column
+                              name) in a Survey report.
+--sort-desc=<string>          Sort data in descending order (by specified
+                              column name) in a Survey report.
+--target-system=cpu | xeon-phi | offload-to-xeon-phi
+                              Specify the hardware configuration to use for
+                              modeling purposes in a Suitability report.
+                              Default: cpu
+--threading-model=tbb | cilk | openmp | tpl | other
+                              Specify the threading model to use for modeling
+                              purposes in a Suitability report.
+                              Default: tbb
+--top-down                    Generate a Survey report in top-down view.
+--with-stack | --no-with-stack (default)
+                              Show callstack data in a Roofline interactive
+                              HTML report (if callstack data is collected).
+
+
+Global Options:
+
+-q, --quiet                   Suppress non-essential messages
+-v, --verbose                 Print additional information
+
+
+Examples:
+
+ Generate a Survey report.
+
+        advisor --report=survey --project-dir=./advi --search-dir src:r=./src
+                --format=csv --report-output=./out/survey.csv
+
+ Generate a Dependencies report for data collected on rank 3 of an MPI cluster.
+
+        advisor --report=dependencies --project-dir=./advi --mpi-rank=3
+                --search-dir src:r=./src
+ Generate a Roofline report with callstacks.
+
+        advisor --report=roofline --with-stack --project-dir=./advi
+                --report-output=./out/roofline-withstack.html
+
+
+C:\Program Files (x86)\Intel\oneAPI\advisor\2025.4>
+
+
+
+Отлично! Теперь вот полный список команд для экспорта результатов в текст:
+
+## Основные отчеты
+
+### 1. Survey (общий анализ производительности)
+```bash
+advixe-cl --report=survey --project-dir=./my_results --format=text --report-output=survey.txt
+```
+
+### 2. Dependencies (дедлоки, race conditions)
+```bash
+advixe-cl --report=dependencies --project-dir=./my_results --format=text --report-output=dependencies.txt
+```
+
+### 3. Map (Memory Access Patterns)
+```bash
+advixe-cl --report=map --project-dir=./my_results --format=text --report-output=map.txt
+```
+
+### 4. Suitability (анализ потоков)
+```bash
+advixe-cl --report=suitability --project-dir=./my_results --format=text --report-output=suitability.txt
+```
+
+### 5. Threads (информация о потоках)
+```bash
+advixe-cl --report=threads --project-dir=./my_results --format=text --report-output=threads.txt
+```
+
+### 6. Summary (краткая сводка)
+```bash
+advixe-cl --report=summary --project-dir=./my_results --format=text --report-output=summary.txt
+```
+
+## Расширенные опции
+
+### С callstack (стеком вызовов)
+```bash
+advixe-cl --report=survey --project-dir=./my_results --display-callstack --format=text --report-output=survey_with_stack.txt
+```
+
+### Только функции (без петель)
+```bash
+advixe-cl --report=survey --project-dir=./my_results --show-functions --no-show-loops --format=text --report-output=functions.txt
+```
+
+### Только петли
+```bash
+advixe-cl --report=survey --project-dir=./my_results --show-loops --no-show-functions --format=text --report-output=loops.txt
+```
+
+### Со всеми колонками
+```bash
+advixe-cl --report=survey --project-dir=./my_results --show-all-columns --format=text --report-output=survey_full.txt
+```
+
+### Сортировка по времени (по убыванию)
+```bash
+advixe-cl --report=survey --project-dir=./my_results --sort-desc="Total Time" --format=text --report-output=survey_sorted.txt
+```
+
+## CSV формат (для Excel/анализа)
+
+```bash
+# Survey в CSV
+advixe-cl --report=survey --project-dir=./my_results --format=csv --csv-delimiter=comma --report-output=survey.csv
+
+# Dependencies в CSV
+advixe-cl --report=dependencies --project-dir=./my_results --format=csv --report-output=dependencies.csv
+```
+
+## Комбинированный отчет
+
+```bash
+# Все результаты в одном HTML (интерактивный)
+advixe-cl --report=all --project-dir=./my_results --report-output=full_report.html
+```
+
+## Для GPU данных
+
+```bash
+advixe-cl --report=survey --gpu --project-dir=./my_results --format=text --report-output=gpu_survey.txt
+```
+
+**Совет:** Для быстрого просмотра всех результатов начните с:
+```bash
+advixe-cl --report=summary --project-dir=./my_results --format=text
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
