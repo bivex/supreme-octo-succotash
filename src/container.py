@@ -90,6 +90,17 @@ class Container:
             )
         return self._singletons['db_connection_pool']
 
+    def get_pool_stats(self):
+        """Get database connection pool statistics."""
+        pool = self.get_db_connection_pool()
+        return {
+            'minconn': getattr(pool, '_minconn', 'unknown'),
+            'maxconn': getattr(pool, '_maxconn', 'unknown'),
+            'used': len(getattr(pool, '_used', [])),
+            'available': len(getattr(pool, '_pool', [])),
+            'total_connections': len(getattr(pool, '_used', [])) + len(getattr(pool, '_pool', []))
+        }
+
     def get_db_connection(self):
         """Get a database connection from the pool."""
         pool = self.get_db_connection_pool()
