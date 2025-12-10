@@ -177,25 +177,39 @@ class PostgresCacheMonitor:
         heap_ratio = heap_ratio or 0
         index_ratio = index_ratio or 0
 
-        # Get shared buffer usage
-        cursor.execute("""
-            SELECT
-                sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
-            FROM pg_buffercache b
-            CROSS JOIN pg_settings s
-            WHERE s.name = 'shared_buffers'
-        """)
+        # Get shared buffer usage (only if pg_buffercache extension is available)
+        buffer_usage = 0
 
-        buffer_usage_row = cursor.fetchone()
-        buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
+        # First check if pg_buffercache extension exists
+        cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'pg_buffercache'")
+        if cursor.fetchone():
+            try:
+                # Extension exists, try to query it
+                cursor.execute("""
+                    SELECT
+                        sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
+                    FROM pg_buffercache b
+                    CROSS JOIN pg_settings s
+                    WHERE s.name = 'shared_buffers'
+                """)
+                buffer_usage_row = cursor.fetchone()
+                buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
+                logger.debug(f"Successfully retrieved buffer usage: {buffer_usage}%")
+            except Exception as e:
+                # Query failed for some reason
+                logger.debug(f"Failed to query pg_buffercache: {e}")
+                buffer_usage = 0
+        else:
+            # Extension not installed
+            logger.debug("pg_buffercache extension not installed")
+            buffer_usage = 0
 
         # Get temporary file statistics (last hour)
         cursor.execute("""
             SELECT
-                count(*) as temp_files,
-                sum(bytes) as temp_bytes
+                sum(temp_files) as temp_files,
+                sum(temp_bytes) as temp_bytes
             FROM pg_stat_database
-            WHERE temp_files > 0
         """)
 
         temp_row = cursor.fetchone()
@@ -466,8 +480,15 @@ class PostgresCacheMonitor:
 
     def get_monitoring_report(self) -> Dict[str, Any]:
         """Get comprehensive monitoring report."""
+        # If no metrics history, try to get current metrics
         if not self.metrics_history:
-            return {"message": "No monitoring data available"}
+            try:
+                current_metrics = self.get_current_metrics()
+                self.metrics_history.append(current_metrics)
+                logger.debug("Collected initial cache metrics for monitoring report")
+            except Exception as e:
+                logger.warning(f"Failed to collect initial cache metrics: {e}")
+                return {"message": "Unable to collect cache metrics", "error": str(e)}
 
         # Calculate trends
         recent_metrics = self.metrics_history[-10:] if len(self.metrics_history) >= 10 else self.metrics_history
