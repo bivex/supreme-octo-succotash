@@ -84,8 +84,8 @@ class ConversionService:
             'sub3': click.sub3,
             'sub4': click.sub4,
             'sub5': click.sub5,
-            'click_timestamp': click.ts,
-            'fraud_score': click.fraudScore
+            'click_timestamp': click.created_at,
+            'fraud_score': click.fraud_score
         })
 
         return enriched
@@ -112,8 +112,8 @@ class ConversionService:
         }
 
         # Calculate time to conversion
-        if click.ts:
-            time_to_conversion = conversion.timestamp.timestamp() - click.ts
+        if click.created_at:
+            time_to_conversion = conversion.timestamp.timestamp() - click.created_at.timestamp()
             attribution['time_to_conversion'] = time_to_conversion
 
             # Attribution confidence decreases with time
@@ -129,10 +129,10 @@ class ConversionService:
     def validate_fraud_risk(self, conversion: Conversion, click: Click) -> Optional[str]:
         """Validate conversion for potential fraud."""
         # Check if click was marked as fraudulent
-        if click.isValid == 0:
+        if not click.is_valid:
             return "conversion_from_invalid_click"
 
-        if click.fraudScore and click.fraudScore > 0.7:
+        if click.fraud_score and click.fraud_score > 0.7:
             return "high_fraud_score_click"
 
         # Check for suspicious conversion patterns
