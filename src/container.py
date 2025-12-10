@@ -18,6 +18,7 @@ from .infrastructure.repositories import (
     SQLiteFormRepository,
     PostgresCampaignRepository,
     PostgresClickRepository,
+    PostgresImpressionRepository,
     PostgresAnalyticsRepository,
     PostgresWebhookRepository,
     PostgresEventRepository,
@@ -147,6 +148,17 @@ class Container:
                 db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
                 self._singletons['click_repository'] = SQLiteClickRepository(db_path)
         return self._singletons['click_repository']
+
+    def get_impression_repository(self):
+        """Get impression repository."""
+        if 'impression_repository' not in self._singletons:
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['impression_repository'] = self.get_postgres_impression_repository()
+            except Exception:
+                # TODO: Create SQLiteImpressionRepository when needed
+                raise NotImplementedError("SQLite impression repository not implemented")
+        return self._singletons['impression_repository']
 
     def get_analytics_repository(self):
         """Get analytics repository."""
@@ -560,11 +572,18 @@ class Container:
             self._singletons['postgres_click_repository'] = PostgresClickRepository(container=self)
         return self._singletons['postgres_click_repository']
 
+    def get_postgres_impression_repository(self):
+        """Get PostgreSQL impression repository."""
+        if 'postgres_impression_repository' not in self._singletons:
+            self._singletons['postgres_impression_repository'] = PostgresImpressionRepository(container=self)
+        return self._singletons['postgres_impression_repository']
+
     def get_postgres_analytics_repository(self):
         """Get PostgreSQL analytics repository."""
         if 'postgres_analytics_repository' not in self._singletons:
             self._singletons['postgres_analytics_repository'] = PostgresAnalyticsRepository(
                 click_repository=self.get_postgres_click_repository(),
+                impression_repository=self.get_postgres_impression_repository(),
                 campaign_repository=self.get_postgres_campaign_repository(),
                 container=self
             )

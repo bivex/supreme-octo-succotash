@@ -2,6 +2,7 @@
 
 from .campaign import Campaign
 from .click import Click
+from .impression import Impression
 from .landing_page import LandingPage
 from .offer import Offer
 from .conversion import Conversion
@@ -17,6 +18,7 @@ from .form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatu
 __all__ = [
     'Campaign',
     'Click',
+    'Impression',
     'LandingPage',
     'Offer',
     'Conversion',

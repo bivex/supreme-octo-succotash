@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, date
 from ...domain.value_objects import Analytics
 from ...domain.repositories.analytics_repository import AnalyticsRepository
 from ...domain.repositories.click_repository import ClickRepository
+from ...domain.repositories.impression_repository import ImpressionRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.value_objects import Money
 
@@ -16,9 +17,11 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
     def __init__(self,
                  click_repository: ClickRepository,
+                 impression_repository: ImpressionRepository,
                  campaign_repository: CampaignRepository,
                  container):
         self._click_repository = click_repository
+        self._impression_repository = impression_repository
         self._campaign_repository = campaign_repository
         self._container = container
         self._connection = None
@@ -96,9 +99,12 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         total_clicks = len(valid_clicks)
         total_conversions = len(conversions)
 
-        # TODO: Implement impressions calculation from impressions repository
-        # For now, use clicks as approximation (this will be replaced)
-        total_impressions = total_clicks * 10  # Placeholder: assume 10% CTR
+        # Get impressions in date range
+        impressions = self._impression_repository.get_impressions_in_date_range(
+            campaign_id, start_date, end_date
+        )
+        valid_impressions = [i for i in impressions if i.is_valid]
+        total_impressions = len(valid_impressions)
 
         # Get campaign for cost/revenue calculations
         from ...domain.value_objects import CampaignId
