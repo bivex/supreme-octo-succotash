@@ -48,6 +48,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
                     start_date DATE NOT NULL,
                     end_date DATE NOT NULL,
                     granularity TEXT NOT NULL,
+                    impressions INTEGER DEFAULT 0,
                     clicks INTEGER DEFAULT 0,
                     unique_clicks INTEGER DEFAULT 0,
                     conversions INTEGER DEFAULT 0,
@@ -95,6 +96,10 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         total_clicks = len(valid_clicks)
         total_conversions = len(conversions)
 
+        # TODO: Implement impressions calculation from impressions repository
+        # For now, use clicks as approximation (this will be replaced)
+        total_impressions = total_clicks * 10  # Placeholder: assume 10% CTR
+
         # Get campaign for cost/revenue calculations
         from ...domain.value_objects import CampaignId
         campaign = self._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
@@ -113,7 +118,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         revenue = Money.from_float(revenue_amount, currency)
 
         # Calculate rates
-        ctr = (total_clicks / max(total_clicks, 1)) if total_clicks > 0 else 0.0
+        ctr = (total_clicks / total_impressions) if total_impressions > 0 else 0.0
         cr = (total_conversions / total_clicks) if total_clicks > 0 else 0.0
 
         # EPC (Earnings Per Click)
@@ -132,6 +137,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
                 'end_date': end_date.isoformat(),
                 'granularity': granularity
             },
+            impressions=total_impressions,
             clicks=total_clicks,
             unique_clicks=total_clicks,  # Simplified - assuming all clicks are unique
             conversions=total_conversions,
@@ -155,6 +161,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         analytics = self.get_campaign_analytics(campaign_id, start_date, end_date)
 
         return {
+            'impressions': analytics.impressions,
             'clicks': analytics.clicks,
             'conversions': analytics.conversions,
             'revenue': analytics.revenue,
@@ -179,11 +186,12 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
             cursor.execute("""
                 INSERT INTO analytics_cache
                 (cache_key, campaign_id, start_date, end_date, granularity,
-                 clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
+                 impressions, clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
                  cost_amount, cost_currency, ctr, cr, epc_amount, epc_currency, roi,
                  breakdowns, created_at, expires_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (cache_key) DO UPDATE SET
+                    impressions = EXCLUDED.impressions,
                     clicks = EXCLUDED.clicks,
                     unique_clicks = EXCLUDED.unique_clicks,
                     conversions = EXCLUDED.conversions,

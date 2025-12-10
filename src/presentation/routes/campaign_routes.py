@@ -422,15 +422,16 @@ class CampaignRoutes:
                         } if campaign.spent_amount else None
                     },
                     "performance": {
+                        "impressions": campaign.impressions_count,
                         "clicks": campaign.clicks_count,
                         "conversions": campaign.conversions_count,
-                        "ctr": round(campaign.clicks_count / max(campaign.clicks_count, 1), 3),  # Mock CTR calculation
-                        "cr": round(campaign.conversions_count / max(campaign.clicks_count, 1), 3),  # Mock CR calculation
+                        "ctr": round(campaign.ctr, 3),
+                        "cr": round(campaign.cr, 3),
                         "epc": {
-                            "amount": round(float(campaign.spent_amount.amount) / max(campaign.conversions_count, 1), 2) if campaign.spent_amount else 0.0,
-                            "currency": campaign.spent_amount.currency if campaign.spent_amount else "USD"
+                            "amount": round(float(campaign.epc.amount), 2) if campaign.epc else 0.0,
+                            "currency": campaign.epc.currency if campaign.epc else "USD"
                         },
-                        "roi": round(float(campaign.spent_amount.amount) / max(float(campaign.spent_amount.amount), 1), 2) if campaign.spent_amount else 0.0  # Mock ROI
+                        "roi": round(campaign.roi, 2)
                     },
                     "createdAt": campaign.created_at.isoformat() + "Z" if campaign.created_at else None,
                     "updatedAt": campaign.updated_at.isoformat() + "Z" if campaign.updated_at else None,

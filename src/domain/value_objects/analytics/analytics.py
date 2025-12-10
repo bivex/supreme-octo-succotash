@@ -15,6 +15,7 @@ class Analytics:
     time_range: Dict[str, Any]  # start_date, end_date, granularity
 
     # Overall metrics
+    impressions: int
     clicks: int
     unique_clicks: int
     conversions: int
@@ -96,6 +97,7 @@ class Analytics:
                 'end_date': end_date.isoformat(),
                 'granularity': 'day'
             },
+            impressions=0,
             clicks=0,
             unique_clicks=0,
             conversions=0,
