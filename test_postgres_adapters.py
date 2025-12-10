@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 from src.infrastructure.repositories.postgres_ltv_repository import PostgresLTVRepository
 from src.infrastructure.repositories.postgres_retention_repository import PostgresRetentionRepository
 from src.infrastructure.repositories.postgres_form_repository import PostgresFormRepository
-from domain.entities.ltv import CustomerLTV
-from domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
-from domain.entities.form import Lead, FormSubmission, LeadScore, LeadStatus, LeadSource
+from src.domain.entities.ltv import CustomerLTV
+from src.domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
+from src.domain.entities.form import Lead, FormSubmission, LeadScore, LeadStatus, LeadSource
 from src.domain.value_objects.financial.money import Money
 
 
