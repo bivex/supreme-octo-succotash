@@ -18,6 +18,9 @@ from loguru import logger
 # Cache functions removed - now using Supreme API for URL generation
 # Removed config import to avoid circular dependencies
 
+# Import shared URL shortener
+from shared_url_shortener import url_shortener
+
 
 class TrackingManager:
     """Tracking manager for Supreme integration"""
@@ -146,18 +149,12 @@ class TrackingManager:
                     result = await response.json()
                     if result.get("status") == "success" and result.get("tracking_url"):
                         api_tracking_url = result["tracking_url"]
-                        # Ensure URL points to /v1/click endpoint for tracking
-                        if "/v1/click" not in api_tracking_url:
-                            # Replace base URL with base URL + /v1/click
-                            if "?" in api_tracking_url:
-                                base_part, query_part = api_tracking_url.split("?", 1)
-                                tracking_url = f"{self.local_landing_url}/v1/click?{query_part}"
-                            else:
-                                tracking_url = f"{self.local_landing_url}/v1/click"
-                        else:
-                            tracking_url = api_tracking_url
-                        logger.info(f"Generated tracking URL via API: {tracking_url}")
-                        return tracking_url
+
+                        # Use URLShortener to create short URL
+                        short_url, params = url_shortener.shorten_url(api_tracking_url)
+
+                        logger.info(f"Generated short tracking URL: {short_url}")
+                        return short_url
                     else:
                         logger.warning(f"API returned error: {result}")
                 else:

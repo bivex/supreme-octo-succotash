@@ -1,11 +1,149 @@
 """Click tracking HTTP routes."""
 
 import json
+import sys
+import os
 from loguru import logger
 
 from ...application.handlers.track_click_handler import TrackClickHandler
 
+# Import shared URL shortener
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
+from shared_url_shortener import url_shortener
+
 # Cache functions removed - now using Supreme API for URL generation
+
+class URLShortener:
+    """URL shortener using SHA256 hash for encoding/decoding parameters"""
+
+    def __init__(self):
+        # Store mappings in dictionary (use Redis in production)
+        self.storage = {}
+
+    def encode_params(self, params_dict):
+        """
+        Encode parameters into short identifier using SHA256 hash
+        """
+        # Serialize parameters to JSON
+        params_json = json.dumps(params_dict, sort_keys=True)
+
+        # Create short hash
+        hash_object = hashlib.sha256(params_json.encode())
+        short_hash = base64.urlsafe_b64encode(hash_object.digest())[:8].decode()
+
+        # Store mapping
+        self.storage[short_hash] = params_dict
+
+        return short_hash
+
+    def decode_params(self, short_hash):
+        """
+        Decode parameters from stored identifier
+        """
+        return self.storage.get(short_hash)
+
+    def shorten_url(self, original_url):
+        """
+        Shorten URL by encoding its parameters
+        """
+        parsed = urlparse(original_url)
+        query_params = parse_qs(parsed.query)
+
+        # Convert lists to single values
+        params_dict = {k: v[0] if len(v) == 1 else v
+                      for k, v in query_params.items()}
+
+        short_code = self.encode_params(params_dict)
+
+        # Create short URL
+        short_url = f"{parsed.scheme}://{parsed.netloc}/s/{short_code}"
+
+        return short_url, params_dict
+
+    def expand_url(self, short_url):
+        """
+        Expand short URL back to full URL
+        """
+        parsed = urlparse(short_url)
+        short_code = parsed.path.split('/')[-1]
+
+        params = self.decode_params(short_code)
+
+        if params:
+            query_string = urlencode(params)
+            full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
+            return full_url, params
+
+        return None, None
+
+# Global storage for URL shortener mappings (use Redis in production)
+URL_SHORTENER_STORAGE = {}
+
+class URLShortener:
+    """URL shortener using SHA256 hash for encoding/decoding parameters"""
+
+    def __init__(self):
+        # Use global storage
+        self.storage = URL_SHORTENER_STORAGE
+
+    def encode_params(self, params_dict):
+        """
+        Encode parameters into short identifier using SHA256 hash
+        """
+        # Serialize parameters to JSON
+        params_json = json.dumps(params_dict, sort_keys=True)
+
+        # Create short hash
+        hash_object = hashlib.sha256(params_json.encode())
+        short_hash = base64.urlsafe_b64encode(hash_object.digest())[:8].decode()
+
+        # Store mapping
+        self.storage[short_hash] = params_dict
+
+        return short_hash
+
+    def decode_params(self, short_hash):
+        """
+        Decode parameters from stored identifier
+        """
+        return self.storage.get(short_hash)
+
+    def shorten_url(self, original_url):
+        """
+        Shorten URL by encoding its parameters
+        """
+        parsed = urlparse(original_url)
+        query_params = parse_qs(parsed.query)
+
+        # Convert lists to single values
+        params_dict = {k: v[0] if len(v) == 1 else v
+                      for k, v in query_params.items()}
+
+        short_code = self.encode_params(params_dict)
+
+        # Create short URL
+        short_url = f"{parsed.scheme}://{parsed.netloc}/s/{short_code}"
+
+        return short_url, params_dict
+
+    def expand_url(self, short_url):
+        """
+        Expand short URL back to full URL
+        """
+        parsed = urlparse(short_url)
+        short_code = parsed.path.split('/')[-1]
+
+        params = self.decode_params(short_code)
+
+        if params:
+            query_string = urlencode(params)
+            full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
+            return full_url, params
+
+        return None, None
+
+# Global URL shortener instance
+url_shortener = URLShortener()
 
 
 class ClickRoutes:
@@ -412,13 +550,50 @@ class ClickRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        # Short link handler removed - now using direct API-generated URLs
+        def handle_short_link_redirect(res, req):
+            """Handle short link redirection with encoded parameters."""
+            try:
+                short_code = req.get_parameter(0)
+                if not short_code:
+                    error_html = "<html><body><h1>Error</h1><p>Invalid short link</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                # Create short URL for expansion
+                short_url = f"{self.local_landing_url}/s/{short_code}"
+
+                # Expand the URL
+                expanded_url, params = url_shortener.expand_url(short_url)
+
+                if not expanded_url or not params:
+                    error_html = "<html><body><h1>Error</h1><p>Short link not found or expired</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                logger.info(f"Short link {short_code} redirecting to: {expanded_url}")
+
+                # Redirect to the click tracking endpoint
+                res.write_status(302)
+                res.write_header("Location", expanded_url)
+                res.end('')
+
+            except Exception as e:
+                logger.error(f"Error handling short link redirect: {e}")
+                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
+                res.write_status(500)
+                res.write_header("Content-Type", "text/html")
+                res.end(error_html)
 
         # Register all routes
         app.post('/clicks', create_click)
         app.get('/v1/click', track_click)
         app.get('/v1/click/:click_id', get_click_details)
         app.get('/v1/clicks', list_clicks)
+        app.get('/s/:encoded_data', handle_short_link_redirect)
         app.get('/mock-offer', mock_offer)
 
     def _get_client_ip(self, request) -> str:
