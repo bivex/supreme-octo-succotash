@@ -12,23 +12,32 @@ from ...domain.value_objects import ClickId
 class PostgresClickRepository(ClickRepository):
     """PostgreSQL implementation of ClickRepository."""
 
-    def __init__(self, host: str = "localhost", port: int = 5432, database: str = "supreme_octosuccotash_db",
-                 user: str = "app_user", password: str = "app_password"):
-        self.connection_params = {
-            'host': host,
-            'port': port,
-            'database': database,
-            'user': user,
-            'password': password,
-            'client_encoding': 'utf8'
-        }
+    def __init__(self, container):
+        self._container = container
         self._connection = None
-        self._initialize_db()
+        self._db_initialized = False
 
     def _get_connection(self):
+
+
         """Get database connection."""
+
+
         if self._connection is None:
-            self._connection = psycopg2.connect(**self.connection_params)
+
+
+            self._connection = self._container.get_db_connection()
+
+
+        if not self._db_initialized:
+
+
+            self._initialize_db()
+
+
+            self._db_initialized = True
+
+
         return self._connection
 
     def _initialize_db(self) -> None:

@@ -1,5 +1,7 @@
 """Create offer command handler."""
 
+import uuid
+
 from ..commands.create_offer_command import CreateOfferCommand
 from ...domain.entities.offer import Offer
 from ...domain.repositories.offer_repository import OfferRepository
@@ -22,7 +24,6 @@ class CreateOfferHandler:
             Created offer entity
         """
         # Generate ID
-        import uuid
         offer_id = f"offer_{str(uuid.uuid4())[:8]}"
 
         # Create offer entity

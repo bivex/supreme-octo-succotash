@@ -1,5 +1,7 @@
 """Create landing page command handler."""
 
+import uuid
+
 from ..commands.create_landing_page_command import CreateLandingPageCommand
 from ...domain.entities.landing_page import LandingPage
 from ...domain.repositories.landing_page_repository import LandingPageRepository
@@ -22,7 +24,6 @@ class CreateLandingPageHandler:
             Created landing page entity
         """
         # Generate ID
-        import uuid
         landing_page_id = f"lp_{str(uuid.uuid4())[:8]}"
 
         # Create landing page entity

@@ -1,5 +1,7 @@
 """Dependency injection container and composition root."""
 
+import psycopg2.pool
+
 # Infrastructure
 from .infrastructure.repositories import (
     SQLiteCampaignRepository,
@@ -73,6 +75,31 @@ class Container:
         self._singletons = {}
         self._settings = settings
 
+    def get_db_connection_pool(self):
+        """Get PostgreSQL connection pool."""
+        if 'db_connection_pool' not in self._singletons:
+            self._singletons['db_connection_pool'] = psycopg2.pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=20,
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password",
+                client_encoding='utf8'
+            )
+        return self._singletons['db_connection_pool']
+
+    def get_db_connection(self):
+        """Get a database connection from the pool."""
+        pool = self.get_db_connection_pool()
+        return pool.getconn()
+
+    def release_db_connection(self, conn):
+        """Release a database connection back to the pool."""
+        pool = self.get_db_connection_pool()
+        pool.putconn(conn)
+
     def get_campaign_repository(self):
         """Get campaign repository."""
         if 'campaign_repository' not in self._singletons:
@@ -87,22 +114,30 @@ class Container:
     def get_click_repository(self):
         """Get click repository."""
         if 'click_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['click_repository'] = SQLiteClickRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['click_repository'] = self.get_postgres_click_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['click_repository'] = SQLiteClickRepository(db_path)
         return self._singletons['click_repository']
 
     def get_analytics_repository(self):
         """Get analytics repository."""
         if 'analytics_repository' not in self._singletons:
-            click_repo = self.get_click_repository()
-            campaign_repo = self.get_campaign_repository()
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            analytics_repo = SQLiteAnalyticsRepository(
-                click_repository=click_repo,
-                campaign_repository=campaign_repo,
-                db_path=db_path,
-            )
-            self._singletons['analytics_repository'] = analytics_repo
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['analytics_repository'] = self.get_postgres_analytics_repository()
+            except Exception:
+                click_repo = self.get_click_repository()
+                campaign_repo = self.get_campaign_repository()
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                analytics_repo = SQLiteAnalyticsRepository(
+                    click_repository=click_repo,
+                    campaign_repository=campaign_repo,
+                    db_path=db_path,
+                )
+                self._singletons['analytics_repository'] = analytics_repo
         return self._singletons['analytics_repository']
 
     def get_ip_geolocation_service(self):
@@ -233,29 +268,7 @@ class Container:
     def get_campaign_routes(self):
         """Get campaign routes."""
         if 'campaign_routes' not in self._singletons:
-            create_handler = self.get_create_campaign_handler()
-            update_handler = self.get_update_campaign_handler()
-            pause_handler = self.get_pause_campaign_handler()
-            resume_handler = self.get_resume_campaign_handler()
-            landing_page_handler = self.get_create_landing_page_handler()
-            offer_handler = self.get_create_offer_handler()
-            get_handler = self.get_get_campaign_handler()
-            analytics_handler = self.get_get_campaign_analytics_handler()
-            landing_pages_handler = self.get_get_campaign_landing_pages_handler()
-            offers_handler = self.get_get_campaign_offers_handler()
-
-            campaign_routes = CampaignRoutes(
-                create_campaign_handler=create_handler,
-                update_campaign_handler=update_handler,
-                pause_campaign_handler=pause_handler,
-                resume_campaign_handler=resume_handler,
-                create_landing_page_handler=landing_page_handler,
-                create_offer_handler=offer_handler,
-                get_campaign_handler=get_handler,
-                get_campaign_analytics_handler=analytics_handler,
-                get_campaign_landing_pages_handler=landing_pages_handler,
-                get_campaign_offers_handler=offers_handler,
-            )
+            campaign_routes = CampaignRoutes(self)
             self._singletons['campaign_routes'] = campaign_routes
         return self._singletons['campaign_routes']
 
@@ -270,8 +283,12 @@ class Container:
     def get_webhook_repository(self):
         """Get webhook repository."""
         if 'webhook_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['webhook_repository'] = SQLiteWebhookRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['webhook_repository'] = self.get_postgres_webhook_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['webhook_repository'] = SQLiteWebhookRepository(db_path)
         return self._singletons['webhook_repository']
 
     def get_webhook_service(self):
@@ -300,8 +317,12 @@ class Container:
     def get_event_repository(self):
         """Get event repository."""
         if 'event_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['event_repository'] = SQLiteEventRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['event_repository'] = self.get_postgres_event_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['event_repository'] = SQLiteEventRepository(db_path)
         return self._singletons['event_repository']
 
     def get_event_service(self):
@@ -330,8 +351,12 @@ class Container:
     def get_conversion_repository(self):
         """Get conversion repository."""
         if 'conversion_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['conversion_repository'] = SQLiteConversionRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['conversion_repository'] = self.get_postgres_conversion_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['conversion_repository'] = SQLiteConversionRepository(db_path)
         return self._singletons['conversion_repository']
 
     def get_conversion_service(self):
@@ -363,8 +388,12 @@ class Container:
     def get_postback_repository(self):
         """Get postback repository."""
         if 'postback_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['postback_repository'] = SQLitePostbackRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['postback_repository'] = self.get_postgres_postback_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['postback_repository'] = SQLitePostbackRepository(db_path)
         return self._singletons['postback_repository']
 
     def get_postback_service(self):
@@ -416,8 +445,12 @@ class Container:
     def get_goal_repository(self):
         """Get goal repository."""
         if 'goal_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['goal_repository'] = SQLiteGoalRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['goal_repository'] = self.get_postgres_goal_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['goal_repository'] = SQLiteGoalRepository(db_path)
         return self._singletons['goal_repository']
 
     def get_ltv_repository(self):
@@ -430,39 +463,35 @@ class Container:
     def get_retention_repository(self):
         """Get retention repository."""
         if 'retention_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['retention_repository'] = SQLiteRetentionRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['retention_repository'] = self.get_postgres_retention_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['retention_repository'] = SQLiteRetentionRepository(db_path)
         return self._singletons['retention_repository']
 
     def get_form_repository(self):
         """Get form repository."""
         if 'form_repository' not in self._singletons:
-            db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
-            self._singletons['form_repository'] = SQLiteFormRepository(db_path)
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['form_repository'] = self.get_postgres_form_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['form_repository'] = SQLiteFormRepository(db_path)
         return self._singletons['form_repository']
 
     def get_postgres_campaign_repository(self):
         """Get PostgreSQL campaign repository."""
         if 'postgres_campaign_repository' not in self._singletons:
-            self._singletons['postgres_campaign_repository'] = PostgresCampaignRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_campaign_repository'] = PostgresCampaignRepository(container=self)
         return self._singletons['postgres_campaign_repository']
 
     def get_postgres_click_repository(self):
         """Get PostgreSQL click repository."""
         if 'postgres_click_repository' not in self._singletons:
-            self._singletons['postgres_click_repository'] = PostgresClickRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_click_repository'] = PostgresClickRepository(container=self)
         return self._singletons['postgres_click_repository']
 
     def get_postgres_analytics_repository(self):
@@ -471,133 +500,91 @@ class Container:
             self._singletons['postgres_analytics_repository'] = PostgresAnalyticsRepository(
                 click_repository=self.get_postgres_click_repository(),
                 campaign_repository=self.get_postgres_campaign_repository(),
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
+                container=self
             )
         return self._singletons['postgres_analytics_repository']
 
     def get_postgres_webhook_repository(self):
         """Get PostgreSQL webhook repository."""
         if 'postgres_webhook_repository' not in self._singletons:
-            self._singletons['postgres_webhook_repository'] = PostgresWebhookRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_webhook_repository'] = PostgresWebhookRepository(container=self)
         return self._singletons['postgres_webhook_repository']
 
     def get_postgres_event_repository(self):
         """Get PostgreSQL event repository."""
         if 'postgres_event_repository' not in self._singletons:
-            self._singletons['postgres_event_repository'] = PostgresEventRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_event_repository'] = PostgresEventRepository(container=self)
         return self._singletons['postgres_event_repository']
 
     def get_postgres_conversion_repository(self):
         """Get PostgreSQL conversion repository."""
         if 'postgres_conversion_repository' not in self._singletons:
-            self._singletons['postgres_conversion_repository'] = PostgresConversionRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_conversion_repository'] = PostgresConversionRepository(container=self)
         return self._singletons['postgres_conversion_repository']
 
     def get_postgres_postback_repository(self):
         """Get PostgreSQL postback repository."""
         if 'postgres_postback_repository' not in self._singletons:
-            self._singletons['postgres_postback_repository'] = PostgresPostbackRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_postback_repository'] = PostgresPostbackRepository(container=self)
         return self._singletons['postgres_postback_repository']
 
     def get_postgres_goal_repository(self):
         """Get PostgreSQL goal repository."""
         if 'postgres_goal_repository' not in self._singletons:
-            self._singletons['postgres_goal_repository'] = PostgresGoalRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_goal_repository'] = PostgresGoalRepository(container=self)
         return self._singletons['postgres_goal_repository']
 
     def get_postgres_ltv_repository(self):
         """Get PostgreSQL LTV repository."""
         if 'postgres_ltv_repository' not in self._singletons:
-            self._singletons['postgres_ltv_repository'] = PostgresLTVRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_ltv_repository'] = PostgresLTVRepository(container=self)
         return self._singletons['postgres_ltv_repository']
 
     def get_postgres_retention_repository(self):
         """Get PostgreSQL retention repository."""
         if 'postgres_retention_repository' not in self._singletons:
-            self._singletons['postgres_retention_repository'] = PostgresRetentionRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_retention_repository'] = PostgresRetentionRepository(container=self)
         return self._singletons['postgres_retention_repository']
 
     def get_postgres_form_repository(self):
         """Get PostgreSQL form repository."""
         if 'postgres_form_repository' not in self._singletons:
-            self._singletons['postgres_form_repository'] = PostgresFormRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_form_repository'] = PostgresFormRepository(container=self)
         return self._singletons['postgres_form_repository']
 
     def get_postgres_landing_page_repository(self):
         """Get PostgreSQL landing page repository."""
         if 'postgres_landing_page_repository' not in self._singletons:
-            self._singletons['postgres_landing_page_repository'] = PostgresLandingPageRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_landing_page_repository'] = PostgresLandingPageRepository(container=self)
         return self._singletons['postgres_landing_page_repository']
 
     def get_postgres_offer_repository(self):
         """Get PostgreSQL offer repository."""
         if 'postgres_offer_repository' not in self._singletons:
-            self._singletons['postgres_offer_repository'] = PostgresOfferRepository(
-                host="localhost",
-                port=5432,
-                database="supreme_octosuccotash_db",
-                user="app_user",
-                password="app_password"
-            )
+            self._singletons['postgres_offer_repository'] = PostgresOfferRepository(container=self)
         return self._singletons['postgres_offer_repository']
+
+    def get_landing_page_repository(self):
+        """Get landing page repository."""
+        if 'landing_page_repository' not in self._singletons:
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['landing_page_repository'] = self.get_postgres_landing_page_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['landing_page_repository'] = SQLiteLandingPageRepository(db_path)
+        return self._singletons['landing_page_repository']
+
+    def get_offer_repository(self):
+        """Get offer repository."""
+        if 'offer_repository' not in self._singletons:
+            # Try PostgreSQL first, fallback to SQLite
+            try:
+                self._singletons['offer_repository'] = self.get_postgres_offer_repository()
+            except Exception:
+                db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
+                self._singletons['offer_repository'] = SQLiteOfferRepository(db_path)
+        return self._singletons['offer_repository']
 
     def get_goal_service(self):
         """Get goal service."""

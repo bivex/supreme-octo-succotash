@@ -17,18 +17,25 @@ def run_server():
     port = settings.api.port
 
     # Determine database driver information and test PostgreSQL connectivity
-    db_driver_info = "SQLite (primary) + PostgreSQL"
-
-    # Test PostgreSQL connectivity on startup
+    # Test PostgreSQL connectivity and determine which driver to use
     try:
-        from src.infrastructure.repositories.postgres_ltv_repository import PostgresLTVRepository
-        postgres_repo = PostgresLTVRepository()
-        db_driver_info += " - PostgreSQL: ✅ Connected"
+        import psycopg2
+        # Simple connection test
+        conn = psycopg2.connect(
+            host="localhost",
+            port=5432,
+            database="supreme_octosuccotash_db",
+            user="app_user",
+            password="app_password",
+            connect_timeout=5
+        )
+        conn.close()
+        db_driver_info = "PostgreSQL"
         logger.info(f"Database driver: {db_driver_info}")
     except Exception as e:
-        db_driver_info += f" - PostgreSQL: ❌ Connection failed ({str(e)[:50]}...)"
+        db_driver_info = "SQLite (PostgreSQL unavailable)"
         logger.warning(f"Database driver: {db_driver_info}")
-        logger.warning("PostgreSQL features will not be available")
+        logger.warning(f"PostgreSQL connection failed: {str(e)[:50]}...")
 
     def on_listen(cfg):
         logger.info(f"Server listening on port {cfg.port}")

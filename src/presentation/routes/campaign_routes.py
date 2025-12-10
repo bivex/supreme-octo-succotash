@@ -19,27 +19,79 @@ from ..dto.campaign_dto import CampaignSummaryResponse
 class CampaignRoutes:
     """Socketify routes for campaign operations."""
 
-    def __init__(self,
-                 create_campaign_handler: CreateCampaignHandler,
-                 update_campaign_handler: UpdateCampaignHandler,
-                 pause_campaign_handler: PauseCampaignHandler,
-                 resume_campaign_handler: ResumeCampaignHandler,
-                 create_landing_page_handler: CreateLandingPageHandler,
-                 create_offer_handler: CreateOfferHandler,
-                 get_campaign_handler: GetCampaignHandler,
-                 get_campaign_analytics_handler: GetCampaignAnalyticsHandler,
-                 get_campaign_landing_pages_handler: GetCampaignLandingPagesHandler,
-                 get_campaign_offers_handler: GetCampaignOffersHandler):
-        self.create_campaign_handler = create_campaign_handler
-        self.update_campaign_handler = update_campaign_handler
-        self.pause_campaign_handler = pause_campaign_handler
-        self.resume_campaign_handler = resume_campaign_handler
-        self.create_landing_page_handler = create_landing_page_handler
-        self.create_offer_handler = create_offer_handler
-        self.get_campaign_handler = get_campaign_handler
-        self.get_campaign_analytics_handler = get_campaign_analytics_handler
-        self.get_campaign_landing_pages_handler = get_campaign_landing_pages_handler
-        self.get_campaign_offers_handler = get_campaign_offers_handler
+    def __init__(self, container):
+        self._container = container
+        # Lazy-loaded handlers
+        self._create_campaign_handler = None
+        self._update_campaign_handler = None
+        self._pause_campaign_handler = None
+        self._resume_campaign_handler = None
+        self._create_landing_page_handler = None
+        self._create_offer_handler = None
+        self._get_campaign_handler = None
+        self._get_campaign_analytics_handler = None
+        self._get_campaign_landing_pages_handler = None
+        self._get_campaign_offers_handler = None
+
+    @property
+    def create_campaign_handler(self):
+        if self._create_campaign_handler is None:
+            self._create_campaign_handler = self._container.get_create_campaign_handler()
+        return self._create_campaign_handler
+
+    @property
+    def update_campaign_handler(self):
+        if self._update_campaign_handler is None:
+            self._update_campaign_handler = self._container.get_update_campaign_handler()
+        return self._update_campaign_handler
+
+    @property
+    def pause_campaign_handler(self):
+        if self._pause_campaign_handler is None:
+            self._pause_campaign_handler = self._container.get_pause_campaign_handler()
+        return self._pause_campaign_handler
+
+    @property
+    def resume_campaign_handler(self):
+        if self._resume_campaign_handler is None:
+            self._resume_campaign_handler = self._container.get_resume_campaign_handler()
+        return self._resume_campaign_handler
+
+    @property
+    def create_landing_page_handler(self):
+        if self._create_landing_page_handler is None:
+            self._create_landing_page_handler = self._container.get_create_landing_page_handler()
+        return self._create_landing_page_handler
+
+    @property
+    def create_offer_handler(self):
+        if self._create_offer_handler is None:
+            self._create_offer_handler = self._container.get_create_offer_handler()
+        return self._create_offer_handler
+
+    @property
+    def get_campaign_handler(self):
+        if self._get_campaign_handler is None:
+            self._get_campaign_handler = self._container.get_get_campaign_handler()
+        return self._get_campaign_handler
+
+    @property
+    def get_campaign_analytics_handler(self):
+        if self._get_campaign_analytics_handler is None:
+            self._get_campaign_analytics_handler = self._container.get_get_campaign_analytics_handler()
+        return self._get_campaign_analytics_handler
+
+    @property
+    def get_campaign_landing_pages_handler(self):
+        if self._get_campaign_landing_pages_handler is None:
+            self._get_campaign_landing_pages_handler = self._container.get_get_campaign_landing_pages_handler()
+        return self._get_campaign_landing_pages_handler
+
+    @property
+    def get_campaign_offers_handler(self):
+        if self._get_campaign_offers_handler is None:
+            self._get_campaign_offers_handler = self._container.get_get_campaign_offers_handler()
+        return self._get_campaign_offers_handler
 
 
     def _validate_query_parameters(self, req, allowed_params: set):
