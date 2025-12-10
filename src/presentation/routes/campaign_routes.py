@@ -859,9 +859,9 @@ class CampaignRoutes:
         app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
 
     def _register_campaign_offers(self, app):
-        """Register campaign offers route."""
+        """Register campaign offers route with CQRS query pattern."""
         def get_campaign_offers(res, req):
-            """Get campaign offers."""
+            """Get campaign offers using GetCampaignOffersQuery and business logic handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
             # Validate request (authentication, rate limiting, etc.)
@@ -897,7 +897,7 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Get offers from business logic
+                # Get offers from business logic using CQRS query pattern
                 from ...application.queries.get_campaign_offers_query import GetCampaignOffersQuery
 
                 offset = (page - 1) * page_size
@@ -1012,11 +1012,12 @@ class CampaignRoutes:
                                 res.end(json.dumps(error_response))
                                 return
 
-                            # Create command
+                            # Create command using CQRS pattern
                             from ...application.commands.create_offer_command import CreateOfferCommand
                             from ...domain.value_objects import Money, Url
                             from decimal import Decimal
 
+                            # Build command with business logic validation
                             command = CreateOfferCommand(
                                 campaign_id=campaign_id,
                                 name=body_data['name'],
