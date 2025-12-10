@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from loguru import logger
 
 from config import BOT_MESSAGES, settings
-from tracking import tracking_manager
+from tracking import get_tracking_manager
 
 
 # Create router for handlers
@@ -42,6 +42,53 @@ async def cmd_start(message: Message):
     )
 
 
+@router.callback_query(F.data.startswith("visit_landing:"))
+async def callback_visit_landing(callback: CallbackQuery):
+    """Handle visit landing page request"""
+
+    # Extract click_id from callback data
+    click_id = callback.data.split(":", 1)[1]
+    user_id = callback.from_user.id
+
+    try:
+        # Generate fresh tracking URL
+        tracking_result = await get_tracking_manager().generate_tracking_link(
+            user_id=user_id,
+            source="telegram_bot_visit",
+            additional_params={
+                "sub3": "direct_visit",
+                "sub4": callback.from_user.username or "user",
+                "click_id": click_id
+            }
+        )
+
+        tracking_url = tracking_result["tracking_url"]
+
+        # Send URL as message
+        await callback.message.reply(
+            f"🌐 Ваша персональная ссылка на предложение:\n\n{tracking_url}\n\n"
+            f"📱 Нажмите на ссылку или скопируйте её в браузер для перехода к Supreme Company.",
+            parse_mode=ParseMode.HTML
+        )
+
+        # Track the visit event
+        await get_tracking_manager().track_event(
+            click_id=click_id,
+            event_type="landing_page_visit",
+            event_data={
+                "user_id": user_id,
+                "username": callback.from_user.username,
+                "source": "telegram_callback"
+            }
+        )
+
+        await callback.answer("Ссылка отправлена! 📨")
+
+    except Exception as e:
+        logger.error(f"Error sending tracking URL for user {user_id}: {e}")
+        await callback.answer("Произошла ошибка. Попробуйте еще раз.", show_alert=True)
+
+
 @router.callback_query(F.data == "get_offer")
 async def callback_get_offer(callback: CallbackQuery):
     """Handle offer button click"""
@@ -51,7 +98,7 @@ async def callback_get_offer(callback: CallbackQuery):
 
     try:
         # Generate tracking link
-        tracking_result = await tracking_manager.generate_tracking_link(
+        tracking_result = await get_tracking_manager().generate_tracking_link(
             user_id=user_id,
             source="telegram_bot_start",
             additional_params={
@@ -69,11 +116,11 @@ async def callback_get_offer(callback: CallbackQuery):
         # Create button with link to landing
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text="Go to offer",
+                text="🌐 Перейти к предложению",
                 url=tracking_url
             )],
             [InlineKeyboardButton(
-                text="Ask question",
+                text="❓ Задать вопрос",
                 callback_data="ask_question"
             )]
         ])
@@ -86,7 +133,7 @@ async def callback_get_offer(callback: CallbackQuery):
         )
 
         # Mark link generation event
-        await tracking_manager.track_event(
+        await get_tracking_manager().track_event(
             click_id=click_id,
             event_type="link_generated",
             event_data={
@@ -287,7 +334,7 @@ async def handle_conversion_webhook(conversion_data: Dict[str, Any]):
         return
 
     # Mark conversion in tracker
-    await tracking_manager.track_conversion(
+    await get_tracking_manager().track_conversion(
         click_id=click_id,
         conversion_type=conversion_type,
         conversion_value=conversion_data.get("value", 0),
@@ -331,7 +378,7 @@ async def handle_click_webhook(click_data: Dict[str, Any]):
         return
 
     # Mark click event
-    await tracking_manager.track_event(
+    await get_tracking_manager().track_event(
         click_id=click_id,
         event_type="click_confirmed",
         event_data={

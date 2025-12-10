@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Main file for Telegram bot tracking clicks to landing pages
-Uses aiogram 3.x and integrates with Keitaro Tracker
+Uses aiogram 3.x and integrates with Supreme Tracker
 """
 
 import asyncio

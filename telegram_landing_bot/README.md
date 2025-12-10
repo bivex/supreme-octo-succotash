@@ -1,11 +1,11 @@
 # Telegram Bot for Tracking Clicks to Landing Pages
 
-Bot built with aiogram 3.x that integrates with Keitaro Tracker to monitor conversions from Telegram to landing pages.
+Bot built with aiogram 3.x that integrates with Supreme Tracker to monitor conversions from Telegram to landing pages.
 
 ## Features
 
 - Generate personalized tracking links
-- Integrate with Keitaro Tracker (KTracker)
+- Integrate with Supreme Tracker (Supreme)
 - Track clicks and conversions
 - Use inline keyboards and interactive elements
 - Handle webhooks from tracker
@@ -37,7 +37,7 @@ Fill in the `.env` file:
 BOT_TOKEN=your_bot_token_from_BotFather
 ADMIN_IDS=[your_telegram_id,another_admin_id]
 
-# Keitaro Tracker Configuration
+# Supreme Tracker Configuration
 TRACKER_DOMAIN=your-tracker-domain.com
 CAMPAIGN_ID=123
 
@@ -56,16 +56,16 @@ LOG_LEVEL=INFO
 2. Create a new bot with command `/newbot`
 3. Copy the token to `.env`
 
-### Configure Keitaro Tracker
+### Configure Supreme Tracker
 
-1. Install Keitaro on your server or use cloud version
+1. Install Supreme on your server or use cloud version
 2. Create a campaign for Telegram traffic
 3. Set up flow with filtering rules
 4. Create landing page in system or connect external one
 5. Configure conversion goals
 6. Get tracker domain and campaign ID
 
-### Campaign structure in Keitaro
+### Campaign structure in Supreme
 
 ```
 Campaign ID: 123
@@ -286,7 +286,7 @@ await tracking_manager.track_event(
 
 ### Tracking problems
 
-1. Check Keitaro settings
+1. Check Supreme settings
 2. Ensure tracker domain is correct
 3. Check campaign_id
 
