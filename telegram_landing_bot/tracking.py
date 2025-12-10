@@ -24,8 +24,8 @@ class TrackingManager:
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
-        self.tracker_base_url = f"https://{settings.tracker_domain}"
-        # Use ngrok HTTPS URL for public access
+        self.tracker_base_url = "https://api.supreme-tracker.com"  # Supreme tracker domain
+        # Use ngrok HTTPS URL for Supreme API access
         self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
 
     async def __aenter__(self):
@@ -56,7 +56,7 @@ class TrackingManager:
         params = {
             "click_id": click_id,
             "source": "telegram_bot",
-            "cid": settings.campaign_id,
+            "cid": "camp_9061",
             **DEFAULT_TRACKING_PARAMS
         }
 
@@ -145,7 +145,17 @@ class TrackingManager:
                 if response.status == 200:
                     result = await response.json()
                     if result.get("status") == "success" and result.get("tracking_url"):
-                        tracking_url = result["tracking_url"]
+                        api_tracking_url = result["tracking_url"]
+                        # Ensure URL points to /v1/click endpoint for tracking
+                        if "/v1/click" not in api_tracking_url:
+                            # Replace base URL with base URL + /v1/click
+                            if "?" in api_tracking_url:
+                                base_part, query_part = api_tracking_url.split("?", 1)
+                                tracking_url = f"{self.local_landing_url}/v1/click?{query_part}"
+                            else:
+                                tracking_url = f"{self.local_landing_url}/v1/click"
+                        else:
+                            tracking_url = api_tracking_url
                         logger.info(f"Generated tracking URL via API: {tracking_url}")
                         return tracking_url
                     else:
@@ -182,7 +192,7 @@ class TrackingManager:
             return False
 
         # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+        skip_remote = True  # Skip remote tracking for demo/development
 
         if skip_remote:
             logger.info(f"Remote tracking skipped (demo mode): {event_type} for click_id {click_id}")
@@ -219,8 +229,8 @@ class TrackingManager:
             return False
 
         try:
-            campaign_id_num = int(settings.campaign_id.replace("camp_", ""))
-            logger.info(f"Using campaign_id: {settings.campaign_id} -> {campaign_id_num}")
+            campaign_id_num = 9061
+            logger.info(f"Using campaign_id: camp_9061 -> {campaign_id_num}")
             payload = {
                 "event_type": event_type,
                 "event_name": event_data.get("event_name", event_type) if event_data else event_type,
@@ -278,7 +288,7 @@ class TrackingManager:
             return False
 
         # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+        skip_remote = True  # Skip remote tracking for demo/development
 
         if skip_remote:
             logger.info(f"Remote conversion tracking skipped (demo mode): {conversion_type} for click_id {click_id}")
@@ -328,7 +338,7 @@ class TrackingManager:
                 "event_type": event_type_map.get(conversion_type, "conversion"),
                 "event_name": f"{conversion_type}_conversion",
                 "click_id": click_id,
-                "campaign_id": settings.campaign_id.replace("camp_", ""),  # Keep as string for events API
+                "campaign_id": "9061",  # Keep as string for events API
                 "url": f"{self.local_landing_url}/landing",
                 "properties": {
                     "conversion_value": conversion_value,
@@ -378,7 +388,7 @@ class TrackingManager:
             return False
 
         # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+        skip_remote = True  # Skip remote tracking for demo/development
 
         if skip_remote:
             logger.info(f"Remote postback skipped (demo mode): {postback_type} for click_id {click_id}")
@@ -419,7 +429,7 @@ class TrackingManager:
                 "event_type": "postback",
                 "event_name": f"{postback_type}_postback",
                 "click_id": click_id,
-                "campaign_id": settings.campaign_id.replace("camp_", ""),  # Keep as string for events API
+                "campaign_id": "9061",  # Keep as string for events API
                 "url": f"{self.local_landing_url}/landing",
                 "properties": {
                     "postback_type": postback_type,
