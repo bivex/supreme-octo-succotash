@@ -364,6 +364,7 @@ def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
         pool_start = time.time()
 
         try:
+            print("DEBUG: Connection pool status handler called")
             logger.info("🏊 Step 1: Getting pool status from monitor")
             monitor_start = time.time()
             pool_status = upholder.connection_pool_monitor.get_pool_status()

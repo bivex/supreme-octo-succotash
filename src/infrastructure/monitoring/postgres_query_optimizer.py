@@ -42,13 +42,22 @@ class PostgresQueryOptimizer:
 
     def _get_cursor(self):
         """Get cursor, handling both connection pools and direct connections."""
+        print("DEBUG: _get_cursor() called")
         if hasattr(self.connection, 'getconn'):
+            print("DEBUG: Detected connection pool")
+            # Skip pool stats check for now to avoid blocking
+            print("DEBUG: Skipping pool stats check")
+
+            print("DEBUG: About to call getconn()")
             # It's a connection pool
             conn = self.connection.getconn()
+            print("DEBUG: Got connection from pool")
             cursor = conn.cursor()
+            print("DEBUG: Created cursor")
             # Return both connection and cursor for proper cleanup
             return conn, cursor
         else:
+            print("DEBUG: Using direct connection")
             # It's a direct connection
             return None, self.connection.cursor()
 
@@ -63,37 +72,62 @@ class PostgresQueryOptimizer:
                            min_calls: int = 10) -> List[QueryPerformanceIssue]:
         """Analyze slow queries and identify performance issues."""
         import time
+        print("DEBUG: analyze_slow_queries() called")
         logger.info("🐌 START: analyze_slow_queries()")
 
         try:
+            print("DEBUG: Getting database cursor")
             logger.info("🐌 Getting database cursor")
             cursor_start = time.time()
             conn, cursor = self._get_cursor()
             cursor_time = time.time() - cursor_start
+            print("DEBUG: Got database cursor")
             logger.info(".3f")       
             try:
                 # Get slow queries from pg_stat_statements
                 logger.info("🐌 Executing slow queries analysis query")
                 query_start = time.time()
-                cursor.execute("""
-                    SELECT
-                        queryid,
-                        query,
-                        calls,
-                        total_time,
-                        mean_time,
-                        rows,
-                        shared_blks_hit,
-                        shared_blks_read,
-                        temp_blks_read,
-                        temp_blks_written
-                    FROM pg_stat_statements
-                    WHERE mean_time >= %s
-                    AND calls >= %s
-                    AND query NOT LIKE '%%pg_stat%%'
-                    ORDER BY mean_time DESC
-                    LIMIT 50
-                """, (min_avg_time, min_calls))
+                try:
+                    cursor.execute("""
+                        SELECT
+                            queryid,
+                            query,
+                            calls,
+                            total_time,
+                            mean_time,
+                            rows,
+                            shared_blks_hit,
+                            shared_blks_read,
+                            temp_blks_read,
+                            temp_blks_written
+                        FROM pg_stat_statements
+                        WHERE mean_time >= %s
+                        AND calls >= %s
+                        AND query NOT LIKE '%%pg_stat%%'
+                        ORDER BY mean_time DESC
+                        LIMIT 50
+                    """, (min_avg_time, min_calls))
+                except Exception as e:
+                    logger.warning(f"pg_stat_statements query failed: {e}, using fallback")
+                    # Close current cursor and get a new connection to avoid aborted transaction
+                    self._close_cursor(conn, cursor)
+                    conn, cursor = self._get_cursor()
+
+                    try:
+                        # Fallback query with basic columns
+                        cursor.execute("""
+                            SELECT
+                                query,
+                                calls
+                            FROM pg_stat_statements
+                            WHERE calls >= %s
+                            ORDER BY calls DESC
+                            LIMIT 20
+                        """, (min_calls,))
+                    except Exception as fallback_error:
+                        logger.error(f"Fallback query failed: {fallback_error}")
+                        self._close_cursor(conn, cursor)
+                        return []
                 query_time = time.time() - query_start
                 logger.info(".3f")
                 logger.info("🐌 Fetching query results")
@@ -105,8 +139,24 @@ class PostgresQueryOptimizer:
 
                 issues = []
                 for row in rows:
-                    issue = self._analyze_single_query(row)
-                    if issue:
+                    # Handle different row formats
+                    if len(row) >= 10:  # Full query result
+                        issue = self._analyze_single_query(row)
+                        if issue:
+                            issues.append(issue)
+                    elif len(row) >= 2:  # Fallback result (query, calls)
+                        # Create a basic issue for fallback data
+                        query, calls = row[0], row[1]
+                        issue = QueryPerformanceIssue(
+                            query_id=f"fallback_{hash(query) % 10000}",
+                            query_text=query[:200] + "..." if len(query) > 200 else query,
+                            issue_type="slow_query",
+                            severity="medium",
+                            metrics={"calls": calls, "mean_time": 0},
+                            recommendations=["Enable pg_stat_statements for detailed analysis"],
+                            estimated_impact="Unknown (limited data)",
+                            fix_complexity="medium"
+                        )
                         issues.append(issue)
 
                 return issues
@@ -119,6 +169,10 @@ class PostgresQueryOptimizer:
 
     def _analyze_single_query(self, query_data: tuple) -> Optional[QueryPerformanceIssue]:
         """Analyze a single query for performance issues."""
+        if len(query_data) < 10:
+            # Not enough data for full analysis
+            return None
+
         queryid, query, calls, total_time, mean_time, rows, shared_blks_hit, shared_blks_read, temp_blks_read, temp_blks_written = query_data
 
         # Clean up query text (remove extra whitespace)
@@ -400,13 +454,17 @@ class PostgresQueryOptimizer:
     def get_performance_dashboard(self) -> Dict[str, Any]:
         """Get comprehensive performance dashboard."""
         import time
+        print("DEBUG: query_optimizer.get_performance_dashboard() called")
         logger.info("🔍 START: get_performance_dashboard()")
 
         try:
+            print("DEBUG: About to analyze slow queries")
             logger.info("🔍 Analyzing slow queries...")
             analyze_start = time.time()
+            print("DEBUG: Calling self.analyze_slow_queries()")
             issues = self.analyze_slow_queries()
             analyze_time = time.time() - analyze_start
+            print("DEBUG: analyze_slow_queries() completed")
             logger.info(".3f")
 
             # Group issues by type and severity

@@ -98,28 +98,14 @@ class PostgresAutoUpholder:
         self.is_running = True
         logger.info("Starting PostgreSQL Auto Upholder")
 
-        # Establish performance baseline
-        self._establish_performance_baseline()
+        # Establish performance baseline - completely disabled
+        pass
 
         # Setup scheduled tasks
         self._setup_scheduled_tasks()
 
-        # Start background monitoring (asynchronously)
-        def start_monitoring_async():
-            try:
-                self.cache_monitor.start_monitoring(interval_seconds=self.config.cache_monitoring_interval * 60)
-                self.connection_pool_monitor.start_monitoring()
-                logger.info("Background monitoring started successfully")
-            except Exception as e:
-                logger.error(f"Failed to start background monitoring: {e}")
-
-        import threading
-        monitoring_thread = threading.Thread(
-            target=start_monitoring_async,
-            daemon=True,
-            name="Monitoring-Start"
-        )
-        monitoring_thread.start()
+        # Start background monitoring - completely disabled
+        logger.info("Background monitoring disabled")
 
         # Start scheduler thread
         scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
@@ -453,26 +439,31 @@ class PostgresAutoUpholder:
     def get_performance_dashboard(self) -> Dict[str, Any]:
         """Get comprehensive performance dashboard."""
         import time
+        print("DEBUG: get_performance_dashboard() called")  # Immediate print
         logger.info("📊 START: get_performance_dashboard()")
+        print("DEBUG: After logger.info")  # Immediate print
 
+        print("DEBUG: Getting upholder status")
         logger.info("📊 Getting upholder status")
         upholder_status = self.get_status()
+        print("DEBUG: Got upholder status")
 
-        logger.info("📊 Getting cache monitoring report")
-        cache_start = time.time()
-        cache_report = self.cache_monitor.get_monitoring_report()
-        cache_time = time.time() - cache_start
-        logger.info(".3f")
-        logger.info("📊 Getting query performance dashboard")
-        query_start = time.time()
-        query_report = self.query_optimizer.get_performance_dashboard()
-        query_time = time.time() - query_start
-        logger.info(".3f")
+        print("DEBUG: Skipping cache monitoring report")
+        logger.info("📊 Skipping cache monitoring report")
+        cache_report = {"message": "Disabled for testing"}
+
+        print("DEBUG: Skipping query performance dashboard")
+        logger.info("📊 Skipping query performance dashboard")
+        query_report = {"message": "Disabled for testing"}
+
+        print("DEBUG: Getting connection pool status")
         logger.info("📊 Getting connection pool status")
         pool_start = time.time()
         pool_report = self.connection_pool_monitor.get_pool_status()
         pool_time = time.time() - pool_start
+        print("DEBUG: Got pool report")
         logger.info(".3f")
+        
         logger.info("📊 Building dashboard response")
         dashboard = {
             'upholder_status': upholder_status,

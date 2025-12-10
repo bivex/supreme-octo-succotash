@@ -76,6 +76,19 @@ class PostgresConnectionPoolMonitor:
     def get_pool_status(self) -> Dict[str, Any]:
         """Get comprehensive connection pool status."""
         try:
+            # If monitoring is disabled, return basic pool stats only
+            if not self.is_monitoring:
+                return {
+                    'is_monitoring': self.is_monitoring,
+                    'pool_metrics': {'message': 'Monitoring disabled'},
+                    'performance_trends': {'message': 'Monitoring disabled'},
+                    'load_analysis': {'message': 'Monitoring disabled'},
+                    'optimization_recommendations': [],
+                    'health_status': 'DISABLED',
+                    'raw_pool_stats': self._safe_get_pool_stats(),
+                    'last_updated': datetime.now().isoformat()
+                }
+
             performance_report = self.optimizer.get_performance_report()
 
             return {
@@ -85,7 +98,7 @@ class PostgresConnectionPoolMonitor:
                 'load_analysis': performance_report.get('load_pattern_analysis', {}),
                 'optimization_recommendations': performance_report.get('optimization_recommendations', []),
                 'health_status': performance_report.get('pool_health_status', 'UNKNOWN'),
-                'raw_pool_stats': self.connection_pool.get_stats(),
+                'raw_pool_stats': self._safe_get_pool_stats(),
                 'last_updated': datetime.now().isoformat()
             }
 
@@ -96,6 +109,14 @@ class PostgresConnectionPoolMonitor:
                 'is_monitoring': self.is_monitoring,
                 'last_updated': datetime.now().isoformat()
             }
+
+    def _safe_get_pool_stats(self) -> Dict[str, Any]:
+        """Safely get pool stats with error handling."""
+        try:
+            return self.connection_pool.get_stats()
+        except Exception as e:
+            logger.warning(f"Failed to get pool stats: {e}")
+            return {'error': str(e)}
 
     def get_optimization_suggestions(self) -> List[Dict[str, Any]]:
         """Get current optimization suggestions for the connection pool."""
