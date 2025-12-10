@@ -29,13 +29,13 @@ from .domain.services.goal import GoalService
 from .domain.services.journey import JourneyService
 
 # Application handlers
-from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler
+from .application.handlers import CreateCampaignHandler, TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler, BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler
 
 # Application queries
 from .application.queries import GetCampaignHandler
 
 # Presentation
-from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes
+from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes
 
 
 class Container:
@@ -362,6 +362,62 @@ class Container:
         if 'retention_routes' not in self._singletons:
             self._singletons['retention_routes'] = RetentionRoutes()
         return self._singletons['retention_routes']
+
+    def get_bulk_click_handler(self):
+        """Get bulk click handler."""
+        if 'bulk_click_handler' not in self._singletons:
+            self._singletons['bulk_click_handler'] = BulkClickHandler()
+        return self._singletons['bulk_click_handler']
+
+    def get_click_validation_handler(self):
+        """Get click validation handler."""
+        if 'click_validation_handler' not in self._singletons:
+            self._singletons['click_validation_handler'] = ClickValidationHandler()
+        return self._singletons['click_validation_handler']
+
+    def get_bulk_operations_routes(self):
+        """Get bulk operations routes."""
+        if 'bulk_operations_routes' not in self._singletons:
+            bulk_handler = self.get_bulk_click_handler()
+            validation_handler = self.get_click_validation_handler()
+            self._singletons['bulk_operations_routes'] = BulkOperationsRoutes(bulk_handler, validation_handler)
+        return self._singletons['bulk_operations_routes']
+
+    def get_fraud_handler(self):
+        """Get fraud handler."""
+        if 'fraud_handler' not in self._singletons:
+            self._singletons['fraud_handler'] = FraudHandler()
+        return self._singletons['fraud_handler']
+
+    def get_fraud_routes(self):
+        """Get fraud routes."""
+        if 'fraud_routes' not in self._singletons:
+            self._singletons['fraud_routes'] = FraudRoutes(self.get_fraud_handler())
+        return self._singletons['fraud_routes']
+
+    def get_system_handler(self):
+        """Get system handler."""
+        if 'system_handler' not in self._singletons:
+            self._singletons['system_handler'] = SystemHandler()
+        return self._singletons['system_handler']
+
+    def get_system_routes(self):
+        """Get system routes."""
+        if 'system_routes' not in self._singletons:
+            self._singletons['system_routes'] = SystemRoutes(self.get_system_handler())
+        return self._singletons['system_routes']
+
+    def get_analytics_handler(self):
+        """Get analytics handler."""
+        if 'analytics_handler' not in self._singletons:
+            self._singletons['analytics_handler'] = AnalyticsHandler()
+        return self._singletons['analytics_handler']
+
+    def get_analytics_routes(self):
+        """Get analytics routes."""
+        if 'analytics_routes' not in self._singletons:
+            self._singletons['analytics_routes'] = AnalyticsRoutes(self.get_analytics_handler())
+        return self._singletons['analytics_routes']
 
 
 

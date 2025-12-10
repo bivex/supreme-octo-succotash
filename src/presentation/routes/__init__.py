@@ -12,6 +12,10 @@ from .journey_routes import JourneyRoutes
 from .ltv_routes import LtvRoutes
 from .form_routes import FormRoutes
 from .retention_routes import RetentionRoutes
+from .bulk_operations_routes import BulkOperationsRoutes
+from .fraud_routes import FraudRoutes
+from .system_routes import SystemRoutes
+from .analytics_routes import AnalyticsRoutes
 
 __all__ = [
     'CampaignRoutes',
@@ -25,5 +29,9 @@ __all__ = [
     'JourneyRoutes',
     'LtvRoutes',
     'FormRoutes',
-    'RetentionRoutes'
+    'RetentionRoutes',
+    'BulkOperationsRoutes',
+    'FraudRoutes',
+    'SystemRoutes',
+    'AnalyticsRoutes'
 ]

@@ -105,6 +105,11 @@ def _register_routes(app: socketify.App) -> None:
     container.get_ltv_routes().register(app)
     container.get_form_routes().register(app)
     container.get_retention_routes().register(app)
+    # New feature routes
+    container.get_bulk_operations_routes().register(app)
+    container.get_fraud_routes().register(app)
+    container.get_system_routes().register(app)
+    container.get_analytics_routes().register(app)
 
 
 def _register_error_handlers(app: socketify.App) -> None:
