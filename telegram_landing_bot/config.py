@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     bot_token: str = Field(..., env="BOT_TOKEN")
     admin_ids: list[int] = Field(default_factory=list, env="ADMIN_IDS")
 
-    # Keitaro Tracker
+    # Supreme Tracker
     tracker_domain: str = Field(..., env="TRACKER_DOMAIN")
     campaign_id: int = Field(..., env="CAMPAIGN_ID")
 
@@ -43,49 +43,52 @@ settings = Settings()
 # Default tracking parameters
 DEFAULT_TRACKING_PARAMS = {
     "sub1": "telegram_bot",
-    "sub2": "organic",
-    "sub3": "main_flow",
+    "sub2": "local_landing",
+    "sub3": "supreme_company",
     "sub4": "direct_message",
-    "sub5": "standard_offer"
+    "sub5": "premium_offer"
 }
 
 
 # Bot messages
 BOT_MESSAGES = {
     "welcome": """
-Hello. I will help you visit a special page with our offer.
+Добро пожаловать в Supreme Company!
 
-Click the button below to learn more details.
+Я помогу вам перейти на специальную страницу с нашим предложением.
+
+Нажмите кнопку ниже, чтобы узнать подробности.
 """,
 
     "main_offer": """
-Special offer.
+🚀 Supreme Company - Премиум решение
 
-Learn how to achieve results faster with our help.
+Узнайте, как достичь результатов быстрее с нашей помощью.
 
-Our client results include:
-- 150% increase in performance
-- 70% time savings
-- Full support available 24/7
+Результаты наших клиентов:
+✅ 200% увеличение производительности
+✅ 80% экономия времени
+✅ Полная поддержка 24/7
+✅ Индивидуальный подход
 """,
 
-    "cta_button": "Learn more details",
+    "cta_button": "Узнать подробности",
 
     "after_click": """
-Good. You have visited the offer page.
+Отлично! Вы перешли на страницу предложения.
 
-If you have questions, write to me here.
-I am always available.
+Если возникнут вопросы, пишите мне здесь.
+Я всегда на связи.
 """,
 
     "conversion_notification": """
-Congratulations.
+🎉 Новая заявка!
 
-You have a new application from user {user_id}
-Name: {name}
+Пользователь {user_id} оставил заявку
+Имя: {name}
 Email: {email}
 
-Contact the client quickly.
+Свяжитесь с клиентом как можно скорее!
 """
 }
 

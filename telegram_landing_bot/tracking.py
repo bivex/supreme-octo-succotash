@@ -1,6 +1,6 @@
 """
 Module for tracking clicks and conversions
-Integrates with Keitaro Tracker (KTracker)
+Integrates with Supreme Tracker (Supreme)
 """
 
 import asyncio
@@ -17,11 +17,13 @@ from config import settings, DEFAULT_TRACKING_PARAMS, API_ENDPOINTS
 
 
 class TrackingManager:
-    """Tracking manager for Keitaro integration"""
+    """Tracking manager for Supreme integration"""
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         self.tracker_base_url = f"https://{settings.tracker_domain}"
+        # Use ngrok HTTPS URL for public access
+        self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -45,12 +47,13 @@ class TrackingManager:
         return click_id
 
     def _build_tracking_url(self, click_id: str, additional_params: Optional[Dict[str, Any]] = None) -> str:
-        """Build tracking URL for Keitaro"""
+        """Build tracking URL for local landing page"""
 
-        # Base parameters
+        # Base parameters for local endpoint
         params = {
-            "cid": settings.campaign_id,
             "click_id": click_id,
+            "source": "telegram_bot",
+            "campaign_id": settings.campaign_id,
             **DEFAULT_TRACKING_PARAMS
         }
 
@@ -58,9 +61,9 @@ class TrackingManager:
         if additional_params:
             params.update(additional_params)
 
-        # Form URL
+        # Form URL - redirect to public landing page via ngrok
         query_string = urlencode(params, safe='')
-        tracking_url = f"{self.tracker_base_url}/click?{query_string}"
+        tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
 
         return tracking_url
 
@@ -131,8 +134,16 @@ class TrackingManager:
         """
 
         if not self.session:
-            logger.error("HTTP session not initialized")
+            logger.warning("HTTP session not initialized - skipping event tracking")
             return False
+
+        # Skip tracking if using placeholder domain (but still try local endpoint)
+        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+
+        if skip_remote:
+            logger.info(f"Remote tracking skipped (demo mode): {event_type} for click_id {click_id}")
+            # Still try to track locally
+            return await self._track_event_locally(click_id, event_type, event_data)
 
         try:
             payload = {
@@ -150,11 +161,40 @@ class TrackingManager:
                     logger.info(f"Event tracked: {event_type} for click_id {click_id}")
                     return result.get("recorded", False)
                 else:
-                    logger.error(f"Failed to track event: {response.status}")
+                    logger.warning(f"Failed to track event (status {response.status}) - continuing without tracking")
                     return False
 
         except Exception as e:
-            logger.error(f"Error tracking event: {e}")
+            logger.warning(f"Error tracking event (network issue): {e} - continuing without tracking")
+            return False
+
+    async def _track_event_locally(self, click_id: str, event_type: str, event_data: Optional[Dict[str, Any]] = None) -> bool:
+        """Track event to local endpoint"""
+        if not self.session:
+            logger.warning("HTTP session not initialized - skipping local event tracking")
+            return False
+
+        try:
+            payload = {
+                "click_id": click_id,
+                "event_type": event_type,
+                "timestamp": int(time.time()),
+                "source": "telegram_bot",
+                **(event_data or {})
+            }
+
+            url = f"{self.local_landing_url}/v1/event"
+
+            async with self.session.post(url, json=payload) as response:
+                if response.status in [200, 201]:
+                    logger.info(f"Local event tracked: {event_type} for click_id {click_id}")
+                    return True
+                else:
+                    logger.warning(f"Local event tracking failed (status {response.status})")
+                    return False
+
+        except Exception as e:
+            logger.warning(f"Error tracking local event: {e}")
             return False
 
     async def track_conversion(self,
@@ -176,8 +216,16 @@ class TrackingManager:
         """
 
         if not self.session:
-            logger.error("HTTP session not initialized")
+            logger.warning("HTTP session not initialized - skipping conversion tracking")
             return False
+
+        # Skip tracking if using placeholder domain (but still try local endpoint)
+        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+
+        if skip_remote:
+            logger.info(f"Remote conversion tracking skipped (demo mode): {conversion_type} for click_id {click_id}")
+            # Still try to track locally
+            return await self._track_conversion_locally(click_id, conversion_type, conversion_value, conversion_data)
 
         try:
             payload = {
@@ -197,11 +245,42 @@ class TrackingManager:
                     logger.info(f"Conversion tracked: {conversion_type} for click_id {click_id}")
                     return result.get("recorded", False)
                 else:
-                    logger.error(f"Failed to track conversion: {response.status}")
+                    logger.warning(f"Failed to track conversion (status {response.status}) - continuing without tracking")
                     return False
 
         except Exception as e:
-            logger.error(f"Error tracking conversion: {e}")
+            logger.warning(f"Error tracking conversion (network issue): {e} - continuing without tracking")
+            return False
+
+    async def _track_conversion_locally(self, click_id: str, conversion_type: str, conversion_value: float = 0.0, conversion_data: Optional[Dict[str, Any]] = None) -> bool:
+        """Track conversion to local endpoint"""
+        if not self.session:
+            logger.warning("HTTP session not initialized - skipping local conversion tracking")
+            return False
+
+        try:
+            payload = {
+                "click_id": click_id,
+                "conversion_type": conversion_type,
+                "conversion_value": conversion_value,
+                "currency": "RUB",
+                "timestamp": int(time.time()),
+                "source": "telegram_bot",
+                **(conversion_data or {})
+            }
+
+            url = f"{self.local_landing_url}/v1/conversion"
+
+            async with self.session.post(url, json=payload) as response:
+                if response.status in [200, 201]:
+                    logger.info(f"Local conversion tracked: {conversion_type} for click_id {click_id}")
+                    return True
+                else:
+                    logger.warning(f"Local conversion tracking failed (status {response.status})")
+                    return False
+
+        except Exception as e:
+            logger.warning(f"Error tracking local conversion: {e}")
             return False
 
     async def send_postback(self,
@@ -221,8 +300,16 @@ class TrackingManager:
         """
 
         if not self.session:
-            logger.error("HTTP session not initialized")
+            logger.warning("HTTP session not initialized - skipping postback")
             return False
+
+        # Skip tracking if using placeholder domain (but still try local endpoint)
+        skip_remote = "yourdomain.com" in settings.tracker_domain or "example.com" in settings.tracker_domain
+
+        if skip_remote:
+            logger.info(f"Remote postback skipped (demo mode): {postback_type} for click_id {click_id}")
+            # Still try to track locally
+            return await self._send_postback_locally(click_id, postback_type, postback_data)
 
         try:
             payload = {
@@ -240,11 +327,40 @@ class TrackingManager:
                     logger.info(f"Postback sent: {postback_type} for click_id {click_id}")
                     return result.get("delivered", False)
                 else:
-                    logger.error(f"Failed to send postback: {response.status}")
+                    logger.warning(f"Failed to send postback (status {response.status}) - continuing without postback")
                     return False
 
         except Exception as e:
-            logger.error(f"Error sending postback: {e}")
+            logger.warning(f"Error sending postback (network issue): {e} - continuing without postback")
+            return False
+
+    async def _send_postback_locally(self, click_id: str, postback_type: str, postback_data: Optional[Dict[str, Any]] = None) -> bool:
+        """Send postback to local endpoint"""
+        if not self.session:
+            logger.warning("HTTP session not initialized - skipping local postback")
+            return False
+
+        try:
+            payload = {
+                "click_id": click_id,
+                "postback_type": postback_type,
+                "timestamp": int(time.time()),
+                "source": "telegram_bot",
+                **(postback_data or {})
+            }
+
+            url = f"{self.local_landing_url}/v1/postback"
+
+            async with self.session.post(url, json=payload) as response:
+                if response.status in [200, 201]:
+                    logger.info(f"Local postback sent: {postback_type} for click_id {click_id}")
+                    return True
+                else:
+                    logger.warning(f"Local postback failed (status {response.status})")
+                    return False
+
+        except Exception as e:
+            logger.warning(f"Error sending local postback: {e}")
             return False
 
     def extract_click_id_from_url(self, url: str) -> Optional[str]:
@@ -261,6 +377,11 @@ class TrackingManager:
 
 # Global instance for use in handlers
 tracking_manager = TrackingManager()
+
+
+def get_tracking_manager() -> TrackingManager:
+    """Get the current tracking manager instance"""
+    return tracking_manager
 
 
 async def init_tracking():
