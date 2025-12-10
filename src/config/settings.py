@@ -14,7 +14,7 @@ class DatabaseSettings:
     user: str = "affiliate_user"
     password: str = ""
     connection_string: Optional[str] = None
-    sqlite_path: str = ":memory:"  # For stress testing with SQLite
+    sqlite_path: str = "stress_test.db"  # For stress testing with SQLite
 
     def get_connection_string(self) -> str:
         """Get database connection string."""

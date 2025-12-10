@@ -38,6 +38,7 @@ The Affiliate Marketing API is a RESTful web service that provides comprehensive
 - **Campaign Management**: Create, update, and monitor affiliate marketing campaigns
 - **Click Tracking**: Track and validate affiliate clicks with fraud prevention
 - **Analytics**: Real-time performance metrics and reporting
+- **Database Support**: SQLite implementation for persistent storage and stress testing
 - **Security**: Comprehensive input validation and fraud detection
 - **Clean Architecture**: Modular design with clear separation of concerns
 
@@ -56,7 +57,9 @@ src/
 │   ├── handlers/     # Command/query handlers
 │   └── queries/      # Query objects for read operations
 ├── infrastructure/   # External concerns and implementations
-│   ├── repositories/ # Repository implementations (in-memory)
+│   ├── repositories/ # Repository implementations (SQLite & in-memory)
+│   │   ├── sqlite_*/ # SQLite implementations for stress testing
+│   │   └── in_memory_*/ # In-memory implementations for development
 │   └── external/     # External service adapters
 ├── presentation/     # HTTP layer and APIs
 │   ├── routes/       # Flask route handlers
@@ -104,11 +107,14 @@ DEBUG=true
 SECRET_KEY=your-secret-key-here
 RATE_LIMIT_REQUESTS=100
 
+# Database Configuration (SQLite)
+SQLITE_PATH=stress_test.db  # Path to SQLite database file (:memory: for in-memory)
+
 # External Services (Optional)
 IP_GEOLOCATION_API_KEY=your-api-key
 REDIS_URL=redis://localhost:6379
 
-# Database Configuration (Future use)
+# Legacy Database Configuration (for future PostgreSQL migration)
 DB_HOST=localhost
 DB_NAME=affiliate_db
 DB_USER=your-username
@@ -120,19 +126,59 @@ Alternatively, create a `.env` file in the project root with the configuration v
 
 ### 3.4 Starting the Application
 
-#### 3.4.1 Development Mode
-To start the application in development mode:
+#### 3.4.1 Quick Start with SQLite
+For immediate testing with persistent SQLite database:
 ```bash
+# Set environment variable and start
+export SQLITE_PATH=stress_test.db
+python main_clean.py
+
+# In new terminal, run tests
+python scripts/test_endpoints.py
+```
+
+#### 3.4.2 Development Mode with SQLite
+To start the application in development mode with SQLite database:
+```bash
+# Set SQLite database path (creates file-based database)
+export SQLITE_PATH=stress_test.db
+python main_clean.py
+
+# Or for in-memory database (data lost on restart)
+export SQLITE_PATH=:memory:
 python main_clean.py
 ```
 
-#### 3.4.2 Production Mode
-For production deployment, set `DEBUG=false` and configure appropriate security settings.
+#### 3.4.3 Production Mode
+For production deployment, set `DEBUG=false` and configure appropriate security settings:
+```bash
+export SQLITE_PATH=/var/data/affiliate.db
+export DEBUG=false
+export SECRET_KEY=your-production-secret-key
+python main_clean.py
+```
 
-#### 3.4.3 Verification
+#### 3.4.4 Verification
 Once started, the API will be available at `http://localhost:5000`. Verify the installation by accessing the health endpoint:
 ```bash
 curl http://localhost:5000/v1/health
+```
+
+**SQLite Database Verification:**
+```bash
+# Check if database file was created
+ls -la stress_test.db
+
+# Examine database contents
+python -c "
+import sqlite3
+conn = sqlite3.connect('stress_test.db')
+cursor = conn.cursor()
+cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\"')
+tables = cursor.fetchall()
+print('Database tables:', [t[0] for t in tables])
+conn.close()
+"
 ```
 
 ## 4. Using the Software
@@ -172,12 +218,34 @@ python -m pytest tests/unit/test_campaign_entity.py -v
 python -m pytest tests/unit/test_campaign_entity.py::TestCampaign::test_campaign_creation -v
 ```
 
-#### 4.2.2 Test Coverage Areas
+#### 4.2.2 Integration Testing with SQLite
+For stress testing with SQLite database:
+```bash
+# Start server with SQLite database
+export SQLITE_PATH=stress_test.db
+python main_clean.py &
+
+# Run comprehensive API tests
+python scripts/test_endpoints.py
+
+# Check database contents
+python -c "
+import sqlite3
+conn = sqlite3.connect('stress_test.db')
+cursor = conn.cursor()
+cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\"')
+tables = cursor.fetchall()
+print('Created tables:', [t[0] for t in tables])
+conn.close()
+"
+```
+
+#### 4.2.3 Test Coverage Areas
 The test suite covers:
 - **Domain Entities**: Campaign and Click validation, business rules
 - **Value Objects**: Money, URL, and ID generation/validation
 - **Application Layer**: Command and query handling
-- **Infrastructure**: Repository implementations
+- **Infrastructure**: Repository implementations (both in-memory and SQLite)
 
 ### 4.3 Development Workflow
 
@@ -206,13 +274,18 @@ The test suite covers:
 | `API_PORT` | Server port number | 5000 | No |
 | `DEBUG` | Enable debug mode | true | No |
 
-#### 5.1.2 Security Configuration
+#### 5.1.2 Database Configuration
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `SQLITE_PATH` | SQLite database file path | :memory: | No |
+
+#### 5.1.3 Security Configuration
 | Parameter | Description | Default | Required |
 |-----------|-------------|---------|----------|
 | `SECRET_KEY` | Application secret key | - | Yes |
 | `RATE_LIMIT_REQUESTS` | Requests per time window | 100 | No |
 
-#### 5.1.3 External Services
+#### 5.1.4 External Services
 | Parameter | Description | Default | Required |
 |-----------|-------------|---------|----------|
 | `IP_GEOLOCATION_API_KEY` | IP geolocation service key | - | No |
@@ -308,6 +381,20 @@ Handles HTTP requests, responses, and provides the API interface to clients.
 2. Check test environment setup
 3. Review recent code changes for breaking changes
 
+#### 6.1.5 SQLite Database Issues
+**Problem**: SQLite database not working correctly.
+
+**Possible Causes**:
+- Incorrect SQLITE_PATH environment variable
+- Permission issues with database file location
+- Corrupted database file
+
+**Solutions**:
+1. Verify SQLITE_PATH is set: `echo $SQLITE_PATH`
+2. Check file permissions: `ls -la stress_test.db`
+3. Recreate database: `rm stress_test.db && python main_clean.py`
+4. Check database integrity: `python -c "import sqlite3; sqlite3.connect('stress_test.db').execute('PRAGMA integrity_check').fetchone()"`
+
 ### 6.2 Getting Help
 
 If you encounter issues not covered in this troubleshooting section:
@@ -316,20 +403,33 @@ If you encounter issues not covered in this troubleshooting section:
 3. Consult the code documentation in docstrings
 4. Check GitHub issues for similar problems
 
-## Appendix A: Future Enhancements
+## Appendix A: Database Integration
 
-### A.1 Database Integration
-The application is designed to support various database backends. To migrate from in-memory storage to PostgreSQL:
+### A.1 SQLite Implementation (Current)
+The application now includes full SQLite database support for stress testing and development:
+
+```bash
+# Start with SQLite database
+export SQLITE_PATH=stress_test.db
+python main_clean.py
+
+# Or use in-memory SQLite (data lost on restart)
+export SQLITE_PATH=:memory:
+python main_clean.py
+```
+
+### A.2 PostgreSQL Migration (Future)
+To migrate from SQLite to PostgreSQL for production:
 
 ```python
 # In src/container.py, replace:
-from infrastructure.repositories.in_memory_campaign_repository import InMemoryCampaignRepository
+from infrastructure.repositories.sqlite_campaign_repository import SQLiteCampaignRepository
 
 # With:
 from infrastructure.repositories.postgresql_campaign_repository import PostgreSQLCampaignRepository
 ```
 
-### A.2 Planned Features
+### A.3 Planned Features
 - **JWT Authentication**: Replace current API key authentication
 - **Redis Caching**: Implement caching for analytics and sessions
 - **Async Processing**: Add background job processing capabilities
@@ -367,7 +467,8 @@ The refactoring provides the following key benefits:
 2. **Testability**: Domain logic can be tested without external dependencies
 3. **Scalability**: Easy to add new features and swap implementations
 4. **Security**: Comprehensive input validation and fraud prevention
-5. **Developer Experience**: Clear code structure with type hints and documentation
-6. **Production Readiness**: Proper error handling, logging, and configuration management
+5. **Database Support**: Full SQLite implementation for stress testing and development
+6. **Developer Experience**: Clear code structure with type hints and documentation
+7. **Production Readiness**: Proper error handling, logging, and configuration management
 
-The refactored codebase follows industry best practices and is prepared for production deployment with proper database integration and monitoring capabilities.
+The refactored codebase follows industry best practices and includes SQLite database integration for comprehensive testing. The architecture supports easy migration to PostgreSQL or other databases when needed.
