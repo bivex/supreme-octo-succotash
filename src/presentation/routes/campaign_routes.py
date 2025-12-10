@@ -156,7 +156,7 @@ class CampaignRoutes:
                 logger.debug(f"pagination={pagination}")
 
                 response = {
-                    "campaigns": [CampaignSummaryResponse.from_campaign(c) for c in campaigns],
+                    "campaigns": [{"id": c.id.value, "name": c.name, "status": c.status.value} for c in campaigns],
                     "pagination": pagination
                 }
                 logger.debug(f"response created, campaigns in response={len(response['campaigns'])}")
@@ -314,19 +314,19 @@ class CampaignRoutes:
                     "financial": {
                         "costModel": campaign.cost_model,
                         "payout": {
-                            "amount": campaign.payout.amount,
+                            "amount": float(campaign.payout.amount),
                             "currency": campaign.payout.currency
                         } if campaign.payout else None,
                         "dailyBudget": {
-                            "amount": campaign.daily_budget.amount,
+                            "amount": float(campaign.daily_budget.amount),
                             "currency": campaign.daily_budget.currency
                         } if campaign.daily_budget else None,
                         "totalBudget": {
-                            "amount": campaign.total_budget.amount,
+                            "amount": float(campaign.total_budget.amount),
                             "currency": campaign.total_budget.currency
                         } if campaign.total_budget else None,
                         "spent": {
-                            "amount": campaign.spent_amount.amount,
+                            "amount": float(campaign.spent_amount.amount),
                             "currency": campaign.spent_amount.currency
                         } if campaign.spent_amount else None
                     },
@@ -336,13 +336,13 @@ class CampaignRoutes:
                         "ctr": round(campaign.clicks_count / max(campaign.clicks_count, 1), 3),  # Mock CTR calculation
                         "cr": round(campaign.conversions_count / max(campaign.clicks_count, 1), 3),  # Mock CR calculation
                         "epc": {
-                            "amount": round(campaign.spent_amount.amount / max(campaign.conversions_count, 1), 2) if campaign.spent_amount else 0.0,
+                            "amount": round(float(campaign.spent_amount.amount) / max(campaign.conversions_count, 1), 2) if campaign.spent_amount else 0.0,
                             "currency": campaign.spent_amount.currency if campaign.spent_amount else "USD"
                         },
-                        "roi": round(campaign.spent_amount.amount / max(campaign.spent_amount.amount, 1), 2) if campaign.spent_amount else 0.0  # Mock ROI
+                        "roi": round(float(campaign.spent_amount.amount) / max(float(campaign.spent_amount.amount), 1), 2) if campaign.spent_amount else 0.0  # Mock ROI
                     },
-                    "createdAt": campaign.created_at.isoformat() + "Z",
-                    "updatedAt": campaign.updated_at.isoformat() + "Z",
+                    "createdAt": campaign.created_at.isoformat() + "Z" if campaign.created_at else None,
+                    "updatedAt": campaign.updated_at.isoformat() + "Z" if campaign.updated_at else None,
                     "_links": {
                         "self": f"/v1/campaigns/{campaign.id.value}",
                         "landingPages": f"/v1/campaigns/{campaign.id.value}/landing-pages",
