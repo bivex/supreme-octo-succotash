@@ -242,9 +242,9 @@ class ServerRunner:
             is_connected, driver_info = self.db_tester.test_postgresql_connection()
             self.db_tester.log_database_info(driver_info)
 
-            # Start background services
-            self.service_manager.start_postgres_upholder()
-            self.service_manager.start_cache_monitor()
+        # Start background services
+        # self.service_manager.start_postgres_upholder()  # Disabled
+        self.service_manager.start_cache_monitor()
 
             yield
         finally:
