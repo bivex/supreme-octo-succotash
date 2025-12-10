@@ -1,0 +1,14 @@
+{
+  "storage": {
+    "1000": {
+      "cid": "camp_9061",
+      "ts": "1765406054",
+      "sub1": "telegram_bot_start",
+      "sub2": "telegram",
+      "sub3": "callback_offer",
+      "sub4": "aaa_4441",
+      "sub5": "premium_offer"
+    }
+  },
+  "counter": 1001
+}

@@ -19,6 +19,9 @@ from loguru import logger
 # Removed config import to avoid circular dependencies
 
 # Import shared URL shortener
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from shared_url_shortener import url_shortener
 
 

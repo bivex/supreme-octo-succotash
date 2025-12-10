@@ -2,77 +2,126 @@
 Shared URL shortener module for both tracking and API server
 """
 
-import base64
-import hashlib
 import json
+import hashlib
+import base64
 from typing import Dict, Any, Optional, Tuple
 from urllib.parse import parse_qs, urlparse, urlencode
 
-# Global storage for URL shortener mappings (use Redis in production)
-URL_SHORTENER_STORAGE: Dict[str, Dict[str, Any]] = {}
 
 class URLShortener:
-    """URL shortener using SHA256 hash for encoding/decoding parameters"""
+    """URL shortener with in-memory storage for tracking parameters."""
 
     def __init__(self):
-        # Use global storage
-        self.storage = URL_SHORTENER_STORAGE
+        """Initialize URL shortener with in-memory storage."""
+        self.storage: Dict[str, Dict[str, Any]] = {}
 
     def encode_params(self, params_dict: Dict[str, Any]) -> str:
         """
-        Encode parameters into short identifier using SHA256 hash
+        Encode parameters into a short identifier.
+
+        Args:
+            params_dict: Dictionary of parameters to encode
+
+        Returns:
+            Short hash identifier
         """
-        # Serialize parameters to JSON
-        params_json = json.dumps(params_dict, sort_keys=True)
+        # Sort keys for consistent hashing
+        params_json = json.dumps(params_dict, sort_keys=True, separators=(',', ':'))
 
-        # Create short hash
-        hash_object = hashlib.sha256(params_json.encode())
-        short_hash = base64.urlsafe_b64encode(hash_object.digest())[:8].decode()
+        # Create hash using SHA256 for uniqueness
+        hash_object = hashlib.sha256(params_json.encode('utf-8'))
+        # Use more characters to reduce collision probability
+        short_hash = base64.urlsafe_b64encode(hash_object.digest())[:12].decode('ascii')
 
-        # Store mapping
-        self.storage[short_hash] = params_dict
+        # Store the mapping in memory
+        self.storage[short_hash] = params_dict.copy()
 
         return short_hash
 
     def decode_params(self, short_hash: str) -> Optional[Dict[str, Any]]:
         """
-        Decode parameters from stored identifier
+        Decode parameters from short identifier.
+
+        Args:
+            short_hash: Short hash identifier
+
+        Returns:
+            Original parameters dictionary or None if not found
         """
         return self.storage.get(short_hash)
 
     def shorten_url(self, original_url: str) -> Tuple[str, Dict[str, Any]]:
         """
-        Shorten URL by encoding its parameters
+        Shorten a URL by encoding its query parameters.
+
+        Args:
+            original_url: Original URL to shorten
+
+        Returns:
+            Tuple of (short_url, params_dict)
         """
-        parsed = urlparse(original_url)
-        query_params = parse_qs(parsed.query)
+        try:
+            parsed = urlparse(original_url)
+            query_params = parse_qs(parsed.query)
 
-        # Convert lists to single values
-        params_dict = {k: v[0] if len(v) == 1 else v
-                      for k, v in query_params.items()}
+            # Convert lists to single values, keep lists for multi-value params
+            params_dict = {}
+            for k, v in query_params.items():
+                if len(v) == 1:
+                    params_dict[k] = v[0]
+                else:
+                    params_dict[k] = v
 
-        short_code = self.encode_params(params_dict)
+            short_code = self.encode_params(params_dict)
 
-        # Create short URL
-        short_url = f"{parsed.scheme}://{parsed.netloc}/s/{short_code}"
+            # Create short URL
+            short_url = f"{parsed.scheme}://{parsed.netloc}/s/{short_code}"
 
-        return short_url, params_dict
+            return short_url, params_dict
+
+        except Exception as e:
+            raise ValueError(f"Failed to shorten URL: {e}")
 
     def expand_url(self, short_url: str) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
         """
-        Expand short URL back to full URL
+        Expand a short URL back to original URL with parameters.
+
+        Args:
+            short_url: Short URL to expand
+
+        Returns:
+            Tuple of (full_url, params_dict) or (None, None) if not found
         """
-        parsed = urlparse(short_url)
-        short_code = parsed.path.split('/')[-1]
+        try:
+            parsed = urlparse(short_url)
+            path_parts = parsed.path.strip('/').split('/')
 
-        params = self.decode_params(short_code)
+            if len(path_parts) < 2 or path_parts[-2] != 's':
+                return None, None
 
-        if params:
-            query_string = urlencode(params)
-            full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
+            short_code = path_parts[-1]
+
+            if not short_code:
+                return None, None
+
+            params = self.decode_params(short_code)
+
+            if params is None:
+                return None, None
+
+            # Reconstruct the original URL
+            query_string = urlencode(params, doseq=True)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            full_url = f"{base_url}/v1/click?{query_string}"
+
             return full_url, params
 
-        return None, None
+        except Exception as e:
+            print(f"Warning: Failed to expand URL: {e}")
+            return None, None
 
-# Global URL shortener instance
+
+
+# Global instance for use across the application
 url_shortener = URLShortener()
