@@ -12,6 +12,7 @@ class EncodingStrategy(Enum):
     SEQUENTIAL = "seq"      # Для известных campaign/параметров
     COMPRESSED = "cmp"      # Для произвольных параметров
     HYBRID = "hyb"          # Комбинированный подход
+    SIMPLE = "simple"       # Простое кодирование без зависимостей
     SMART = "auto"          # Автоматический выбор
 
 
@@ -92,89 +93,133 @@ class URLShortener:
     
     def decode_sequential(self, code: str) -> Optional[URLParams]:
         """Декодирование sequential формата"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         if not code.startswith('s') or len(code) < 2:
+            logger.debug(f"Invalid sequential code format: {code}")
             return None
-        
+
         try:
-            seq_id = self._decode_base62(code[1:])
-            return self.seq_to_params.get(seq_id)
-        except (ValueError, KeyError):
+            seq_part = code[1:]
+            logger.debug(f"Sequential code part: '{seq_part}'")
+            seq_id = self._decode_base62(seq_part)
+            logger.debug(f"Decoded seq_id: {seq_id}")
+
+            result = self.seq_to_params.get(seq_id)
+            if result:
+                logger.debug(f"Found sequential mapping: {result.to_dict()}")
+                return result
+            else:
+                logger.debug(f"No sequential mapping found for seq_id: {seq_id}")
+                return None
+        except (ValueError, KeyError) as e:
+            logger.debug(f"Sequential decode error: {e}")
             return None
     
     # ==================== COMPRESSED STRATEGY ====================
     
     def encode_compressed(self, params: URLParams) -> str:
         """
-        Стратегия 2: Компрессия параметров с известными кампаниями
-        Формат: [strategy:1][campaign_id:1-2][compressed_params:variable]
-        Длина: до 10 символов с эффективной упаковкой
+        Стратегия 2: Компрессия параметров (cross-process compatible)
+        Формат: [strategy:1][params_data:base64]
+        Не зависит от маппингов для декодирования
         """
-        # Получаем или создаем campaign ID
-        cid = params.cid
-        if cid not in self.campaign_map:
-            self.campaign_map[cid] = self.next_campaign_id
-            self.reverse_campaign_map[self.next_campaign_id] = cid
-            self.next_campaign_id += 1
+        import logging
+        logger = logging.getLogger(__name__)
 
-        campaign_id = self.campaign_map[cid]
-
-        # Собираем параметры (без cid) в более компактном формате
-        params_parts = []
+        # Собираем все параметры в строку
+        params_parts = [f"c:{params.cid}"]
         for i in range(1, 6):
             val = getattr(params, f"sub{i}")
             if val:
                 params_parts.append(f"{i}:{val}")
         if params.click_id:
             params_parts.append(f"k:{params.click_id}")
+        if params.extra:
+            for key, val in params.extra.items():
+                if val:
+                    params_parts.append(f"e:{key}:{val}")
+
         params_str = "|".join(params_parts)
+        logger.debug(f"Compressed params string: '{params_str}'")
 
-        # Сжимаем и кодируем
+        # Сжимаем параметры
         compressed = zlib.compress(params_str.encode(), level=9)
-
-        # Пробуем base64 (обычно короче)
         encoded_params = base64.urlsafe_b64encode(compressed).decode().rstrip('=')
+        logger.debug(f"Compressed and encoded: '{encoded_params}' (length: {len(encoded_params)})")
 
-        # Формат: 'c' + campaign_id(base62, 2 символа) + compressed_data(base64)
-        campaign_code = self._encode_base62(campaign_id).zfill(2)[:2]
-        result = f"c{campaign_code}{encoded_params}"
+        # Формат: 'c' + encoded_params
+        result = f"c{encoded_params}"
 
-        # Если слишком длинное, используем hybrid стратегию как fallback
-        if len(result) > 10:
-            return self.encode_hybrid(params)
+        logger.debug(f"Full compressed result: '{result}' (length: {len(result)})")
 
-        return result[:10]
+        # Возвращаем как есть - пусть SMART решает обрезку
+        return result
     
     def decode_compressed(self, code: str) -> Optional[URLParams]:
-        """Декодирование compressed формата"""
-        if not code.startswith('c') or len(code) < 4:  # 'c' + 2 символа campaign + минимум 1 символ params
+        """Декодирование compressed формата (cross-process compatible)"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if not code.startswith('c') or len(code) < 2:
+            logger.debug(f"Invalid compressed code format: {code}")
             return None
 
-        try:
-            # Фиксированный формат: 'c' + campaign_id(2 символа) + compressed_params(base64)
-            campaign_part = code[1:3]
-            params_part = code[3:]
+        logger.debug(f"Decoding compressed: {code}")
 
-            if not params_part:  # Нет параметров
-                return None
+        # Пробуем декодировать, добавляя символы, так как код может быть обрезан
+        for extra_chars in ['', 'A', 'AA', 'AAA', 'AAAA']:  # Пробуем восстановить обрезанные данные
+            try:
+                params_part = code[1:] + extra_chars
+                logger.debug(f"Trying with extra chars '{extra_chars}': params_part='{params_part}'")
 
-            campaign_id = self._decode_base62(campaign_part)
-            cid = self.reverse_campaign_map.get(campaign_id)
+                if not params_part:
+                    continue
 
-            if not cid:
-                return None
+                # Декодируем сжатые параметры из base64
+                padding = (4 - len(params_part) % 4) % 4
+                params_part_padded = params_part + '=' * padding
+                logger.debug(f"Padded params: '{params_part_padded}' (padding: {padding})")
 
-            # Декодируем сжатые параметры из base64
-            # Добавляем padding для base64
-            padding = (4 - len(params_part) % 4) % 4
-            params_part_padded = params_part + '=' * padding
+                compressed = base64.urlsafe_b64decode(params_part_padded)
+                logger.debug(f"Compressed data: {len(compressed)} bytes")
 
-            compressed = base64.urlsafe_b64decode(params_part_padded)
-            params_str = zlib.decompress(compressed).decode()
+                params_str = zlib.decompress(compressed).decode()
+                logger.debug(f"Decompressed string: '{params_str}'")
 
-            return self._deserialize_params(params_str, cid)
+                # Парсим параметры - cid должен быть первым
+                params = URLParams(cid="unknown")  # default
 
-        except Exception as e:
-            return None
+                for part in params_str.split("|"):
+                    if not part or ":" not in part:
+                        continue
+                    key, val = part.split(":", 1)
+                    logger.debug(f"Parsing param: key='{key}', val='{val}'")
+                    if key == "c":
+                        params.cid = val
+                    elif key.isdigit():
+                        sub_num = int(key)
+                        if 1 <= sub_num <= 5:
+                            setattr(params, f"sub{sub_num}", val)
+                    elif key == "k":
+                        params.click_id = val
+                    elif key == "e" and ":" in val:
+                        # Extra parameters: e:key:value
+                        extra_key, extra_val = val.split(":", 1)
+                        if not params.extra:
+                            params.extra = {}
+                        params.extra[extra_key] = extra_val
+
+                logger.debug(f"Successfully parsed params: {params.to_dict()}")
+                return params
+
+            except Exception as e:
+                logger.debug(f"Failed with extra '{extra_chars}': {e}")
+                continue  # Пробуем следующий вариант
+
+        logger.warning(f"All compressed decode attempts failed for: {code}")
+        return None
     
     # ==================== HYBRID STRATEGY (УЛУЧШЕННАЯ) ====================
     
@@ -223,37 +268,51 @@ class URLShortener:
     
     def decode_hybrid(self, code: str) -> Optional[URLParams]:
         """Декодирование hybrid формата"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         if not code.startswith('h') or len(code) != 10:
+            logger.debug(f"Invalid hybrid code format: {code} (length: {len(code)})")
             return None
-        
+
         try:
             # Извлекаем части
             campaign_part = code[1:3]
             sub_parts = [code[3 + i] for i in range(5)]
             click_part = code[8:10]
-            
+
+            logger.debug(f"Hybrid parts: campaign='{campaign_part}', subs={sub_parts}, click='{click_part}'")
+
             campaign_id = self._decode_base62(campaign_part)
+            logger.debug(f"Decoded campaign_id: {campaign_id}")
+
             cid = self.reverse_campaign_map.get(campaign_id)
-            
+            logger.debug(f"Campaign from mapping: '{cid}' (fallback would be '{campaign_id}')")
+
             if not cid:
+                logger.debug("No campaign mapping found")
                 return None
-            
+
             params = URLParams(cid=cid)
-            
+
             # Восстанавливаем sub-параметры
             for i, sub_char in enumerate(sub_parts, 1):
                 sub_idx = self._decode_base62(sub_char)
+                logger.debug(f"Sub{i}: char='{sub_char}' -> idx={sub_idx}")
                 if sub_idx > 0:
                     val = self.sub_value_map.get(sub_idx)
+                    logger.debug(f"Sub{i} value from mapping: '{val}'")
                     if val:
                         setattr(params, f"sub{i}", val)
-            
+
             # Click ID можно восстановить только если храним маппинг
             # Пока оставляем None
-            
+
+            logger.debug(f"Hybrid decode result: {params.to_dict()}")
             return params
-        
+
         except Exception as e:
+            logger.debug(f"Hybrid decode error: {e}")
             return None
     
     # ==================== SMART STRATEGY ====================
@@ -261,75 +320,185 @@ class URLShortener:
     def encode_smart(self, params: URLParams) -> str:
         """
         Автоматический выбор оптимальной стратегии
+        Приоритет: sequential > compressed > hybrid
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         params_key = self._params_to_key(params)
-        
-        # Если параметры уже известны - используем sequential
-        if params_key in self.params_to_seq:
-            code = self.encode_sequential(params)
-            if len(code) <= 10:
-                return code
-        
-        # Пробуем hybrid (фиксированная длина, быстрое восстановление)
-        code = self.encode_hybrid(params)
+
+        # Сначала проверяем sequential (самый короткий для повторяющихся)
+        code = self.encode_sequential(params)
+        logger.debug(f"Smart sequential attempt: '{code}' (length: {len(code)})")
         if len(code) <= 10:
+            logger.debug("Smart chose sequential")
             return code
-        
-        # Fallback на compressed
+
+        # Затем compressed (работает между процессами)
         code = self.encode_compressed(params)
-        return code[:10]
-    
+        logger.debug(f"Smart compressed attempt: '{code}' (length: {len(code)})")
+        if len(code) <= 10:
+            logger.debug("Smart chose compressed")
+            return code
+
+        # Fallback на simple (без зависимостей от состояния)
+        code = self.encode_simple(params)
+        logger.debug(f"Smart simple attempt: '{code}' (length: {len(code)})")
+        logger.debug("Smart chose simple")
+        return code
+
+    def encode_simple(self, params: URLParams) -> str:
+        """
+        Стратегия SIMPLE: Простое кодирование без зависимостей от состояния
+        Формат: [strategy:1][params:base64]
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Собираем параметры в компактную строку
+        parts = [params.cid or ""]
+        for i in range(1, 6):
+            val = getattr(params, f"sub{i}")
+            parts.append(val or "")
+        parts.append(params.click_id or "")
+
+        # Объединяем через разделитель
+        params_str = "|".join(parts)
+
+        # Кодируем в base64
+        encoded = base64.urlsafe_b64encode(params_str.encode()).decode().rstrip('=')
+
+        result = f"z{encoded}"
+
+        # Обрезаем до 10 символов если нужно
+        if len(result) > 10:
+            result = result[:10]
+
+        logger.debug(f"Simple encoded: '{result}' from '{params_str}'")
+        return result
+
+    def decode_simple(self, code: str) -> Optional[URLParams]:
+        """
+        Декодирование simple формата
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if not code.startswith('z'):
+            return None
+
+        try:
+            encoded_part = code[1:]
+
+            # Пробуем восстановить обрезанные данные
+            for extra in ['', 'A', 'AA']:
+                try:
+                    test_data = encoded_part + extra
+                    padding = (4 - len(test_data) % 4) % 4
+                    test_data += '=' * padding
+
+                    decoded_bytes = base64.urlsafe_b64decode(test_data)
+                    params_str = decoded_bytes.decode()
+
+                    parts = params_str.split('|')
+                    if len(parts) >= 7:  # cid + 5 sub + click_id
+                        params = URLParams(
+                            cid=parts[0] or None,
+                            sub1=parts[1] or None,
+                            sub2=parts[2] or None,
+                            sub3=parts[3] or None,
+                            sub4=parts[4] or None,
+                            sub5=parts[5] or None,
+                            click_id=parts[6] or None
+                        )
+                        logger.debug(f"Simple decoded: {params.to_dict()}")
+                        return params
+                except Exception:
+                    continue
+
+        except Exception as e:
+            logger.debug(f"Simple decode error: {e}")
+
+        return None
+
     # ==================== UNIFIED API ====================
     
     def encode(self, params: URLParams, strategy: EncodingStrategy = EncodingStrategy.SMART) -> str:
         """
         Унифицированный метод кодирования
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.debug(f"Encoding params: {params.to_dict()} with strategy: {strategy.value}")
+
         if strategy == EncodingStrategy.SEQUENTIAL:
             code = self.encode_sequential(params)
+            logger.debug(f"Sequential encoding result: {code}")
         elif strategy == EncodingStrategy.COMPRESSED:
             code = self.encode_compressed(params)
+            logger.debug(f"Compressed encoding result: {code}")
         elif strategy == EncodingStrategy.HYBRID:
             code = self.encode_hybrid(params)
+            logger.debug(f"Hybrid encoding result: {code}")
+        elif strategy == EncodingStrategy.SIMPLE:
+            code = self.encode_simple(params)
+            logger.debug(f"Simple encoding result: {code}")
         elif strategy == EncodingStrategy.SMART:
             code = self.encode_smart(params)
+            logger.debug(f"Smart encoding result: {code}")
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
-        
-        # Гарантируем максимум 10 символов
-        if len(code) > 10:
-            code = code[:10]
-        
+
+        # SMART стратегия уже гарантирует <= 10 символов
         # Кэшируем для быстрого декодирования
         self.decode_cache[code] = params
-        
+        logger.debug(f"Final encoded code: {code} (length: {len(code)})")
+
         return code
     
     def decode(self, code: str) -> Optional[URLParams]:
         """
         Унифицированный метод декодирования с автоопределением стратегии
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.debug(f"Decoding code: {code} (length: {len(code)})")
+
         # Проверяем кэш
         if code in self.decode_cache:
+            logger.debug("Found in cache")
             return self.decode_cache[code]
-        
+
         # Определяем стратегию по префиксу
         result = None
         if code.startswith('s'):
+            logger.debug("Trying sequential decode")
             result = self.decode_sequential(code)
         elif code.startswith('c'):
+            logger.debug("Trying compressed decode")
             result = self.decode_compressed(code)
         elif code.startswith('h'):
+            logger.debug("Trying hybrid decode")
             result = self.decode_hybrid(code)
+        elif code.startswith('z'):
+            logger.debug("Trying simple decode")
+            result = self.decode_simple(code)
         else:
+            logger.debug("Unknown prefix, trying all strategies")
             # Пробуем все стратегии
-            result = (self.decode_sequential(code) or 
-                     self.decode_compressed(code) or 
-                     self.decode_hybrid(code))
-        
+            result = (self.decode_sequential(code) or
+                     self.decode_compressed(code) or
+                     self.decode_hybrid(code) or
+                     self.decode_simple(code))
+
         if result:
             self.decode_cache[code] = result
-        
+            logger.debug(f"Successfully decoded: {result.to_dict()}")
+        else:
+            logger.warning(f"Failed to decode: {code}")
+
         return result
 
     def get_strategy_info(self, code: str) -> str:
@@ -462,6 +631,7 @@ class URLShortener:
     def clear_cache(self):
         """Очистка кэша для освобождения памяти"""
         self.decode_cache.clear()
+
     
     def export_mappings(self) -> Dict:
         """Экспорт маппингов для персистентности"""
