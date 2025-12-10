@@ -1054,8 +1054,18 @@ class CampaignRoutes:
                 return  # Validation failed, response already sent
 
             try:
-                campaign_id = req.get_parameter(0)
-                logger.debug(f"create_campaign_offer: campaign_id from URL: '{campaign_id}'")
+                # Extract campaign_id from URL path
+                url_path = req.get_url()
+                logger.debug(f"create_campaign_offer: full URL: '{url_path}'")
+
+                # Parse path to extract campaign_id (format: /v1/campaigns/{campaign_id}/offers)
+                path_parts = url_path.split('/')
+                if len(path_parts) >= 4 and path_parts[3]:  # campaigns/{campaign_id}/offers
+                    campaign_id = path_parts[3]
+                else:
+                    campaign_id = None
+
+                logger.debug(f"create_campaign_offer: extracted campaign_id: '{campaign_id}'")
 
                 # Validate campaign_id
                 if not campaign_id:

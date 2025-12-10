@@ -80,9 +80,11 @@ class PostgresClickRepository(ClickRepository):
 
     def _row_to_click(self, row) -> Click:
         """Convert database row to Click entity."""
+        from ...domain.value_objects import CampaignId
+
         return Click(
             id=ClickId.from_string(row["id"]),
-            campaign_id=row["campaign_id"],
+            campaign_id=CampaignId(row["campaign_id"]) if row["campaign_id"] else None,
             ip_address=row["ip_address"],
             user_agent=row["user_agent"],
             referrer=row["referrer"],
