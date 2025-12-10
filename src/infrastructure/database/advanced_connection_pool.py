@@ -10,8 +10,33 @@ import time
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import logging
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
+
+class TimeoutError(Exception):
+    """Timeout exception for pool operations"""
+    pass
+
+@contextmanager
+def timeout_context(seconds: int):
+    """Context manager для таймаута операций"""
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Operation timed out after {seconds} seconds")
+
+    # Установить обработчик только на Unix-системах
+    if hasattr(signal, 'SIGALRM'):
+        import signal
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+    else:
+        # На Windows просто пропускаем таймаут
+        yield
 
 class ConnectionPoolStats:
     """Statistics for connection pool monitoring."""
@@ -89,9 +114,14 @@ class AdvancedConnectionPool:
 
         # Statistics and monitoring
         self._stats = ConnectionPoolStats()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # RLock вместо Lock для реентерабельности
         self._health_check_interval = 60  # seconds
         self._last_health_check = 0
+
+        # Кеширование статистики для защиты от блокировок
+        self._stats_cache = None
+        self._stats_cache_time = 0
+        self._stats_cache_ttl = 5  # Кеш на 5 секунд
 
         logger.info(f"AdvancedConnectionPool initialized: minconn={minconn}, maxconn={maxconn}")
 
@@ -203,12 +233,28 @@ class AdvancedConnectionPool:
 
     def get_stats(self) -> Dict[str, Any]:
         """
-        Get comprehensive pool statistics.
+        Get comprehensive pool statistics with timeout protection.
 
         Returns:
             Dictionary with pool and performance statistics
         """
-        with self._lock:
+        current_time = time.time()
+
+        # Проверить кеш
+        if (self._stats_cache and
+            current_time - self._stats_cache_time < self._stats_cache_ttl):
+            logger.debug("Returning cached pool stats")
+            return self._stats_cache.copy()
+
+        # Попытка получить lock с таймаутом
+        acquired = self._lock.acquire(timeout=1.0)
+
+        if not acquired:
+            logger.warning("Could not acquire stats lock, returning stale data")
+            return self._stats_cache.copy() if self._stats_cache else self._get_fallback_stats("lock_timeout")
+
+        try:
+            # Быстрая операция без внешних вызовов
             pool_stats = {
                 'minconn': getattr(self._pool, '_minconn', 0),
                 'maxconn': getattr(self._pool, '_maxconn', 0),
@@ -216,12 +262,56 @@ class AdvancedConnectionPool:
                 'available': len(getattr(self._pool, '_pool', [])),
             }
 
-            return {
+            stats = {
                 **pool_stats,
                 **self._stats.get_summary(),
                 'pool_efficiency': self._calculate_pool_efficiency(pool_stats),
-                'health_status': self._get_health_status()
+                'health_status': self._get_health_status(),
+                'cached': False,
+                'timestamp': current_time
             }
+
+            # Обновить кеш
+            self._stats_cache = stats.copy()
+            self._stats_cache_time = current_time
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error in get_stats: {e}")
+            return self._get_fallback_stats("error")
+        finally:
+            self._lock.release()
+
+    def _get_fallback_stats(self, reason: str) -> Dict[str, Any]:
+        """Вернуть безопасные fallback данные"""
+        fallback = {
+            'minconn': self._config.get('minconn', 0),
+            'maxconn': self._config.get('maxconn', 0),
+            'used': 0,
+            'available': 0,
+            'pool_efficiency': 0.0,
+            'health_status': 'unknown',
+            'cached': True,
+            'fallback_reason': reason,
+            'timestamp': time.time(),
+            'connections_created': 0,
+            'connections_returned': 0,
+            'connections_failed': 0,
+            'query_count': 0,
+            'avg_query_time_ms': 0.0,
+            'slow_queries': 0,
+            'errors': 0,
+            'qps': 0.0,
+            'uptime_seconds': 0.0
+        }
+
+        # Если есть кешированные данные, использовать их
+        if self._stats_cache:
+            logger.info("Using stale cached stats due to error")
+            return {**self._stats_cache, 'cached': True, 'fallback_reason': reason}
+
+        return fallback
 
     def _calculate_pool_efficiency(self, pool_stats: Dict[str, Any]) -> float:
         """Calculate pool utilization efficiency."""

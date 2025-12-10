@@ -255,7 +255,7 @@ def _initialize_postgres_upholder(app: socketify.App) -> None:
 def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
     """Add PostgreSQL upholder management endpoints."""
 
-    def get_upholder_status(res, req):
+    async def get_upholder_status(res, req):
         """Get upholder status and recent reports."""
         logger.info("🚀 START: GET /v1/system/upholder/status")
         start_time = time.time()
@@ -265,9 +265,16 @@ def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
             status_start = time.time()
             status = upholder.get_status()
             status_time = time.time() - status_start
-            logger.info("📊 Step 2: Getting performance dashboard")
+            logger.info("📊 Step 2: Getting performance dashboard (async)")
             dashboard_start = time.time()
-            dashboard = upholder.get_performance_dashboard()
+
+            # Run blocking database operations in thread pool to avoid blocking the event loop
+            import asyncio
+            loop = asyncio.get_event_loop()
+            dashboard = await asyncio.wait_for(
+                loop.run_in_executor(None, upholder.get_performance_dashboard),
+                timeout=30.0  # 30 second timeout
+            )
             dashboard_time = time.time() - dashboard_start
             logger.info("📊 Step 3: Preparing response")
             response = {

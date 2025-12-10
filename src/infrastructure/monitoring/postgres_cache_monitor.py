@@ -479,7 +479,7 @@ class PostgresCacheMonitor:
         recent_alerts = [a for a in self.alerts_history if (datetime.now() - a.timestamp).seconds < 3600]  # Last hour
 
         return {
-            'current_metrics': self.metrics_history[-1] if self.metrics_history else None,
+            'current_metrics': self.metrics_history[-1] if self.metrics_history else {},
             'average_metrics': {
                 'heap_hit_ratio': avg_heap_ratio,
                 'index_hit_ratio': avg_index_ratio

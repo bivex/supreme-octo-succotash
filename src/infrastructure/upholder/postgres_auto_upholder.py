@@ -16,7 +16,7 @@ from ..monitoring.postgres_index_auditor import PostgresIndexAuditor
 from ..monitoring.postgres_cache_monitor import PostgresCacheMonitor, create_default_cache_monitor
 from ..monitoring.postgres_query_optimizer import PostgresQueryOptimizer
 from ..monitoring.adaptive_connection_pool_optimizer import AdaptiveConnectionPoolOptimizer
-from ..upholder.postgres_connection_pool_monitor import PostgresConnectionPoolMonitor
+from ..database.postgres_connection_pool_monitor import PostgresConnectionPoolMonitor
 from ..repositories.postgres_bulk_loader import PostgresBulkLoader
 from ..repositories.postgres_prepared_statements import PreparedStatementsManager
 
@@ -98,14 +98,28 @@ class PostgresAutoUpholder:
         self.is_running = True
         logger.info("Starting PostgreSQL Auto Upholder")
 
-        # Establish performance baseline - completely disabled
-        pass
+        # Establish performance baseline asynchronously
+        self._establish_performance_baseline()
 
         # Setup scheduled tasks
         self._setup_scheduled_tasks()
 
-        # Start background monitoring - completely disabled
-        logger.info("Background monitoring disabled")
+        # Start background monitoring (asynchronously)
+        def start_monitoring_async():
+            try:
+                self.cache_monitor.start_monitoring(interval_seconds=self.config.cache_monitoring_interval * 60)
+                self.connection_pool_monitor.start_monitoring()
+                logger.info("Background monitoring started successfully")
+            except Exception as e:
+                logger.error(f"Failed to start background monitoring: {e}")
+
+        import threading
+        monitoring_thread = threading.Thread(
+            target=start_monitoring_async,
+            daemon=True,
+            name="Monitoring-Start"
+        )
+        monitoring_thread.start()
 
         # Start scheduler thread
         scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
@@ -456,13 +470,21 @@ class PostgresAutoUpholder:
         logger.info("📊 Skipping query performance dashboard")
         query_report = {"message": "Disabled for testing"}
 
-        print("DEBUG: Getting connection pool status")
-        logger.info("📊 Getting connection pool status")
+        print("DEBUG: Getting connection pool status with protection")
+        logger.info("📊 Getting connection pool status with protection")
         pool_start = time.time()
-        pool_report = self.connection_pool_monitor.get_pool_status()
-        pool_time = time.time() - pool_start
-        print("DEBUG: Got pool report")
-        logger.info(".3f")
+
+        # Используем новый защищенный монитор
+        try:
+            pool_report = self.connection_pool_monitor.get_pool_status(timeout_seconds=5)
+            pool_time = time.time() - pool_start
+            logger.info(".3f")
+        except Exception as e:
+            pool_report = {"error": f"Pool status unavailable: {str(e)}"}
+            pool_time = time.time() - pool_start
+            logger.warning(f"Connection pool status failed: {e}")
+
+        print("DEBUG: Got pool report (with protection)")
         
         logger.info("📊 Building dashboard response")
         dashboard = {
