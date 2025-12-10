@@ -55,9 +55,9 @@ class SQLiteEventRepository(EventRepository):
             (id, click_id, event_type, event_data, created_at)
             VALUES (?, ?, ?, ?, ?)
         """, (
-            event.id.value, event.click_id, event.event_type,
+            event.id, event.click_id, event.event_type,
             json.dumps(event.event_data) if event.event_data else None,
-            event.created_at.isoformat()
+            event.timestamp.isoformat()
         ))
 
         conn.commit()

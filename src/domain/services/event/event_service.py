@@ -45,12 +45,12 @@ class EventService:
 
             # Validate campaign/landing page IDs if provided
             if 'campaign_id' in event_data and event_data['campaign_id'] is not None:
-                if not isinstance(event_data['campaign_id'], int) or event_data['campaign_id'] <= 0:
+                if not isinstance(event_data['campaign_id'], str) or not event_data['campaign_id'].strip():
                     logger.warning(f"Invalid campaign_id: {event_data['campaign_id']}")
                     return False
 
             if 'landing_page_id' in event_data and event_data['landing_page_id'] is not None:
-                if not isinstance(event_data['landing_page_id'], int) or event_data['landing_page_id'] <= 0:
+                if not isinstance(event_data['landing_page_id'], str) or not event_data['landing_page_id'].strip():
                     logger.warning(f"Invalid landing_page_id: {event_data['landing_page_id']}")
                     return False
 
@@ -103,8 +103,8 @@ class EventService:
 
         # Use IP + User Agent + timestamp for session identification
         components = [
-            event_data.get('ip_address', ''),
-            event_data.get('user_agent', ''),
+            str(event_data.get('ip_address') or ''),
+            str(event_data.get('user_agent') or ''),
             str(datetime.utcnow().date())  # Same session for same day
         ]
 
@@ -117,8 +117,8 @@ class EventService:
 
         # Use IP + User Agent for user identification (anonymous)
         components = [
-            event_data.get('ip_address', ''),
-            event_data.get('user_agent', ''),
+            str(event_data.get('ip_address') or ''),
+            str(event_data.get('user_agent') or ''),
         ]
 
         user_hash = hashlib.md5('|'.join(components).encode()).hexdigest()[:16]
@@ -158,11 +158,12 @@ class EventService:
             categories.append('content')
 
         # Custom categories based on event name
-        if 'button' in event.event_name.lower():
+        event_name = event.event_name or ''
+        if 'button' in event_name.lower():
             categories.append('cta_interaction')
-        elif 'form' in event.event_name.lower():
+        elif 'form' in event_name.lower():
             categories.append('lead_generation')
-        elif 'purchase' in event.event_name.lower() or 'buy' in event.event_name.lower():
+        elif 'purchase' in event_name.lower() or 'buy' in event_name.lower():
             categories.append('revenue')
 
         return categories

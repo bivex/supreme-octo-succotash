@@ -6,6 +6,7 @@ from loguru import logger
 from ...entities.conversion import Conversion
 from ...entities.click import Click
 from ...repositories.click_repository import ClickRepository
+from ...value_objects.identifiers.click_id import ClickId
 
 
 class ConversionService:
@@ -31,7 +32,8 @@ class ConversionService:
                 return False, f"Invalid conversion_type: {conversion_data['conversion_type']}"
 
             # Validate click_id exists
-            click = self.click_repository.get_by_id(conversion_data['click_id'])
+            click_id = ClickId.from_string(conversion_data['click_id'])
+            click = self.click_repository.find_by_id(click_id)
             if not click:
                 return False, f"Click ID not found: {conversion_data['click_id']}"
 

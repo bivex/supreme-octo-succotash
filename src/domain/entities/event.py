@@ -22,6 +22,7 @@ class Event:
     user_agent: Optional[str]
     ip_address: Optional[str]
     properties: Dict[str, Any]  # Custom event properties
+    event_data: Optional[Dict[str, Any]]  # Additional event data
     timestamp: datetime
 
     @classmethod
@@ -44,5 +45,6 @@ class Event:
             user_agent=event_data.get('user_agent'),
             ip_address=event_data.get('ip_address'),
             properties=event_data.get('properties', {}),
+            event_data=event_data.get('event_data'),
             timestamp=datetime.utcnow()
         )

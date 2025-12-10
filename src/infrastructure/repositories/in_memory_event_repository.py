@@ -113,7 +113,8 @@ class InMemoryEventRepository(EventRepository):
                     if group_by == 'event_type':
                         counts[event.event_type] += 1
                     elif group_by == 'event_name':
-                        counts[event.event_name] += 1
+                        event_name = event.event_name or 'unknown'
+                        counts[event_name] += 1
                     elif group_by == 'campaign_id' and event.campaign_id:
                         counts[str(event.campaign_id)] += 1
                     elif group_by == 'landing_page_id' and event.landing_page_id:

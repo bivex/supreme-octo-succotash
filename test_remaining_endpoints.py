@@ -117,15 +117,14 @@ class RemainingEndpointsTester:
         self.log("Testing POST /events/track...")
 
         event_data = {
-            "eventType": "page_view",
-            "userId": "user123",
-            "campaignId": "camp_123",
-            "landingPageId": "lp_456",
-            "metadata": {
-                "url": "https://example.com/page",
-                "userAgent": "Mozilla/5.0...",
-                "ipAddress": "192.168.1.1"
-            },
+            "event_type": "page_view",
+            "event_name": "page_view_landing",
+            "user_id": "user123",
+            "campaign_id": "camp_123",
+            "landing_page_id": "lp_456",
+            "url": "https://example.com/page",
+            "user_agent": "Mozilla/5.0...",
+            "ip_address": "192.168.1.1",
             "timestamp": "2024-01-01T12:00:00Z"
         }
 
@@ -144,9 +143,30 @@ class RemainingEndpointsTester:
         """Test POST /conversions/track."""
         self.log("Testing POST /conversions/track...")
 
+        # First create a click in the database
+        click_data = {
+            "campaign_id": "camp_123",
+            "landing_page_id": "lp_456",
+            "click_url": "https://example.com/offer",
+            "referrer": "https://example.com/landing",
+            "user_agent": "Mozilla/5.0...",
+            "ip_address": "192.168.1.1"
+        }
+
+        # Create click via API (assuming click creation endpoint exists)
+        click_result = self.make_request('POST', '/clicks', click_data)
+        click_id = None
+        if click_result['success']:
+            click_id = click_result['data'].get('click_id', 'click_123456789')
+            self.log(f"Created test click with ID: {click_id}")
+        else:
+            click_id = 'click_123456789'  # Fallback
+            self.log(f"Could not create click, using fallback ID: {click_id}")
+
         conversion_data = {
-            "clickId": "click_123",
-            "goalId": "goal_456",
+            "click_id": click_id,
+            "goal_id": "goal_456",
+            "conversion_type": "sale",
             "amount": 25.50,
             "currency": "USD",
             "metadata": {
@@ -172,10 +192,10 @@ class RemainingEndpointsTester:
         self.log("Testing POST /postbacks/send...")
 
         postback_data = {
-            "affiliateId": "aff_123",
-            "offerId": "offer_456",
-            "clickId": "click_789",
-            "conversionId": "conv_101",
+            "affiliate_id": "aff_123",
+            "offer_id": "offer_456",
+            "click_id": "click_789",
+            "conversion_id": "conv_101",
             "amount": 15.75,
             "currency": "USD",
             "status": "approved",
@@ -200,11 +220,11 @@ class RemainingEndpointsTester:
         goal_data = {
             "name": "Purchase Goal",
             "description": "Track successful purchases",
-            "goalType": "conversion",
-            "targetValue": 100.00,
+            "goal_type": "conversion",
+            "target_value": 100.00,
             "currency": "USD",
-            "isActive": True,
-            "campaignIds": ["camp_123", "camp_456"]
+            "is_active": True,
+            "campaign_id": "camp_123"
         }
 
         result = self.make_request('POST', '/goals', goal_data)

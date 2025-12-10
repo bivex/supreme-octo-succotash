@@ -51,6 +51,13 @@ class TrackEventHandler:
             categories = self.event_service.categorize_event(event)
             event.properties['categories'] = categories
 
+            # Clean properties from None values to prevent JSON serialization issues
+            cleaned_properties = {}
+            for key, value in event.properties.items():
+                if value is not None:
+                    cleaned_properties[key] = value
+            event.properties = cleaned_properties
+
             # Save event
             self.event_repository.save(event)
             logger.info(f"Event tracked successfully: {event.id}")
