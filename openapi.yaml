@@ -901,6 +901,314 @@ components:
             message: "Status must be one of: active, paused, draft"
             code: "invalid_choice"
 # ============================================================================
+# NEW FEATURES SCHEMAS
+# ============================================================================
+    ClickValidationResponse:
+      description: Response for click validation including fraud detection results and redirect information.
+      type: object
+      properties:
+        clickId:
+          type: string
+          example: "click_123456"
+          description: Unique click identifier
+        isValid:
+          type: boolean
+          example: true
+          description: Whether the click passes validation
+        fraudScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.05
+          description: Fraud risk score (0.0 = safe, 1.0 = high risk)
+        redirectUrl:
+          type: string
+          format: uri
+          example: "https://affiliate.com/offer/123"
+          description: URL to redirect to if valid
+        validationReason:
+          type: string
+          example: "passed_all_checks"
+          description: Reason for validation result
+        blockedReason:
+          type: string
+          example: null
+          description: Reason why click was blocked (null if valid)
+        campaignId:
+          type: string
+          example: "camp_123"
+          description: Associated campaign ID
+        landingPageId:
+          type: string
+          example: "lp_456"
+          description: Target landing page ID
+        offerId:
+          type: string
+          example: "offer_789"
+          description: Associated offer ID
+      required:
+        - clickId
+        - isValid
+        - fraudScore
+      example:
+        clickId: "click_123456"
+        isValid: true
+        fraudScore: 0.05
+        redirectUrl: "https://affiliate.com/offer/123"
+        validationReason: "passed_all_checks"
+        blockedReason: null
+        campaignId: "camp_123"
+        landingPageId: "lp_456"
+        offerId: "offer_789"
+    FraudRule:
+      description: Fraud detection rule configuration for automated blocking and scoring.
+      type: object
+      properties:
+        id:
+          type: string
+          example: "fraud_rule_001"
+          description: Unique rule identifier
+        name:
+          type: string
+          example: "Block suspicious user agents"
+          description: Human-readable rule name
+        type:
+          type: string
+          enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+          example: "ip_block"
+          description: Type of fraud detection rule
+        action:
+          type: string
+          enum: [block, flag, score_increase, redirect_safe]
+          example: "block"
+          description: Action to take when rule matches
+        conditions:
+          type: object
+          description: Rule-specific conditions
+          properties:
+            ip_addresses:
+              type: array
+              items:
+                type: string
+                format: ipv4
+              example: ["192.168.1.1", "10.0.0.0/8"]
+              description: IP addresses or CIDR ranges to block/flag
+            user_agents:
+              type: array
+              items:
+                type: string
+              example: ["bot", "crawler"]
+              description: User agent patterns to match
+            countries:
+              type: array
+              items:
+                type: string
+                pattern: '^[A-Z]{2}$'
+              example: ["RU", "CN"]
+              description: Country codes to restrict
+            rate_limit:
+              type: object
+              properties:
+                requests_per_minute:
+                  type: integer
+                  minimum: 1
+                  example: 100
+                time_window_seconds:
+                  type: integer
+                  minimum: 1
+                  example: 60
+              description: Rate limiting configuration
+            score_threshold:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+              example: 0.8
+              description: Fraud score threshold for action
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 50
+          description: Rule priority (higher = processed first)
+        isActive:
+          type: boolean
+          example: true
+          description: Whether the rule is currently active
+        createdAt:
+          type: string
+          format: date-time
+          description: Rule creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Rule last update timestamp
+      required:
+        - id
+        - name
+        - type
+        - action
+        - priority
+        - isActive
+      example:
+        id: "fraud_rule_001"
+        name: "Block suspicious user agents"
+        type: "ua_block"
+        action: "block"
+        conditions:
+          user_agents: ["bot", "crawler", "spider"]
+        priority: 80
+        isActive: true
+        createdAt: "2024-01-01T00:00:00Z"
+        updatedAt: "2024-01-15T00:00:00Z"
+    FraudRuleCollection:
+      description: Collection of fraud detection rules with pagination.
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/FraudRule'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+      required:
+        - status
+        - rules
+      example:
+        status: "success"
+        rules: []
+        pagination:
+          page: 1
+          limit: 20
+          total: 0
+          totalPages: 0
+          hasNext: false
+          hasPrev: false
+    RealTimeAnalytics:
+      description: Real-time analytics data for the last 5 minutes of activity.
+      type: object
+      properties:
+        timeRange:
+          type: object
+          properties:
+            startTime:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:00:00Z"
+              description: Start of the 5-minute window
+            endTime:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:05:00Z"
+              description: End of the 5-minute window
+          required:
+            - startTime
+            - endTime
+          description: Time window for real-time data
+        activeUsers:
+          type: integer
+          format: int64
+          example: 1250
+          description: Number of active users in the last 5 minutes
+        clicks:
+          type: integer
+          format: int64
+          example: 89
+          description: Total clicks in the last 5 minutes
+        conversions:
+          type: integer
+          format: int64
+          example: 12
+          description: Total conversions in the last 5 minutes
+        revenue:
+          $ref: '#/components/schemas/Money'
+        topCampaigns:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              campaignId:
+                type: string
+                example: "camp_123"
+              campaignName:
+                type: string
+                example: "Summer Sale Campaign"
+              clicks:
+                type: integer
+                example: 45
+              conversions:
+                type: integer
+                example: 8
+            required:
+              - campaignId
+              - campaignName
+              - clicks
+              - conversions
+          description: Top 10 performing campaigns in the last 5 minutes
+        topLandingPages:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              landingPageId:
+                type: string
+                example: "lp_456"
+              pageName:
+                type: string
+                example: "Main Squeeze Page"
+              clicks:
+                type: integer
+                example: 67
+              conversions:
+                type: integer
+                example: 15
+            required:
+              - landingPageId
+              - pageName
+              - clicks
+              - conversions
+          description: Top 10 performing landing pages in the last 5 minutes
+        fraudEvents:
+          type: integer
+          format: int64
+          example: 3
+          description: Number of fraud events detected in the last 5 minutes
+        blockedClicks:
+          type: integer
+          format: int64
+          example: 7
+          description: Number of clicks blocked by fraud detection
+      required:
+        - timeRange
+        - activeUsers
+        - clicks
+        - conversions
+        - revenue
+        - topCampaigns
+        - topLandingPages
+        - fraudEvents
+        - blockedClicks
+      example:
+        timeRange:
+          startTime: "2024-01-15T10:00:00Z"
+          endTime: "2024-01-15T10:05:00Z"
+        activeUsers: 1250
+        clicks: 89
+        conversions: 12
+        revenue:
+          amount: 300.00
+          currency: "USD"
+        topCampaigns: []
+        topLandingPages: []
+        fraudEvents: 3
+        blockedClicks: 7
+# ============================================================================
 # LANDING PAGE SCHEMAS
 # ============================================================================
     LandingPageResource:
@@ -5134,6 +5442,391 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 # ============================================================================
+# NEW FEATURES ENDPOINTS
+# ============================================================================
+  /clicks/bulk-generate:
+    post:
+      summary: Bulk generate click tracking URLs
+      description: |
+        **HIGH PRIORITY** - Generate multiple click tracking URLs in a single request.
+        Supports up to 1000 URLs per request for large advertising campaigns.
+        Each generated click inherits campaign, landing page, and offer targeting rules.
+      operationId: bulkGenerateClicks
+      tags: [Clicks]
+      security:
+        - bearerAuth: [clicks:write]
+        - oauth2: [clicks:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkClickGenerationRequest'
+      responses:
+        '200':
+          description: Bulk click generation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkClickGenerationResponse'
+        '400':
+          description: Invalid request parameters or exceeds maximum limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /clicks/validate/{clickid}:
+    get:
+      summary: Validate click before redirect
+      description: |
+        **HIGH PRIORITY** - Real-time validation of click tracking links before redirecting users.
+        Performs comprehensive fraud detection, validates campaign status, and determines
+        the appropriate redirect URL based on A/B testing and targeting rules.
+      operationId: validateClick
+      tags: [Clicks, Fraud]
+      security: []  # Public endpoint for click validation
+      parameters:
+        - name: clickid
+          in: path
+          description: Unique click identifier to validate
+          required: true
+          schema:
+            type: string
+            pattern: '^click_[a-zA-Z0-9]+$'
+          example: "click_123456"
+        - name: user_agent
+          in: query
+          description: User agent string for fraud detection
+          required: false
+          schema:
+            type: string
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        - name: ip_address
+          in: query
+          description: Client IP address for geo-blocking and fraud detection
+          required: false
+          schema:
+            type: string
+            format: ipv4
+          example: "192.168.1.100"
+        - name: referrer
+          in: query
+          description: HTTP referrer for traffic source validation
+          required: false
+          schema:
+            type: string
+            format: uri
+          example: "https://google.com"
+      responses:
+        '200':
+          description: Click validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickValidationResponse'
+        '400':
+          description: Invalid click ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Click blocked by fraud detection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClickValidationResponse'
+        '404':
+          description: Click not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /fraud/rules:
+    get:
+      summary: List fraud detection rules
+      description: |
+        **MEDIUM PRIORITY** - Retrieve all active fraud detection rules with their
+        configurations, priorities, and conditions for monitoring and auditing.
+      operationId: getFraudRules
+      tags: [Fraud]
+      security:
+        - bearerAuth: [fraud:read]
+        - oauth2: [fraud:read]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: Number of rules per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: type
+          in: query
+          description: Filter by rule type
+          required: false
+          schema:
+            type: string
+            enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+          example: "ip_block"
+        - name: active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: List of fraud detection rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudRuleCollection'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create fraud detection rule
+      description: |
+        **MEDIUM PRIORITY** - Create a new fraud detection rule with specific conditions
+        and actions for automated threat mitigation.
+      operationId: createFraudRule
+      tags: [Fraud]
+      security:
+        - bearerAuth: [fraud:write]
+        - oauth2: [fraud:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FraudRule'
+            example:
+              name: "Block Russian traffic"
+              type: "geo_block"
+              action: "block"
+              conditions:
+                countries: ["RU"]
+              priority: 90
+              isActive: true
+      responses:
+        '201':
+          description: Fraud rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FraudRule'
+        '400':
+          description: Invalid rule configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Rule with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /cache/flush:
+    post:
+      summary: Flush application cache
+      description: |
+        **MEDIUM PRIORITY** - Clear cached data to ensure fresh content after
+        campaign or landing page updates. Supports selective cache flushing by data type.
+      operationId: flushCache
+      tags: [System]
+      security:
+        - bearerAuth: [admin:write]
+        - oauth2: [admin:write]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [campaigns, landing_pages, offers, analytics, all]
+                  example: ["campaigns", "landing_pages"]
+                  description: Specific cache types to flush (empty = flush all)
+                pattern:
+                  type: string
+                  example: "camp_*"
+                  description: Pattern to match cache keys (optional)
+              description: Cache flush configuration
+      responses:
+        '200':
+          description: Cache flushed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Cache flushed successfully"
+                  flushed_keys:
+                    type: integer
+                    example: 150
+                    description: Number of cache keys cleared
+                  flush_time_ms:
+                    type: integer
+                    example: 45
+                    description: Time taken to flush cache in milliseconds
+                required:
+                  - status
+                  - message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin permissions required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Cache flush failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /analytics/real-time:
+    get:
+      summary: Get real-time analytics
+      description: |
+        **LOW PRIORITY** - Retrieve live analytics data for the last 5 minutes,
+        including active users, recent conversions, top-performing campaigns and
+        landing pages, plus fraud detection metrics.
+      operationId: getRealTimeAnalytics
+      tags: [Analytics]
+      security:
+        - bearerAuth: [analytics:read]
+        - oauth2: [analytics:read]
+      responses:
+        '200':
+          description: Real-time analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealTimeAnalytics'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+# ============================================================================
 # TAGS
 # ============================================================================
 tags:
@@ -5200,6 +5893,14 @@ tags:
     description: |
       Event tracking endpoints for capturing user interactions on landing pages,
       including clicks, form submissions, conversions, and custom events with fraud detection.
+  - name: Fraud
+    description: |
+      Fraud detection and prevention including rule management, real-time validation,
+      IP blocking, user agent filtering, and automated threat mitigation.
+  - name: System
+    description: |
+      System administration and maintenance endpoints including cache management,
+      configuration updates, and performance monitoring tools.
 # ============================================================================
 # EXTERNAL DOCUMENTATION AND SUPPORT
 # ============================================================================
