@@ -462,13 +462,29 @@ class PostgresAutoUpholder:
         upholder_status = self.get_status()
         print("DEBUG: Got upholder status")
 
-        print("DEBUG: Skipping cache monitoring report")
-        logger.info("📊 Skipping cache monitoring report")
-        cache_report = {"message": "Disabled for testing"}
+        print("DEBUG: Getting cache monitoring report")
+        logger.info("📊 Getting cache monitoring report")
+        cache_start = time.time()
+        try:
+            cache_report = self.cache_monitor.get_monitoring_report()
+            cache_time = time.time() - cache_start
+            logger.info(".3f")
+        except Exception as e:
+            cache_report = {"error": f"Cache monitoring failed: {str(e)}"}
+            cache_time = time.time() - cache_start
+            logger.warning(f"Cache monitoring failed: {e}")
 
-        print("DEBUG: Skipping query performance dashboard")
-        logger.info("📊 Skipping query performance dashboard")
-        query_report = {"message": "Disabled for testing"}
+        print("DEBUG: Getting query performance dashboard")
+        logger.info("📊 Getting query performance dashboard")
+        query_start = time.time()
+        try:
+            query_report = self.query_optimizer.get_performance_dashboard()
+            query_time = time.time() - query_start
+            logger.info(".3f")
+        except Exception as e:
+            query_report = {"error": f"Query performance monitoring failed: {str(e)}"}
+            query_time = time.time() - query_start
+            logger.warning(f"Query performance monitoring failed: {e}")
 
         print("DEBUG: Getting connection pool status with protection")
         logger.info("📊 Getting connection pool status with protection")
