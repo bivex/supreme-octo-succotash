@@ -22,6 +22,14 @@ from .sqlite_goal_repository import SQLiteGoalRepository
 from .sqlite_ltv_repository import SQLiteLTVRepository
 from .sqlite_retention_repository import SQLiteRetentionRepository
 from .sqlite_form_repository import SQLiteFormRepository
+from .postgres_campaign_repository import PostgresCampaignRepository
+from .postgres_click_repository import PostgresClickRepository
+from .postgres_analytics_repository import PostgresAnalyticsRepository
+from .postgres_webhook_repository import PostgresWebhookRepository
+from .postgres_event_repository import PostgresEventRepository
+from .postgres_conversion_repository import PostgresConversionRepository
+from .postgres_postback_repository import PostgresPostbackRepository
+from .postgres_goal_repository import PostgresGoalRepository
 from .postgres_ltv_repository import PostgresLTVRepository
 from .postgres_retention_repository import PostgresRetentionRepository
 from .postgres_form_repository import PostgresFormRepository
@@ -48,6 +56,14 @@ __all__ = [
     'SQLiteLTVRepository',
     'SQLiteRetentionRepository',
     'SQLiteFormRepository',
+    'PostgresCampaignRepository',
+    'PostgresClickRepository',
+    'PostgresAnalyticsRepository',
+    'PostgresWebhookRepository',
+    'PostgresEventRepository',
+    'PostgresConversionRepository',
+    'PostgresPostbackRepository',
+    'PostgresGoalRepository',
     'PostgresLTVRepository',
     'PostgresRetentionRepository',
     'PostgresFormRepository'

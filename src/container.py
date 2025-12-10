@@ -13,6 +13,14 @@ from .infrastructure.repositories import (
     SQLiteLTVRepository,
     SQLiteRetentionRepository,
     SQLiteFormRepository,
+    PostgresCampaignRepository,
+    PostgresClickRepository,
+    PostgresAnalyticsRepository,
+    PostgresWebhookRepository,
+    PostgresEventRepository,
+    PostgresConversionRepository,
+    PostgresPostbackRepository,
+    PostgresGoalRepository,
     PostgresLTVRepository,
     PostgresRetentionRepository,
     PostgresFormRepository,
@@ -334,6 +342,104 @@ class Container:
             db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
             self._singletons['form_repository'] = SQLiteFormRepository(db_path)
         return self._singletons['form_repository']
+
+    def get_postgres_campaign_repository(self):
+        """Get PostgreSQL campaign repository."""
+        if 'postgres_campaign_repository' not in self._singletons:
+            self._singletons['postgres_campaign_repository'] = PostgresCampaignRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_campaign_repository']
+
+    def get_postgres_click_repository(self):
+        """Get PostgreSQL click repository."""
+        if 'postgres_click_repository' not in self._singletons:
+            self._singletons['postgres_click_repository'] = PostgresClickRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_click_repository']
+
+    def get_postgres_analytics_repository(self):
+        """Get PostgreSQL analytics repository."""
+        if 'postgres_analytics_repository' not in self._singletons:
+            self._singletons['postgres_analytics_repository'] = PostgresAnalyticsRepository(
+                click_repository=self.get_postgres_click_repository(),
+                campaign_repository=self.get_postgres_campaign_repository(),
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_analytics_repository']
+
+    def get_postgres_webhook_repository(self):
+        """Get PostgreSQL webhook repository."""
+        if 'postgres_webhook_repository' not in self._singletons:
+            self._singletons['postgres_webhook_repository'] = PostgresWebhookRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_webhook_repository']
+
+    def get_postgres_event_repository(self):
+        """Get PostgreSQL event repository."""
+        if 'postgres_event_repository' not in self._singletons:
+            self._singletons['postgres_event_repository'] = PostgresEventRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_event_repository']
+
+    def get_postgres_conversion_repository(self):
+        """Get PostgreSQL conversion repository."""
+        if 'postgres_conversion_repository' not in self._singletons:
+            self._singletons['postgres_conversion_repository'] = PostgresConversionRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_conversion_repository']
+
+    def get_postgres_postback_repository(self):
+        """Get PostgreSQL postback repository."""
+        if 'postgres_postback_repository' not in self._singletons:
+            self._singletons['postgres_postback_repository'] = PostgresPostbackRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_postback_repository']
+
+    def get_postgres_goal_repository(self):
+        """Get PostgreSQL goal repository."""
+        if 'postgres_goal_repository' not in self._singletons:
+            self._singletons['postgres_goal_repository'] = PostgresGoalRepository(
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password"
+            )
+        return self._singletons['postgres_goal_repository']
 
     def get_postgres_ltv_repository(self):
         """Get PostgreSQL LTV repository."""
