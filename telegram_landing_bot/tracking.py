@@ -18,6 +18,8 @@ from loguru import logger
 # Cache functions removed - now using Supreme API for URL generation
 # Removed config import to avoid circular dependencies
 
+from config import DEFAULT_TRACKING_PARAMS
+
 # Import shared URL shortener
 import sys
 import os
