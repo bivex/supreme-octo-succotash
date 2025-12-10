@@ -14,54 +14,6 @@ class InMemoryCampaignRepository(CampaignRepository):
     def __init__(self):
         self._campaigns: Dict[str, Campaign] = {}
         self._deleted_campaigns: set[str] = set()
-        self._initialize_mock_data()
-
-    def _initialize_mock_data(self) -> None:
-        """Initialize with mock campaign data."""
-        # Create mock campaigns
-        mock_campaigns = [
-            Campaign(
-                id=CampaignId.from_string("camp_123"),
-                name="Summer Sale Campaign",
-                description="High-converting summer promotion",
-                status="active",
-                cost_model="CPA",
-                payout=Money.from_float(25.50, "USD"),
-                safe_page_url=Url("https://example.com/safe-landing"),
-                offer_page_url=Url("https://example.com/offer"),
-                daily_budget=Money.from_float(500.00, "USD"),
-                total_budget=Money.from_float(15000.00, "USD"),
-                start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end_date=datetime(2024, 12, 31, tzinfo=timezone.utc),
-                clicks_count=5000,
-                conversions_count=150,
-                spent_amount=Money.from_float(1250.75, "USD"),
-                created_at=datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc),
-                updated_at=datetime(2024, 1, 15, 15, 0, 0, tzinfo=timezone.utc),
-            ),
-            Campaign(
-                id=CampaignId.from_string("camp_456"),
-                name="Winter Promotion",
-                description="Holiday season marketing campaign",
-                status="active",
-                cost_model="CPC",
-                payout=Money.from_float(15.00, "USD"),
-                safe_page_url=Url("https://example.com/winter-landing"),
-                offer_page_url=Url("https://example.com/winter-offer"),
-                daily_budget=Money.from_float(300.00, "USD"),
-                total_budget=Money.from_float(9000.00, "USD"),
-                start_date=datetime(2024, 11, 1, tzinfo=timezone.utc),
-                end_date=datetime(2024, 12, 31, tzinfo=timezone.utc),
-                clicks_count=8000,
-                conversions_count=240,
-                spent_amount=Money.from_float(2100.00, "USD"),
-                created_at=datetime(2024, 11, 1, 8, 0, 0, tzinfo=timezone.utc),
-                updated_at=datetime(2024, 11, 20, 12, 0, 0, tzinfo=timezone.utc),
-            )
-        ]
-
-        for campaign in mock_campaigns:
-            self._campaigns[campaign.id.value] = campaign
 
     def save(self, campaign: Campaign) -> None:
         """Save a campaign."""

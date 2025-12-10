@@ -13,58 +13,7 @@ class InMemoryClickRepository(ClickRepository):
 
     def __init__(self):
         self._clicks: List[Click] = []
-        self._initialize_mock_data()
 
-    def _initialize_mock_data(self) -> None:
-        """Initialize with mock click data."""
-        from ...domain.value_objects import ClickId
-
-        mock_clicks = [
-            Click(
-                id=ClickId.from_string("123e4567-e89b-12d3-a456-426614174000"),
-                campaign_id="camp_123",
-                ip_address="192.168.1.100",
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                referrer="https://facebook.com/ad/123",
-                is_valid=True,
-                sub1="fb_ad_15",
-                sub2="facebook",
-                sub3="adset_12",
-                sub4="video1",
-                sub5="lookalike78",
-                click_id_param="USERCLICK123",
-                affiliate_sub="aff_sub_123",
-                landing_page_id=456,
-                campaign_offer_id=789,
-                traffic_source_id=101,
-                conversion_type=None,
-                created_at=datetime.fromtimestamp(1640995200, tz=timezone.utc),
-            ),
-            Click(
-                id=ClickId.from_string("456e7890-e89b-12d3-a456-426614174001"),
-                campaign_id="camp_456",
-                ip_address="10.0.0.50",
-                user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
-                referrer="https://google.com/search?q=test",
-                is_valid=True,
-                sub1="google_search",
-                sub2="google",
-                sub3="brand_campaign",
-                sub4="text_ad",
-                sub5="keyword_123",
-                click_id_param="GOOGLE_CLICK_456",
-                affiliate_sub="network_a",
-                affiliate_sub2="sub_a1",
-                landing_page_id=457,
-                campaign_offer_id=790,
-                traffic_source_id=102,
-                conversion_type="lead",
-                converted_at=datetime.now(timezone.utc),
-                created_at=datetime.fromtimestamp(1641081600, tz=timezone.utc),
-            )
-        ]
-
-        self._clicks.extend(mock_clicks)
 
     def save(self, click: Click) -> None:
         """Save a click."""
