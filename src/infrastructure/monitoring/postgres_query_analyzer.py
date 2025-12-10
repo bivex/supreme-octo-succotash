@@ -35,11 +35,26 @@ class PostgresQueryAnalyzer:
         try:
             explain_query = f"EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {query}"
 
-            with self.connection.cursor() as cursor:
-                start_time = datetime.now()
-                cursor.execute(explain_query, params or ())
-                explain_result = cursor.fetchone()[0]
-                execution_time = (datetime.now() - start_time).total_seconds() * 1000
+            # Get connection from pool if it's a pool, otherwise use directly
+            if hasattr(self.connection, 'getconn'):
+                # It's a connection pool
+                conn = self.connection.getconn()
+                try:
+                    cursor = conn.cursor()
+                    start_time = datetime.now()
+                    cursor.execute(explain_query, params or ())
+                    explain_result = cursor.fetchone()[0]
+                    execution_time = (datetime.now() - start_time).total_seconds() * 1000
+                    cursor.close()
+                finally:
+                    self.connection.putconn(conn)
+            else:
+                # It's a direct connection
+                with self.connection.cursor() as cursor:
+                    start_time = datetime.now()
+                    cursor.execute(explain_query, params or ())
+                    explain_result = cursor.fetchone()[0]
+                    execution_time = (datetime.now() - start_time).total_seconds() * 1000
 
             return self._parse_explain_result(query, explain_result, execution_time)
 
@@ -235,26 +250,56 @@ class PostgresQueryAnalyzer:
     def get_slow_queries_report(self, min_calls: int = 10, min_avg_time: float = 100) -> List[Dict]:
         """Get report of slow queries from pg_stat_statements."""
         try:
-            with self.connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT query, calls, total_time, mean_time, rows
-                    FROM pg_stat_statements
-                    WHERE calls >= %s AND mean_time >= %s
-                    ORDER BY mean_time DESC
-                    LIMIT 20
-                """, (min_calls, min_avg_time))
+            # Get connection from pool if it's a pool, otherwise use directly
+            if hasattr(self.connection, 'getconn'):
+                # It's a connection pool
+                conn = self.connection.getconn()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT query, calls, total_time, mean_time, rows
+                        FROM pg_stat_statements
+                        WHERE calls >= %s AND mean_time >= %s
+                        ORDER BY mean_time DESC
+                        LIMIT 20
+                    """, (min_calls, min_avg_time))
 
-                slow_queries = []
-                for row in cursor.fetchall():
-                    slow_queries.append({
-                        'query': row[0],
-                        'calls': row[1],
-                        'total_time': row[2],
-                        'mean_time': row[3],
-                        'rows': row[4]
-                    })
+                    slow_queries = []
+                    for row in cursor.fetchall():
+                        slow_queries.append({
+                            'query': row[0],
+                            'calls': row[1],
+                            'total_time': row[2],
+                            'mean_time': row[3],
+                            'rows': row[4]
+                        })
 
-                return slow_queries
+                    cursor.close()
+                    return slow_queries
+                finally:
+                    self.connection.putconn(conn)
+            else:
+                # It's a direct connection
+                with self.connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT query, calls, total_time, mean_time, rows
+                        FROM pg_stat_statements
+                        WHERE calls >= %s AND mean_time >= %s
+                        ORDER BY mean_time DESC
+                        LIMIT 20
+                    """, (min_calls, min_avg_time))
+
+                    slow_queries = []
+                    for row in cursor.fetchall():
+                        slow_queries.append({
+                            'query': row[0],
+                            'calls': row[1],
+                            'total_time': row[2],
+                            'mean_time': row[3],
+                            'rows': row[4]
+                        })
+
+                    return slow_queries
 
         except Exception as e:
             logger.error(f"Failed to get slow queries report: {e}")

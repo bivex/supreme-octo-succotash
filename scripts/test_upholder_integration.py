@@ -99,7 +99,9 @@ def test_upholder_endpoints(base_url: str = "http://localhost:5000"):
 
         if response.status_code == 200:
             result = response.json()
-            print("✅ Manual audit completed"            print(".2f"            print(f"   - Optimizations applied: {len(result.get('optimizations_applied', []))}")
+            print("✅ Manual audit completed")
+            print(f"   - Duration: {duration:.2f}s")
+            print(f"   - Optimizations applied: {len(result.get('optimizations_applied', []))}")
             print(f"   - Alerts generated: {len(result.get('alerts_generated', []))}")
             print(f"   - Recommendations: {len(result.get('recommendations_pending', []))}")
 

@@ -39,10 +39,30 @@ class PostgresIndexAuditor:
     def __init__(self, connection):
         self.connection = connection
 
+    def _get_cursor(self):
+        """Get cursor, handling both connection pools and direct connections."""
+        if hasattr(self.connection, 'getconn'):
+            # It's a connection pool
+            conn = self.connection.getconn()
+            cursor = conn.cursor()
+            # Return both connection and cursor for proper cleanup
+            return conn, cursor
+        else:
+            # It's a direct connection
+            return None, self.connection.cursor()
+
+    def _close_cursor(self, conn, cursor):
+        """Close cursor and return connection to pool if needed."""
+        cursor.close()
+        if conn is not None:
+            # Return connection to pool
+            self.connection.putconn(conn)
+
     def audit_all_tables(self) -> Dict[str, IndexAuditResult]:
         """Audit indexes for all tables in the database."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 # Get all user tables
                 cursor.execute("""
                     SELECT schemaname, tablename
@@ -56,6 +76,8 @@ class PostgresIndexAuditor:
                     results[table] = self.audit_table_indexes(table)
 
                 return results
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to audit all tables: {e}")
@@ -95,7 +117,8 @@ class PostgresIndexAuditor:
     def _get_existing_indexes(self, table_name: str) -> List[Dict]:
         """Get existing indexes for a table."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT
                         i.indexname,
@@ -121,6 +144,8 @@ class PostgresIndexAuditor:
                     })
 
                 return indexes
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to get existing indexes for {table_name}: {e}")
@@ -137,7 +162,8 @@ class PostgresIndexAuditor:
 
         try:
             # Get query patterns from pg_stat_statements
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT query, calls
                     FROM pg_stat_statements
@@ -164,6 +190,8 @@ class PostgresIndexAuditor:
                         patterns['join_columns'].update(join_cols)
                         patterns['order_columns'].update(order_cols)
                         patterns['group_columns'].update(group_cols)
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to analyze query patterns for {table_name}: {e}")
@@ -295,7 +323,8 @@ class PostgresIndexAuditor:
     def _get_table_columns(self, table_name: str) -> Set[str]:
         """Get column names for a table."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT column_name
                     FROM information_schema.columns
@@ -304,6 +333,8 @@ class PostgresIndexAuditor:
                 """, (table_name,))
 
                 return {row[0] for row in cursor.fetchall()}
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to get columns for table {table_name}: {e}")
@@ -328,7 +359,8 @@ class PostgresIndexAuditor:
     def _find_unused_indexes(self, table_name: str) -> List[Dict]:
         """Find indexes that haven't been used recently."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT
                         indexname,
@@ -351,6 +383,8 @@ class PostgresIndexAuditor:
                     })
 
                 return unused
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to find unused indexes for {table_name}: {e}")
@@ -359,7 +393,8 @@ class PostgresIndexAuditor:
     def _find_bloated_indexes(self, table_name: str) -> List[Dict]:
         """Find bloated indexes that need rebuilding."""
         try:
-            with self.connection.cursor() as cursor:
+            conn, cursor = self._get_cursor()
+            try:
                 cursor.execute("""
                     SELECT
                         indexname,
@@ -384,6 +419,8 @@ class PostgresIndexAuditor:
                     })
 
                 return bloated
+            finally:
+                self._close_cursor(conn, cursor)
 
         except Exception as e:
             logger.error(f"Failed to find bloated indexes for {table_name}: {e}")
@@ -419,10 +456,16 @@ class PostgresIndexAuditor:
                     applied.append(f"DRY RUN: Would create {rec.ddl_statement}")
                 else:
                     try:
-                        with self.connection.cursor() as cursor:
+                        conn, cursor = self._get_cursor()
+                        try:
                             cursor.execute(rec.ddl_statement)
-                            self.connection.commit()
-                        applied.append(f"✅ Created index: {rec.ddl_statement}")
+                            if hasattr(self.connection, 'commit'):
+                                self.connection.commit()
+                            elif conn and hasattr(conn, 'commit'):
+                                conn.commit()
+                            applied.append(f"✅ Created index: {rec.ddl_statement}")
+                        finally:
+                            self._close_cursor(conn, cursor)
                     except Exception as e:
                         applied.append(f"❌ Failed to create index: {e}")
 

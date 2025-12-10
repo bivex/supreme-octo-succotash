@@ -82,7 +82,21 @@ class PostgresCacheMonitor:
     def get_current_metrics(self) -> CacheMetrics:
         """Get current cache metrics."""
         try:
-            with self.connection.cursor() as cursor:
+            # Get connection from pool if it's a pool, otherwise use directly
+            if hasattr(self.connection, 'getconn'):
+                # It's a connection pool
+                conn = self.connection.getconn()
+                try:
+                    cursor = conn.cursor()
+                    result = self._execute_cache_queries(cursor)
+                    cursor.close()
+                    return result
+                finally:
+                    self.connection.putconn(conn)
+            else:
+                # It's a direct connection
+                with self.connection.cursor() as cursor:
+                    return self._execute_cache_queries(cursor)
                 # Get cache hit ratios
                 cursor.execute("""
                     SELECT
@@ -140,6 +154,55 @@ class PostgresCacheMonitor:
                 temp_bytes_written=0,
                 timestamp=datetime.now()
             )
+
+    def _execute_cache_queries(self, cursor) -> CacheMetrics:
+        """Execute cache-related queries and return metrics."""
+        # Get cache hit ratios
+        cursor.execute("""
+            SELECT
+                sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read)) as heap_hit_ratio,
+                sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read)) as index_hit_ratio
+            FROM pg_statio_user_tables
+            WHERE heap_blks_hit + heap_blks_read > 0
+        """)
+
+        heap_ratio, index_ratio = cursor.fetchone()
+        heap_ratio = heap_ratio or 0
+        index_ratio = index_ratio or 0
+
+        # Get shared buffer usage
+        cursor.execute("""
+            SELECT
+                sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
+            FROM pg_buffercache b
+            CROSS JOIN pg_settings s
+            WHERE s.name = 'shared_buffers'
+        """)
+
+        buffer_usage_row = cursor.fetchone()
+        buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
+
+        # Get temporary file statistics (last hour)
+        cursor.execute("""
+            SELECT
+                count(*) as temp_files,
+                sum(bytes) as temp_bytes
+            FROM pg_stat_database
+            WHERE temp_files > 0
+        """)
+
+        temp_row = cursor.fetchone()
+        temp_files = temp_row[0] if temp_row else 0
+        temp_bytes = temp_row[1] if temp_row else 0
+
+        return CacheMetrics(
+            heap_hit_ratio=heap_ratio,
+            index_hit_ratio=index_ratio,
+            shared_buffer_usage=buffer_usage,
+            temp_files_created=temp_files,
+            temp_bytes_written=temp_bytes,
+            timestamp=datetime.now()
+        )
 
     def check_alerts(self, metrics: CacheMetrics) -> List[CacheAlert]:
         """Check for cache performance alerts."""
