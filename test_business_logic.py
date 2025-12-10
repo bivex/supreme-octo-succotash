@@ -80,10 +80,10 @@ class CampaignAPITester:
         self.log("Testing health check...")
         result = self.make_request('GET', '/v1/health')
         if result['success']:
-            self.log("✅ Health check passed")
+            self.log("[OK] Health check passed")
             return True
         else:
-            self.log(f"❌ Health check failed: {result['error']}")
+            self.log(f"[FAIL] Health check failed: {result['error']}")
             return False
 
     def test_list_campaigns(self):
@@ -93,19 +93,19 @@ class CampaignAPITester:
 
         if result['success']:
             campaigns = result['data'].get('campaigns', [])
-            self.log(f"✅ Found {len(campaigns)} campaigns")
+            self.log(f"[OK] Found {len(campaigns)} campaigns")
             if campaigns:
                 self.test_campaign_id = campaigns[0]['id']
                 self.log(f"Using test campaign ID: {self.test_campaign_id}")
             return True
         else:
-            self.log(f"❌ List campaigns failed: {result['error']}")
+            self.log(f"[FAIL] List campaigns failed: {result['error']}")
             return False
 
     def test_get_campaign_detail(self):
         """Test GET /v1/campaigns/{id}."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for detail test")
+            self.log("[FAIL] No campaign ID available for detail test")
             return False
 
         self.log(f"Testing GET /v1/campaigns/{self.test_campaign_id}...")
@@ -113,14 +113,14 @@ class CampaignAPITester:
 
         if result['success']:
             campaign = result['data']
-            self.log("✅ Campaign detail retrieved successfully")
+            self.log("[OK] Campaign detail retrieved successfully")
             self.log(f"   Name: {campaign.get('name')}")
             self.log(f"   Status: {campaign.get('status')}")
             self.log(f"   Performance data: {'performance' in campaign}")
             self.log(f"   Links: {'_links' in campaign}")
             return True
         else:
-            self.log(f"❌ Get campaign detail failed: {result['error']}")
+            self.log(f"[FAIL] Get campaign detail failed: {result['error']}")
             return False
 
     def test_create_campaign(self):
@@ -151,18 +151,18 @@ class CampaignAPITester:
 
         if result['success']:
             new_campaign = result['data']
-            self.log("✅ Campaign created successfully")
+            self.log("[OK] Campaign created successfully")
             self.log(f"   New ID: {new_campaign.get('id')}")
             self.log(f"   Name: {new_campaign.get('name')}")
             return True
         else:
-            self.log(f"❌ Create campaign failed: {result['error']}")
+            self.log(f"[FAIL] Create campaign failed: {result['error']}")
             return False
 
     def test_update_campaign(self):
         """Test PUT /v1/campaigns/{id}."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for update test")
+            self.log("[FAIL] No campaign ID available for update test")
             return False
 
         self.log(f"Testing PUT /v1/campaigns/{self.test_campaign_id}...")
@@ -181,17 +181,17 @@ class CampaignAPITester:
 
         if result['success']:
             updated_campaign = result['data']
-            self.log("✅ Campaign updated successfully")
+            self.log("[OK] Campaign updated successfully")
             self.log(f"   Updated name: {updated_campaign.get('name')}")
             return True
         else:
-            self.log(f"❌ Update campaign failed: {result['error']}")
+            self.log(f"[FAIL] Update campaign failed: {result['error']}")
             return False
 
     def test_campaign_actions(self):
         """Test pause and resume actions."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for actions test")
+            self.log("[FAIL] No campaign ID available for actions test")
             return False
 
         # Test pause
@@ -199,25 +199,25 @@ class CampaignAPITester:
         result = self.make_request('POST', f'/v1/campaigns/{self.test_campaign_id}/pause')
 
         if result['success']:
-            self.log("✅ Campaign paused successfully")
+            self.log("[OK] Campaign paused successfully")
         else:
-            self.log(f"❌ Pause campaign failed: {result['error']}")
+            self.log(f"[FAIL] Pause campaign failed: {result['error']}")
 
         # Test resume
         self.log(f"Testing POST /v1/campaigns/{self.test_campaign_id}/resume...")
         result = self.make_request('POST', f'/v1/campaigns/{self.test_campaign_id}/resume')
 
         if result['success']:
-            self.log("✅ Campaign resumed successfully")
+            self.log("[OK] Campaign resumed successfully")
             return True
         else:
-            self.log(f"❌ Resume campaign failed: {result['error']}")
+            self.log(f"[FAIL] Resume campaign failed: {result['error']}")
             return False
 
     def test_analytics(self):
         """Test analytics endpoint."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for analytics test")
+            self.log("[FAIL] No campaign ID available for analytics test")
             return False
 
         # Try with the first campaign from the list (should have data)
@@ -237,7 +237,7 @@ class CampaignAPITester:
 
         if result['success']:
             analytics = result['data']
-            self.log("✅ Analytics retrieved successfully")
+            self.log("[OK] Analytics retrieved successfully")
             self.log(f"   Campaign ID: {analytics.get('campaignId')}")
             metrics = analytics.get('metrics', {})
             self.log(f"   Clicks: {metrics.get('clicks')}")
@@ -245,7 +245,7 @@ class CampaignAPITester:
             self.log(f"   Revenue: {metrics.get('revenue')}")
             return True
         else:
-            self.log(f"❌ Analytics failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Analytics failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             elif result['response_text']:
@@ -257,7 +257,7 @@ class CampaignAPITester:
     def test_landing_pages(self):
         """Test landing pages endpoints."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for landing pages test")
+            self.log("[FAIL] No campaign ID available for landing pages test")
             return False
 
         # Test GET landing pages
@@ -266,12 +266,12 @@ class CampaignAPITester:
 
         if result['success']:
             landing_pages = result['data']
-            self.log("✅ Landing pages retrieved successfully")
+            self.log("[OK] Landing pages retrieved successfully")
             pages = landing_pages.get('landingPages', [])
             self.log(f"   Found {len(pages)} landing pages")
             return True
         else:
-            self.log(f"❌ Landing pages failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Landing pages failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             elif result['response_text']:
@@ -283,7 +283,7 @@ class CampaignAPITester:
     def test_offers(self):
         """Test offers endpoints."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for offers test")
+            self.log("[FAIL] No campaign ID available for offers test")
             return False
 
         # Test GET offers
@@ -292,14 +292,14 @@ class CampaignAPITester:
 
         if result['success']:
             offers = result['data']
-            self.log("✅ Offers retrieved successfully")
+            self.log("[OK] Offers retrieved successfully")
             offers_list = offers.get('offers', [])
             pagination = offers.get('pagination', {})
             self.log(f"   Found {len(offers_list)} offers")
             self.log(f"   Pagination: {pagination}")
             return True
         else:
-            self.log(f"❌ Offers failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Offers failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             elif result['response_text']:
@@ -324,7 +324,7 @@ class CampaignAPITester:
             result = self.make_request('GET', f'/v1/campaigns{query_string}')
 
             if not result['success']:
-                self.log(f"❌ Pagination failed for {query_string}: HTTP {result['status_code']}")
+                self.log(f"[FAIL] Pagination failed for {query_string}: HTTP {result['status_code']}")
                 return False
 
             data = result['data']
@@ -336,23 +336,23 @@ class CampaignAPITester:
             missing_fields = [field for field in required_fields if field not in pagination]
 
             if missing_fields:
-                self.log(f"❌ Missing pagination fields {missing_fields} for {query_string}")
+                self.log(f"[FAIL] Missing pagination fields {missing_fields} for {query_string}")
                 return False
 
             # Validate pagination values
             if pagination['page'] != params['page']:
-                self.log(f"❌ Page mismatch: expected {params['page']}, got {pagination['page']}")
+                self.log(f"[FAIL] Page mismatch: expected {params['page']}, got {pagination['page']}")
                 return False
 
             if pagination['pageSize'] != params['pageSize']:
-                self.log(f"❌ Page size mismatch: expected {params['pageSize']}, got {pagination['pageSize']}")
+                self.log(f"[FAIL] Page size mismatch: expected {params['pageSize']}, got {pagination['pageSize']}")
                 return False
 
             if len(campaigns) > params['pageSize']:
-                self.log(f"❌ Too many items returned: {len(campaigns)} > {params['pageSize']}")
+                self.log(f"[FAIL] Too many items returned: {len(campaigns)} > {params['pageSize']}")
                 return False
 
-            self.log(f"✅ Pagination {query_string}: {len(campaigns)} items, page {pagination['page']}/{pagination['totalPages']}")
+            self.log(f"[OK] Pagination {query_string}: {len(campaigns)} items, page {pagination['page']}/{pagination['totalPages']}")
 
         # Test invalid parameters
         invalid_cases = [
@@ -364,17 +364,17 @@ class CampaignAPITester:
         for query_string in invalid_cases:
             result = self.make_request('GET', f'/v1/campaigns{query_string}')
             if result['status_code'] != 400:
-                self.log(f"❌ Invalid params {query_string} should return 400, got {result['status_code']}")
+                self.log(f"[FAIL] Invalid params {query_string} should return 400, got {result['status_code']}")
                 return False
-            self.log(f"✅ Invalid params {query_string} correctly rejected (400)")
+            self.log(f"[OK] Invalid params {query_string} correctly rejected (400)")
 
-        self.log("✅ Campaigns pagination tests passed")
+        self.log("[OK] Campaigns pagination tests passed")
         return True
 
     def test_landing_pages_pagination(self):
         """Test landing pages pagination."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for landing pages pagination test")
+            self.log("[FAIL] No campaign ID available for landing pages pagination test")
             return False
 
         self.log(f"Testing landing pages pagination for campaign {self.test_campaign_id}...")
@@ -390,7 +390,7 @@ class CampaignAPITester:
             result = self.make_request('GET', f'/v1/campaigns/{self.test_campaign_id}/landing-pages{query_string}')
 
             if not result['success']:
-                self.log(f"❌ Landing pages pagination failed for {query_string}: HTTP {result['status_code']}")
+                self.log(f"[FAIL] Landing pages pagination failed for {query_string}: HTTP {result['status_code']}")
                 return False
 
             data = result['data']
@@ -402,22 +402,22 @@ class CampaignAPITester:
             missing_fields = [field for field in required_fields if field not in pagination]
 
             if missing_fields:
-                self.log(f"❌ Missing pagination fields {missing_fields} for landing pages {query_string}")
+                self.log(f"[FAIL] Missing pagination fields {missing_fields} for landing pages {query_string}")
                 return False
 
             if len(landing_pages) > params['pageSize']:
-                self.log(f"❌ Too many landing pages returned: {len(landing_pages)} > {params['pageSize']}")
+                self.log(f"[FAIL] Too many landing pages returned: {len(landing_pages)} > {params['pageSize']}")
                 return False
 
-            self.log(f"✅ Landing pages pagination {query_string}: {len(landing_pages)} items")
+            self.log(f"[OK] Landing pages pagination {query_string}: {len(landing_pages)} items")
 
-        self.log("✅ Landing pages pagination tests passed")
+        self.log("[OK] Landing pages pagination tests passed")
         return True
 
     def test_offers_pagination(self):
         """Test offers pagination."""
         if not self.test_campaign_id:
-            self.log("❌ No campaign ID available for offers pagination test")
+            self.log("[FAIL] No campaign ID available for offers pagination test")
             return False
 
         self.log(f"Testing offers pagination for campaign {self.test_campaign_id}...")
@@ -433,7 +433,7 @@ class CampaignAPITester:
             result = self.make_request('GET', f'/v1/campaigns/{self.test_campaign_id}/offers{query_string}')
 
             if not result['success']:
-                self.log(f"❌ Offers pagination failed for {query_string}: HTTP {result['status_code']}")
+                self.log(f"[FAIL] Offers pagination failed for {query_string}: HTTP {result['status_code']}")
                 return False
 
             data = result['data']
@@ -445,16 +445,16 @@ class CampaignAPITester:
             missing_fields = [field for field in required_fields if field not in pagination]
 
             if missing_fields:
-                self.log(f"❌ Missing pagination fields {missing_fields} for offers {query_string}")
+                self.log(f"[FAIL] Missing pagination fields {missing_fields} for offers {query_string}")
                 return False
 
             if len(offers) > params['pageSize']:
-                self.log(f"❌ Too many offers returned: {len(offers)} > {params['pageSize']}")
+                self.log(f"[FAIL] Too many offers returned: {len(offers)} > {params['pageSize']}")
                 return False
 
-            self.log(f"✅ Offers pagination {query_string}: {len(offers)} items")
+            self.log(f"[OK] Offers pagination {query_string}: {len(offers)} items")
 
-        self.log("✅ Offers pagination tests passed")
+        self.log("[OK] Offers pagination tests passed")
         return True
 
     def test_pagination_edge_cases(self):
@@ -464,7 +464,7 @@ class CampaignAPITester:
         # Test large page number (should return empty or last page)
         result = self.make_request('GET', '/v1/campaigns?page=999&pageSize=10')
         if not result['success']:
-            self.log(f"❌ Large page number failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Large page number failed: HTTP {result['status_code']}")
             return False
 
         data = result['data']
@@ -472,26 +472,26 @@ class CampaignAPITester:
         pagination = data.get('pagination', {})
 
         if len(campaigns) > 10:
-            self.log(f"❌ Too many campaigns for large page: {len(campaigns)}")
+            self.log(f"[FAIL] Too many campaigns for large page: {len(campaigns)}")
             return False
 
-        self.log(f"✅ Large page handled correctly: {len(campaigns)} campaigns")
+        self.log(f"[OK] Large page handled correctly: {len(campaigns)} campaigns")
 
         # Test default parameters (no query params)
         result = self.make_request('GET', '/v1/campaigns')
         if not result['success']:
-            self.log(f"❌ Default params failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Default params failed: HTTP {result['status_code']}")
             return False
 
         data = result['data']
         pagination = data.get('pagination', {})
 
         if pagination.get('page') != 1 or pagination.get('pageSize') != 20:
-            self.log(f"❌ Wrong defaults: page={pagination.get('page')}, pageSize={pagination.get('pageSize')}")
+            self.log(f"[FAIL] Wrong defaults: page={pagination.get('page')}, pageSize={pagination.get('pageSize')}")
             return False
 
-        self.log("✅ Default pagination parameters work correctly")
-        self.log("✅ Pagination edge cases tests passed")
+        self.log("[OK] Default pagination parameters work correctly")
+        self.log("[OK] Pagination edge cases tests passed")
         return True
 
     def run_all_tests(self):
@@ -523,7 +523,7 @@ class CampaignAPITester:
                 result = test_func()
                 results.append((test_name, result))
             except Exception as e:
-                self.log(f"❌ Test {test_name} crashed: {e}")
+                self.log(f"[FAIL] Test {test_name} crashed: {e}")
                 results.append((test_name, False))
 
         # Summary
@@ -535,7 +535,7 @@ class CampaignAPITester:
         total = len(results)
 
         for test_name, result in results:
-            status = "✅ PASS" if result else "❌ FAIL"
+            status = "[OK] PASS" if result else "[FAIL] FAIL"
             self.log(f"{status}: {test_name}")
             if result:
                 passed += 1
@@ -543,9 +543,9 @@ class CampaignAPITester:
         self.log(f"\nTOTAL: {passed}/{total} tests passed")
 
         if passed == total:
-            self.log("🎉 ALL TESTS PASSED! Business logic and pagination are working correctly.")
+            self.log("[SUCCESS] ALL TESTS PASSED! Business logic and pagination are working correctly.")
         else:
-            self.log(f"⚠️  {total - passed} tests failed. Check the logs above for details.")
+            self.log(f"[WARN]  {total - passed} tests failed. Check the logs above for details.")
 
         # Detailed breakdown
         core_tests = 9  # Original business logic tests
@@ -555,8 +555,8 @@ class CampaignAPITester:
         pagination_passed = sum(1 for name, result in results[core_tests:] if result)
 
         self.log(f"\nBreakdown:")
-        self.log(f"  Core Business Logic: {core_passed}/{core_tests} ✅")
-        self.log(f"  Pagination Tests: {pagination_passed}/{pagination_tests} ✅")
+        self.log(f"  Core Business Logic: {core_passed}/{core_tests} [OK]")
+        self.log(f"  Pagination Tests: {pagination_passed}/{pagination_tests} [OK]")
 
         return passed == total
 

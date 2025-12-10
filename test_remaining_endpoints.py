@@ -104,10 +104,10 @@ class RemainingEndpointsTester:
         result = self.make_request('POST', '/webhooks/telegram', telegram_data)
 
         if result['success']:
-            self.log("✅ Telegram webhook accepted")
+            self.log("[OK] Telegram webhook accepted")
             return True
         else:
-            self.log(f"❌ Telegram webhook failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Telegram webhook failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             return False
@@ -131,10 +131,10 @@ class RemainingEndpointsTester:
         result = self.make_request('POST', '/events/track', event_data)
 
         if result['success']:
-            self.log("✅ Event tracking successful")
+            self.log("[OK] Event tracking successful")
             return True
         else:
-            self.log(f"❌ Event tracking failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Event tracking failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             return False
@@ -179,10 +179,10 @@ class RemainingEndpointsTester:
         result = self.make_request('POST', '/conversions/track', conversion_data)
 
         if result['success']:
-            self.log("✅ Conversion tracking successful")
+            self.log("[OK] Conversion tracking successful")
             return True
         else:
-            self.log(f"❌ Conversion tracking failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Conversion tracking failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             return False
@@ -205,10 +205,10 @@ class RemainingEndpointsTester:
         result = self.make_request('POST', '/postbacks/send', postback_data)
 
         if result['success']:
-            self.log("✅ Postback sending successful")
+            self.log("[OK] Postback sending successful")
             return True
         else:
-            self.log(f"❌ Postback sending failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Postback sending failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             return False
@@ -230,10 +230,10 @@ class RemainingEndpointsTester:
         result = self.make_request('POST', '/goals', goal_data)
 
         if result['success']:
-            self.log("✅ Goal creation successful")
+            self.log("[OK] Goal creation successful")
             return True
         else:
-            self.log(f"❌ Goal creation failed: HTTP {result['status_code']}")
+            self.log(f"[FAIL] Goal creation failed: HTTP {result['status_code']}")
             if result['error']:
                 self.log(f"   Error: {result['error']}")
             return False
@@ -259,7 +259,7 @@ class RemainingEndpointsTester:
                 result = test_func()
                 results.append((test_name, result))
             except Exception as e:
-                self.log(f"❌ Test {test_name} crashed: {e}")
+                self.log(f"[FAIL] Test {test_name} crashed: {e}")
                 results.append((test_name, False))
 
         # Summary
@@ -271,7 +271,7 @@ class RemainingEndpointsTester:
         total = len(results)
 
         for test_name, result in results:
-            status = "✅ PASS" if result else "❌ FAIL"
+            status = "[OK] PASS" if result else "[FAIL] FAIL"
             self.log(f"{status}: {test_name}")
             if result:
                 passed += 1
@@ -279,9 +279,9 @@ class RemainingEndpointsTester:
         self.log(f"\nTOTAL: {passed}/{total} remaining endpoints tested")
 
         if passed == total:
-            self.log("🎉 ALL REMAINING ENDPOINTS WORKING!")
+            self.log("[SUCCESS] ALL REMAINING ENDPOINTS WORKING!")
         else:
-            self.log(f"⚠️  {total - passed} endpoints need implementation")
+            self.log(f"[WARN]  {total - passed} endpoints need implementation")
 
         return passed == total
 

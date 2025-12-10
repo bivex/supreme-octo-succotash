@@ -87,5 +87,40 @@ class SystemRoutes:
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
 
-        # Register the cache flush endpoint
+        def health_check(res, req):
+            """Simple health check endpoint."""
+            from ...container import container
+            import json
+
+            try:
+                # Check database connectivity
+                db_status = "ok"
+                try:
+                    # Try to get a connection from pool
+                    conn = container.get_db_connection()
+                    container.release_db_connection(conn)
+                except Exception as e:
+                    db_status = f"error: {str(e)[:50]}"
+
+                response = {
+                    "status": "healthy",
+                    "timestamp": req.get_query('timestamp') or "unknown",
+                    "database": db_status,
+                    "version": "1.0.0"
+                }
+
+                res.write_header("Content-Type", "application/json")
+                res.end(json.dumps(response))
+
+            except Exception as e:
+                error_response = {
+                    "status": "unhealthy",
+                    "error": str(e)[:100]
+                }
+                res.write_status(500)
+                res.write_header("Content-Type", "application/json")
+                res.end(json.dumps(error_response))
+
+        # Register endpoints
+        app.get('/health', health_check)
         app.post('/v1/cache/flush', flush_cache)

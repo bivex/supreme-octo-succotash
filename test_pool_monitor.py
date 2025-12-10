@@ -45,11 +45,11 @@ def test_pool_stats():
 
     # Check for leaks
     if initial_stats.get('available', 0) != final_stats.get('available', 0):
-        print("⚠️  WARNING: Possible connection leak detected!")
+        print("[WARN]  WARNING: Possible connection leak detected!")
         print(f"   Initial available: {initial_stats.get('available', 'unknown')}")
         print(f"   Final available: {final_stats.get('available', 'unknown')}")
     else:
-        print("✅ No connection leaks detected")
+        print("[OK] No connection leaks detected")
 
     # Test pool limits
     connections = []

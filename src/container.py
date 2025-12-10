@@ -80,7 +80,7 @@ class Container:
         if 'db_connection_pool' not in self._singletons:
             self._singletons['db_connection_pool'] = psycopg2.pool.SimpleConnectionPool(
                 minconn=1,
-                maxconn=20,
+                maxconn=100,
                 host="localhost",
                 port=5432,
                 database="supreme_octosuccotash_db",
