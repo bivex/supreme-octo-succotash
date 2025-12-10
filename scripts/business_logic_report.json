@@ -1,0 +1,10 @@
+{
+  "total_endpoints": 0,
+  "implemented_endpoints": 0,
+  "mock_endpoints": 0,
+  "not_implemented_endpoints": 0,
+  "partially_implemented_endpoints": 0,
+  "critical_missing_features": [],
+  "recommendations": [],
+  "endpoints_by_status": {}
+}
