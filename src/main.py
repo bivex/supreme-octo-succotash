@@ -141,7 +141,7 @@ def _setup_global_exception_handler() -> None:
 
     # Note: Exception handling is done in individual route handlers with try/catch blocks
 
-    logger.info("Global exception handler configured (JSON encoder already set up)")
+    logger.info("Global exception handler configured (JSON encoder already set up) - Hot reload ready")
 
 
 def _register_routes(app: socketify.App) -> None:

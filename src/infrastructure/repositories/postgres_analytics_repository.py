@@ -101,7 +101,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         campaign = self._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
 
         # Calculate financial metrics
-        currency = campaign.payout.currency.value if campaign and campaign.payout else "USD"
+        currency = campaign.payout.currency if campaign and campaign.payout else "USD"
 
         # Simplified cost calculation (would need actual cost data)
         cost_per_click = 0.50  # Placeholder
@@ -201,10 +201,10 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
             cache_key, analytics.campaign_id, analytics.time_range['start_date'],
             analytics.time_range['end_date'], analytics.time_range['granularity'],
             analytics.clicks, analytics.unique_clicks, analytics.conversions,
-            analytics.revenue.amount, analytics.revenue.currency.value,
-            analytics.cost.amount, analytics.cost.currency.value,
+            analytics.revenue.amount, analytics.revenue.currency,
+            analytics.cost.amount, analytics.cost.currency,
             analytics.ctr, analytics.cr,
-            analytics.epc.amount, analytics.epc.currency.value,
+            analytics.epc.amount, analytics.epc.currency,
             analytics.roi,
             json.dumps(analytics.breakdowns),
             datetime.now(),
