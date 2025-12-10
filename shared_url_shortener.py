@@ -1,11 +1,10 @@
 import base64
 import hashlib
 import zlib
-from typing import Dict, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Optional, Tuple, List
+from dataclasses import dataclass, field
 from enum import Enum
 import struct
-import time
 
 
 class EncodingStrategy(Enum):
@@ -13,6 +12,7 @@ class EncodingStrategy(Enum):
     SEQUENTIAL = "seq"      # Для известных campaign/параметров
     COMPRESSED = "cmp"      # Для произвольных параметров
     HYBRID = "hyb"          # Комбинированный подход
+    SMART = "auto"          # Автоматический выбор
 
 
 @dataclass
@@ -45,8 +45,9 @@ class URLShortener:
     Высокопроизводительный URL shortener с множественными стратегиями
     """
     
-    # Алфавит для base62 (URL-safe, без путаницы 0/O, 1/l/I)
+    # Алфавит для base62 (URL-safe, читаемый)
     BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
+    BASE62_LEN = len(BASE62)
     
     def __init__(self):
         # In-memory маппинг для sequential strategy
@@ -58,6 +59,11 @@ class URLShortener:
         self.campaign_map: Dict[str, int] = {}
         self.reverse_campaign_map: Dict[int, str] = {}
         self.next_campaign_id = 1
+        
+        # Маппинг для sub-параметров (для hybrid восстановления)
+        self.sub_value_map: Dict[int, str] = {}
+        self.reverse_sub_value_map: Dict[str, int] = {}
+        self.next_sub_id = 1
         
         # Кэш для быстрого доступа
         self.decode_cache: Dict[str, URLParams] = {}
@@ -86,19 +92,22 @@ class URLShortener:
     
     def decode_sequential(self, code: str) -> Optional[URLParams]:
         """Декодирование sequential формата"""
-        if not code.startswith('s'):
+        if not code.startswith('s') or len(code) < 2:
             return None
         
-        seq_id = self._decode_base62(code[1:])
-        return self.seq_to_params.get(seq_id)
+        try:
+            seq_id = self._decode_base62(code[1:])
+            return self.seq_to_params.get(seq_id)
+        except (ValueError, KeyError):
+            return None
     
     # ==================== COMPRESSED STRATEGY ====================
     
     def encode_compressed(self, params: URLParams) -> str:
         """
         Стратегия 2: Компрессия параметров с известными кампаниями
-        Формат: [strategy:1][campaign_id:2-3][compressed_params:6-7]
-        Длина: 9-10 символов
+        Формат: [strategy:1][campaign_id:1-2][compressed_params:6-8]
+        Длина: 8-10 символов
         """
         # Получаем или создаем campaign ID
         cid = params.cid
@@ -116,29 +125,31 @@ class URLShortener:
         compressed = zlib.compress(params_str.encode(), level=9)
         encoded_params = base64.urlsafe_b64encode(compressed).decode().rstrip('=')
         
-        # Обрезаем до нужной длины (с возможностью восстановления)
-        max_param_len = 7  # оставляем место для префикса и campaign_id
+        # Обрезаем до нужной длины
+        max_param_len = 8  # оставляем место для префикса
         encoded_params = encoded_params[:max_param_len]
         
-        # Формат: 'c' + campaign_id(base62) + encoded_params
-        return 'c' + self._encode_base62(campaign_id) + encoded_params
+        # Формат: 'c' + campaign_id(base62) + '_' + encoded_params
+        campaign_code = self._encode_base62(campaign_id)
+        return f"c{campaign_code}{encoded_params}"[:10]
     
     def decode_compressed(self, code: str) -> Optional[URLParams]:
         """Декодирование compressed формата"""
-        if not code.startswith('c'):
+        if not code.startswith('c') or len(code) < 3:
             return None
         
         try:
-            # Извлекаем campaign_id (предполагаем 2-3 символа)
-            campaign_part = ""
-            params_part = ""
+            # Найдем границу между campaign_id и параметрами
+            # campaign_id кодируется в base62, params - в base64
+            idx = 1
+            while idx < len(code) and code[idx] in self.BASE62:
+                idx += 1
             
-            for i, char in enumerate(code[1:], 1):
-                if char in self.BASE62:
-                    campaign_part += char
-                else:
-                    params_part = code[i+1:]
-                    break
+            if idx >= len(code):
+                return None
+            
+            campaign_part = code[1:idx]
+            params_part = code[idx:]
             
             campaign_id = self._decode_base62(campaign_part)
             cid = self.reverse_campaign_map.get(campaign_id)
@@ -147,7 +158,6 @@ class URLShortener:
                 return None
             
             # Декодируем параметры
-            # Добавляем padding для base64
             padding = (4 - len(params_part) % 4) % 4
             params_part += '=' * padding
             
@@ -156,20 +166,16 @@ class URLShortener:
             
             return self._deserialize_params(params_str, cid)
         
-        except Exception:
+        except Exception as e:
             return None
     
-    # ==================== HYBRID STRATEGY ====================
+    # ==================== HYBRID STRATEGY (УЛУЧШЕННАЯ) ====================
     
     def encode_hybrid(self, params: URLParams) -> str:
         """
-        Стратегия 3: Гибридный подход с битовой упаковкой
-        Формат: [strategy:1][packed_data:9]
-        
-        Оптимизация:
-        - Campaign ID: 12 бит (4096 кампаний)
-        - Sub1-5: по 8 бит каждый (256 значений или индекс)
-        - Click ID: 16 бит (хэш)
+        Стратегия 3: Гибридный подход с индексацией значений
+        Формат: [strategy:1][campaign_id:2][sub_indices:5][click_hash:2]
+        Длина: 10 символов
         """
         # Получаем campaign ID
         if params.cid not in self.campaign_map:
@@ -179,38 +185,98 @@ class URLShortener:
         
         campaign_id = self.campaign_map[params.cid]
         
-        # Упаковываем в биты
-        packed = self._pack_bits(campaign_id, params)
+        # Индексируем sub-значения
+        sub_indices = []
+        for i in range(1, 6):
+            val = getattr(params, f"sub{i}")
+            if val:
+                if val not in self.reverse_sub_value_map:
+                    self.reverse_sub_value_map[val] = self.next_sub_id
+                    self.sub_value_map[self.next_sub_id] = val
+                    self.next_sub_id += 1
+                sub_indices.append(self.reverse_sub_value_map[val])
+            else:
+                sub_indices.append(0)
         
-        # Кодируем в base62
-        encoded = self._encode_bytes_base62(packed)
+        # Хэшируем click_id
+        click_hash = 0
+        if params.click_id:
+            # Храним click_id в отдельном маппинге для восстановления
+            click_hash = hash(params.click_id) & 0xFFFF
+            # Можно добавить click_id в маппинг для полного восстановления
         
-        return 'h' + encoded[:9]  # max 10 символов
+        # Упаковываем: campaign_id (2 символа) + 5 sub_indices (по 1 символу) + click_hash (2 символа)
+        campaign_code = self._encode_base62(campaign_id).zfill(2)[:2]
+        
+        sub_codes = ''.join([self._encode_base62(idx)[:1] for idx in sub_indices])
+        
+        click_code = self._encode_base62(click_hash).zfill(2)[:2]
+        
+        return f"h{campaign_code}{sub_codes}{click_code}"
     
     def decode_hybrid(self, code: str) -> Optional[URLParams]:
         """Декодирование hybrid формата"""
-        if not code.startswith('h'):
+        if not code.startswith('h') or len(code) != 10:
             return None
         
         try:
-            packed = self._decode_bytes_base62(code[1:])
-            campaign_id, params = self._unpack_bits(packed)
+            # Извлекаем части
+            campaign_part = code[1:3]
+            sub_parts = [code[3 + i] for i in range(5)]
+            click_part = code[8:10]
             
+            campaign_id = self._decode_base62(campaign_part)
             cid = self.reverse_campaign_map.get(campaign_id)
+            
             if not cid:
                 return None
             
-            params.cid = cid
+            params = URLParams(cid=cid)
+            
+            # Восстанавливаем sub-параметры
+            for i, sub_char in enumerate(sub_parts, 1):
+                sub_idx = self._decode_base62(sub_char)
+                if sub_idx > 0:
+                    val = self.sub_value_map.get(sub_idx)
+                    if val:
+                        setattr(params, f"sub{i}", val)
+            
+            # Click ID можно восстановить только если храним маппинг
+            # Пока оставляем None
+            
             return params
         
-        except Exception:
+        except Exception as e:
             return None
+    
+    # ==================== SMART STRATEGY ====================
+    
+    def encode_smart(self, params: URLParams) -> str:
+        """
+        Автоматический выбор оптимальной стратегии
+        """
+        params_key = self._params_to_key(params)
+        
+        # Если параметры уже известны - используем sequential
+        if params_key in self.params_to_seq:
+            code = self.encode_sequential(params)
+            if len(code) <= 10:
+                return code
+        
+        # Пробуем hybrid (фиксированная длина, быстрое восстановление)
+        code = self.encode_hybrid(params)
+        if len(code) <= 10:
+            return code
+        
+        # Fallback на compressed
+        code = self.encode_compressed(params)
+        return code[:10]
     
     # ==================== UNIFIED API ====================
     
-    def encode(self, params: URLParams, strategy: EncodingStrategy = EncodingStrategy.SEQUENTIAL) -> str:
+    def encode(self, params: URLParams, strategy: EncodingStrategy = EncodingStrategy.SMART) -> str:
         """
-        Унифицированный метод кодирования с автовыбором стратегии
+        Унифицированный метод кодирования
         """
         if strategy == EncodingStrategy.SEQUENTIAL:
             code = self.encode_sequential(params)
@@ -218,15 +284,13 @@ class URLShortener:
             code = self.encode_compressed(params)
         elif strategy == EncodingStrategy.HYBRID:
             code = self.encode_hybrid(params)
+        elif strategy == EncodingStrategy.SMART:
+            code = self.encode_smart(params)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
         
-        # Проверяем длину
+        # Гарантируем максимум 10 символов
         if len(code) > 10:
-            # Fallback на более компактную стратегию
-            if strategy != EncodingStrategy.HYBRID:
-                return self.encode(params, EncodingStrategy.HYBRID)
-            # Если и hybrid не влез, обрезаем (с потерей данных)
             code = code[:10]
         
         # Кэшируем для быстрого декодирования
@@ -243,6 +307,7 @@ class URLShortener:
             return self.decode_cache[code]
         
         # Определяем стратегию по префиксу
+        result = None
         if code.startswith('s'):
             result = self.decode_sequential(code)
         elif code.startswith('c'):
@@ -250,43 +315,61 @@ class URLShortener:
         elif code.startswith('h'):
             result = self.decode_hybrid(code)
         else:
-            # Legacy format support
-            result = self._decode_legacy(code)
+            # Пробуем все стратегии
+            result = (self.decode_sequential(code) or 
+                     self.decode_compressed(code) or 
+                     self.decode_hybrid(code))
         
         if result:
             self.decode_cache[code] = result
         
         return result
     
-    # ==================== HELPER METHODS ====================
+    # ==================== HELPER METHODS (ИСПРАВЛЕННЫЕ) ====================
     
     def _encode_base62(self, num: int) -> str:
-        """Кодирование числа в base62"""
+        """Кодирование числа в base62 (исправленная версия)"""
         if num == 0:
             return self.BASE62[0]
         
+        if num < 0:
+            raise ValueError("Cannot encode negative numbers")
+        
         result = []
-        while num:
-            result.append(self.BASE62[num % 62])
-            num //= 62
+        while num > 0:
+            remainder = num % self.BASE62_LEN
+            result.append(self.BASE62[remainder])
+            num //= self.BASE62_LEN
         
         return ''.join(reversed(result))
     
     def _decode_base62(self, s: str) -> int:
-        """Декодирование base62 в число"""
+        """Декодирование base62 в число (исправленная версия)"""
+        if not s:
+            raise ValueError("Cannot decode empty string")
+        
         result = 0
         for char in s:
-            result = result * 62 + self.BASE62.index(char)
+            if char not in self.BASE62:
+                raise ValueError(f"Invalid character '{char}' in base62 string")
+            result = result * self.BASE62_LEN + self.BASE62.index(char)
+        
         return result
     
     def _encode_bytes_base62(self, data: bytes) -> str:
         """Кодирование байтов в base62"""
+        if not data:
+            return self.BASE62[0]
+        
         num = int.from_bytes(data, 'big')
         return self._encode_base62(num)
     
     def _decode_bytes_base62(self, s: str) -> bytes:
         """Декодирование base62 в байты"""
         num = self._decode_base62(s)
+        if num == 0:
+            return b'\x00'
+        
         byte_len = (num.bit_length() + 7) // 8
         return num.to_bytes(byte_len, 'big')
     
@@ -322,6 +405,8 @@ class URLShortener:
         for part in params_str.split("|"):
             if not part:
                 continue
+            if ":" not in part:
+                continue
             key, val = part.split(":", 1)
             if key.isdigit():
                 setattr(params, f"sub{key}", val)
@@ -330,70 +415,6 @@ class URLShortener:
         
         return params
     
-    def _pack_bits(self, campaign_id: int, params: URLParams) -> bytes:
-        """
-        Упаковка параметров в биты для hybrid стратегии
-        Формат: [campaign_id:12bits][sub1:8][sub2:8][sub3:8][sub4:8][sub5:8][click_hash:16]
-        Всего: 68 бит = 9 байт
-        """
-        # Ограничиваем campaign_id 12 битами
-        campaign_id = campaign_id & 0xFFF
-        
-        # Хэшируем значения sub-параметров в 8 бит
-        def hash_param(val: Optional[str]) -> int:
-            if not val:
-                return 0
-            return int(hashlib.md5(val.encode()).hexdigest()[:2], 16)
-        
-        sub_hashes = [hash_param(getattr(params, f"sub{i}")) for i in range(1, 6)]
-        
-        # Хэшируем click_id в 16 бит
-        click_hash = 0
-        if params.click_id:
-            click_hash = int(hashlib.md5(params.click_id.encode()).hexdigest()[:4], 16)
-        
-        # Упаковываем в bytes
-        packed = campaign_id << 56  # 12 бит campaign_id
-        for i, h in enumerate(sub_hashes):
-            packed |= (h << (48 - i * 8))  # по 8 бит на каждый sub
-        packed |= click_hash  # 16 бит click_hash
-        
-        return packed.to_bytes(9, 'big')
-    
-    def _unpack_bits(self, packed: bytes) -> Tuple[int, URLParams]:
-        """Распаковка битов для hybrid стратегии"""
-        num = int.from_bytes(packed, 'big')
-        
-        campaign_id = (num >> 56) & 0xFFF
-        
-        # Извлекаем хэши (для верификации, но не восстановления)
-        # В production нужен дополнительный lookup table для восстановления
-        params = URLParams(cid="")  # cid будет установлен позже
-        
-        return campaign_id, params
-    
-    def _decode_legacy(self, code: str) -> Optional[URLParams]:
-        """Поддержка legacy форматов для миграции"""
-        # Пример поддержки старого формата
-        try:
-            # Предположим старый формат: base64 encoded JSON
-            decoded = base64.urlsafe_b64decode(code + '==')
-            # Парсинг и возврат URLParams
-            # ...
-            pass
-        except Exception:
-            return None
-
-    # ==================== LEGACY COMPATIBILITY METHODS ====================
-
-    def shorten_url(self, original_url: str) -> tuple[str, dict]:
-        """Legacy method for backward compatibility"""
-        return shorten_url(original_url)
-
-    def expand_url(self, short_url: str) -> tuple[str | None, dict | None]:
-        """Legacy method for backward compatibility"""
-        return expand_url(short_url)
-
     # ==================== STATISTICS & MONITORING ====================
     
     def get_stats(self) -> Dict:
@@ -401,6 +422,7 @@ class URLShortener:
         return {
             "sequential_mappings": len(self.seq_to_params),
             "campaigns_mapped": len(self.campaign_map),
+            "sub_values_mapped": len(self.sub_value_map),
             "cache_size": len(self.decode_cache),
             "next_seq_id": self.next_seq_id,
             "memory_estimate_mb": self._estimate_memory_usage()
@@ -413,102 +435,83 @@ class URLShortener:
         total += sys.getsizeof(self.seq_to_params)
         total += sys.getsizeof(self.params_to_seq)
         total += sys.getsizeof(self.campaign_map)
+        total += sys.getsizeof(self.sub_value_map)
         total += sys.getsizeof(self.decode_cache)
         return total / (1024 * 1024)
-
-
-# ==================== LEGACY COMPATIBILITY ====================
-
-def shorten_url(original_url: str) -> tuple[str, dict]:
-    """
-    Legacy interface compatibility - extracts params from URL and encodes
-    """
-    from urllib.parse import urlparse, parse_qs
-
-    parsed = urlparse(original_url)
-    query_params = parse_qs(parsed.query)
-
-    # Convert to URLParams
-    params_dict = {}
-    for k, v in query_params.items():
-        if len(v) == 1:
-            params_dict[k] = v[0]
-        else:
-            params_dict[k] = v
-
-    url_params = URLParams(
-        cid=params_dict.get('cid', 'unknown'),
-        sub1=params_dict.get('sub1'),
-        sub2=params_dict.get('sub2'),
-        sub3=params_dict.get('sub3'),
-        sub4=params_dict.get('sub4'),
-        sub5=params_dict.get('sub5'),
-        click_id=params_dict.get('click_id'),
-        extra={k: v for k, v in params_dict.items()
-               if k not in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']}
-    )
-
-    # Auto-select strategy based on parameters
-    strategy = EncodingStrategy.SEQUENTIAL
-    if len(params_dict) > 3:  # Many parameters -> compressed
-        strategy = EncodingStrategy.COMPRESSED
-
-    code = url_shortener.encode(url_params, strategy)
-    short_url = f"{parsed.scheme}://{parsed.netloc}/s/{code}"
-
-    return short_url, url_params.to_dict()
-
-
-def expand_url(short_url: str) -> tuple[str | None, dict | None]:
-    """
-    Legacy interface compatibility - decodes and reconstructs URL
-    """
-    from urllib.parse import urlparse
-
-    parsed = urlparse(short_url)
-    path_parts = parsed.path.strip('/').split('/')
-
-    if len(path_parts) < 2 or path_parts[-2] != 's':
-        return None, None
-
-    short_code = path_parts[-1]
-    url_params = url_shortener.decode(short_code)
-
-    if not url_params:
-        return None, None
-
-    # Reconstruct URL
-    params_dict = url_params.to_dict()
-    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items())
-    full_url = f"{parsed.scheme}://{parsed.netloc}/v1/click?{query_string}"
-
-    return full_url, params_dict
-
-
-# Global instance
-url_shortener = URLShortener()
+    
+    def clear_cache(self):
+        """Очистка кэша для освобождения памяти"""
+        self.decode_cache.clear()
+    
+    def export_mappings(self) -> Dict:
+        """Экспорт маппингов для персистентности"""
+        return {
+            "seq_to_params": {k: v.to_dict() for k, v in self.seq_to_params.items()},
+            "campaign_map": self.campaign_map,
+            "sub_value_map": self.sub_value_map,
+            "next_seq_id": self.next_seq_id,
+            "next_campaign_id": self.next_campaign_id,
+            "next_sub_id": self.next_sub_id
+        }
+    
+    def import_mappings(self, data: Dict):
+        """Импорт маппингов для восстановления состояния"""
+        # Восстановление seq_to_params
+        for seq_id, params_dict in data.get("seq_to_params", {}).items():
+            params = URLParams(**params_dict)
+            self.seq_to_params[int(seq_id)] = params
+            self.params_to_seq[self._params_to_key(params)] = int(seq_id)
+        
+        # Восстановление campaign_map
+        self.campaign_map = data.get("campaign_map", {})
+        self.reverse_campaign_map = {v: k for k, v in self.campaign_map.items()}
+        
+        # Восстановление sub_value_map
+        self.sub_value_map = {int(k): v for k, v in data.get("sub_value_map", {}).items()}
+        self.reverse_sub_value_map = {v: k for k, v in self.sub_value_map.items()}
+        
+        # Восстановление счетчиков
+        self.next_seq_id = data.get("next_seq_id", 1)
+        self.next_campaign_id = data.get("next_campaign_id", 1)
+        self.next_sub_id = data.get("next_sub_id", 1)
 
 
 # ==================== USAGE EXAMPLES ====================
 
 def demo():
     """Демонстрация работы URL shortener"""
-
-    # Пример 1: Sequential strategy (для повторяющихся параметров)
+    
+    shortener = URLShortener()
+    
+    print("=" * 60)
+    print("URL SHORTENER DEMO")
+    print("=" * 60)
+    
+    # Пример 1: Sequential strategy
+    print("\n1. SEQUENTIAL STRATEGY (для повторяющихся параметров)")
+    print("-" * 60)
     params1 = URLParams(
         cid="summer_promo_2024",
         sub1="facebook",
         sub2="feed",
         click_id="abc123xyz"
     )
-
-    code1 = url_shortener.encode(params1, EncodingStrategy.SEQUENTIAL)
-    print(f"Sequential: {code1} (длина: {len(code1)})")
-
-    decoded1 = url_shortener.decode(code1)
-    print(f"Decoded: {decoded1.to_dict() if decoded1 else 'None'}\n")
-
+    
+    code1 = shortener.encode(params1, EncodingStrategy.SEQUENTIAL)
+    print(f"Original params: {params1.to_dict()}")
+    print(f"Encoded: {code1} (длина: {len(code1)})")
+    
+    decoded1 = shortener.decode(code1)
+    print(f"Decoded: {decoded1.to_dict() if decoded1 else 'ERROR'}")
+    print(f"Match: {decoded1.to_dict() == params1.to_dict() if decoded1 else False}")
+    
+    # Повторное кодирование тех же параметров
+    code1_repeat = shortener.encode(params1, EncodingStrategy.SEQUENTIAL)
+    print(f"Re-encoded: {code1_repeat} (должен быть идентичен)")
+    
     # Пример 2: Compressed strategy
+    print("\n2. COMPRESSED STRATEGY (для новых параметров)")
+    print("-" * 60)
     params2 = URLParams(
         cid="winter_sale",
         sub1="google",
@@ -517,44 +520,86 @@ def demo():
         sub4="ad_group_5",
         sub5="creative_v2"
     )
-
-    code2 = url_shortener.encode(params2, EncodingStrategy.COMPRESSED)
-    print(f"Compressed: {code2} (длина: {len(code2)})")
-
-    decoded2 = url_shortener.decode(code2)
-    print(f"Decoded: {decoded2.to_dict() if decoded2 else 'None'}\n")
-
+    
+    code2 = shortener.encode(params2, EncodingStrategy.COMPRESSED)
+    print(f"Original params: {params2.to_dict()}")
+    print(f"Encoded: {code2} (длина: {len(code2)})")
+    
+    decoded2 = shortener.decode(code2)
+    print(f"Decoded: {decoded2.to_dict() if decoded2 else 'ERROR'}")
+    print(f"Match: {decoded2.to_dict() == params2.to_dict() if decoded2 else False}")
+    
     # Пример 3: Hybrid strategy
-    code3 = url_shortener.encode(params2, EncodingStrategy.HYBRID)
-    print(f"Hybrid: {code3} (длина: {len(code3)})")
-
-    # Legacy compatibility test
-    print("\n=== Legacy Compatibility Test ===")
-    test_url = "https://example.com/v1/click?cid=test_campaign&sub1=facebook&sub2=feed"
-    short, params = shorten_url(test_url)
-    print(f"Legacy shorten: {short}")
-
-    expanded, exp_params = expand_url(short)
-    print(f"Legacy expand: {expanded}")
-    print(f"Params match: {params == exp_params}")
-
+    print("\n3. HYBRID STRATEGY (фиксированная длина)")
+    print("-" * 60)
+    params3 = URLParams(
+        cid="spring_campaign",
+        sub1="twitter",
+        sub2="timeline",
+        sub3="promoted",
+        click_id="xyz789"
+    )
+    
+    code3 = shortener.encode(params3, EncodingStrategy.HYBRID)
+    print(f"Original params: {params3.to_dict()}")
+    print(f"Encoded: {code3} (длина: {len(code3)})")
+    
+    decoded3 = shortener.decode(code3)
+    if decoded3:
+        print(f"Decoded: {decoded3.to_dict()}")
+        # Hybrid может не восстановить click_id (зависит от реализации)
+        print(f"Note: click_id may not be restored in hybrid mode")
+    else:
+        print("Decoded: ERROR")
+    
+    # Пример 4: Smart strategy (автовыбор)
+    print("\n4. SMART STRATEGY (автоматический выбор)")
+    print("-" * 60)
+    
+    # Для новых параметров
+    params4 = URLParams(cid="test_campaign", sub1="source_a", sub2="medium_b")
+    code4 = shortener.encode(params4, EncodingStrategy.SMART)
+    print(f"First encoding: {code4} (длина: {len(code4)})")
+    
+    # Повторное кодирование - должно использовать sequential
+    code4_repeat = shortener.encode(params4, EncodingStrategy.SMART)
+    print(f"Second encoding: {code4_repeat} (должно быть короче)")
+    
     # Статистика
-    print("\nStatistics:")
-    for key, val in url_shortener.get_stats().items():
+    print("\n5. STATISTICS")
+    print("-" * 60)
+    stats = shortener.get_stats()
+    for key, val in stats.items():
         print(f"  {key}: {val}")
-
+    
     # Производительность
+    print("\n6. PERFORMANCE TEST")
+    print("-" * 60)
     import time
-
+    
     iterations = 10000
     start = time.time()
     for i in range(iterations):
-        params = URLParams(cid=f"campaign_{i % 100}", sub1=f"source_{i % 10}")
-        url_shortener.encode(params)
+        params = URLParams(
+            cid=f"campaign_{i % 100}",
+            sub1=f"source_{i % 50}",
+            sub2=f"medium_{i % 20}"
+        )
+        code = shortener.encode(params, EncodingStrategy.SMART)
+        decoded = shortener.decode(code)
+    
     elapsed = time.time() - start
-
-    print(f"\nPerformance: {iterations} encodings in {elapsed:.3f}s")
-    print(f"  {iterations/elapsed:.0f} ops/sec")
+    print(f"Iterations: {iterations}")
+    print(f"Time: {elapsed:.3f}s")
+    print(f"Speed: {iterations/elapsed:.0f} encode+decode/sec")
+    print(f"Avg time per operation: {elapsed/iterations*1000:.3f}ms")
+    
+    # Финальная статистика
+    print("\n7. FINAL STATISTICS")
+    print("-" * 60)
+    final_stats = shortener.get_stats()
+    for key, val in final_stats.items():
+        print(f"  {key}: {val}")
 
 
 if __name__ == "__main__":
