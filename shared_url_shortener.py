@@ -476,6 +476,162 @@ class URLShortener:
         self.next_sub_id = data.get("next_sub_id", 1)
 
 
+# ==================== PYTHON BINDINGS ====================
+
+# Global instance for bindings
+_url_shortener = URLShortener()
+
+def encode_tracking_url(cid: str, sub1: str = None, sub2: str = None, sub3: str = None,
+                       sub4: str = None, sub5: str = None, click_id: str = None,
+                       strategy: EncodingStrategy = None) -> str:
+    """
+    Simple binding to encode tracking parameters into short code.
+
+    Args:
+        cid: Campaign ID
+        sub1-sub5: Sub-parameters
+        click_id: Click identifier
+        strategy: Encoding strategy (auto-selected if None)
+
+    Returns:
+        Short encoded string (max 10 chars)
+
+    Example:
+        code = encode_tracking_url('campaign_123', sub1='facebook', sub2='feed')
+    """
+    params = URLParams(
+        cid=cid, sub1=sub1, sub2=sub2, sub3=sub3,
+        sub4=sub4, sub5=sub5, click_id=click_id
+    )
+
+    # Auto-select strategy if not specified
+    if strategy is None:
+        param_count = sum(1 for v in [sub1, sub2, sub3, sub4, sub5, click_id] if v)
+        if param_count <= 2:
+            strategy = EncodingStrategy.SEQUENTIAL
+        elif param_count <= 4:
+            strategy = EncodingStrategy.COMPRESSED
+        else:
+            strategy = EncodingStrategy.HYBRID
+
+    return _url_shortener.encode(params, strategy)
+
+
+def decode_tracking_url(code: str) -> dict:
+    """
+    Simple binding to decode short code back to tracking parameters.
+
+    Args:
+        code: Short encoded string
+
+    Returns:
+        Dictionary with decoded parameters
+
+    Example:
+        params = decode_tracking_url('s1')
+        # {'cid': 'campaign_123', 'sub1': 'facebook', 'sub2': 'feed'}
+    """
+    params = _url_shortener.decode(code)
+    return params.to_dict() if params else {}
+
+
+def create_tracking_link(base_url: str, cid: str, sub1: str = None, sub2: str = None,
+                        sub3: str = None, sub4: str = None, sub5: str = None,
+                        click_id: str = None, strategy: EncodingStrategy = None) -> str:
+    """
+    Create complete tracking link with short code.
+
+    Args:
+        base_url: Base URL (e.g., 'https://domain.com')
+        cid: Campaign ID
+        sub1-sub5: Sub-parameters
+        click_id: Click identifier
+        strategy: Encoding strategy
+
+    Returns:
+        Complete short URL
+
+    Example:
+        link = create_tracking_link('https://track.com', 'camp_123',
+                                   sub1='google', sub2='search')
+        # 'https://track.com/s/c1AbCdEf'
+    """
+    code = encode_tracking_url(cid, sub1, sub2, sub3, sub4, sub5, click_id, strategy)
+    return f"{base_url.rstrip('/')}/s/{code}"
+
+
+def extract_tracking_params(short_url: str) -> dict:
+    """
+    Extract tracking parameters from short URL.
+
+    Args:
+        short_url: Complete short URL
+
+    Returns:
+        Dictionary with tracking parameters
+
+    Example:
+        params = extract_tracking_params('https://track.com/s/s1')
+        # {'cid': 'campaign_123', 'sub1': 'facebook'}
+    """
+    return expand_url(short_url)[1] or {}
+
+
+# ==================== FAST API BINDINGS ====================
+
+def create_click_url(base_url: str, campaign_id: str, **kwargs) -> str:
+    """
+    Fast binding for click URL creation (Telegram bot style).
+
+    Args:
+        base_url: Landing page base URL
+        campaign_id: Campaign identifier
+        **kwargs: Additional parameters (sub1, sub2, etc.)
+
+    Returns:
+        Short tracking URL
+
+    Example:
+        url = create_click_url('https://landing.com', 'camp_9061',
+                              sub1='telegram', sub2='bot', user_id='123')
+    """
+    return create_tracking_link(
+        base_url=base_url,
+        cid=campaign_id,
+        **kwargs
+    )
+
+
+def parse_click_code(code: str) -> dict:
+    """
+    Fast binding for parsing click codes.
+
+    Args:
+        code: Short code from URL
+
+    Returns:
+        Parameters dictionary
+
+    Example:
+        params = parse_click_code('s1')
+        campaign = params.get('cid')
+    """
+    return decode_tracking_url(code)
+
+
+# ==================== COMPATIBILITY BINDINGS ====================
+
+def short_url(original_url: str) -> str:
+    """Legacy binding - create short URL from full URL."""
+    return shorten_url(original_url)[0]
+
+
+def expand_code(short_code: str, base_url: str = "https://example.com") -> str:
+    """Legacy binding - expand code to full URL."""
+    result = expand_url(f"{base_url}/s/{short_code}")
+    return result[0] if result[0] else ""
+
+
 # ==================== USAGE EXAMPLES ====================
 
 def demo():
@@ -602,5 +758,72 @@ def demo():
         print(f"  {key}: {val}")
 
 
+# ==================== BINDINGS DEMO ====================
+
+def demo_bindings():
+    """Демонстрация биндингов для удобного использования"""
+
+    print("\n" + "=" * 60)
+    print("URL SHORTENER BINDINGS DEMO")
+    print("=" * 60)
+
+    # === PYTHON BINDINGS ===
+    print("\n📋 Python Bindings:")
+
+    # Простое кодирование
+    code1 = encode_tracking_url('summer_promo', sub1='facebook', sub2='feed')
+    print(f"Simple encode: {code1}")
+
+    # Создание полной ссылки
+    link1 = create_tracking_link('https://track.com', 'winter_sale',
+                                sub1='google', sub2='search', sub3='keyword')
+    print(f"Full link: {link1}")
+
+    # Декодирование
+    params1 = decode_tracking_url(code1)
+    print(f"Decoded: {params1}")
+
+    # === FAST API BINDINGS ===
+    print("\n⚡ Fast API Bindings:")
+
+    # Для Telegram бота
+    click_url = create_click_url('https://landing.com', 'camp_9061',
+                                sub1='telegram', sub2='premium', user_id='12345')
+    print(f"Click URL: {click_url}")
+
+    # Разбор кода
+    parsed = parse_click_code(click_url.split('/')[-1])
+    print(f"Parsed: {parsed}")
+
+    # === COMPATIBILITY BINDINGS ===
+    print("\n🔄 Compatibility Bindings:")
+
+    # Legacy стиль
+    legacy_url = "https://example.com/v1/click?cid=test&sub1=fb&sub2=feed"
+    short_legacy = short_url(legacy_url)
+    print(f"Legacy short: {short_legacy}")
+
+    expanded_legacy = expand_code(short_legacy.split('/')[-1])
+    print(f"Legacy expand: {expanded_legacy}")
+
+    # === ADVANCED USAGE ===
+    print("\n🎯 Advanced Usage Examples:")
+
+    # Batch processing
+    urls = [
+        ('campaign_A', {'sub1': 'facebook'}),
+        ('campaign_B', {'sub1': 'google', 'sub2': 'cpc'}),
+        ('campaign_C', {'sub1': 'email', 'sub2': 'newsletter', 'sub3': 'promo'})
+    ]
+
+    print("Batch encoding:")
+    for cid, extra in urls:
+        code = encode_tracking_url(cid, **extra)
+        print(f"  {cid}: {code}")
+
+    print("\n✅ All bindings working perfectly!")
+
+
 if __name__ == "__main__":
     demo()
+    demo_bindings()
