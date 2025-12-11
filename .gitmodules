@@ -1,4 +1,0 @@
-[submodule "scripts/tools/async-trace"]
-	path = scripts/tools/async-trace
-	url = https://github.com/r4u-dev/async-trace.git
-
