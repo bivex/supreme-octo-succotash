@@ -112,6 +112,9 @@ async def callback_get_offer(callback: CallbackQuery):
                 "sub5": "offer_page", # Added sub5
                 "aff_sub": "test_aff_sub_1", # Added for testing aff_sub
                 "aff_sub2": "test_aff_sub_2", # Added for testing aff_sub2
+                "aff_sub3": "test_aff_sub_3", # Added for testing aff_sub3
+                "aff_sub4": "test_aff_sub_4", # Added for testing aff_sub4
+                "aff_sub5": "test_aff_sub_5", # Added for testing aff_sub5
                 # "click_id": click_id # Removed click_id here
             },
             lp_id=settings.default_lp_id,
