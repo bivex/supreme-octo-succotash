@@ -73,3 +73,4 @@ python bot.py --mode webhook --webhook-url %WEBHOOK_URL%
 echo.
 echo Bot stopped.
 pause
+

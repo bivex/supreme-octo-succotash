@@ -95,3 +95,4 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 # Установить вебхук вручную
 curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" -d "url=https://your-domain.ngrok-free.dev/webhook"
 ```
+
