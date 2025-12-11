@@ -97,6 +97,7 @@ class ClickRoutes:
 
                 # Validate required parameters
                 campaign_id = req.get_query('cid')
+                ts = req.get_query('ts')
                 logger.info(f"Campaign ID: {campaign_id}")
 
                 if not campaign_id:
@@ -144,8 +145,13 @@ class ClickRoutes:
                 logger.info(f"lp_id (landing page): {repr(req.get_query('lp_id'))} -> {lp_id}")
                 logger.info(f"offer_id (offer): {repr(req.get_query('offer_id'))} -> {offer_id}")
                 logger.info(f"ts_id (traffic source): {repr(req.get_query('ts_id'))} -> {ts_id}")
-                logger.info(f"ts (timestamp): {repr(req.get_query('ts'))} -> {ts_param}") # Log 'ts' parameter
+                logger.info(f"ts (timestamp): '{ts}' -> {self._safe_int_convert(ts)}")
                 logger.info(f"test_mode: {test_mode}")
+                logger.info(f"aff_sub: '{aff_sub}'")
+                logger.info(f"aff_sub2: '{aff_sub2}'")
+                logger.info(f"aff_sub3: '{aff_sub3}'")
+                logger.info(f"aff_sub4: '{aff_sub4}'")
+                logger.info(f"aff_sub5: '{aff_sub5}'")
 
                 # Debug: check all query parameters
                 logger.info("=== ALL QUERY PARAMETERS ===")
@@ -225,11 +231,11 @@ class ClickRoutes:
                     sub4=sub4,
                     sub5=sub5,
                     click_id_param=click_id_param,
-                    affiliate_sub=req.get_query('aff_sub'),
-                    affiliate_sub2=req.get_query('aff_sub2'),
-                    affiliate_sub3=req.get_query('aff_sub3'),
-                    affiliate_sub4=req.get_query('aff_sub4'),
-                    affiliate_sub5=req.get_query('aff_sub5'),
+                    affiliate_sub=aff_sub,
+                    affiliate_sub2=aff_sub2,
+                    affiliate_sub3=aff_sub3,
+                    affiliate_sub4=aff_sub4,
+                    affiliate_sub5=aff_sub5,
                     landing_page_id=self._safe_int_convert(lp_id),
                     campaign_offer_id=self._safe_int_convert(offer_id),
                     traffic_source_id=self._safe_int_convert(ts_id),

@@ -163,5 +163,8 @@ class TrackClickHandler:
             'landing_page_id': command.landing_page_id,
             'campaign_offer_id': command.campaign_offer_id,
             'traffic_source_id': command.traffic_source_id,
+            'is_valid': True,
+            'fraud_score': 0.0,
+            'fraud_reason': None,
         }
         return Click(**click_data)
