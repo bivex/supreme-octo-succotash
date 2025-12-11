@@ -499,78 +499,63 @@ class ClickRoutes:
 
                 decoded_dict = decoded_params_obj.to_dict()
                 click_id_from_code = decoded_dict.get('click_id')
+                campaign_id_from_code = decoded_dict.get('cid')
 
-                if not click_id_from_code:
-                    logger.warning(f"Decoded parameters missing click_id for code: {short_code}")
-                    error_html = "<html><body><h1>Error</h1><p>Missing click_id in tracking parameters</p></body></html>"
+                if not click_id_from_code or not campaign_id_from_code:
+                    logger.warning(f"Decoded parameters missing click_id or campaign_id for code: {short_code}")
+                    error_html = "<html><body><h1>Error</h1><p>Missing click_id or campaign_id in tracking parameters</p></body></html>"
                     res.write_status(400)
                     res.write_header("Content-Type", "text/html")
                     add_security_headers(res)
                     res.end(error_html)
                     return
 
-                # Fetch full PreClickData from the repository using the click_id
-                pre_click_data = await self.pre_click_data_repository.find_by_click_id(ClickId(click_id_from_code))
+                # Now use the TrackClickHandler to determine the final redirect URL
+                # This mimics the logic in the track_click function
+                user_agent = req.get_header('user-agent') or req.get_header('User-Agent') or 'Unknown'
+                referrer = req.get_header('referer') or req.get_header('Referer') or 'Direct'
+                client_ip = self._get_client_ip(req)
+                test_mode = req.get_query('test_mode') == '1'
 
-                if not pre_click_data:
-                    logger.warning(f"PreClickData not found for click_id: {click_id_from_code}")
-                    error_html = "<html><body><h1>Error</h1><p>Tracking data not found for click_id</p></body></html>"
-                    res.write_status(404)
-                    res.write_header("Content-Type", "text/html")
-                    add_security_headers(res)
-                    res.end(error_html)
-                    return
+                from ...application.commands.track_click_command import TrackClickCommand
 
-                # Retrieve the original base URL from metadata
-                redirect_base_url = pre_click_data.metadata.get('original_base_url')
-                if not redirect_base_url:
-                    logger.error(f"Original base URL not found in PreClickData metadata for click_id: {click_id_from_code}")
-                    error_html = "<html><body><h1>Error</h1><p>Internal server error: Missing redirect base URL</p></body></html>"
-                    res.write_status(500)
-                    res.write_header("Content-Type", "text/html")
-                    add_security_headers(res)
-                    res.end(error_html)
-                    return
+                command = TrackClickCommand(
+                    campaign_id=campaign_id_from_code,
+                    click_id_param=click_id_from_code,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                    referrer=referrer,
+                    test_mode=test_mode
+                )
 
-                # Combine original tracking parameters with any additional data from PreClickData
-                all_params = pre_click_data.tracking_params.copy()
-
-                # Construct query string (ensure non-None values)
-                query_string = urlencode({k: v for k, v in all_params.items() if v is not None})
-
-                # Construct the final redirect URL to the original landing page
-                redirect_url = f"{redirect_base_url}?{query_string}"
+                logger.info(f"Processing short link redirect through TrackClickHandler for click_id: {click_id_from_code}")
+                click, final_redirect_url, is_valid = await self.track_click_handler.handle(command)
 
                 # Log successful decoding with details
                 strategy_info = self.url_shortener_service.get_strategy_info(short_code)
                 param_count = len([v for v in decoded_dict.values() if v is not None])
 
-                logger.info("=== SHORT LINK DECODED SUCCESSFULLY ===")
+                logger.info("=== SHORT LINK REDIRECT HANDLED SUCCESSFULLY ===")
                 logger.info(f"Short code: {short_code}")
                 logger.info(f"Encoding strategy: {strategy_info}")
                 logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
                 logger.info("Decoded parameters:")
                 for k, v in decoded_dict.items():
                     logger.info(f"  {k}: {v}")
-                logger.info(f"Final redirect URL: {redirect_url}")
+                logger.info(f"Final redirect URL: {final_redirect_url.value}")
 
-            except Exception as decode_error:
-                logger.error(f"Error decoding short link {short_code}: {decode_error}", exc_info=True)
-                error_html = f"""<html><body>
-                <h1>Decoding Error</h1>
-                <p>Failed to process short link: <code>{short_code}</code></p>
-                <p>Error: {str(decode_error)}</p>
-                </body></html>"""
-                res.write_status(400)
+                res.write_status(302)
+                res.write_header("Location", final_redirect_url.value)
+                add_security_headers(res) # Add security headers before ending response
+                res.end('')
+
+            except Exception as e:
+                logger.error(f"Error handling short link redirect: {e}", exc_info=True)
+                error_html = "<html><body><h1>Error</h1><p>Internal server error during short link redirect</p></body></html>"
+                res.write_status(500)
                 res.write_header("Content-Type", "text/html")
-                add_security_headers(res)
+                add_security_headers(res) # Add security headers to error response as well
                 res.end(error_html)
-                return
-
-            # Redirect to the final landing page
-            res.write_status(302)
-            res.write_header("Location", redirect_url)
-            res.end('')
 
         # Register all routes
         app.post('/clicks', create_click)
