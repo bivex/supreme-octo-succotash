@@ -26,6 +26,10 @@ python-dotenv>=1.0.0
 # Advanced scheduling library for automated tasks
 APScheduler>=3.10.0
 
+# Testing libraries
+pytest==8.2.2
+pytest-asyncio==0.23.6
+
 # Async debugging and tracing
 -e file:./scripts/tools/async-trace
 

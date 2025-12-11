@@ -1,6 +1,6 @@
-# Re-export from the main async_trace module for convenience
+# Re-export from the installed async_trace package
 try:
-    from scripts.tools.async_trace.async_trace import *
+    from async_trace import *
 except ImportError:
     # If not available, provide minimal stubs
     def EnhancedAsyncTracer(*args, **kwargs):

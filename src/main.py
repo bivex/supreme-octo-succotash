@@ -32,29 +32,25 @@ from .container import container
 
 # Enhanced async tracing for production monitoring
 try:
-    # Try to import from local async_trace module if available
-    from .async_trace import EnhancedAsyncTracer, AsyncDebugger
+    # Try to import from installed package first
+    from async_trace import EnhancedAsyncTracer, AsyncDebugger
     _production_tracer = EnhancedAsyncTracer(capture_locals=False, max_var_length=50)  # Minimal overhead
     _production_debugger = AsyncDebugger(_production_tracer)
     _tracing_enabled = True
     logger.info("✅ Enhanced async tracing enabled for production monitoring")
-except ImportError:
+except ImportError as e:
+    # Fallback: try to import from local modules
     try:
-        # Fallback: try to import from scripts directory
-        import sys
-        import os
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        sys.path.insert(0, project_root)
-        from scripts.tools.async_trace.async_trace import EnhancedAsyncTracer, AsyncDebugger
+        from .async_trace import EnhancedAsyncTracer, AsyncDebugger
         _production_tracer = EnhancedAsyncTracer(capture_locals=False, max_var_length=50)
         _production_debugger = AsyncDebugger(_production_tracer)
         _tracing_enabled = True
-        logger.info("✅ Enhanced async tracing enabled for production monitoring (fallback import)")
-    except ImportError as e:
+        logger.info("✅ Enhanced async tracing enabled for production monitoring (local import)")
+    except ImportError as e2:
         _production_tracer = None
         _production_debugger = None
         _tracing_enabled = False
-        logger.warning(f"⚠️ Enhanced async tracing not available: {e}")
+        logger.warning(f"⚠️ Enhanced async tracing not available: {e}, {e2}")
 
 # Custom JSON encoder for Decimal objects
 class CustomJSONEncoder(json.JSONEncoder):
