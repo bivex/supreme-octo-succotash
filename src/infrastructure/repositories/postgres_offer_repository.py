@@ -142,13 +142,13 @@ class PostgresOfferRepository(OfferRepository):
                     updated_at = EXCLUDED.updated_at
             """, (
                 offer.id, offer.campaign_id, offer.name, offer.url.value, offer.offer_type,
-                offer.payout.amount, offer.payout.currency.value, float(offer.revenue_share),
+                offer.payout.amount, offer.payout.currency, float(offer.revenue_share),
                 offer.cost_per_click.amount if offer.cost_per_click else None,
-                offer.cost_per_click.currency.value if offer.cost_per_click else None,
+                offer.cost_per_click.currency if offer.cost_per_click else None,
                 offer.weight, offer.is_active, offer.is_control,
                 offer.clicks, offer.conversions,
-                offer.revenue.amount, offer.revenue.currency.value,
-                offer.cost.amount, offer.cost.currency.value,
+                offer.revenue.amount, offer.revenue.currency,
+                offer.cost.amount, offer.cost.currency,
                 offer.created_at, offer.updated_at
             ))
 
