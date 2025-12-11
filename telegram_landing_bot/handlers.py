@@ -103,18 +103,21 @@ async def callback_get_offer(callback: CallbackQuery):
         # Generate tracking link
         tracking_result = await get_tracking_manager().generate_tracking_link(
             user_id=user_id,
-            source="telegram_bot_start",
+            source="telegram_bot_visit",
             additional_params={
-                "sub3": "callback_offer",
-                "sub4": username,
-                "user_id": user_id
+                "sub1": "telegram_bot_visit", # Added sub1
+                "sub2": "callback", # Added sub2
+                "sub3": "direct_visit",
+                "sub4": callback.from_user.username or "user",
+                "sub5": "offer_page", # Added sub5
+                # "click_id": click_id # Removed click_id here
             },
             lp_id=settings.default_lp_id,
             offer_id=settings.default_offer_id,
             ts_id=settings.default_ts_id
         )
 
-        click_id = tracking_result["click_id"]
+        click_id = tracking_result["click_id"] # click_id is assigned here
         tracking_url = tracking_result["tracking_url"]
 
         logger.info(f"Generated tracking link for user {user_id}: {click_id}")

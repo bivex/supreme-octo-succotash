@@ -55,7 +55,7 @@ class GenerateClickHandler:
             # Extract parameters
             campaign_id = request_data['campaign_id']
             base_url = request_data['base_url']
-            tracking_params = request_data.get('params', {})
+            tracking_params = {**request_data.get('params', {}), **request_data} # Merge all request_data params
             landing_page_id = request_data.get('lp_id') or request_data.get('landing_page_id')
             offer_id = request_data.get('offer_id')
             traffic_source_id = request_data.get('ts_id')

@@ -117,14 +117,16 @@ class ClickRoutes:
                     sub3 = req.get_query('sub3')
                     sub4 = req.get_query('sub4')
                     sub5 = req.get_query('sub5')
+
                     click_id_param = req.get_query('click_id')
-                    lp_id = req.get_query('lp_id')
-                    offer_id = req.get_query('offer_id')
-                    ts_id = req.get_query('ts_id')
+                    lp_id = self._safe_int_convert(req.get_query('lp_id'))
+                    offer_id = self._safe_int_convert(req.get_query('offer_id'))
+                    ts_id = self._safe_int_convert(req.get_query('ts_id'))
+                    ts_param = self._safe_int_convert(req.get_query('ts')) # Extract the 'ts' parameter
                 except AttributeError as e:
                     logger.error(f"Error accessing query parameters: {e}")
                     # Set defaults to None
-                    sub1 = sub2 = sub3 = sub4 = sub5 = click_id_param = lp_id = offer_id = ts_id = None
+                    sub1 = sub2 = sub3 = sub4 = sub5 = click_id_param = lp_id = offer_id = ts_id = ts_param = None
 
                 logger.info("=== TRACKING PARAMETERS ===")
                 logger.info(f"sub1 (source): {repr(sub1)}")
@@ -133,9 +135,10 @@ class ClickRoutes:
                 logger.info(f"sub4 (user_id): {repr(sub4)}")
                 logger.info(f"sub5 (content): {repr(sub5)}")
                 logger.info(f"click_id: {repr(click_id_param)}")
-                logger.info(f"lp_id (landing page): {repr(lp_id)} -> {int(lp_id) if lp_id else None}")
-                logger.info(f"offer_id (offer): {repr(offer_id)} -> {int(offer_id) if offer_id else None}")
-                logger.info(f"ts_id (traffic source): {repr(ts_id)} -> {int(ts_id) if ts_id else None}")
+                logger.info(f"lp_id (landing page): {repr(req.get_query('lp_id'))} -> {lp_id}")
+                logger.info(f"offer_id (offer): {repr(req.get_query('offer_id'))} -> {offer_id}")
+                logger.info(f"ts_id (traffic source): {repr(req.get_query('ts_id'))} -> {ts_id}")
+                logger.info(f"ts (timestamp): {repr(req.get_query('ts'))} -> {ts_param}") # Log 'ts' parameter
                 logger.info(f"test_mode: {test_mode}")
 
                 # Debug: check all query parameters
