@@ -52,7 +52,7 @@ def create_app() -> socketify.App:
     _register_routes(app)
     _register_error_handlers(app)
     _add_health_endpoints(app)
-    _initialize_postgres_upholder(app)
+    # _initialize_postgres_upholder(app) # Removed, will be called in background tasks
 
     app_time = time.time() - app_start
     return app
@@ -178,6 +178,14 @@ def _register_error_handlers(app: socketify.App) -> None:
     # Socketify handles errors differently - exceptions in route handlers
     # will be caught by the global exception handler
     logger.info("Error handlers configured (using global exception handler)")
+
+
+async def _start_background_tasks(app: socketify.App):
+    """Start background tasks like PostgreSQL upholder and cache monitoring."""
+    import asyncio
+    logger.info("🚀 Starting background tasks...")
+    _initialize_postgres_upholder(app)
+    logger.info("✅ Background tasks started.")
 
 
 def _add_health_endpoints(app: socketify.App) -> None:
@@ -551,6 +559,10 @@ if __name__ == "__main__":
 
         try:
             logger.info("🎯 All workers started! Server ready for maximum throughput.")
+            # Start background tasks in the main process
+            import asyncio
+            asyncio.create_task(_start_background_tasks(app))
+
             for process in processes:
                 process.join()
         except KeyboardInterrupt:
@@ -561,6 +573,10 @@ if __name__ == "__main__":
                 process.join()
     else:
         # Single process mode
+        # Start background tasks in the single process
+        import asyncio
+        asyncio.create_task(_start_background_tasks(app))
+        
         app.listen(listen_options, on_listen)
         logger.info("🎯 Single-process mode. For maximum performance, set WORKERS environment variable.")
         app.run()
