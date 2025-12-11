@@ -134,12 +134,14 @@ class URLShortener:
         # Пробуем base64 (обычно короче)
         encoded_params = base64.urlsafe_b64encode(compressed).decode().rstrip('=')
 
-        # Формат: 'c' + campaign_id(base62, 2 символа) + compressed_data(base64)
-        campaign_code = self._encode_base62(campaign_id).zfill(2)[:2]
-        result = f"c{campaign_code}{encoded_params}"
+        # Формат: 'c' + campaign_id(base62, 1 символ) + compressed_data(base64, усеченное до 8 символов)
+        campaign_code = self._encode_base62(campaign_id)[:1]  # Только 1 символ для campaign_id
+        # Обрезаем encoded_params до 8 символов для гарантированных 10 символов итого
+        truncated_params = encoded_params[:8] if len(encoded_params) > 8 else encoded_params.ljust(8, 'A')
+        result = f"c{campaign_code}{truncated_params}"
 
-        # COMPRESSED стратегия может возвращать коды до 80 символов
-        return result
+        # Гарантируем ровно 10 символов
+        return result[:10]
     
     def decode_compressed(self, code: str) -> Optional[URLParams]:
         """Декодирование compressed формата"""
@@ -293,14 +295,9 @@ class URLShortener:
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
         
-        # Для COMPRESSED стратегии разрешаем до 120 символов
-        if strategy == EncodingStrategy.COMPRESSED:
-            if len(code) > 120:
-                code = code[:120]
-        else:
-            # Для других стратегий гарантируем максимум 10 символов
-            if len(code) > 10:
-                code = code[:10]
+        # Все стратегии гарантируют максимум 10 символов для совместимости
+        if len(code) > 10:
+            code = code[:10]
         
         # Кэшируем для быстрого декодирования
         self.decode_cache[code] = params
@@ -911,8 +908,8 @@ class TrackingURLDecoder:
         if not code.startswith('c') or len(code) < 3:
             return None
 
-        # Пробуем разные длины campaign_id: 3, 2, 1 символа (сначала более длинные)
-        for campaign_len in [3, 2, 1]:
+        # Пробуем разные длины campaign_id: 1, 2, 3 символа (сначала короткие для 10-символьных кодов)
+        for campaign_len in [1, 2, 3]:
             if len(code) <= campaign_len + 1:  # +1 для префикса 'c'
                 continue
 
@@ -940,7 +937,26 @@ class TrackingURLDecoder:
                     continue
                 print(f"  Campaign ID: {campaign_id}")
 
-                # Пытаемся декодировать параметры
+                # Для 10-символьных кодов пытаемся восстановить усеченные base64 данные
+                if len(code) == 10 and campaign_len == 1:
+                    # Пытаемся добавить недостающие символы к base64
+                    for suffix in ['', 'A', 'AA', 'AAA', 'AAAA', 'B', 'BA', 'BAA', 'BAAA']:
+                        try:
+                            extended_params = params_part + suffix
+                            print(f"  Trying extended params: '{extended_params}'")
+
+                            test_params_str = self._decompress_params(extended_params)
+                            if test_params_str:
+                                print(f"  [OK] Successfully decompressed extended params: '{test_params_str}'")
+
+                                # Парсим параметры
+                                result = self._parse_params_string(test_params_str, campaign_id)
+                                if result:
+                                    return result
+                        except:
+                            continue
+
+                # Пытаемся декодировать параметры обычным способом
                 params_str = self._decompress_params(params_part)
 
                 if params_str:
