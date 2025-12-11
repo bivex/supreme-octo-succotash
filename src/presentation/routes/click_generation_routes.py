@@ -91,4 +91,4 @@ class ClickGenerationRoutes:
                 res.end(json.dumps(error_response))
 
         # Register the click generation endpoint
-        app.post('/clicks/generate', generate_click)
+        app.post('/v1/clicks/generate', generate_click)
