@@ -9,7 +9,7 @@ from .campaign import (
 )
 
 # Click services
-from .click import ClickValidationService
+from .click import ClickValidationService, ClickGenerationService
 
 # LTV services
 from .ltv import LTVService
@@ -26,6 +26,7 @@ __all__ = [
     'CampaignPerformanceService',
     'CampaignLifecycleService',
     'ClickValidationService',
+    'ClickGenerationService',
     'LTVService',
     'RetentionService',
     'FormService'

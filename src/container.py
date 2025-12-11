@@ -48,15 +48,18 @@ from .domain.services import (
     ClickValidationService,
     CampaignValidationService,
     CampaignPerformanceService,
-    CampaignLifecycleService
+    CampaignLifecycleService,
+    ClickGenerationService # Ensure ClickGenerationService is imported directly
 )
 from .domain.services.webhook import WebhookService
 from .domain.services.event import EventService
 from .domain.services.conversion import ConversionService
 from .domain.services.postback import PostbackService
-from .domain.services.click import ClickGenerationService
+# from .domain.services.click import ClickGenerationService # This line is no longer needed
 from .domain.services.goal import GoalService
+# from .domain.services.url_shortening_service import TinyURLService # Remove TinyURLService import
 from .domain.services.journey import JourneyService
+from shared_url_shortener import URLShortener, URLParams, EncodingStrategy # Import URLShortener
 
 # Application handlers
 from .application.handlers import (
@@ -578,7 +581,8 @@ class Container:
         """Get click generation service."""
         if 'click_generation_service' not in self._singletons:
             self._singletons['click_generation_service'] = ClickGenerationService(
-                pre_click_data_repository=await self.get_postgres_pre_click_data_repository()
+                pre_click_data_repository=await self.get_postgres_pre_click_data_repository(),
+                url_shortener=await self.get_url_shortening_service() # Pass the new dependency
             )
         return self._singletons['click_generation_service']
 
@@ -763,6 +767,12 @@ class Container:
         else:
             logger.debug("🗂️ Reusing PostgresPreClickDataRepository singleton")
         return self._singletons['postgres_pre_click_data_repository']
+
+    async def get_url_shortening_service(self):
+        """Get URL shortening service."""
+        if 'url_shortening_service' not in self._singletons:
+            self._singletons['url_shortening_service'] = URLShortener()
+        return self._singletons['url_shortening_service']
 
     async def get_landing_page_repository(self):
         """Get landing page repository."""

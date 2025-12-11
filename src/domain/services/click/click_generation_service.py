@@ -8,12 +8,15 @@ from datetime import datetime, timezone
 from src.domain.entities.pre_click_data import PreClickData
 from src.domain.repositories.pre_click_data_repository import PreClickDataRepository
 from src.domain.value_objects import ClickId, CampaignId
+# from src.domain.services.url_shortening_service import URLShorteningService # Remove the old import
+from shared_url_shortener import URLShortener, URLParams, EncodingStrategy # Import the new local shortener
 
 class ClickGenerationService:
     """Service for generating personalized click tracking links."""
 
-    def __init__(self, pre_click_data_repository: PreClickDataRepository):
+    def __init__(self, pre_click_data_repository: PreClickDataRepository, url_shortener: URLShortener):
         self._pre_click_data_repository = pre_click_data_repository
+        self._url_shortener = url_shortener # Store the new local shortener
         self._valid_traffic_sources = {
             'facebook', 'google', 'taboola', 'outbrain', 'twitter', 'linkedin',
             'email', 'direct', 'referral', 'organic', 'paid', 'social'
@@ -99,6 +102,21 @@ class ClickGenerationService:
                 short_query,
                 ''
             ))
+
+            # Use the local URL shortener instead of the external service
+            # Construct URLParams object from the tracking parameters
+            url_params = URLParams(
+                cid=f"camp_{campaign_id}",
+                click_id=generated_click_id.value,
+                # Add other relevant tracking_params if needed, e.g., sub1, sub2, etc.
+                # For now, we only include cid and click_id in the shortened part
+                # The full tracking_params are already saved in PreClickData
+            )
+
+            short_code = self._url_shortener.encode(url_params, EncodingStrategy.SMART)
+
+            # The final URL will be base_url/s/short_code
+            final_short_url = f"{parsed_base.scheme}://{parsed_base.netloc}/s/{short_code}"
 
             logger.info(f"Generated short tracking URL for campaign {campaign_id}: {final_short_url}")
             logger.info("=== END CLICK GENERATION SERVICE DEBUG ===")
