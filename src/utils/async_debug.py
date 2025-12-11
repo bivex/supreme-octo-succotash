@@ -1,18 +1,23 @@
 """Async debugging utilities using async-trace."""
 
 import logging
+import time
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 # Check if async-trace is available
 try:
-    from async_trace import print_trace, collect_async_trace
+    from async_trace import print_trace, collect_async_trace, save_trace_to_json, save_trace_to_html, save_trace, log_trace_to_file
     ASYNC_TRACE_AVAILABLE = True
 except ImportError:
     ASYNC_TRACE_AVAILABLE = False
     print_trace = None
     collect_async_trace = None
+    save_trace_to_json = None
+    save_trace_to_html = None
+    save_trace = None
+    log_trace_to_file = None
 
 def debug_async_trace(message: str = "Async call stack:") -> None:
     """Print current async call stack for debugging."""
@@ -88,3 +93,63 @@ def debug_http_request(endpoint: str = "unknown") -> None:
 def debug_task_creation() -> None:
     """Debug when tasks are being created."""
     debug_async_trace("Task creation point")
+
+def save_trace_to_file(filename: str = None, format: str = "json") -> Optional[str]:
+    """Save current async trace to file for later analysis.
+
+    Args:
+        filename: Optional filename. If None, generates timestamped name.
+        format: Format to save in ('json', 'html')
+
+    Returns:
+        Path to saved file or None if async-trace not available
+    """
+    if not ASYNC_TRACE_AVAILABLE:
+        logger.warning("⚠️  async-trace not available for saving traces")
+        return None
+
+    try:
+        filepath = save_trace(filename, format)
+        logger.info(f"💾 Async trace saved to: {filepath}")
+        return filepath
+    except Exception as e:
+        logger.error(f"❌ Error saving async trace: {e}")
+        return None
+
+def log_trace_to_continuous_file(filename: str = "async_trace_continuous.jsonl") -> Optional[str]:
+    """Append current trace to continuous log file for monitoring.
+
+    Args:
+        filename: Log filename (default: async_trace_continuous.jsonl)
+
+    Returns:
+        Path to log file or None if async-trace not available
+    """
+    if not ASYNC_TRACE_AVAILABLE:
+        logger.warning("⚠️  async-trace not available for continuous logging")
+        return None
+
+    try:
+        filepath = log_trace_to_file(filename)
+        logger.debug(f"📝 Trace appended to continuous log: {filepath}")
+        return filepath
+    except Exception as e:
+        logger.error(f"❌ Error logging trace to file: {e}")
+        return None
+
+def save_debug_snapshot(reason: str = "debug") -> Optional[str]:
+    """Save a debug snapshot of current async state.
+
+    Args:
+        reason: Reason for the snapshot (used in filename)
+
+    Returns:
+        Path to saved HTML file or None
+    """
+    timestamp = time.strftime("%H%M%S")
+    filename = f"debug_snapshot_{reason}_{timestamp}.html"
+
+    filepath = save_trace_to_file(filename, "html")
+    if filepath:
+        logger.info(f"📸 Debug snapshot saved: {filepath}")
+    return filepath

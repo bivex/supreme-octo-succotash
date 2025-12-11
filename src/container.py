@@ -3,6 +3,9 @@
 import psycopg2.pool
 import threading
 import asyncio
+import time
+
+from loguru import logger
 
 # Infrastructure
 from .infrastructure.repositories import (
@@ -90,23 +93,34 @@ class Container:
         loop = asyncio.get_running_loop()
         with self._lock:
             if 'db_connection_pool' not in self._singletons:
-                self._singletons['db_connection_pool'] = await loop.run_in_executor(None, lambda: AdvancedConnectionPool(
-                    minconn=5,          # Увеличено для лучшей производительности
-                    maxconn=32,         # Оптимально для большинства приложений
-                    host="localhost",
-                    port=5432,
-                    database="supreme_octosuccotash_db",
-                    user="app_user",
-                    password="app_password",
-                    client_encoding='utf8',
-                    # Оптимизации соединения для лучшей производительности
-                    connect_timeout=10,
-                    keepalives=1,
-                    keepalives_idle=30,
-                    keepalives_interval=10,
-                    keepalives_count=5,
-                    tcp_user_timeout=60000,
-                ))
+                start = time.time()
+                logger.info("🔌 DB pool: creating AdvancedConnectionPool (localhost:5432)...")
+                try:
+                    self._singletons['db_connection_pool'] = await loop.run_in_executor(None, lambda: AdvancedConnectionPool(
+                        minconn=5,          # Увеличено для лучшей производительности
+                        maxconn=32,         # Оптимально для большинства приложений
+                        host="localhost",
+                        port=5432,
+                        database="supreme_octosuccotash_db",
+                        user="app_user",
+                        password="app_password",
+                        client_encoding='utf8',
+                        # Оптимизации соединения для лучшей производительности
+                        connect_timeout=10,
+                        keepalives=1,
+                        keepalives_idle=30,
+                        keepalives_interval=10,
+                        keepalives_count=5,
+                        tcp_user_timeout=60000,
+                    ))
+                    duration = time.time() - start
+                    logger.info(f"✅ DB pool ready in {duration:.3f}s")
+                except Exception:
+                    duration = time.time() - start
+                    logger.exception(f"❌ DB pool creation failed after {duration:.3f}s")
+                    raise
+            else:
+                logger.debug("🔌 DB pool: reusing existing instance")
             return self._singletons['db_connection_pool']
 
     def get_db_connection_pool_sync(self):
@@ -150,11 +164,19 @@ class Container:
         """Get click repository."""
         if 'click_repository' not in self._singletons:
             # Try PostgreSQL first, fallback to SQLite
+            start = time.time()
+            logger.info("🖱️ Creating click_repository (PostgreSQL preferred)...")
             try:
-                self._singletons['click_repository'] = self.get_postgres_click_repository()
+                self._singletons['click_repository'] = await self.get_postgres_click_repository()
+                duration = time.time() - start
+                logger.info(f"🖱️ click_repository ready (PostgreSQL) in {duration:.3f}s")
             except Exception:
+                duration = time.time() - start
+                logger.exception(f"⚠️ Falling back to SQLite click_repository after {duration:.3f}s")
                 db_path = self._settings.database.get_sqlite_path() if self._settings else ":memory:"
                 self._singletons['click_repository'] = SQLiteClickRepository(db_path)
+        else:
+            logger.debug("🖱️ Reusing click_repository singleton")
         return self._singletons['click_repository']
 
     async def get_impression_repository(self):
@@ -307,6 +329,8 @@ class Container:
     async def get_track_click_handler(self):
         """Get track click handler."""
         if 'track_click_handler' not in self._singletons:
+            start = time.time()
+            logger.info("🖱️ Creating TrackClickHandler and dependencies...")
             click_repo = await self.get_click_repository()
             campaign_repo = await self.get_campaign_repository()
             landing_page_repo = await self.get_landing_page_repository()
@@ -323,6 +347,10 @@ class Container:
                 click_validation_service=validation_svc,
             )
             self._singletons['track_click_handler'] = track_click_handler
+            duration = time.time() - start
+            logger.info(f"🖱️ TrackClickHandler ready in {duration:.3f}s")
+        else:
+            logger.debug("🖱️ Reusing TrackClickHandler singleton")
         return self._singletons['track_click_handler']
 
     async def get_get_campaign_handler(self):
@@ -597,12 +625,21 @@ class Container:
     async def get_postgres_analytics_repository(self):
         """Get PostgreSQL analytics repository."""
         if 'postgres_analytics_repository' not in self._singletons:
-            self._singletons['postgres_analytics_repository'] = PostgresAnalyticsRepository(
-                click_repository=await self.get_postgres_click_repository(),
-                impression_repository=await self.get_postgres_impression_repository(),
-                campaign_repository=await self.get_postgres_campaign_repository(),
-                container=self
-            )
+            start = time.time()
+            logger.info("📊 Creating PostgresAnalyticsRepository...")
+            try:
+                self._singletons['postgres_analytics_repository'] = PostgresAnalyticsRepository(
+                    click_repository=await self.get_postgres_click_repository(),
+                    impression_repository=await self.get_postgres_impression_repository(),
+                    campaign_repository=await self.get_postgres_campaign_repository(),
+                    container=self
+                )
+                duration = time.time() - start
+                logger.info(f"📊 PostgresAnalyticsRepository ready in {duration:.3f}s")
+            except Exception:
+                duration = time.time() - start
+                logger.exception(f"❌ Failed to create PostgresAnalyticsRepository after {duration:.3f}s")
+                raise
         return self._singletons['postgres_analytics_repository']
 
     async def get_postgres_webhook_repository(self):
@@ -668,12 +705,29 @@ class Container:
     async def get_postgres_pre_click_data_repository(self):
         """Get PostgreSQL pre-click data repository."""
         if 'postgres_pre_click_data_repository' not in self._singletons:
-            # Ensure the event loop is running before creating the repository, as its __init__ starts an async task.
-            # This implicitly waits for the loop to be running.
+            start = time.time()
+            logger.info("🗂️ Creating PostgresPreClickDataRepository...")
             repo = PostgresPreClickDataRepository(container=self)
-            # Explicitly wait for DB initialization to complete after creation
-            await repo._db_initialized_event.wait()
+            # Kick off async DB initialization
+            try:
+                asyncio.get_running_loop().create_task(repo._initialize_db())
+            except RuntimeError:
+                # If no running loop (unlikely here), fall back to awaiting directly
+                await repo._initialize_db()
+
+            # Wait for initialization to complete (with timeout to avoid silent hangs)
+            try:
+                await asyncio.wait_for(repo._db_initialized_event.wait(), timeout=15)
+            except asyncio.TimeoutError:
+                duration = time.time() - start
+                logger.error(f"⏱️ pre_click_data init timeout after {duration:.3f}s")
+                raise
+
             self._singletons['postgres_pre_click_data_repository'] = repo
+            duration = time.time() - start
+            logger.info(f"🗂️ PostgresPreClickDataRepository ready in {duration:.3f}s")
+        else:
+            logger.debug("🗂️ Reusing PostgresPreClickDataRepository singleton")
         return self._singletons['postgres_pre_click_data_repository']
 
     async def get_landing_page_repository(self):

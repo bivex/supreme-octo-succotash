@@ -1086,69 +1086,89 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Validate required fields
-                required_fields = ['name', 'url', 'offerType', 'weight', 'isActive', 'isControl', 'payout']
-                missing_fields = [field for field in required_fields if field not in body_data]
-                if missing_fields:
-                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
-                    res.write_status(400)
+                try:
+                    # Validate required fields
+                    required_fields = ['name', 'url', 'offerType', 'weight', 'isActive', 'isControl', 'payout']
+                    missing_fields = [field for field in required_fields if field not in body_data]
+                    if missing_fields:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
+                        res.write_status(400)
+                        res.write_header("Content-Type", "application/json")
+                        add_security_headers(res)
+                        res.end(json.dumps(error_response))
+                        return
+
+                    # Create command using CQRS pattern
+                    from ...application.commands.create_offer_command import CreateOfferCommand
+                    from ...domain.value_objects import Money, Url
+                    from decimal import Decimal
+
+                    # Build command with business logic validation
+                    from ...domain.value_objects import CampaignId
+                    command = CreateOfferCommand(
+                        campaign_id=CampaignId(campaign_id),
+                        name=body_data['name'],
+                        url=Url(body_data['url']),
+                        offer_type=body_data.get('offerType', 'direct'),
+                        payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
+                        revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
+                        cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
+                        weight=body_data.get('weight', 100),
+                        is_control=body_data.get('isControl', False)
+                    )
+
+                    # Debug: Show async call stack before database operation
+                    debug_database_call("create_offer_command")
+
+                    # Handle command
+                    offer = (await self.create_offer_handler).handle(command)
+
+                    # Convert to response
+                    response = {
+                        "id": offer.id,
+                        "campaignId": offer.campaign_id,
+                        "name": offer.name,
+                        "url": offer.url.value,
+                        "offerType": offer.offer_type,
+                        "weight": offer.weight,
+                        "isActive": offer.is_active,
+                        "isControl": offer.is_control,
+                        "payout": {
+                            "amount": float(offer.payout.amount),
+                            "currency": offer.payout.currency.value
+                        },
+                        "revenueShare": float(offer.revenue_share),
+                        "costPerClick": {
+                            "amount": float(offer.cost_per_click.amount),
+                            "currency": offer.cost_per_click.currency.value
+                        } if offer.cost_per_click else None,
+                        "createdAt": offer.created_at.isoformat(),
+                        "updatedAt": offer.updated_at.isoformat()
+                    }
+
+                    # Log successful operation
+                    debug_database_call("offer_creation_success")
+
+                    res.write_status(201)
+                    res.write_header('Content-Type', 'application/json')
+                    add_security_headers(res)
+                    res.end(json.dumps(response))
+
+                except Exception as e:
+                    # Save async trace on error
+                    try:
+                        from ...utils.async_debug import save_debug_snapshot
+                        error_trace = save_debug_snapshot("create_offer_error")
+                        logger.error(f"📸 Create offer error trace saved: {error_trace}")
+                    except Exception as trace_error:
+                        logger.error(f"Failed to save error trace: {trace_error}")
+
+                    logger.error(f"Error in create_campaign_offer processing: {e}", exc_info=True)
+                    error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
+                    res.write_status(500)
                     res.write_header("Content-Type", "application/json")
                     add_security_headers(res)
                     res.end(json.dumps(error_response))
-                    return
-
-                # Create command using CQRS pattern
-                from ...application.commands.create_offer_command import CreateOfferCommand
-                from ...domain.value_objects import Money, Url
-                from decimal import Decimal
-
-                # Build command with business logic validation
-                from ...domain.value_objects import CampaignId
-                command = CreateOfferCommand(
-                    campaign_id=CampaignId(campaign_id),
-                    name=body_data['name'],
-                    url=Url(body_data['url']),
-                    offer_type=body_data.get('offerType', 'direct'),
-                    payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
-                    revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
-                    cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
-                    weight=body_data.get('weight', 100),
-                    is_control=body_data.get('isControl', False)
-                )
-
-                # Debug: Show async call stack before database operation
-                debug_database_call("create_offer_command")
-
-                # Handle command
-                offer = (await self.create_offer_handler).handle(command)
-
-                # Convert to response
-                response = {
-                    "id": offer.id,
-                    "campaignId": offer.campaign_id,
-                    "name": offer.name,
-                    "url": offer.url.value,
-                    "offerType": offer.offer_type,
-                    "weight": offer.weight,
-                    "isActive": offer.is_active,
-                    "isControl": offer.is_control,
-                    "payout": {
-                        "amount": float(offer.payout.amount),
-                        "currency": offer.payout.currency.value
-                    },
-                    "revenueShare": float(offer.revenue_share),
-                    "costPerClick": {
-                        "amount": float(offer.cost_per_click.amount),
-                        "currency": offer.cost_per_click.currency.value
-                    } if offer.cost_per_click else None,
-                    "createdAt": offer.created_at.isoformat(),
-                    "updatedAt": offer.updated_at.isoformat()
-                }
-
-                res.write_status(201)
-                res.write_header('Content-Type', 'application/json')
-                add_security_headers(res)
-                res.end(json.dumps(response))
 
             except Exception as e:
                 logger.error(f"Error setting up create_campaign_offer: {e}", exc_info=True)

@@ -235,6 +235,15 @@ class ServerRunner:
         """Setup signal handlers for graceful shutdown."""
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+
+            # Save trace before shutdown if async-trace is enabled
+            try:
+                from src.utils.async_debug import save_debug_snapshot
+                signal_trace = save_debug_snapshot(f"signal_shutdown_sig{signum}")
+                logger.info(f"📸 Signal shutdown trace saved: {signal_trace}")
+            except Exception as e:
+                logger.error(f"Failed to save signal trace: {e}")
+
             self.service_manager.stop_all_services()
             sys.exit(0)
 
@@ -406,6 +415,25 @@ Examples:
         if ASYNC_TRACE_AVAILABLE:
             async_trace.enable_tracing()
             logger.info("🔍 Async-trace enabled for debugging asyncio tasks")
+
+            # Import async debug utilities
+            from src.utils.async_debug import save_debug_snapshot, log_trace_to_continuous_file
+
+            # Save initial server startup trace
+            startup_trace = save_debug_snapshot("server_startup")
+            logger.info(f"📸 Server startup trace saved: {startup_trace}")
+
+            # Setup automatic trace saving on shutdown
+            import atexit
+            def save_shutdown_trace():
+                try:
+                    shutdown_trace = save_debug_snapshot("server_shutdown")
+                    logger.info(f"📸 Server shutdown trace saved: {shutdown_trace}")
+                except Exception as e:
+                    print(f"Error saving shutdown trace: {e}")
+
+            atexit.register(save_shutdown_trace)
+
         else:
             logger.warning("⚠️  Async-trace requested but not available. Install with: pip install async-trace")
 

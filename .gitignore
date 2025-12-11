@@ -8,7 +8,7 @@
 advi_survey/ 
 advi_threading_final/
 advi_threading_final_clean/
-
+traces/
 # Environment files
 .env
 .env.*

@@ -161,6 +161,14 @@ def _setup_global_exception_handler() -> None:
         logger.critical("Full traceback:")
         logger.critical("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
+        # Save async trace if available
+        try:
+            from .utils.async_debug import save_debug_snapshot
+            error_trace = save_debug_snapshot("unhandled_exception")
+            logger.critical(f"📸 Unhandled exception trace saved: {error_trace}")
+        except Exception as trace_error:
+            logger.error(f"Failed to save exception trace: {trace_error}")
+
         # Also call the original exception handler
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
@@ -176,23 +184,59 @@ def _setup_global_exception_handler() -> None:
 
 async def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
-    await (await container.get_campaign_routes()).register(app)
-    await (await container.get_click_routes()).register(app)
-    await (await container.get_webhook_routes()).register(app)
-    await (await container.get_event_routes()).register(app)
-    await (await container.get_conversion_routes()).register(app)
-    await (await container.get_postback_routes()).register(app)
-    await (await container.get_click_generation_routes()).register(app)
-    await (await container.get_goal_routes()).register(app)
-    await (await container.get_journey_routes()).register(app)
-    await (await container.get_ltv_routes()).register(app)
-    await (await container.get_form_routes()).register(app)
-    await (await container.get_retention_routes()).register(app)
-    # New feature routes
-    (await container.get_bulk_operations_routes()).register(app)
-    (await container.get_fraud_routes()).register(app)
-    (await container.get_system_routes()).register(app)
-    (await container.get_analytics_routes()).register(app)
+    logger.info("🔌 Registering routes...")
+    start = time.time()
+
+    try:
+        from .utils.async_debug import debug_async_trace, save_debug_snapshot
+    except Exception:
+        def debug_async_trace(msg: str = ""):
+            return
+        def save_debug_snapshot(reason: str = "debug"):
+            return None
+
+    steps = [
+        ("campaign", container.get_campaign_routes),
+        ("click", container.get_click_routes),
+        ("webhook", container.get_webhook_routes),
+        ("event", container.get_event_routes),
+        ("conversion", container.get_conversion_routes),
+        ("postback", container.get_postback_routes),
+        ("click_generation", container.get_click_generation_routes),
+        ("goal", container.get_goal_routes),
+        ("journey", container.get_journey_routes),
+        ("ltv", container.get_ltv_routes),
+        ("form", container.get_form_routes),
+        ("retention", container.get_retention_routes),
+        ("bulk_operations", container.get_bulk_operations_routes),
+        ("fraud", container.get_fraud_routes),
+        ("system", container.get_system_routes),
+        ("analytics", container.get_analytics_routes),
+    ]
+
+    try:
+        for name, getter in steps:
+            step_start = time.time()
+            logger.info(f"🔌 Route step START: {name}")
+            debug_async_trace(f"Before route step: {name}")
+            routes = await getter()
+            await routes.register(app)
+            step_duration = time.time() - step_start
+            logger.info(f"✅ Route step DONE: {name} in {step_duration:.3f}s")
+            debug_async_trace(f"After route step: {name}")
+
+        duration = time.time() - start
+        logger.info(f"✅ Routes registered in {duration:.3f}s")
+    except Exception as e:
+        duration = time.time() - start
+        logger.exception(f"❌ Route registration failed after {duration:.3f}s")
+        try:
+            snapshot = save_debug_snapshot(f"routes_error_{name}")
+            if snapshot:
+                logger.error(f"📸 Async snapshot saved: {snapshot}")
+        except Exception:
+            logger.error("Failed to save async snapshot for route error")
+        raise
 
 
 def _register_error_handlers(app: socketify.App) -> None:
