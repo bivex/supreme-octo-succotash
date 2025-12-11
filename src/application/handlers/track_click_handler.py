@@ -1,11 +1,16 @@
 """Track click command handler."""
 
+import logging
 from typing import Tuple
+
+logger = logging.getLogger(__name__)
 
 from ..commands.track_click_command import TrackClickCommand
 from ...domain.entities.click import Click
 from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.repositories.landing_page_repository import LandingPageRepository
+from ...domain.repositories.offer_repository import OfferRepository
 from ...domain.services.click import ClickValidationService
 from ...domain.value_objects import ClickId, CampaignId, Url
 
@@ -16,9 +21,13 @@ class TrackClickHandler:
     def __init__(self,
                  click_repository: ClickRepository,
                  campaign_repository: CampaignRepository,
+                 landing_page_repository: LandingPageRepository,
+                 offer_repository: OfferRepository,
                  click_validation_service: ClickValidationService):
         self._click_repository = click_repository
         self._campaign_repository = campaign_repository
+        self._landing_page_repository = landing_page_repository
+        self._offer_repository = offer_repository
         self._click_validation_service = click_validation_service
 
     def handle(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
@@ -36,7 +45,7 @@ class TrackClickHandler:
         click = self._create_click_from_command(command)
         is_valid = self._validate_click_and_mark_fraud(click)
 
-        redirect_url = self._determine_redirect_url(campaign, is_valid, command.test_mode, click.id.value)
+        redirect_url = self._determine_redirect_url(campaign, is_valid, command.test_mode, click.id.value, command)
 
         # Save click
         self._click_repository.save(click)
@@ -69,15 +78,56 @@ class TrackClickHandler:
 
         return is_valid
 
-    def _determine_redirect_url(self, campaign, is_valid: bool, test_mode: bool, click_id: str) -> Url:
-        """Determine redirect URL based on validation and campaign settings."""
-        if is_valid and campaign.offer_page_url:
-            redirect_url = campaign.offer_page_url
-        elif campaign.safe_page_url:
+    def _determine_redirect_url(self, campaign, is_valid: bool, test_mode: bool, click_id: str, command: TrackClickCommand) -> Url:
+        """Determine redirect URL based on validation, campaign settings, and specific parameters."""
+        redirect_url = None
+
+        # Priority 1: Use specific landing page if provided (overrides everything)
+        if command.landing_page_id:
+            try:
+                landing_page = self._landing_page_repository.find_by_id(str(command.landing_page_id))
+                if landing_page and landing_page.is_active:
+                    redirect_url = landing_page.url
+                    logger.info(f"Using specific landing page URL for lp_id {command.landing_page_id}: {landing_page.url.value}")
+                    # For direct landing page links, skip fraud checks
+                    is_valid = True
+                else:
+                    logger.warning(f"Landing page {command.landing_page_id} not found or inactive")
+            except Exception as e:
+                logger.warning(f"Failed to find landing page {command.landing_page_id}: {e}")
+
+        # Priority 2: Use specific offer if provided (overrides campaign settings)
+        if not redirect_url and command.campaign_offer_id:
+            try:
+                offer = self._offer_repository.find_by_id(str(command.campaign_offer_id))
+                if offer and offer.is_active:
+                    redirect_url = offer.url
+                    logger.info(f"Using specific offer URL for offer_id {command.campaign_offer_id}: {offer.url.value}")
+                    # For direct offer links, skip fraud checks
+                    is_valid = True
+                else:
+                    logger.warning(f"Offer {command.campaign_offer_id} not found or inactive")
+            except Exception as e:
+                logger.warning(f"Failed to find offer {command.campaign_offer_id}: {e}")
+
+        # Priority 3: Use campaign's offer page for valid clicks
+        if not redirect_url and is_valid:
+            if campaign.offer_page_url:
+                redirect_url = campaign.offer_page_url
+                logger.info("Using campaign offer page URL (valid click)")
+            elif campaign.safe_page_url:
+                redirect_url = campaign.safe_page_url
+                logger.info("Using campaign safe page URL (valid click, no offer URL)")
+
+        # Priority 4: Use campaign's safe page for invalid clicks
+        if not redirect_url and not is_valid and campaign.safe_page_url:
             redirect_url = campaign.safe_page_url
-        else:
-            # Fallback
+            logger.info("Using campaign safe page URL (invalid click)")
+
+        # Fallback
+        if not redirect_url:
             redirect_url = Url("http://localhost:5000/mock-safe-page")
+            logger.warning("Using fallback safe page URL")
 
         # Add click ID to redirect URL if in test mode
         if test_mode:

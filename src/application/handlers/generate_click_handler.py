@@ -56,8 +56,9 @@ class GenerateClickHandler:
             campaign_id = request_data['campaign_id']
             base_url = request_data['base_url']
             tracking_params = request_data.get('params', {})
-            landing_page_id = request_data.get('landing_page_id')
+            landing_page_id = request_data.get('lp_id') or request_data.get('landing_page_id')
             offer_id = request_data.get('offer_id')
+            traffic_source_id = request_data.get('ts_id')
 
             # Validate parameters
             validation_params = {
@@ -69,6 +70,8 @@ class GenerateClickHandler:
                 validation_params['landing_page_id'] = landing_page_id
             if offer_id is not None:
                 validation_params['offer_id'] = offer_id
+            if traffic_source_id is not None:
+                validation_params['traffic_source_id'] = traffic_source_id
 
             is_valid, error_message = self.click_generation_service.validate_tracking_parameters(validation_params)
             if not is_valid:
@@ -81,12 +84,22 @@ class GenerateClickHandler:
             optimized_params = self.click_generation_service.optimize_tracking_parameters(tracking_params)
 
             # Generate tracking URL
+            logger.info("=== CLICK HANDLER DEBUG ===")
+            logger.info(f"Calling generate_tracking_url with:")
+            logger.info(f"  base_url: {base_url}")
+            logger.info(f"  campaign_id: {campaign_id}")
+            logger.info(f"  landing_page_id: {landing_page_id}")
+            logger.info(f"  offer_id: {offer_id}")
+            logger.info(f"  traffic_source_id: {traffic_source_id}")
+            logger.info(f"  optimized_params: {optimized_params}")
+
             tracking_url = self.click_generation_service.generate_tracking_url(
                 base_url=base_url,
                 campaign_id=campaign_id,
                 tracking_params=optimized_params,
                 landing_page_id=landing_page_id,
-                offer_id=offer_id
+                offer_id=offer_id,
+                traffic_source_id=traffic_source_id
             )
 
             return {
@@ -95,7 +108,8 @@ class GenerateClickHandler:
                 "campaign_id": campaign_id,
                 "params": optimized_params,
                 "landing_page_id": landing_page_id,
-                "offer_id": offer_id
+                "offer_id": offer_id,
+                "traffic_source_id": traffic_source_id
             }
 
         except Exception as e:

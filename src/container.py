@@ -301,11 +301,15 @@ class Container:
         if 'track_click_handler' not in self._singletons:
             click_repo = self.get_click_repository()
             campaign_repo = self.get_campaign_repository()
+            landing_page_repo = self.get_landing_page_repository()
+            offer_repo = self.get_offer_repository()
             validation_svc = self.get_click_validation_service()
 
             track_click_handler = TrackClickHandler(
                 click_repository=click_repo,
                 campaign_repository=campaign_repo,
+                landing_page_repository=landing_page_repo,
+                offer_repository=offer_repo,
                 click_validation_service=validation_svc,
             )
             self._singletons['track_click_handler'] = track_click_handler

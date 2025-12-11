@@ -20,10 +20,17 @@ class ClickGenerationService:
         campaign_id: int,
         tracking_params: Dict[str, Any],
         landing_page_id: Optional[int] = None,
-        offer_id: Optional[int] = None
+        offer_id: Optional[int] = None,
+        traffic_source_id: Optional[int] = None
     ) -> str:
         """Generate a tracking URL with all necessary parameters."""
         try:
+            logger.info("=== CLICK GENERATION SERVICE DEBUG ===")
+            logger.info(f"Input parameters: base_url={base_url}, campaign_id={campaign_id}")
+            logger.info(f"landing_page_id: {landing_page_id} (type: {type(landing_page_id)})")
+            logger.info(f"offer_id: {offer_id} (type: {type(offer_id)})")
+            logger.info(f"traffic_source_id: {traffic_source_id} (type: {type(traffic_source_id)})")
+            logger.info(f"tracking_params: {tracking_params}")
             # Parse base URL
             parsed = urlparse(base_url)
 
@@ -38,9 +45,11 @@ class ClickGenerationService:
 
             # Add optional targeting parameters
             if landing_page_id:
-                tracking_data['landing_page_id'] = str(landing_page_id)
+                tracking_data['lp_id'] = str(landing_page_id)  # Use lp_id for URL parameter
             if offer_id:
-                tracking_data['campaign_offer_id'] = str(offer_id)
+                tracking_data['offer_id'] = str(offer_id)
+            if traffic_source_id:
+                tracking_data['ts_id'] = str(traffic_source_id)
 
             # Add sub-tracking parameters (1-5 levels)
             for i in range(1, 6):
@@ -71,6 +80,8 @@ class ClickGenerationService:
             ))
 
             logger.info(f"Generated tracking URL for campaign {campaign_id}: {final_url}")
+            logger.info(f"Final merged_params: {merged_params}")
+            logger.info("=== END CLICK GENERATION SERVICE DEBUG ===")
             return final_url
 
         except Exception as e:

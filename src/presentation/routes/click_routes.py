@@ -3,6 +3,7 @@
 import json
 import sys
 import os
+from typing import Optional
 from loguru import logger
 
 from ...application.handlers.track_click_handler import TrackClickHandler
@@ -20,6 +21,10 @@ class ClickRoutes:
     def __init__(self, track_click_handler: TrackClickHandler):
         self.track_click_handler = track_click_handler
         self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+
+        # Default URLs for campaigns that are not properly configured
+        self.default_offer_url = "https://example.com/default-offer"
+        self.default_safe_url = "https://example.com/default-safe"
 
     def register(self, app):
         """Register routes with socketify app."""
@@ -47,19 +52,45 @@ class ClickRoutes:
                         request_url = "Unknown URL"
 
                 # Get query string (socketify specific)
+                # Socketify doesn't have get_query_string(), let's try alternative approaches
+                query_string = ""
+
+                # Try to get query string from URL
                 try:
-                    query_string = req.get_query_string()
+                    full_url = req.get_full_url()
+                    logger.info(f"Full URL from req.get_full_url(): {repr(full_url)}")
+
+                    # Extract query string from full URL
+                    if '?' in full_url:
+                        query_string = full_url.split('?', 1)[1]
+                        logger.info(f"Extracted query string: {repr(query_string)}")
+                    else:
+                        query_string = "No query params"
+                        logger.info("No query parameters in URL")
+
                 except AttributeError:
-                    # Fallback: build query string from known parameters
-                    query_params = []
-                    for param in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'lp_id', 'offer_id', 'ts_id']:
-                        try:
-                            value = req.get_query(param)
-                            if value:
-                                query_params.append(f"{param}={value}")
-                        except AttributeError:
-                            continue
-                    query_string = "&".join(query_params) if query_params else "No query params"
+                    logger.warning("req.get_full_url() not available")
+                    # Try get_url() and see if it includes query
+                    try:
+                        url = req.get_url()
+                        logger.info(f"URL from req.get_url(): {repr(url)}")
+                        if '?' in url:
+                            query_string = url.split('?', 1)[1]
+                            logger.info(f"Query string from get_url(): {repr(query_string)}")
+                        else:
+                            query_string = "No query params"
+                    except AttributeError:
+                        logger.warning("req.get_url() not available either")
+                        # Last resort: build from individual parameters
+                        query_params = []
+                        for param in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'lp_id', 'offer_id', 'ts_id']:
+                            try:
+                                value = req.get_query(param)
+                                if value:
+                                    query_params.append(f"{param}={value}")
+                            except AttributeError:
+                                continue
+                        query_string = "&".join(query_params) if query_params else "No query params"
 
                 logger.info(f"Request URL: {request_url}")
                 logger.info(f"Query String: {query_string}")
@@ -96,16 +127,80 @@ class ClickRoutes:
                     sub1 = sub2 = sub3 = sub4 = sub5 = click_id_param = lp_id = offer_id = ts_id = None
 
                 logger.info("=== TRACKING PARAMETERS ===")
-                logger.info(f"sub1 (source): {sub1}")
-                logger.info(f"sub2 (medium): {sub2}")
-                logger.info(f"sub3 (campaign): {sub3}")
-                logger.info(f"sub4 (user_id): {sub4}")
-                logger.info(f"sub5 (content): {sub5}")
-                logger.info(f"click_id: {click_id_param}")
-                logger.info(f"lp_id (landing page): {lp_id}")
-                logger.info(f"offer_id (offer): {offer_id}")
-                logger.info(f"ts_id (traffic source): {ts_id}")
+                logger.info(f"sub1 (source): {repr(sub1)}")
+                logger.info(f"sub2 (medium): {repr(sub2)}")
+                logger.info(f"sub3 (campaign): {repr(sub3)}")
+                logger.info(f"sub4 (user_id): {repr(sub4)}")
+                logger.info(f"sub5 (content): {repr(sub5)}")
+                logger.info(f"click_id: {repr(click_id_param)}")
+                logger.info(f"lp_id (landing page): {repr(lp_id)} -> {int(lp_id) if lp_id else None}")
+                logger.info(f"offer_id (offer): {repr(offer_id)} -> {int(offer_id) if offer_id else None}")
+                logger.info(f"ts_id (traffic source): {repr(ts_id)} -> {int(ts_id) if ts_id else None}")
                 logger.info(f"test_mode: {test_mode}")
+
+                # Debug: check all query parameters
+                logger.info("=== ALL QUERY PARAMETERS ===")
+                all_params = {}
+                for param_name in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'lp_id', 'offer_id', 'ts_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5']:
+                    try:
+                        param_value = req.get_query(param_name)
+                        all_params[param_name] = param_value
+                        logger.info(f"{param_name}: {repr(param_value)} (type: {type(param_value).__name__})")
+                    except Exception as e:
+                        logger.error(f"Error getting {param_name}: {e}")
+                logger.info(f"Total parameters found: {len([p for p in all_params.values() if p is not None])}")
+
+                # Additional debugging for req object
+                logger.info("=== REQ OBJECT DEBUGGING ===")
+                try:
+                    logger.info(f"req type: {type(req)}")
+                    logger.info(f"req methods: {[m for m in dir(req) if not m.startswith('_')][:10]}...")
+
+                    # Try different ways to get query parameters
+                    try:
+                        url = req.get_url()
+                        logger.info(f"Full URL: {url}")
+                    except:
+                        logger.info("Could not get full URL")
+
+                    try:
+                        method = req.get_method()
+                        logger.info(f"HTTP Method: {method}")
+                    except:
+                        logger.info("Could not get HTTP method")
+
+                    # Try to get all query parameters at once (if supported)
+                    try:
+                        # Some frameworks support iterating over query params
+                        query_params_dict = {}
+                        # Try common methods
+                        if hasattr(req, 'query'):
+                            query_params_dict = dict(req.query)
+                            logger.info(f"req.query found: {query_params_dict}")
+                        elif hasattr(req, 'args'):
+                            query_params_dict = dict(req.args)
+                            logger.info(f"req.args found: {query_params_dict}")
+                        elif hasattr(req, 'get_parameters'):
+                            # Socketify specific method
+                            try:
+                                all_params = req.get_parameters()
+                                logger.info(f"req.get_parameters() returned: {all_params} (type: {type(all_params)})")
+                                if hasattr(all_params, 'items'):
+                                    query_params_dict = dict(all_params.items())
+                                elif isinstance(all_params, dict):
+                                    query_params_dict = all_params
+                                elif hasattr(all_params, '__iter__'):
+                                    query_params_dict = {k: v for k, v in all_params}
+                                logger.info(f"Parsed parameters: {query_params_dict}")
+                            except Exception as e2:
+                                logger.warning(f"req.get_parameters() failed: {e2}")
+                        else:
+                            logger.info("No bulk query parameter access method found")
+                    except Exception as e:
+                        logger.warning(f"Could not get bulk query params: {e}")
+
+                except Exception as e:
+                    logger.error(f"Error debugging req object: {e}")
 
                 # Create track click command
                 from ...application.commands.track_click_command import TrackClickCommand
@@ -126,9 +221,9 @@ class ClickRoutes:
                     affiliate_sub3=req.get_query('aff_sub3'),
                     affiliate_sub4=req.get_query('aff_sub4'),
                     affiliate_sub5=req.get_query('aff_sub5'),
-                    landing_page_id=int(lp_id) if lp_id else None,
-                    campaign_offer_id=int(offer_id) if offer_id else None,
-                    traffic_source_id=int(ts_id) if ts_id else None,
+                    landing_page_id=self._safe_int_convert(lp_id),
+                    campaign_offer_id=self._safe_int_convert(offer_id),
+                    traffic_source_id=self._safe_int_convert(ts_id),
                     test_mode=test_mode
                 )
 
@@ -144,6 +239,22 @@ class ClickRoutes:
                 logger.info(f"Is Valid: {is_valid}")
                 logger.info(f"Redirect URL: {redirect_url.value}")
                 logger.info(f"Created At: {click.created_at.isoformat()}")
+
+                # Check if we got fallback URL and campaign needs configuration
+                if redirect_url.value == "http://localhost:5000/mock-safe-page":
+                    logger.warning(f"Campaign {campaign_id} is not properly configured with offer/safe URLs")
+
+                    if is_valid:
+                        logger.warning(f"VALID click for campaign {campaign_id} redirected to fallback - campaign needs proper URLs!")
+                        logger.warning(f"Set offer_page_url for campaign {campaign_id} via: PUT /v1/campaigns/{campaign_id}")
+                    else:
+                        logger.info(f"Invalid/fraud click for campaign {campaign_id} - correctly using safe fallback")
+
+                    # Provide helpful setup instructions
+                    logger.warning("To configure campaign URLs:")
+                    logger.warning(f"  curl -X PUT http://localhost:5000/v1/campaigns/{campaign_id} \\")
+                    logger.warning("    -H 'Content-Type: application/json' \\")
+                    logger.warning("    -d '{\"offer_page_url\": \"https://your-offer.com\", \"safe_page_url\": \"https://your-safe.com\"}'")
 
                 if test_mode:
                     logger.info("Test mode: returning HTML response")
@@ -631,6 +742,31 @@ class ClickRoutes:
         app.get('/v1/clicks', list_clicks)
         app.get('/s/:encoded_data', handle_short_link_redirect)
         app.get('/mock-offer', mock_offer)
+
+    def _safe_int_convert(self, value) -> Optional[int]:
+        """Safely convert value to int, handling various formats."""
+        if not value:
+            return None
+
+        # Handle string values
+        if isinstance(value, str):
+            # Remove common prefixes like 'lp_', 'offer_', etc.
+            clean_value = value.strip()
+            if clean_value.startswith(('lp_', 'offer_', 'ts_')):
+                clean_value = clean_value.split('_', 1)[1] if '_' in clean_value else clean_value
+
+            try:
+                return int(clean_value)
+            except (ValueError, TypeError):
+                logger.warning(f"Could not convert '{value}' to int")
+                return None
+
+        # Handle numeric values
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            logger.warning(f"Could not convert '{value}' (type: {type(value)}) to int")
+            return None
 
     def _get_client_ip(self, request) -> str:
         """Get real client IP address."""

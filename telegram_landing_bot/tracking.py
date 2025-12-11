@@ -92,7 +92,10 @@ class TrackingManager:
     async def generate_tracking_link(self,
                                    user_id: int,
                                    source: str = "telegram_bot",
-                                   additional_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                                   additional_params: Optional[Dict[str, Any]] = None,
+                                   lp_id: Optional[int] = None,
+                                   offer_id: Optional[int] = None,
+                                   ts_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Generate tracking link for user using API URL generation
 
@@ -108,8 +111,17 @@ class TrackingManager:
         timestamp = time.time()
         click_id = self._generate_click_id(user_id, timestamp)
 
+        # Объединить параметры с ID для разрешения
+        api_params = additional_params.copy() if additional_params else {}
+        if lp_id:
+            api_params["lp_id"] = lp_id
+        if offer_id:
+            api_params["offer_id"] = offer_id
+        if ts_id:
+            api_params["ts_id"] = ts_id
+
         # Use API to generate tracking URL with direct parameters
-        tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, additional_params or {})
+        tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, api_params)
 
         # Save click information (if database exists)
         click_data = {
@@ -148,6 +160,10 @@ class TrackingManager:
                 "sub3": additional_params.get("sub3", "callback_offer"),
                 "sub4": str(user_id),
                 "sub5": additional_params.get("sub5", "premium_offer"),
+                # Добавить параметры для разрешения по ID
+                "lp_id": additional_params.get("lp_id"),  # Landing Page ID
+                "offer_id": additional_params.get("offer_id"),  # Offer ID
+                "ts_id": additional_params.get("ts_id"),  # Traffic Source ID
                 "metadata": {
                     "user_id": user_id,
                     "bot_source": "telegram",
