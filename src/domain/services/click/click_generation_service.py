@@ -40,8 +40,13 @@ class ClickGenerationService:
             logger.info(f"traffic_source_id: {traffic_source_id} (type: {type(traffic_source_id)})")
             logger.info(f"tracking_params: {tracking_params}")
 
-            # Generate a unique click_id
-            generated_click_id = ClickId.generate()
+            # Use provided click_id or generate a unique one
+            if 'click_id' in tracking_params and tracking_params['click_id']:
+                generated_click_id = ClickId.from_string(tracking_params['click_id'])
+                logger.info(f"Using provided click_id: {generated_click_id.value}")
+            else:
+                generated_click_id = ClickId.generate()
+                logger.info(f"Generated new click_id: {generated_click_id.value}")
 
             # Collect all tracking parameters to be stored
             all_tracking_params = {

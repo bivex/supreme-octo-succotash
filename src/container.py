@@ -99,14 +99,16 @@ class Container:
                 start = time.time()
                 logger.info("🔌 DB pool: creating AdvancedConnectionPool (localhost:5432)...")
                 try:
+                    db_settings = self._settings.database
+                    logger.info(f"🔌 DB pool: connecting to {db_settings.database} on {db_settings.host}:{db_settings.port} as {db_settings.user}")
                     self._singletons['db_connection_pool'] = await loop.run_in_executor(None, lambda: AdvancedConnectionPool(
                         minconn=5,          # Увеличено для лучшей производительности
                         maxconn=32,         # Оптимально для большинства приложений
-                        host="localhost",
-                        port=5432,
-                        database="supreme_octosuccotash_db",
-                        user="app_user",
-                        password="app_password",
+                        host=db_settings.host,
+                        port=db_settings.port,
+                        database=db_settings.database,
+                        user=db_settings.user,
+                        password=db_settings.password,
                         client_encoding='utf8',
                         # Оптимизации соединения для лучшей производительности
                         connect_timeout=10,

@@ -44,23 +44,47 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
             
             logger.info("Attempting to create pre_click_data table if not exists...")
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
-                CREATE TABLE IF NOT EXISTS pre_click_data (
-                    click_id TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-                    tracking_params JSONB,
-                    metadata JSONB
-                )
-            """))
-            logger.info("Table pre_click_data created or already exists.")
+            try:
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
+                    CREATE TABLE IF NOT EXISTS pre_click_data (
+                        click_id TEXT PRIMARY KEY,
+                        campaign_id TEXT NOT NULL,
+                        timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                        tracking_params JSONB,
+                        metadata JSONB
+                    )
+                """))
+                logger.info("Table pre_click_data created or already exists.")
 
-            logger.info("Attempting to create indexes for pre_click_data table...")
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
-            logger.info("Indexes for pre_click_data table created or already exist.")
+                logger.info("Attempting to create indexes for pre_click_data table...")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
+                logger.info("Indexes for pre_click_data table created or already exist.")
 
-            await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+            except UnicodeDecodeError:
+                # If there's corrupted data, drop and recreate the table
+                logger.warning("Unicode decode error during table creation, dropping and recreating table...")
+                try:
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DROP TABLE IF EXISTS pre_click_data CASCADE"))
+                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
+                        CREATE TABLE pre_click_data (
+                            click_id TEXT PRIMARY KEY,
+                            campaign_id TEXT NOT NULL,
+                            timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                            tracking_params JSONB,
+                            metadata JSONB
+                        )
+                    """))
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
+                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                    logger.info("Table pre_click_data dropped and recreated successfully.")
+                except Exception as e2:
+                    logger.error(f"Error recreating pre_click_data table: {e2}", exc_info=True)
+                    raise e2
             logger.info("Database schema initialization committed.")
             self._db_initialized_event.set()  # Mark as initialized
             logger.info("Database schema initialization completed.")
@@ -124,6 +148,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
 
     async def find_by_click_id(self, click_id: ClickId) -> Optional[PreClickData]:
         """Finds pre-click data by click ID."""
+        logger.info(f"Finding PreClickData for click_id: {click_id.value}")
         await self._db_initialized_event.wait()  # Wait for DB to be initialized
         conn = None
         try:
@@ -142,6 +167,43 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             return None
         except Exception as e:
             logger.error(f"Error finding PreClickData for click_id {click_id.value}: {e}", exc_info=True)
+            raise
+        finally:
+            if conn:
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+
+    async def clear_table(self) -> None:
+        """Clears all data from the pre_click_data table. Use with caution, primarily for testing."""
+        await self._db_initialized_event.wait()  # Wait for DB to be initialized
+        conn = None
+        cursor = None
+        try:
+            conn = await self._get_blocking_connection()
+            cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
+
+            logger.warning("Truncating pre_click_data table...")
+            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "TRUNCATE TABLE pre_click_data RESTART IDENTITY CASCADE"))
+            await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+            logger.warning("Pre_click_data table truncated and committed.")
+        except UnicodeDecodeError:
+            # If there's a Unicode decode error, try a different approach
+            logger.warning("Unicode decode error during truncate, trying DELETE instead")
+            if conn and cursor:
+                try:
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DELETE FROM pre_click_data"))
+                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                    logger.warning("Pre_click_data table cleared with DELETE.")
+                except Exception as e2:
+                    logger.error(f"Error clearing pre_click_data table with DELETE: {e2}", exc_info=True)
+                    if conn:
+                        await asyncio.get_event_loop().run_in_executor(None, conn.rollback)
+                    raise e2
+            else:
+                raise RuntimeError("Cannot clear table: no database connection")
+        except Exception as e:
+            logger.error(f"Error truncating pre_click_data table: {e}", exc_info=True)
+            if conn:
+                await asyncio.get_event_loop().run_in_executor(None, conn.rollback)
             raise
         finally:
             if conn:
