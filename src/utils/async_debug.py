@@ -110,13 +110,20 @@ def save_trace_to_file(filename: str = None, format: str = "json") -> Optional[s
         format: Format to save in ('json', 'html')
 
     Returns:
-        Path to saved file or None if async-trace not available
+        Path to saved file or None if async-trace not available or no event loop
     """
     if not ASYNC_TRACE_AVAILABLE:
         logger.warning("⚠️  async-trace not available for saving traces")
         return None
 
     try:
+        # Check if we have a running event loop before attempting to save trace
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning("⚠️  Skipping async trace save: no running event loop")
+            return None
+
         filepath = save_trace(filename, format)
         logger.info(f"💾 Async trace saved to: {filepath}")
         return filepath
@@ -150,13 +157,28 @@ def save_debug_snapshot(reason: str = "debug") -> Optional[str]:
     timestamp = time.strftime("%H%M%S")
     filename = f"debug_snapshot_{reason}_{timestamp}.html"
 
-    try:
-        # Prefer richer snapshot if extended API is present
-        from async_trace import save_full_trace
-        filepath = save_full_trace(filename, format="html")
-    except Exception:
-        filepath = save_trace_to_file(filename, "html")
+    if not ASYNC_TRACE_AVAILABLE:
+        logger.warning("⚠️  async-trace not available for debug snapshots")
+        return None
 
-    if filepath:
-        logger.info(f"📸 Debug snapshot saved: {filepath}")
-    return filepath
+    try:
+        # Check if we have a running event loop before attempting to save trace
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning("⚠️  Skipping debug snapshot: no running event loop")
+            return None
+
+        # Prefer richer snapshot if extended API is present
+        try:
+            from async_trace import save_full_trace
+            filepath = save_full_trace(filename, format="html")
+        except Exception:
+            filepath = save_trace_to_file(filename, "html")
+
+        if filepath:
+            logger.info(f"📸 Debug snapshot saved: {filepath}")
+        return filepath
+    except Exception as e:
+        logger.error(f"❌ Error saving debug snapshot: {e}")
+        return None
