@@ -5,12 +5,17 @@ import sys
 import os
 from typing import Optional
 from loguru import logger
+from urllib.parse import urlencode, urlunparse, urlparse # Import urlparse for handling base_url
 
 from ...application.handlers.track_click_handler import TrackClickHandler
+from shared_url_shortener import URLShortener # Only import URLShortener, not URLParams or EncodingStrategy here
+from ...domain.repositories.pre_click_data_repository import PreClickDataRepository
+from ...domain.value_objects import ClickId, CampaignId
+from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
-# Import shared URL shortener
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from shared_url_shortener import url_shortener, recover_unknown_code
+# Remove these lines as url_shortener will be injected
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
+# from shared_url_shortener import url_shortener, recover_unknown_code
 
 # Cache functions removed - now using Supreme API for URL generation
 
@@ -18,8 +23,13 @@ from shared_url_shortener import url_shortener, recover_unknown_code
 class ClickRoutes:
     """Socketify routes for click tracking operations."""
 
-    def __init__(self, track_click_handler: TrackClickHandler):
+    def __init__(self, 
+                 track_click_handler: TrackClickHandler,
+                 url_shortener_service: URLShortener, # Inject URLShortener
+                 pre_click_data_repository: PreClickDataRepository): # Inject PreClickDataRepository
         self.track_click_handler = track_click_handler
+        self.url_shortener_service = url_shortener_service # Assign injected service
+        self.pre_click_data_repository = pre_click_data_repository # Assign injected repository
         self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
 
         # Default URLs for campaigns that are not properly configured
@@ -124,7 +134,7 @@ class ClickRoutes:
 
             except Exception as e:
                 # Log error and return HTML error page
-                logger.error(f"Click tracking error: {e}")
+                logger.error(f"Click tracking error: {e}", exc_info=True)
                 error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
                 res.write_status(500)
                 res.write_header("Content-Type", "text/html")
@@ -132,7 +142,7 @@ class ClickRoutes:
 
         def get_click_details(res, req):
             """Get click details (admin endpoint)."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            # from ...presentation.middleware.security_middleware import validate_request, add_security_headers # Already imported above
 
             # Validate request (authentication, rate limiting, etc.)
             if validate_request(req, res):
@@ -195,15 +205,16 @@ class ClickRoutes:
                 res.end(json.dumps(click_data))
 
             except Exception as e:
-                logger.error(f"Error getting click details: {e}")
+                logger.error(f"Error getting click details: {e}", exc_info=True)
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
                 res.end(json.dumps(error_response))
 
         def list_clicks(res, req):
             """List recent clicks (admin endpoint)."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            # from ...presentation.middleware.security_middleware import validate_request, add_security_headers # Already imported above
 
             # Validate request (authentication, rate limiting, etc.)
             if validate_request(req, res):
@@ -312,7 +323,7 @@ class ClickRoutes:
                     }
 
                 except Exception as e:
-                    logger.error(f"Error listing clicks: {e}")
+                    logger.error(f"Error listing clicks: {e}", exc_info=True)
                     raise
 
                 res.write_header("Content-Type", "application/json")
@@ -323,6 +334,7 @@ class ClickRoutes:
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
+                add_security_headers(res)
                 res.end(json.dumps(error_response))
 
         # Add mock endpoints for testing
@@ -334,7 +346,7 @@ class ClickRoutes:
 
         def create_click(res, req):
             """Create a click directly (for testing purposes)."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            # from ...presentation.middleware.security_middleware import validate_request, add_security_headers # Already imported above
             import json
             import uuid
 
@@ -431,7 +443,7 @@ class ClickRoutes:
                                 res.end(json.dumps(response))
 
                             except Exception as e:
-                                logger.error(f"Error creating click: {e}")
+                                logger.error(f"Error creating click: {e}", exc_info=True)
                                 error_response = {"status": "error", "message": str(e)}
                                 res.write_status(500)
                                 res.write_header("Content-Type", "application/json")
@@ -439,7 +451,7 @@ class ClickRoutes:
                                 res.end(json.dumps(error_response))
 
                     except Exception as e:
-                        logger.error(f"Error processing click creation data: {e}")
+                        logger.error(f"Error processing click creation data: {e}", exc_info=True)
                         error_response = {"status": "error", "message": "Internal server error"}
                         res.write_status(500)
                         res.write_header("Content-Type", "application/json")
@@ -449,14 +461,14 @@ class ClickRoutes:
                 res.on_data(on_data)
 
             except Exception as e:
-                logger.error(f"Error in create_click: {e}")
+                logger.error(f"Error in create_click: {e}", exc_info=True)
                 error_response = {"status": "error", "message": "Internal server error"}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
-        def handle_short_link_redirect(res, req):
+        async def handle_short_link_redirect(res, req):
             """Handle short link redirection with encoded parameters."""
             try:
                 short_code = req.get_parameter(0)
@@ -473,113 +485,92 @@ class ClickRoutes:
                     res.end(error_html)
                     return
 
-                # Decode short link using new URLShortener
-                try:
-                    url_params = url_shortener.decode(short_code)
+                # Decode short link using injected URLShortener
+                decoded_params_obj = self.url_shortener_service.decode(short_code)
 
-                    # If normal decoding fails, try recovery
-                    if not url_params:
-                        logger.warning(f"Normal decoding failed, trying recovery for: {short_code}")
-                        url_params = recover_unknown_code(short_code)
-
-                    if not url_params:
-                        # Provide detailed diagnostic info
-                        logger.warning(f"Failed to decode/recover short link: {short_code} (length: {len(short_code)})")
-
-                        # Analyze the code structure
-                        diagnostics = []
-                        if short_code.startswith(('s', 'c', 'h')):
-                            strategy = "Sequential" if short_code.startswith('s') else "Compressed" if short_code.startswith('c') else "Hybrid"
-                            diagnostics.append(f"Format: {strategy}")
-                        else:
-                            diagnostics.append("Format: Unknown (should start with s/c/h)")
-                            diagnostics.append("This may be from a different URL shortener system")
-
-                        # Check for common issues
-                        if len(short_code) != 10:
-                            diagnostics.append(f"Length: {len(short_code)} (expected 10 for current system)")
-                        else:
-                            diagnostics.append("Length: Correct (10 characters)")
-
-                        if short_code.startswith('c'):
-                            # Try to decode campaign_id
-                            try:
-                                campaign_code = short_code[1:2]
-                                campaign_id = url_shortener._decode_base62(campaign_code)
-                                diagnostics.append(f"Campaign ID: {campaign_id}")
-                            except:
-                                diagnostics.append("Campaign ID: Invalid base62 encoding")
-
-                        # Log diagnostics
-                        for diag in diagnostics:
-                            logger.warning(f"  {diag}")
-
-                        # Return informative error page
-                        diag_html = "".join(f"<li>{d}</li>" for d in diagnostics)
-                        error_html = f"""<html><body>
-                        <h1>Short Link Error</h1>
-                        <p>Unable to decode short link: <code>{short_code}</code></p>
-                        <h2>Technical Details:</h2>
-                        <ul>{diag_html}</ul>
-                        <p><strong>Possible causes:</strong></p>
-                        <ul>
-                        <li>Old or corrupted link from previous system version</li>
-                        <li>Link was truncated or modified</li>
-                        <li>Link from different URL shortener service</li>
-                        </ul>
-                        <p>Please contact support with this code if you believe this is an error.</p>
-                        </body></html>"""
-                        res.write_status(404)
-                        res.write_header("Content-Type", "text/html")
-                        res.end(error_html)
-                        return
-
-                    # Reconstruct tracking URL from decoded parameters
-                    params_dict = url_params.to_dict()
-                    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
-                    tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
-
-                    # Log successful decoding with details
-                    strategy_info = url_shortener.get_strategy_info(short_code)
-                    param_count = len([v for v in params_dict.values() if v is not None])
-
-                    logger.info("=== SHORT LINK DECODED SUCCESSFULLY ===")
-                    logger.info(f"Short code: {short_code}")
-                    logger.info(f"Encoding strategy: {strategy_info}")
-                    logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
-                    logger.info("Decoded parameters:")
-                    logger.info(f"  cid (campaign): {url_params.cid}")
-                    logger.info(f"  sub1 (source): {url_params.sub1}")
-                    logger.info(f"  sub2 (medium): {url_params.sub2}")
-                    logger.info(f"  sub3 (campaign): {url_params.sub3}")
-                    logger.info(f"  sub4 (user_id): {url_params.sub4}")
-                    logger.info(f"  sub5 (content): {url_params.sub5}")
-                    logger.info(f"  click_id: {url_params.click_id}")
-                    logger.info(f"Final redirect URL: {tracking_url}")
-
-                except Exception as decode_error:
-                    logger.error(f"Error decoding short link {short_code}: {decode_error}")
-                    error_html = f"""<html><body>
-                    <h1>Decoding Error</h1>
-                    <p>Failed to process short link: <code>{short_code}</code></p>
-                    <p>Error: {str(decode_error)}</p>
-                    </body></html>"""
-                    res.write_status(400)
+                if not decoded_params_obj:
+                    logger.warning(f"Failed to decode short code: {short_code} (length: {len(short_code)})")
+                    error_html = "<html><body><h1>Error</h1><p>Tracking URL not found or invalid</p></body></html>"
+                    res.write_status(404)
                     res.write_header("Content-Type", "text/html")
+                    add_security_headers(res)
                     res.end(error_html)
                     return
 
-                # Redirect to the click tracking endpoint
-                res.write_status(302)
-                res.write_header("Location", tracking_url)
-                res.end('')
+                decoded_dict = decoded_params_obj.to_dict()
+                click_id_from_code = decoded_dict.get('click_id')
 
-            except Exception as e:
-                logger.error(f"Error handling short link redirect: {e}")
-                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
-                res.write_status(500)
+                if not click_id_from_code:
+                    logger.warning(f"Decoded parameters missing click_id for code: {short_code}")
+                    error_html = "<html><body><h1>Error</h1><p>Missing click_id in tracking parameters</p></body></html>"
+                    res.write_status(400)
+                    res.write_header("Content-Type", "text/html")
+                    add_security_headers(res)
+                    res.end(error_html)
+                    return
+
+                # Fetch full PreClickData from the repository using the click_id
+                pre_click_data = await self.pre_click_data_repository.find_by_click_id(ClickId(click_id_from_code))
+
+                if not pre_click_data:
+                    logger.warning(f"PreClickData not found for click_id: {click_id_from_code}")
+                    error_html = "<html><body><h1>Error</h1><p>Tracking data not found for click_id</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    add_security_headers(res)
+                    res.end(error_html)
+                    return
+
+                # Retrieve the original base URL from metadata
+                redirect_base_url = pre_click_data.metadata.get('original_base_url')
+                if not redirect_base_url:
+                    logger.error(f"Original base URL not found in PreClickData metadata for click_id: {click_id_from_code}")
+                    error_html = "<html><body><h1>Error</h1><p>Internal server error: Missing redirect base URL</p></body></html>"
+                    res.write_status(500)
+                    res.write_header("Content-Type", "text/html")
+                    add_security_headers(res)
+                    res.end(error_html)
+                    return
+
+                # Combine original tracking parameters with any additional data from PreClickData
+                all_params = pre_click_data.tracking_params.copy()
+
+                # Construct query string (ensure non-None values)
+                query_string = urlencode({k: v for k, v in all_params.items() if v is not None})
+
+                # Construct the final redirect URL to the original landing page
+                redirect_url = f"{redirect_base_url}?{query_string}"
+
+                # Log successful decoding with details
+                strategy_info = self.url_shortener_service.get_strategy_info(short_code)
+                param_count = len([v for v in decoded_dict.values() if v is not None])
+
+                logger.info("=== SHORT LINK DECODED SUCCESSFULLY ===")
+                logger.info(f"Short code: {short_code}")
+                logger.info(f"Encoding strategy: {strategy_info}")
+                logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
+                logger.info("Decoded parameters:")
+                for k, v in decoded_dict.items():
+                    logger.info(f"  {k}: {v}")
+                logger.info(f"Final redirect URL: {redirect_url}")
+
+            except Exception as decode_error:
+                logger.error(f"Error decoding short link {short_code}: {decode_error}", exc_info=True)
+                error_html = f"""<html><body>
+                <h1>Decoding Error</h1>
+                <p>Failed to process short link: <code>{short_code}</code></p>
+                <p>Error: {str(decode_error)}</p>
+                </body></html>"""
+                res.write_status(400)
                 res.write_header("Content-Type", "text/html")
+                add_security_headers(res)
                 res.end(error_html)
+                return
+
+            # Redirect to the final landing page
+            res.write_status(302)
+            res.write_header("Location", redirect_url)
+            res.end('')
 
         # Register all routes
         app.post('/clicks', create_click)

@@ -434,6 +434,8 @@ class Container:
         if 'click_routes' not in self._singletons:
             self._singletons['click_routes'] = ClickRoutes(
                 track_click_handler=await self.get_track_click_handler(),
+                url_shortener_service=await self.get_url_shortening_service(), # Inject URLShortener
+                pre_click_data_repository=await self.get_postgres_pre_click_data_repository() # Inject PreClickDataRepository
             )
         return self._singletons['click_routes']
 
