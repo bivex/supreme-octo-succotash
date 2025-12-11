@@ -21,3 +21,4 @@ for padding in ['', '=', '==', '===']:
     except Exception as e:
         print(f'Failed: {e}')
 
+

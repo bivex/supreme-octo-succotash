@@ -36,7 +36,7 @@ class TrackingManager:
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         # Advertising Platform API base URL
-        self.api_base_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+        self.api_base_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev/v1"
         # Fallback URL for manual URL building
         self.local_landing_url = self.api_base_url
 
