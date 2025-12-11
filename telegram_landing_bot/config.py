@@ -2,6 +2,15 @@
 Configuration for Telegram bot with click tracking to landing pages
 """
 
+# Default tracking parameters (defined at module level to avoid import issues)
+DEFAULT_TRACKING_PARAMS = {
+    "sub1": "telegram_bot",
+    "sub2": "local_landing",
+    "sub3": "supreme_company",
+    "sub4": "direct_message",
+    "sub5": "premium_offer"
+}
+
 import os
 from typing import Optional
 try:
@@ -20,10 +29,15 @@ class Settings(BaseSettings):
 
     # Supreme Tracker
     tracker_domain: str = Field(..., env="TRACKER_DOMAIN")
-    campaign_id: int = Field(..., env="CAMPAIGN_ID")
+    campaign_id: str = Field("camp_9061", env="CAMPAIGN_ID")  # Fixed to correct campaign ID
 
     # Landing Page
     landing_url: str = Field(..., env="LANDING_URL")
+
+    # Default targeting parameters for click tracking
+    default_lp_id: Optional[int] = Field(42, env="DEFAULT_LP_ID")  # Default landing page ID
+    default_offer_id: Optional[int] = Field(24, env="DEFAULT_OFFER_ID")  # Default offer ID
+    default_ts_id: Optional[int] = Field(1, env="DEFAULT_TS_ID")  # Default traffic source ID
 
     # Database (optional)
     database_url: Optional[str] = Field(None, env="DATABASE_URL")
@@ -38,16 +52,6 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
-
-
-# Default tracking parameters
-DEFAULT_TRACKING_PARAMS = {
-    "sub1": "telegram_bot",
-    "sub2": "local_landing",
-    "sub3": "supreme_company",
-    "sub4": "direct_message",
-    "sub5": "premium_offer"
-}
 
 
 # Bot messages

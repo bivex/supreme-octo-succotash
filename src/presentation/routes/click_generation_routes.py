@@ -17,7 +17,7 @@ class ClickGenerationRoutes:
 
     def _register_generate_click(self, app):
         """Register click generation route."""
-        def generate_click(res, req):
+        async def generate_click(res, req):
             """Generate personalized click tracking URLs."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
             import json
@@ -28,7 +28,7 @@ class ClickGenerationRoutes:
                 # Parse request body
                 data_parts = []
 
-                def on_data(res, chunk, is_last, *args):
+                async def on_data(res, chunk, is_last, *args):
                     try:
                         if chunk:
                             data_parts.append(chunk)
@@ -53,7 +53,7 @@ class ClickGenerationRoutes:
                                         return
 
                             # Generate click URL(s)
-                            result = self.generate_click_handler.handle(body_data)
+                            result = await self.generate_click_handler.handle(body_data)
 
                             # Return response
                             res.write_header("Content-Type", "application/json")
@@ -91,4 +91,4 @@ class ClickGenerationRoutes:
                 res.end(json.dumps(error_response))
 
         # Register the click generation endpoint
-        app.post('/clicks/generate', generate_click)
+        app.post('/v1/clicks/generate', generate_click)

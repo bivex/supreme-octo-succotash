@@ -33,6 +33,7 @@ from .postgres_postback_repository import PostgresPostbackRepository
 from .postgres_goal_repository import PostgresGoalRepository
 from .postgres_landing_page_repository import PostgresLandingPageRepository
 from .postgres_offer_repository import PostgresOfferRepository
+from .postgres_pre_click_data_repository import PostgresPreClickDataRepository
 from .postgres_ltv_repository import PostgresLTVRepository
 from .postgres_retention_repository import PostgresRetentionRepository
 from .postgres_form_repository import PostgresFormRepository
@@ -70,6 +71,7 @@ __all__ = [
     'PostgresGoalRepository',
     'PostgresLandingPageRepository',
     'PostgresOfferRepository',
+    'PostgresPreClickDataRepository',
     'PostgresLTVRepository',
     'PostgresRetentionRepository',
     'PostgresFormRepository'

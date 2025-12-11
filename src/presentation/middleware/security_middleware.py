@@ -14,6 +14,13 @@ _request_counts = {}
 
 def setup_security_middleware(app):
     """Setup security middleware for socketify app."""
+    # Import async debug here to avoid circular imports
+    try:
+        from ..utils.async_debug import debug_async_trace
+        debug_async_trace("Setting up security middleware")
+    except ImportError:
+        pass
+
     logger.info("🛡️ Setting up security middleware")
     # In socketify, we handle security checks in individual route handlers
     # rather than using global middleware
@@ -22,6 +29,13 @@ def setup_security_middleware(app):
 
 def validate_request(req, res):
     """Validate incoming request before processing."""
+    # Import async debug here to avoid circular imports
+    try:
+        from ..utils.async_debug import debug_http_request
+        debug_http_request("validate_request")
+    except ImportError:
+        pass
+
     # Get path - socketify request object has limited path access
     # For now, we'll check if analytics is in the URL to determine protection
     try:

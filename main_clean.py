@@ -12,12 +12,22 @@ import sys
 import threading
 import time
 import weakref
+import inspect
+import asyncio
 from contextlib import contextmanager
+
+# Async trace import (optional)
+try:
+    import async_trace
+    ASYNC_TRACE_AVAILABLE = True
+except ImportError:
+    ASYNC_TRACE_AVAILABLE = False
 from typing import Optional
 
 from loguru import logger
 
-from src.config.settings import settings
+from src.config.settings import load_settings
+settings = load_settings()
 from src.container import container
 from src.main import create_app
 
@@ -156,8 +166,8 @@ class BackgroundServiceManager:
         with self._service_lock:
             try:
                 logger.info("Closing database connections...")
-                pool = container.get_db_connection_pool()
-                if hasattr(pool, '_closeall'):
+                pool = container.get_db_connection_pool_sync()
+                if pool and hasattr(pool, '_closeall'):
                     pool._closeall()
                     logger.info("Database connections closed successfully")
             except Exception as e:
@@ -179,9 +189,15 @@ class DatabaseConnectionTester:
             try:
                 import psycopg2
 
-                # Use connection pool from container with thread-safe access
+                # Use connection pool from container with thread-safe access (sync)
                 with self._container_lock:
-                    pool = self.container.get_db_connection_pool()
+                    pool = self.container.get_db_connection_pool_sync()
+                    if pool is None:
+                        # Create pool synchronously as a fallback
+                        conn = self.container.get_db_connection()
+                        pool = self.container.get_db_connection_pool_sync()
+                        if conn and pool:
+                            pool.putconn(conn)
                 conn = None
 
                 try:
@@ -228,6 +244,15 @@ class ServerRunner:
         """Setup signal handlers for graceful shutdown."""
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+
+            # Save trace before shutdown if async-trace is enabled
+            try:
+                from src.utils.async_debug import save_debug_snapshot
+                signal_trace = save_debug_snapshot(f"signal_shutdown_sig{signum}")
+                logger.info(f"📸 Signal shutdown trace saved: {signal_trace}")
+            except Exception as e:
+                logger.error(f"Failed to save signal trace: {e}")
+
             self.service_manager.stop_all_services()
             sys.exit(0)
 
@@ -243,18 +268,28 @@ class ServerRunner:
             self.db_tester.log_database_info(driver_info)
 
             # Start background services
-            self.service_manager.start_postgres_upholder()
-            self.service_manager.start_cache_monitor()
+            # self.service_manager.start_postgres_upholder()
+            # self.service_manager.start_cache_monitor()
 
             yield
         finally:
             self.service_manager.stop_all_services()
 
     def run_server(self) -> None:
-        """Run the server with full lifecycle management."""
+        """Run the server with full lifecycle management (sync entrypoint)."""
+        try:
+            from src.utils.async_debug import debug_async_trace
+            debug_async_trace("Starting server runner")
+        except ImportError:
+            pass
+
         self.setup_signal_handlers()
 
-        app = create_app()
+        logger.info("🚀 Creating app...")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        # create_app is async; run it once on the current loop (do not close it)
+        app = loop.run_until_complete(create_app())
         port = settings.api.port
 
         def on_listen(cfg):
@@ -262,8 +297,18 @@ class ServerRunner:
 
         try:
             with self.managed_services():
-                app.listen(port, on_listen)
+                listen_result = app.listen(port, on_listen)
+                # app.listen may be sync; if it returns awaitable, wait for it on the same loop
+                if inspect.isawaitable(listen_result):
+                    loop.run_until_complete(listen_result)
+
+                # Run socketify loop in the main thread (blocking)
                 app.run()
+        except KeyboardInterrupt:
+            logger.info("Received keyboard interrupt, shutting down...")
+        except Exception as e:
+            logger.error(f"Server error: {e}")
+            raise
         except KeyboardInterrupt:
             logger.info("Received keyboard interrupt, shutting down...")
         except Exception as e:
@@ -292,15 +337,16 @@ class HotReloadManager:
         def __init__(self, script_path: str):
             from watchdog.events import FileSystemEventHandler
             import subprocess
+            import asyncio # Import asyncio here
 
             self.FileSystemEventHandler = FileSystemEventHandler
             self.subprocess = subprocess
             self.script_path = script_path
             self.process: Optional[subprocess.Popen] = None
-            self.restart_server()
+            asyncio.run(self.restart_server()) # Run restart_server as async
 
-        def restart_server(self) -> None:
-            """Restart the server process."""
+        async def restart_server(self) -> None:
+            """Restart the server process (async)."""
             if self.process:
                 logger.info("Stopping current server process...")
                 self.process.terminate()
@@ -320,7 +366,8 @@ class HotReloadManager:
             if (event.src_path.endswith('.py') and
                 not event.src_path.endswith(('__pycache__', '__init__.py'))):
                 logger.info(f"File changed: {event.src_path}")
-                self.restart_server()
+                import asyncio
+                asyncio.run(self.restart_server())
 
     def run_with_reload(self, script_path: str) -> None:
         """Run server with hot reload watching for file changes."""
@@ -348,8 +395,8 @@ class HotReloadManager:
             observer.join()
 
 
-def main():
-    """Main entry point for the application."""
+def main_async(): # Now synchronous wrapper, keeps arg parsing logic
+    """Main entry point for the application (sync wrapper)."""
     parser = argparse.ArgumentParser(
         description='Clean Architecture Affiliate Marketing API Server',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -369,8 +416,44 @@ Examples:
         action='store_true',
         help='Internal flag for reload subprocess (do not use manually)'
     )
+    parser.add_argument(
+        '--async-trace',
+        action='store_true',
+        help='Enable async-trace for debugging asyncio tasks'
+    )
 
     args = parser.parse_args()
+
+    # Enable async tracing if requested and available
+    if args.async_trace:
+        if ASYNC_TRACE_AVAILABLE:
+            async_trace.enable_tracing()
+            logger.info("🔍 Async-trace enabled for debugging asyncio tasks")
+
+            # Import async debug utilities
+            from src.utils.async_debug import save_debug_snapshot, log_trace_to_continuous_file
+
+            # Save initial server startup trace if a loop is running
+            try:
+                asyncio.get_running_loop()
+                startup_trace = save_debug_snapshot("server_startup")
+                logger.info(f"📸 Server startup trace saved: {startup_trace}")
+            except RuntimeError:
+                logger.warning("Skipping startup trace: no running event loop at startup")
+
+            # Setup automatic trace saving on shutdown
+            import atexit
+            def save_shutdown_trace():
+                try:
+                    shutdown_trace = save_debug_snapshot("server_shutdown")
+                    logger.info(f"📸 Server shutdown trace saved: {shutdown_trace}")
+                except Exception as e:
+                    print(f"Error saving shutdown trace: {e}")
+
+            atexit.register(save_shutdown_trace)
+
+        else:
+            logger.warning("⚠️  Async-trace requested but not available. Install with: pip install async-trace")
 
     if args.no_reload:
         # This is a subprocess started by the reload handler
@@ -383,11 +466,11 @@ Examples:
         except ImportError as e:
             logger.error(str(e))
             logger.info("Falling back to normal run mode")
-            ServerRunner().run_server()
+            ServerRunner().run_server() # fallback
     else:
         # Normal server run
         ServerRunner().run_server()
 
 
 if __name__ == "__main__":
-    main()
+    main_async()

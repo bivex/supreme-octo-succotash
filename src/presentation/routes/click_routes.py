@@ -1,9 +1,18 @@
 """Click tracking HTTP routes."""
 
 import json
+import sys
+import os
+from typing import Optional
 from loguru import logger
 
 from ...application.handlers.track_click_handler import TrackClickHandler
+
+# Import shared URL shortener
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
+from shared_url_shortener import url_shortener, recover_unknown_code
+
+# Cache functions removed - now using Supreme API for URL generation
 
 
 class ClickRoutes:
@@ -11,16 +20,37 @@ class ClickRoutes:
 
     def __init__(self, track_click_handler: TrackClickHandler):
         self.track_click_handler = track_click_handler
+        self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+
+        # Default URLs for campaigns that are not properly configured
+        self.default_offer_url = "https://example.com/default-offer"
+        self.default_safe_url = "https://example.com/default-safe"
 
     def register(self, app):
         """Register routes with socketify app."""
-        def track_click(res, req):
+        async def track_click(res, req):
             """Handle click tracking and redirection."""
             try:
-                # Validate required parameters
-                campaign_id = req.get_query('cid')
-                if not campaign_id:
-                    error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
+                # Log incoming click request details
+                user_agent = req.get_header('user-agent') or req.get_header('User-Agent') or 'Unknown'
+                referrer = req.get_header('referer') or req.get_header('Referer') or 'Direct'
+                client_ip = self._get_client_ip(req)
+
+                logger.info("=== CLICK RECEIVED ===")
+                logger.info(f"IP Address: {client_ip}")
+                logger.info(f"User Agent: {user_agent}")
+                logger.info(f"Referrer: {referrer}")
+
+                # Extract only campaign_id and click_id from the URL
+                campaign_id_param = req.get_query('cid')
+                click_id_param = req.get_query('click_id')
+
+                logger.info(f"Campaign ID from URL: {campaign_id_param}")
+                logger.info(f"Click ID from URL: {click_id_param}")
+
+                if not campaign_id_param or not click_id_param:
+                    logger.warning("Missing required campaign_id or click_id parameter")
+                    error_html = "<html><body><h1>Error</h1><p>Campaign or Click ID not found</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
                     res.end(error_html)
@@ -28,36 +58,52 @@ class ClickRoutes:
 
                 # Check if test mode
                 test_mode = req.get_query('test_mode') == '1'
+                logger.info(f"Test mode: {test_mode}")
 
                 # Create track click command
                 from ...application.commands.track_click_command import TrackClickCommand
 
                 command = TrackClickCommand(
-                    campaign_id=campaign_id,
-                    ip_address=self._get_client_ip(req),
-                    user_agent=req.get_header('user-agent') or req.get_header('User-Agent') or '',
-                    referrer=req.get_header('referer') or req.get_header('Referer') or None,
-                    sub1=req.get_query('sub1'),
-                    sub2=req.get_query('sub2'),
-                    sub3=req.get_query('sub3'),
-                    sub4=req.get_query('sub4'),
-                    sub5=req.get_query('sub5'),
-                    click_id_param=req.get_query('click_id'),
-                    affiliate_sub=req.get_query('aff_sub'),
-                    affiliate_sub2=req.get_query('aff_sub2'),
-                    affiliate_sub3=req.get_query('aff_sub3'),
-                    affiliate_sub4=req.get_query('aff_sub4'),
-                    affiliate_sub5=req.get_query('aff_sub5'),
-                    landing_page_id=int(req.get_query('lp_id')) if req.get_query('lp_id') else None,
-                    campaign_offer_id=int(req.get_query('offer_id')) if req.get_query('offer_id') else None,
-                    traffic_source_id=int(req.get_query('ts_id')) if req.get_query('ts_id') else None,
+                    campaign_id=campaign_id_param,
+                    click_id_param=click_id_param,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                    referrer=referrer,
                     test_mode=test_mode
+                    # Other parameters will be fetched from PreClickData inside the handler
                 )
 
+                logger.info("TrackClickCommand created successfully with short parameters")
+
                 # Handle click tracking
-                click, redirect_url, is_valid = self.track_click_handler.handle(command)
+                logger.info("Processing click through TrackClickHandler...")
+                click, redirect_url, is_valid = await self.track_click_handler.handle(command)
+
+                logger.info("=== CLICK PROCESSING RESULT ===")
+                logger.info(f"Click ID: {click.id.value}")
+                logger.info(f"Campaign ID: {click.campaign_id}")
+                logger.info(f"Is Valid: {is_valid}")
+                logger.info(f"Redirect URL: {redirect_url.value}")
+                logger.info(f"Created At: {click.created_at.isoformat()}")
+
+                # Check if we got fallback URL and campaign needs configuration
+                if redirect_url.value == "http://localhost:5000/mock-safe-page":
+                    logger.warning(f"Campaign {campaign_id_param} is not properly configured with offer/safe URLs")
+
+                    if is_valid:
+                        logger.warning(f"VALID click for campaign {campaign_id_param} redirected to fallback - campaign needs proper URLs!")
+                        logger.warning(f"Set offer_page_url for campaign {campaign_id_param} via: PUT /v1/campaigns/{campaign_id_param}")
+                    else:
+                        logger.info(f"Invalid/fraud click for campaign {campaign_id_param} - correctly using safe fallback")
+
+                    # Provide helpful setup instructions
+                    logger.warning("To configure campaign URLs:")
+                    logger.warning(f"  curl -X PUT http://localhost:5000/v1/campaigns/{campaign_id_param} \\")
+                    logger.warning("    -H 'Content-Type: application/json' \\")
+                    logger.warning("    -d '{\"offer_page_url\": \"https://your-offer.com\", \"safe_page_url\": \"https://your-safe.com\"}'")
 
                 if test_mode:
+                    logger.info("Test mode: returning HTML response")
                     # Return HTML for testing
                     status_text = "Valid" if is_valid else "Invalid/Fraud"
                     html = (
@@ -71,6 +117,7 @@ class ClickRoutes:
                     return
 
                 # Standard redirect
+                logger.info(f"Redirecting user to: {redirect_url.value}")
                 res.write_status(302)
                 res.write_header("Location", redirect_url.value)
                 res.end('')
@@ -409,12 +456,163 @@ class ClickRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(error_response))
 
+        def handle_short_link_redirect(res, req):
+            """Handle short link redirection with encoded parameters."""
+            try:
+                short_code = req.get_parameter(0)
+                logger.info("=== SHORT LINK REDIRECT ===")
+                logger.info(f"Short code received: {short_code}")
+                logger.info(f"Client IP: {self._get_client_ip(req)}")
+                logger.info(f"User Agent: {req.get_header('user-agent') or 'Unknown'}")
+
+                if not short_code:
+                    logger.warning("Empty short code received")
+                    error_html = "<html><body><h1>Error</h1><p>Invalid short link</p></body></html>"
+                    res.write_status(404)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                # Decode short link using new URLShortener
+                try:
+                    url_params = url_shortener.decode(short_code)
+
+                    # If normal decoding fails, try recovery
+                    if not url_params:
+                        logger.warning(f"Normal decoding failed, trying recovery for: {short_code}")
+                        url_params = recover_unknown_code(short_code)
+
+                    if not url_params:
+                        # Provide detailed diagnostic info
+                        logger.warning(f"Failed to decode/recover short link: {short_code} (length: {len(short_code)})")
+
+                        # Analyze the code structure
+                        diagnostics = []
+                        if short_code.startswith(('s', 'c', 'h')):
+                            strategy = "Sequential" if short_code.startswith('s') else "Compressed" if short_code.startswith('c') else "Hybrid"
+                            diagnostics.append(f"Format: {strategy}")
+                        else:
+                            diagnostics.append("Format: Unknown (should start with s/c/h)")
+                            diagnostics.append("This may be from a different URL shortener system")
+
+                        # Check for common issues
+                        if len(short_code) != 10:
+                            diagnostics.append(f"Length: {len(short_code)} (expected 10 for current system)")
+                        else:
+                            diagnostics.append("Length: Correct (10 characters)")
+
+                        if short_code.startswith('c'):
+                            # Try to decode campaign_id
+                            try:
+                                campaign_code = short_code[1:2]
+                                campaign_id = url_shortener._decode_base62(campaign_code)
+                                diagnostics.append(f"Campaign ID: {campaign_id}")
+                            except:
+                                diagnostics.append("Campaign ID: Invalid base62 encoding")
+
+                        # Log diagnostics
+                        for diag in diagnostics:
+                            logger.warning(f"  {diag}")
+
+                        # Return informative error page
+                        diag_html = "".join(f"<li>{d}</li>" for d in diagnostics)
+                        error_html = f"""<html><body>
+                        <h1>Short Link Error</h1>
+                        <p>Unable to decode short link: <code>{short_code}</code></p>
+                        <h2>Technical Details:</h2>
+                        <ul>{diag_html}</ul>
+                        <p><strong>Possible causes:</strong></p>
+                        <ul>
+                        <li>Old or corrupted link from previous system version</li>
+                        <li>Link was truncated or modified</li>
+                        <li>Link from different URL shortener service</li>
+                        </ul>
+                        <p>Please contact support with this code if you believe this is an error.</p>
+                        </body></html>"""
+                        res.write_status(404)
+                        res.write_header("Content-Type", "text/html")
+                        res.end(error_html)
+                        return
+
+                    # Reconstruct tracking URL from decoded parameters
+                    params_dict = url_params.to_dict()
+                    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
+                    tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
+
+                    # Log successful decoding with details
+                    strategy_info = url_shortener.get_strategy_info(short_code)
+                    param_count = len([v for v in params_dict.values() if v is not None])
+
+                    logger.info("=== SHORT LINK DECODED SUCCESSFULLY ===")
+                    logger.info(f"Short code: {short_code}")
+                    logger.info(f"Encoding strategy: {strategy_info}")
+                    logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
+                    logger.info("Decoded parameters:")
+                    logger.info(f"  cid (campaign): {url_params.cid}")
+                    logger.info(f"  sub1 (source): {url_params.sub1}")
+                    logger.info(f"  sub2 (medium): {url_params.sub2}")
+                    logger.info(f"  sub3 (campaign): {url_params.sub3}")
+                    logger.info(f"  sub4 (user_id): {url_params.sub4}")
+                    logger.info(f"  sub5 (content): {url_params.sub5}")
+                    logger.info(f"  click_id: {url_params.click_id}")
+                    logger.info(f"Final redirect URL: {tracking_url}")
+
+                except Exception as decode_error:
+                    logger.error(f"Error decoding short link {short_code}: {decode_error}")
+                    error_html = f"""<html><body>
+                    <h1>Decoding Error</h1>
+                    <p>Failed to process short link: <code>{short_code}</code></p>
+                    <p>Error: {str(decode_error)}</p>
+                    </body></html>"""
+                    res.write_status(400)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
+
+                # Redirect to the click tracking endpoint
+                res.write_status(302)
+                res.write_header("Location", tracking_url)
+                res.end('')
+
+            except Exception as e:
+                logger.error(f"Error handling short link redirect: {e}")
+                error_html = "<html><body><h1>Error</h1><p>Internal server error</p></body></html>"
+                res.write_status(500)
+                res.write_header("Content-Type", "text/html")
+                res.end(error_html)
+
         # Register all routes
         app.post('/clicks', create_click)
         app.get('/v1/click', track_click)
         app.get('/v1/click/:click_id', get_click_details)
         app.get('/v1/clicks', list_clicks)
+        app.get('/s/:encoded_data', handle_short_link_redirect)
         app.get('/mock-offer', mock_offer)
+
+    def _safe_int_convert(self, value) -> Optional[int]:
+        """Safely convert value to int, handling various formats."""
+        if not value:
+            return None
+
+        # Handle string values
+        if isinstance(value, str):
+            # Remove common prefixes like 'lp_', 'offer_', etc.
+            clean_value = value.strip()
+            if clean_value.startswith(('lp_', 'offer_', 'ts_')):
+                clean_value = clean_value.split('_', 1)[1] if '_' in clean_value else clean_value
+
+            try:
+                return int(clean_value)
+            except (ValueError, TypeError):
+                logger.warning(f"Could not convert '{value}' to int")
+                return None
+
+        # Handle numeric values
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            logger.warning(f"Could not convert '{value}' (type: {type(value)}) to int")
+            return None
 
     def _get_client_ip(self, request) -> str:
         """Get real client IP address."""

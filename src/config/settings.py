@@ -10,9 +10,9 @@ class DatabaseSettings:
     """Database configuration."""
     host: str = "localhost"
     port: int = 5432
-    database: str = "affiliate_db"
-    user: str = "affiliate_user"
-    password: str = ""
+    database: str = "supreme_octosuccotash_db"
+    user: str = "app_user"
+    password: str = "app_password"
     connection_string: Optional[str] = None
     sqlite_path: str = "stress_test.db"  # For stress testing with SQLite
 

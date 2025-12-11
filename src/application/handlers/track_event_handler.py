@@ -44,6 +44,8 @@ class TrackEventHandler:
             fraud_reason = self.event_service.detect_fraudulent_event(event)
             if fraud_reason:
                 logger.warning(f"Fraudulent event detected: {fraud_reason}")
+                if fraud_reason == "suspicious_user_agent" and event.user_agent:
+                    logger.warning(f"Suspicious User Agent: {event.user_agent}")
                 # Still save the event but mark it as fraudulent
                 event.properties['fraud_reason'] = fraud_reason
                 event.properties['is_fraudulent'] = True

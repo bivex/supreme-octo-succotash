@@ -4,6 +4,7 @@ from ..commands.update_campaign_command import UpdateCampaignCommand
 from ...domain.entities.campaign import Campaign
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.value_objects import CampaignId
+from loguru import logger
 
 
 class UpdateCampaignHandler:
@@ -12,7 +13,7 @@ class UpdateCampaignHandler:
     def __init__(self, campaign_repository: CampaignRepository):
         self._campaign_repository = campaign_repository
 
-    def handle(self, command: UpdateCampaignCommand) -> Campaign:
+    async def handle(self, command: UpdateCampaignCommand) -> Campaign:
         """
         Handle update campaign command.
 
@@ -29,6 +30,8 @@ class UpdateCampaignHandler:
         campaign = self._campaign_repository.find_by_id(command.campaign_id)
         if not campaign:
             raise ValueError(f"Campaign with ID {command.campaign_id.value} not found")
+
+        logger.info(f"DEBUG: UpdateCampaignCommand received for campaign {command.campaign_id.value}. safe_page_url: {command.safe_page_url}, offer_page_url: {command.offer_page_url}")
 
         # Update fields if provided
         if command.name is not None:
@@ -51,6 +54,8 @@ class UpdateCampaignHandler:
             campaign.start_date = command.start_date
         if command.end_date is not None:
             campaign.end_date = command.end_date
+        
+        logger.info(f"DEBUG: Campaign object before save for {campaign.id.value}. safe_page_url: {campaign.safe_page_url}, offer_page_url: {campaign.offer_page_url}")
 
         # Update timestamp
         from datetime import datetime, timezone
