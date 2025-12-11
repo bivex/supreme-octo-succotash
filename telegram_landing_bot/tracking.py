@@ -192,7 +192,7 @@ class TrackingManager:
                         # Remove any conflicting parameters and ensure proper format
                         final_params = {}
                         for key, values in params.items():
-                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']:
+                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'ts', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']:
                                 final_params[key] = values[0] if isinstance(values, list) else values
 
                         # Ensure we have at least cid
