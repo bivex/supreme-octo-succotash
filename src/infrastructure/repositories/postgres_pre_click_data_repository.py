@@ -45,8 +45,16 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             
             logger.info("Attempting to create pre_click_data table if not exists...")
             try:
+                # First, try to drop the table if it exists and has corrupted data
+                try:
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DROP TABLE IF EXISTS pre_click_data CASCADE"))
+                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                    logger.info("Dropped existing pre_click_data table to avoid corruption issues.")
+                except UnicodeDecodeError:
+                    logger.warning("Unicode decode error when dropping table, continuing with recreation...")
+
                 await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
-                    CREATE TABLE IF NOT EXISTS pre_click_data (
+                    CREATE TABLE pre_click_data (
                         click_id TEXT PRIMARY KEY,
                         campaign_id TEXT NOT NULL,
                         timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -54,37 +62,43 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
                         metadata JSONB
                     )
                 """))
-                logger.info("Table pre_click_data created or already exists.")
+                logger.info("Table pre_click_data created.")
 
                 logger.info("Attempting to create indexes for pre_click_data table...")
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
-                logger.info("Indexes for pre_click_data table created or already exist.")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
+                logger.info("Indexes for pre_click_data table created.")
 
                 await asyncio.get_event_loop().run_in_executor(None, conn.commit)
-            except UnicodeDecodeError:
-                # If there's corrupted data, drop and recreate the table
-                logger.warning("Unicode decode error during table creation, dropping and recreating table...")
-                try:
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DROP TABLE IF EXISTS pre_click_data CASCADE"))
-                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                logger.info("Database schema initialization completed successfully.")
+            except UnicodeDecodeError as e:
+                # If there's still a Unicode decode error, try with a different approach
+                logger.error(f"Persistent Unicode decode error during database initialization: {e}")
+                logger.warning("Attempting to recreate database connection...")
+                # Try to recreate the connection
+                if conn:
+                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                conn = await self._get_blocking_connection()
+                cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
 
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
-                        CREATE TABLE pre_click_data (
-                            click_id TEXT PRIMARY KEY,
-                            campaign_id TEXT NOT NULL,
-                            timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-                            tracking_params JSONB,
-                            metadata JSONB
-                        )
-                    """))
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
-                    await asyncio.get_event_loop().run_in_executor(None, conn.commit)
-                    logger.info("Table pre_click_data dropped and recreated successfully.")
-                except Exception as e2:
-                    logger.error(f"Error recreating pre_click_data table: {e2}", exc_info=True)
-                    raise e2
+                # Force drop and recreate
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DROP TABLE IF EXISTS pre_click_data CASCADE"))
+                await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
+                    CREATE TABLE pre_click_data (
+                        click_id TEXT PRIMARY KEY,
+                        campaign_id TEXT NOT NULL,
+                        timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                        tracking_params JSONB,
+                        metadata JSONB
+                    )
+                """))
+                await asyncio.get_event_loop().run_in_executor(None, conn.commit)
+                logger.warning("Database schema recreated after Unicode error.")
+            except Exception as e:
+                logger.error(f"Error initializing pre_click_data database schema: {e}", exc_info=True)
+                raise
             logger.info("Database schema initialization committed.")
             self._db_initialized_event.set()  # Mark as initialized
             logger.info("Database schema initialization completed.")
