@@ -36,9 +36,11 @@ class TrackingManager:
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         # Advertising Platform API base URL
-        self.api_base_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
-        # Fallback URL for manual URL building
-        self.local_landing_url = self.api_base_url
+        self.api_root_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+        # v1 prefix is used for click generation/redirect endpoints
+        self.api_base_url = f"{self.api_root_url}/v1"
+        # Fallback URL for manual URL building (landing)
+        self.local_landing_url = self.api_root_url
 
     async def __aenter__(self):
         # Initialize HTTP session for API calls
@@ -205,7 +207,11 @@ class TrackingManager:
 
         # Use Advertising Platform API for tracking
         logger.info(f"Tracking event via Advertising Platform API: {event_type} for click_id {click_id}")
-        return await self._track_event_locally(click_id, event_type, event_data)
+        try:
+            return await self._track_event_locally(click_id, event_type, event_data)
+        except Exception as e:
+            logger.warning(f"Event tracking failed for {event_type} (click_id: {click_id}): {e} - continuing without event tracking")
+            return False  # Don't fail the whole operation
 
         try:
             payload = {
@@ -256,7 +262,7 @@ class TrackingManager:
             # Remove None values
             payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
 
-            url = f"{self.api_base_url}/events/track"
+            url = f"{self.api_root_url}/events/track"
 
             logger.info(f"Sending event to API: {url}")
             logger.info(f"Event payload: {payload}")
@@ -359,7 +365,7 @@ class TrackingManager:
             # Remove None values
             payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
 
-            url = f"{self.api_base_url}/conversions/track"
+            url = f"{self.api_root_url}/conversions/track"
 
             logger.info(f"Sending conversion to API: {url}")
             logger.info(f"Conversion payload: {payload}")
@@ -456,7 +462,7 @@ class TrackingManager:
             # Remove None values
             payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
 
-            url = f"{self.api_base_url}/postbacks/send"
+            url = f"{self.api_root_url}/postbacks/send"
 
             logger.info(f"Sending postback to API: {url}")
             logger.info(f"Postback payload: {payload}")

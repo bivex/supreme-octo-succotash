@@ -26,6 +26,9 @@ python-dotenv>=1.0.0
 # Advanced scheduling library for automated tasks
 APScheduler>=3.10.0
 
+# Async debugging and tracing
+-e file:./scripts/tools/async-trace
+
 # Data analysis (for performance testing and analytics) - install separately if needed
 # pandas>=2.2.0
 # numpy>=1.26.0

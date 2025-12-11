@@ -204,7 +204,8 @@ class ClickGenerationService:
         # Clean and normalize string parameters
         string_params = [
             'sub1', 'sub2', 'sub3', 'sub4', 'sub5',
-            'click_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5'
+            'click_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5',
+            'user_id', 'bot_source', 'generated_at', 'source'
         ]
 
         for param in string_params:

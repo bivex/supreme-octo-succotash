@@ -34,63 +34,63 @@ class CampaignRoutes:
         self._get_campaign_offers_handler = None
 
     @property
-    def create_campaign_handler(self):
+    async def create_campaign_handler(self):
         if self._create_campaign_handler is None:
-            self._create_campaign_handler = self._container.get_create_campaign_handler()
+            self._create_campaign_handler = await self._container.get_create_campaign_handler()
         return self._create_campaign_handler
 
     @property
-    def update_campaign_handler(self):
+    async def update_campaign_handler(self):
         if self._update_campaign_handler is None:
-            self._update_campaign_handler = self._container.get_update_campaign_handler()
+            self._update_campaign_handler = await self._container.get_update_campaign_handler()
         return self._update_campaign_handler
 
     @property
-    def pause_campaign_handler(self):
+    async def pause_campaign_handler(self):
         if self._pause_campaign_handler is None:
-            self._pause_campaign_handler = self._container.get_pause_campaign_handler()
+            self._pause_campaign_handler = await self._container.get_pause_campaign_handler()
         return self._pause_campaign_handler
 
     @property
-    def resume_campaign_handler(self):
+    async def resume_campaign_handler(self):
         if self._resume_campaign_handler is None:
-            self._resume_campaign_handler = self._container.get_resume_campaign_handler()
+            self._resume_campaign_handler = await self._container.get_resume_campaign_handler()
         return self._resume_campaign_handler
 
     @property
-    def create_landing_page_handler(self):
+    async def create_landing_page_handler(self):
         if self._create_landing_page_handler is None:
-            self._create_landing_page_handler = self._container.get_create_landing_page_handler()
+            self._create_landing_page_handler = await self._container.get_create_landing_page_handler()
         return self._create_landing_page_handler
 
     @property
-    def create_offer_handler(self):
+    async def create_offer_handler(self):
         if self._create_offer_handler is None:
-            self._create_offer_handler = self._container.get_create_offer_handler()
+            self._create_offer_handler = await self._container.get_create_offer_handler()
         return self._create_offer_handler
 
     @property
-    def get_campaign_handler(self):
+    async def get_campaign_handler(self):
         if self._get_campaign_handler is None:
-            self._get_campaign_handler = self._container.get_get_campaign_handler()
+            self._get_campaign_handler = await self._container.get_get_campaign_handler()
         return self._get_campaign_handler
 
     @property
-    def get_campaign_analytics_handler(self):
+    async def get_campaign_analytics_handler(self):
         if self._get_campaign_analytics_handler is None:
-            self._get_campaign_analytics_handler = self._container.get_get_campaign_analytics_handler()
+            self._get_campaign_analytics_handler = await self._container.get_get_campaign_analytics_handler()
         return self._get_campaign_analytics_handler
 
     @property
-    def get_campaign_landing_pages_handler(self):
+    async def get_campaign_landing_pages_handler(self):
         if self._get_campaign_landing_pages_handler is None:
-            self._get_campaign_landing_pages_handler = self._container.get_get_campaign_landing_pages_handler()
+            self._get_campaign_landing_pages_handler = await self._container.get_get_campaign_landing_pages_handler()
         return self._get_campaign_landing_pages_handler
 
     @property
-    def get_campaign_offers_handler(self):
+    async def get_campaign_offers_handler(self):
         if self._get_campaign_offers_handler is None:
-            self._get_campaign_offers_handler = self._container.get_get_campaign_offers_handler()
+            self._get_campaign_offers_handler = await self._container.get_get_campaign_offers_handler()
         return self._get_campaign_offers_handler
 
 
@@ -119,21 +119,21 @@ class CampaignRoutes:
 
         return True
 
-    def register(self, app):
+    async def register(self, app):
         """Register routes with socketify app."""
         # Register individual route handlers
-        self._register_list_campaigns(app)
-        self._register_create_campaign(app)
-        self._register_get_campaign(app)
-        self._register_campaign_analytics(app)
-        self._register_campaign_landing_pages(app)
-        self._register_campaign_offers(app)
-        self._register_campaign_pause(app)
-        self._register_campaign_resume(app)
+        await self._register_list_campaigns(app)
+        await self._register_create_campaign(app)
+        await self._register_get_campaign(app)
+        await self._register_campaign_analytics(app)
+        await self._register_campaign_landing_pages(app)
+        await self._register_campaign_offers(app)
+        await self._register_campaign_pause(app)
+        await self._register_campaign_resume(app)
 
-    def _register_list_campaigns(self, app):
+    async def _register_list_campaigns(self, app):
         """Register list campaigns route."""
-        def list_campaigns(res, req):
+        async def list_campaigns(res, req):
             """List campaigns with pagination."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
             import json
@@ -208,7 +208,7 @@ class CampaignRoutes:
 
                 # Get campaigns from repository
                 offset = (page - 1) * page_size
-                campaign_repo = self.create_campaign_handler._campaign_repository
+                campaign_repo = (await self.create_campaign_handler)._campaign_repository
                 logger.debug(f"About to call find_all with limit={page_size}, offset={offset}")
                 try:
                     campaigns = campaign_repo.find_all(limit=page_size, offset=offset)
@@ -268,7 +268,7 @@ class CampaignRoutes:
 
         app.get('/v1/campaigns', list_campaigns)
 
-    def _register_create_campaign(self, app):
+    async def _register_create_campaign(self, app):
         """Register create campaign route."""
         async def create_campaign(res, req):
             """Create a new campaign."""
@@ -326,7 +326,7 @@ class CampaignRoutes:
                 )
 
                 # Handle command
-                campaign = self.create_campaign_handler.handle(command)
+                campaign = (await self.create_campaign_handler).handle(command)
 
                 # Convert to response
                 response = {
@@ -363,7 +363,7 @@ class CampaignRoutes:
 
         app.post('/v1/campaigns', create_campaign)
 
-    def _register_get_campaign(self, app):
+    async def _register_get_campaign(self, app):
         """Register get campaign route."""
         async def get_campaign(res, req):
             """Get campaign details."""
@@ -378,7 +378,7 @@ class CampaignRoutes:
 
                 # Get campaign from repository
                 from ...domain.value_objects import CampaignId
-                campaign = self.create_campaign_handler._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
+                campaign = (await self.create_campaign_handler)._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
 
                 if not campaign:
                     error_response = {"error": {"code": "NOT_FOUND", "message": "Campaign not found"}}
@@ -556,7 +556,7 @@ class CampaignRoutes:
                     end_date=body_data.get('endDate')
                 )
 
-                updated_campaign = await self.update_campaign_handler.handle(command)
+                updated_campaign = await (await self.update_campaign_handler).handle(command)
 
                 # Convert to response
                 response = {
@@ -607,9 +607,9 @@ class CampaignRoutes:
             }
         }
 
-    def _register_campaign_analytics(self, app):
+    async def _register_campaign_analytics(self, app):
         """Register campaign analytics route."""
-        def get_campaign_analytics(res, req):
+        async def get_campaign_analytics(res, req):
             """Get campaign analytics."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -668,7 +668,7 @@ class CampaignRoutes:
                 )
 
                 # Get analytics from business logic
-                analytics = self.get_campaign_analytics_handler.handle(query)
+                analytics = (await self.get_campaign_analytics_handler).handle(query)
                 logger.debug(f"Analytics object type: {type(analytics)}")
                 if hasattr(analytics, 'revenue'):
                     logger.debug(f"Analytics revenue type: {type(analytics.revenue)}")
@@ -738,10 +738,10 @@ class CampaignRoutes:
 
         app.get('/v1/campaigns/:campaign_id/analytics', get_campaign_analytics)
 
-    def _register_campaign_landing_pages(self, app):
+    async def _register_campaign_landing_pages(self, app):
         """Register campaign landing pages route."""
         logger.debug("_register_campaign_landing_pages called")
-        def get_campaign_landing_pages(res, req):
+        async def get_campaign_landing_pages(res, req):
             """Get campaign landing pages."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -808,7 +808,7 @@ class CampaignRoutes:
                     offset=offset
                 )
 
-                landing_pages = self.get_campaign_landing_pages_handler.handle(query)
+                landing_pages = (await self.get_campaign_landing_pages_handler).handle(query)
                 logger.debug("Landing pages query executed successfully")
                 logger.debug(f"Type: {type(landing_pages)}")
                 if hasattr(landing_pages, '__len__'):
@@ -905,7 +905,7 @@ class CampaignRoutes:
                 )
 
                 # Handle command
-                landing_page = self.create_landing_page_handler.handle(command)
+                landing_page = (await self.create_landing_page_handler).handle(command)
 
                 # Convert to response
                 response = {
@@ -937,9 +937,9 @@ class CampaignRoutes:
         app.get('/v1/campaigns/:campaign_id/landing-pages', get_campaign_landing_pages)
         app.post('/v1/campaigns/:campaign_id/landing-pages', create_campaign_landing_page)
 
-    def _register_campaign_offers(self, app):
+    async def _register_campaign_offers(self, app):
         """Register campaign offers route with CQRS query pattern."""
-        def get_campaign_offers(res, req):
+        async def get_campaign_offers(res, req):
             """Get campaign offers using GetCampaignOffersQuery and business logic handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -989,7 +989,7 @@ class CampaignRoutes:
                     offset=offset
                 )
 
-                offers = self.get_campaign_offers_handler.handle(query)
+                offers = (await self.get_campaign_offers_handler).handle(query)
                 logger.debug("Offers query executed successfully")
                 logger.debug(f"Type: {type(offers)}")
                 if hasattr(offers, '__len__'):
@@ -1042,7 +1042,11 @@ class CampaignRoutes:
         async def create_campaign_offer(res, req):
             """Create an offer for a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...utils.async_debug import debug_http_request, debug_database_call
             import json
+
+            # Debug: Show async call stack for HTTP requests
+            debug_http_request("create_campaign_offer")
 
             # Validate request (authentication, rate limiting, etc.)
             if validate_request(req, res):
@@ -1071,100 +1075,100 @@ class CampaignRoutes:
                     res.end(json.dumps(error_response))
                     return
 
-                # Buffer for request body
-                data_parts = []
+                # Parse request body using socketify's res.get_json()
+                body_data = await res.get_json()
 
-                def on_data(res, chunk, is_last, *args):
-                    try:
-                        if chunk:
-                            data_parts.append(chunk)
-                        
-                        if is_last:
-                            # Parse body
-                            body_data = {}
-                            if data_parts:
-                                full_body = b"".join(data_parts)
-                                if full_body:
-                                    try:
-                                        body_data = json.loads(full_body)
-                                    except (ValueError, json.JSONDecodeError):
-                                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON in request body"}}
-                                        res.write_status(400)
-                                        res.write_header("Content-Type", "application/json")
-                                        add_security_headers(res)
-                                        res.end(json.dumps(error_response))
-                                        return
+                if not body_data:
+                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Request body is required"}}
+                    res.write_status(400)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
+                    return
 
-                            # Validate required fields
-                            required_fields = ['name', 'url', 'offerType', 'weight', 'isActive', 'isControl', 'payout']
-                            missing_fields = [field for field in required_fields if field not in body_data]
-                            if missing_fields:
-                                error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
-                                res.write_status(400)
-                                res.write_header("Content-Type", "application/json")
-                                add_security_headers(res)
-                                res.end(json.dumps(error_response))
-                                return
-
-                            # Create command using CQRS pattern
-                            from ...application.commands.create_offer_command import CreateOfferCommand
-                            from ...domain.value_objects import Money, Url
-                            from decimal import Decimal
-
-                            # Build command with business logic validation
-                            from ...domain.value_objects import CampaignId
-                            command = CreateOfferCommand(
-                                campaign_id=CampaignId(campaign_id),
-                                name=body_data['name'],
-                                url=Url(body_data['url']),
-                                offer_type=body_data.get('offerType', 'direct'),
-                                payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
-                                revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
-                                cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
-                                weight=body_data.get('weight', 100),
-                                is_control=body_data.get('isControl', False)
-                            )
-
-                            # Handle command
-                            offer = self.create_offer_handler.handle(command)
-
-                            # Convert to response
-                            response = {
-                                "id": offer.id,
-                                "campaignId": offer.campaign_id,
-                                "name": offer.name,
-                                "url": offer.url.value,
-                                "offerType": offer.offer_type,
-                                "weight": offer.weight,
-                                "isActive": offer.is_active,
-                                "isControl": offer.is_control,
-                                "payout": {
-                                    "amount": float(offer.payout.amount),
-                                    "currency": offer.payout.currency.value
-                                },
-                                "revenueShare": float(offer.revenue_share),
-                                "costPerClick": {
-                                    "amount": float(offer.cost_per_click.amount),
-                                    "currency": offer.cost_per_click.currency.value
-                                } if offer.cost_per_click else None,
-                                "createdAt": offer.created_at.isoformat(),
-                                "updatedAt": offer.updated_at.isoformat()
-                            }
-
-                            res.write_status(201)
-                            res.write_header('Content-Type', 'application/json')
-                            add_security_headers(res)
-                            res.end(json.dumps(response))
-
-                    except Exception as e:
-                        logger.error(f"Error in create_campaign_offer: {e}", exc_info=True)
-                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
-                        res.write_status(500)
+                try:
+                    # Validate required fields
+                    required_fields = ['name', 'url', 'offerType', 'weight', 'isActive', 'isControl', 'payout']
+                    missing_fields = [field for field in required_fields if field not in body_data]
+                    if missing_fields:
+                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
+                        res.write_status(400)
                         res.write_header("Content-Type", "application/json")
                         add_security_headers(res)
                         res.end(json.dumps(error_response))
+                        return
 
-                res.on_data(on_data)
+                    # Create command using CQRS pattern
+                    from ...application.commands.create_offer_command import CreateOfferCommand
+                    from ...domain.value_objects import Money, Url
+                    from decimal import Decimal
+
+                    # Build command with business logic validation
+                    from ...domain.value_objects import CampaignId
+                    command = CreateOfferCommand(
+                        campaign_id=CampaignId(campaign_id),
+                        name=body_data['name'],
+                        url=Url(body_data['url']),
+                        offer_type=body_data.get('offerType', 'direct'),
+                        payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
+                        revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
+                        cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
+                        weight=body_data.get('weight', 100),
+                        is_control=body_data.get('isControl', False)
+                    )
+
+                    # Debug: Show async call stack before database operation
+                    debug_database_call("create_offer_command")
+
+                    # Handle command
+                    offer = (await self.create_offer_handler).handle(command)
+
+                    # Convert to response
+                    response = {
+                        "id": offer.id,
+                        "campaignId": offer.campaign_id,
+                        "name": offer.name,
+                        "url": offer.url.value,
+                        "offerType": offer.offer_type,
+                        "weight": offer.weight,
+                        "isActive": offer.is_active,
+                        "isControl": offer.is_control,
+                        "payout": {
+                            "amount": float(offer.payout.amount),
+                            "currency": offer.payout.currency.value
+                        },
+                        "revenueShare": float(offer.revenue_share),
+                        "costPerClick": {
+                            "amount": float(offer.cost_per_click.amount),
+                            "currency": offer.cost_per_click.currency.value
+                        } if offer.cost_per_click else None,
+                        "createdAt": offer.created_at.isoformat(),
+                        "updatedAt": offer.updated_at.isoformat()
+                    }
+
+                    # Log successful operation
+                    debug_database_call("offer_creation_success")
+
+                    res.write_status(201)
+                    res.write_header('Content-Type', 'application/json')
+                    add_security_headers(res)
+                    res.end(json.dumps(response))
+
+                except Exception as e:
+                    # Save async trace on error
+                    try:
+                        from ...utils.async_debug import save_debug_snapshot
+                        error_trace = save_debug_snapshot("create_offer_error")
+                        logger.error(f"📸 Create offer error trace saved: {error_trace}")
+                    except Exception as trace_error:
+                        logger.error(f"Failed to save error trace: {trace_error}")
+
+                    logger.error(f"Error in create_campaign_offer processing: {e}", exc_info=True)
+                    error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
+                    res.write_status(500)
+                    res.write_header("Content-Type", "application/json")
+                    add_security_headers(res)
+                    res.end(json.dumps(error_response))
 
             except Exception as e:
                 logger.error(f"Error setting up create_campaign_offer: {e}", exc_info=True)
@@ -1177,9 +1181,9 @@ class CampaignRoutes:
         app.get('/v1/campaigns/:campaign_id/offers', get_campaign_offers)
         app.post('/v1/campaigns/:campaign_id/offers', create_campaign_offer)
 
-    def _register_campaign_pause(self, app):
+    async def _register_campaign_pause(self, app):
         """Register campaign pause route."""
-        def pause_campaign(res, req):
+        async def pause_campaign(res, req):
             """Pause a campaign using CQRS pattern with PauseCampaignCommand and handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -1204,7 +1208,7 @@ class CampaignRoutes:
                 command = PauseCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
 
                 # Handle command
-                campaign = self.pause_campaign_handler.handle(command)
+                campaign = (await self.pause_campaign_handler).handle(command)
 
                 # Convert to response
                 response = {
@@ -1240,9 +1244,9 @@ class CampaignRoutes:
 
         app.post('/v1/campaigns/:campaign_id/pause', pause_campaign)
 
-    def _register_campaign_resume(self, app):
+    async def _register_campaign_resume(self, app):
         """Register campaign resume route."""
-        def resume_campaign(res, req):
+        async def resume_campaign(res, req):
             """Resume a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
 
@@ -1270,7 +1274,7 @@ class CampaignRoutes:
                 command = ResumeCampaignCommand(campaign_id=CampaignId.from_string(campaign_id))
 
                 # Handle command
-                campaign = self.resume_campaign_handler.handle(command)
+                campaign = (await self.resume_campaign_handler).handle(command)
 
                 # Convert to response
                 response = {

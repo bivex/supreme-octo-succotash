@@ -21,9 +21,14 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
 
     async def _get_blocking_connection(self):
         """Get a blocking database connection from the container pool in a thread pool."""
-        if not asyncio.get_event_loop().is_running():
+        loop = asyncio.get_event_loop()
+        if not loop.is_running():
             logger.warning("Attempted to get blocking connection outside of a running event loop. This might be a problem if not handled by a background task.")
-        return await asyncio.get_event_loop().run_in_executor(None, self._container.get_db_connection)
+
+        # Ensure pool is initialized in the async context, then get sync connection in executor
+        await self._container.get_db_connection_pool()
+        pool = self._container.get_db_connection_pool_sync()
+        return await loop.run_in_executor(None, pool.getconn)
 
     async def _initialize_db(self) -> None:
         """Initialize database schema (runs once in background)."""
