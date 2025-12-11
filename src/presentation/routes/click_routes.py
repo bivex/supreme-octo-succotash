@@ -434,35 +434,54 @@ class ClickRoutes:
                     url_params = url_shortener.decode(short_code)
 
                     if not url_params:
-                        logger.warning(f"Failed to decode short link: {short_code}")
-                        error_html = "<html><body><h1>Error</h1><p>Short link not found or expired</p></body></html>"
+                        # Try legacy decoding or provide diagnostic info
+                        logger.warning(f"Failed to decode short link: {short_code} (length: {len(short_code)})")
+
+                        # Check if it's a known format
+                        if short_code.startswith(('s', 'c', 'h')):
+                            strategy = "Sequential" if short_code.startswith('s') else "Compressed" if short_code.startswith('c') else "Hybrid"
+                            logger.warning(f"Code appears to be {strategy} format but decoding failed")
+                        else:
+                            logger.warning(f"Unknown code format - does not start with s/c/h")
+
+                        # For now, return a more informative error
+                        error_html = f"""<html><body>
+                        <h1>Short Link Error</h1>
+                        <p>Unable to decode short link: <code>{short_code}</code></p>
+                        <p>This may be an old or corrupted link.</p>
+                        <p>Please contact support if you believe this is an error.</p>
+                        </body></html>"""
                         res.write_status(404)
                         res.write_header("Content-Type", "text/html")
                         res.end(error_html)
                         return
 
-                        # Reconstruct tracking URL from decoded parameters
-                        params_dict = url_params.to_dict()
-                        query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
-                        tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
+                    # Reconstruct tracking URL from decoded parameters
+                    params_dict = url_params.to_dict()
+                    query_string = "&".join(f"{k}={v}" for k, v in params_dict.items() if v is not None)
+                    tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
 
-                        # Log successful decoding with details
-                        strategy_info = url_shortener.get_strategy_info(short_code)
-                        param_count = len([v for v in params_dict.values() if v is not None])
+                    # Log successful decoding with details
+                    strategy_info = url_shortener.get_strategy_info(short_code)
+                    param_count = len([v for v in params_dict.values() if v is not None])
 
-                        logger.info(f"Short link {short_code} decoded successfully")
-                        logger.info(f"Encoding strategy: {strategy_info}")
-                        logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
-                        logger.info(f"Decoded params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
-                        logger.info(f"Redirecting to: {tracking_url}")
+                    logger.info(f"Short link {short_code} decoded successfully")
+                    logger.info(f"Encoding strategy: {strategy_info}")
+                    logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
+                    logger.info(f"Decoded params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
+                    logger.info(f"Redirecting to: {tracking_url}")
 
                 except Exception as decode_error:
-                        logger.error(f"Error decoding short link {short_code}: {decode_error}")
-                        error_html = "<html><body><h1>Error</h1><p>Invalid short link format</p></body></html>"
-                        res.write_status(400)
-                        res.write_header("Content-Type", "text/html")
-                        res.end(error_html)
-                        return
+                    logger.error(f"Error decoding short link {short_code}: {decode_error}")
+                    error_html = f"""<html><body>
+                    <h1>Decoding Error</h1>
+                    <p>Failed to process short link: <code>{short_code}</code></p>
+                    <p>Error: {str(decode_error)}</p>
+                    </body></html>"""
+                    res.write_status(400)
+                    res.write_header("Content-Type", "text/html")
+                    res.end(error_html)
+                    return
 
                 # Redirect to the click tracking endpoint
                 res.write_status(302)

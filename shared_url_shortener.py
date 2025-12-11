@@ -260,23 +260,16 @@ class URLShortener:
     def encode_smart(self, params: URLParams) -> str:
         """
         Автоматический выбор оптимальной стратегии
+        Приоритет: HYBRID (10 символов) -> COMPRESSED (10 символов) -> SEQUENTIAL
         """
-        params_key = self._params_to_key(params)
-        
-        # Если параметры уже известны - используем sequential
-        if params_key in self.params_to_seq:
-            code = self.encode_sequential(params)
-            if len(code) <= 10:
-                return code
-        
-        # Пробуем hybrid (фиксированная длина, быстрое восстановление)
+        # Для обеспечения 10-символьных кодов используем HYBRID в первую очередь
         code = self.encode_hybrid(params)
-        if len(code) <= 10:
+        if len(code) == 10:  # HYBRID всегда дает ровно 10 символов
             return code
-        
-        # Fallback на compressed
+
+        # Fallback на compressed (тоже 10 символов)
         code = self.encode_compressed(params)
-        return code[:10]
+        return code
     
     # ==================== UNIFIED API ====================
     
