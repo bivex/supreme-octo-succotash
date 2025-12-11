@@ -285,8 +285,9 @@ class ServerRunner:
         self.setup_signal_handlers()
 
         logger.info("🚀 Creating app...")
-        # create_app is async; run it once to get the socketify app
-        app = asyncio.run(create_app())
+        loop = asyncio.get_event_loop()
+        # create_app is async; run it once on the current loop (do not close it)
+        app = loop.run_until_complete(create_app())
         port = settings.api.port
 
         def on_listen(cfg):
@@ -295,9 +296,9 @@ class ServerRunner:
         try:
             with self.managed_services():
                 listen_result = app.listen(port, on_listen)
-                # app.listen may be sync; if it returns awaitable, wait for it
+                # app.listen may be sync; if it returns awaitable, wait for it on the same loop
                 if inspect.isawaitable(listen_result):
-                    asyncio.run(listen_result)
+                    loop.run_until_complete(listen_result)
 
                 # Run socketify loop in the main thread (blocking)
                 app.run()
