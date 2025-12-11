@@ -42,6 +42,7 @@ class GenerateClickHandler:
     async def _handle_single_generation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle single URL generation."""
         try:
+            logger.info(f"DEBUG: Incoming request_data for single generation: {json.dumps(request_data, indent=2)}")
             # Validate required fields
             required_fields = ['campaign_id', 'base_url']
             missing_fields = [field for field in required_fields if field not in request_data]

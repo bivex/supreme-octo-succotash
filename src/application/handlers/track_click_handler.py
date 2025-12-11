@@ -1,9 +1,7 @@
 """Track click command handler."""
 
-import logging
 from typing import Tuple
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 from ..commands.track_click_command import TrackClickCommand
 from ...domain.entities.click import Click
@@ -178,6 +176,7 @@ class TrackClickHandler:
                 'fraud_reason': None,
             }
         else:
+            logger.info(f"DEBUG: PreClickData found for click_id {click_id.value}. Tracking parameters: {pre_click_data.tracking_params}")
             # Populate click_data with parameters from pre_click_data, falling back to command if not present
             tracking_params = pre_click_data.tracking_params
             click_data = {
