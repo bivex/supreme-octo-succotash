@@ -285,7 +285,8 @@ class ServerRunner:
         self.setup_signal_handlers()
 
         logger.info("🚀 Creating app...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         # create_app is async; run it once on the current loop (do not close it)
         app = loop.run_until_complete(create_app())
         port = settings.api.port
@@ -431,9 +432,13 @@ Examples:
             # Import async debug utilities
             from src.utils.async_debug import save_debug_snapshot, log_trace_to_continuous_file
 
-            # Save initial server startup trace
-            startup_trace = save_debug_snapshot("server_startup")
-            logger.info(f"📸 Server startup trace saved: {startup_trace}")
+            # Save initial server startup trace if a loop is running
+            try:
+                asyncio.get_running_loop()
+                startup_trace = save_debug_snapshot("server_startup")
+                logger.info(f"📸 Server startup trace saved: {startup_trace}")
+            except RuntimeError:
+                logger.warning("Skipping startup trace: no running event loop at startup")
 
             # Setup automatic trace saving on shutdown
             import atexit
