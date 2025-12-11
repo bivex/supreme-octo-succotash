@@ -110,6 +110,8 @@ async def callback_get_offer(callback: CallbackQuery):
                 "sub3": "direct_visit",
                 "sub4": callback.from_user.username or "user",
                 "sub5": "offer_page", # Added sub5
+                "aff_sub": "test_aff_sub_1", # Added for testing aff_sub
+                "aff_sub2": "test_aff_sub_2", # Added for testing aff_sub2
                 # "click_id": click_id # Removed click_id here
             },
             lp_id=settings.default_lp_id,

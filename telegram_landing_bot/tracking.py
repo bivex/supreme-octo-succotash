@@ -164,6 +164,11 @@ class TrackingManager:
                 "lp_id": additional_params.get("lp_id"),  # Landing Page ID
                 "offer_id": additional_params.get("offer_id"),  # Offer ID
                 "ts_id": additional_params.get("ts_id"),  # Traffic Source ID
+                "aff_sub": additional_params.get("aff_sub"), # Add aff_sub
+                "aff_sub2": additional_params.get("aff_sub2"), # Add aff_sub2
+                "aff_sub3": additional_params.get("aff_sub3"), # Add aff_sub3
+                "aff_sub4": additional_params.get("aff_sub4"), # Add aff_sub4
+                "aff_sub5": additional_params.get("aff_sub5"), # Add aff_sub5
                 "metadata": {
                     "user_id": user_id,
                     "bot_source": "telegram",
@@ -192,7 +197,7 @@ class TrackingManager:
                         # Remove any conflicting parameters and ensure proper format
                         final_params = {}
                         for key, values in params.items():
-                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'ts', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']:
+                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'ts', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5']:
                                 final_params[key] = values[0] if isinstance(values, list) else values
 
                         # Ensure we have at least cid

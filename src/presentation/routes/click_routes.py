@@ -118,6 +118,12 @@ class ClickRoutes:
                     sub4 = req.get_query('sub4')
                     sub5 = req.get_query('sub5')
 
+                    aff_sub = req.get_query('aff_sub') # Extract aff_sub
+                    aff_sub2 = req.get_query('aff_sub2') # Extract aff_sub2
+                    aff_sub3 = req.get_query('aff_sub3') # Extract aff_sub3
+                    aff_sub4 = req.get_query('aff_sub4') # Extract aff_sub4
+                    aff_sub5 = req.get_query('aff_sub5') # Extract aff_sub5
+
                     click_id_param = req.get_query('click_id')
                     lp_id = self._safe_int_convert(req.get_query('lp_id'))
                     offer_id = self._safe_int_convert(req.get_query('offer_id'))
