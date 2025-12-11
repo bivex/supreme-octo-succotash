@@ -97,8 +97,8 @@ class TrackingManager:
         timestamp = time.time()
         click_id = self._generate_click_id(user_id, timestamp)
 
-        # Use API to generate short tracking URL
-        tracking_url = await self._generate_short_tracking_url(user_id, source, additional_params or {})
+        # Use API to generate tracking URL with direct parameters
+        tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, additional_params or {})
 
         # Save click information (if database exists)
         click_data = {
@@ -121,7 +121,7 @@ class TrackingManager:
             "click_data": click_data
         }
 
-    async def _generate_short_tracking_url(self, user_id: int, source: str, additional_params: Dict[str, Any]) -> str:
+    async def _generate_short_tracking_url(self, user_id: int, click_id: str, source: str, additional_params: Dict[str, Any]) -> str:
         """Generate tracking URL using Supreme API /clicks/generate endpoint"""
         try:
             # Prepare payload for API URL generation
@@ -190,36 +190,30 @@ class TrackingManager:
                             click_id = self._generate_click_id(user_id, time.time())
                             return self._build_tracking_url(click_id, additional_params)
 
-                        # Use direct URL parameters instead of encoding for cross-process compatibility
+                        # Encode parameters into short URL using SIMPLE strategy (cross-process compatible)
                         try:
-                            click_id = self._generate_click_id(user_id, time.time())
-                            tracking_url = self._build_tracking_url(click_id, {
-                                "sub1": payload["params"].get("sub1", "telegram_bot"),
-                                "sub2": payload["params"].get("sub2", "telegram"),
-                                "sub3": payload["params"].get("sub3", "callback_offer"),
-                                "sub4": payload["params"].get("sub4", str(user_id)),
-                                "sub5": payload["params"].get("sub5", "premium_offer")
-                            })
+                            from shared_url_shortener import URLParams, EncodingStrategy
+                            url_params = URLParams(
+                                cid="camp_9061",
+                                sub1=payload["params"].get("sub1", "telegram_bot"),
+                                sub2=payload["params"].get("sub2", "telegram"),
+                                sub3=payload["params"].get("sub3", "callback_offer"),
+                                sub4=str(user_id),
+                                sub5=payload["params"].get("sub5", "premium_offer"),
+                                click_id=click_id
+                            )
 
-                            # Return direct URL instead of short code
-                            logger.info(f"Generated direct tracking URL: {tracking_url}")
-                            return tracking_url
+                            # Use COMPRESSED strategy - cross-process compatible
+                            short_code = url_shortener.encode(url_params, EncodingStrategy.COMPRESSED)
+                            short_url = f"{self.local_landing_url}/s/{short_code}"
+
+                            # Return short URL
+                            logger.info(f"Generated short tracking URL: {short_url}")
+                            return short_url
                         except Exception as encode_error:
-                            logger.warning(f"Error encoding tracking parameters: {encode_error}")
+                            logger.warning(f"Error building tracking URL: {encode_error}")
                             # Fallback to manual URL building
-                            logger.info("Falling back to manual URL generation due to encoding error")
-                            click_id = self._generate_click_id(user_id, time.time())
                             return self._build_tracking_url(click_id, additional_params)
-                        short_url = f"{self.local_landing_url}/s/{short_code}"
-
-                        # Detailed logging of encoding strategy and parameters
-                        param_count = len([v for v in url_params.to_dict().values() if v])
-
-                        logger.info(f"Generated ultra-short tracking URL: {short_url}")
-                        logger.info(f"Encoding strategy: Compressed (сжатие с кампаниями)")
-                        logger.info(f"Parameters count: {param_count}, Code length: {len(short_code)}")
-                        logger.info(f"Tracking params: cid={url_params.cid}, sub1={url_params.sub1}, sub2={url_params.sub2}, sub4={url_params.sub4}")
-                        return short_url
                     else:
                         logger.warning(f"API returned error: {result}")
                 else:
@@ -230,7 +224,6 @@ class TrackingManager:
 
         # Fallback to direct URL building
         logger.info("Falling back to manual URL generation")
-        click_id = self._generate_click_id(user_id, time.time())
         return self._build_tracking_url(click_id, additional_params)
 
     async def track_event(self,

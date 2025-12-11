@@ -13,6 +13,7 @@ class EncodingStrategy(Enum):
     COMPRESSED = "cmp"      # Для произвольных параметров
     HYBRID = "hyb"          # Комбинированный подход
     SIMPLE = "simple"       # Простое кодирование без зависимостей
+    DIRECT = "direct"       # Прямое кодирование без состояния
     SMART = "auto"          # Автоматический выбор
 
 
@@ -370,10 +371,7 @@ class URLShortener:
 
         result = f"z{encoded}"
 
-        # Обрезаем до 10 символов если нужно
-        if len(result) > 10:
-            result = result[:10]
-
+        # Для SIMPLE стратегии не обрезаем - она cross-process compatible
         logger.debug(f"Simple encoded: '{result}' from '{params_str}'")
         return result
 
@@ -421,6 +419,56 @@ class URLShortener:
 
         return None
 
+    def encode_direct(self, params: URLParams) -> str:
+        """
+        Стратегия DIRECT: Прямое кодирование параметров в JSON + base64
+        Полностью независимо от состояния, не обрезается
+        """
+        import json
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Сериализуем параметры в JSON
+        params_dict = params.to_dict()
+        json_str = json.dumps(params_dict, separators=(',', ':'))
+
+        # Кодируем в base64
+        encoded = base64.urlsafe_b64encode(json_str.encode()).decode()
+
+        result = f"d{encoded}"
+
+        logger.debug(f"Direct encoded: '{result}' from {params_dict}")
+        return result
+
+    def decode_direct(self, code: str) -> Optional[URLParams]:
+        """
+        Декодирование direct формата
+        """
+        import json
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if not code.startswith('d'):
+            return None
+
+        try:
+            encoded_part = code[1:]
+
+            # Декодируем из base64
+            decoded_bytes = base64.urlsafe_b64decode(encoded_part)
+            json_str = decoded_bytes.decode()
+
+            # Парсим JSON
+            params_dict = json.loads(json_str)
+
+            params = URLParams(**params_dict)
+            logger.debug(f"Direct decoded: {params.to_dict()}")
+            return params
+
+        except Exception as e:
+            logger.debug(f"Direct decode error: {e}")
+            return None
+
     # ==================== UNIFIED API ====================
     
     def encode(self, params: URLParams, strategy: EncodingStrategy = EncodingStrategy.SMART) -> str:
@@ -444,6 +492,9 @@ class URLShortener:
         elif strategy == EncodingStrategy.SIMPLE:
             code = self.encode_simple(params)
             logger.debug(f"Simple encoding result: {code}")
+        elif strategy == EncodingStrategy.DIRECT:
+            code = self.encode_direct(params)
+            logger.debug(f"Direct encoding result: {code}")
         elif strategy == EncodingStrategy.SMART:
             code = self.encode_smart(params)
             logger.debug(f"Smart encoding result: {code}")
