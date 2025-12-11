@@ -78,7 +78,7 @@ class ClickGenerationService:
                 campaign_id=CampaignId(f"camp_{campaign_id}"), # CampaignId constructor takes 'camp_9061' format
                 timestamp=datetime.now(timezone.utc),
                 tracking_params=all_tracking_params,
-                metadata={'generated_from': 'ClickGenerationService'}
+                metadata={'generated_from': 'ClickGenerationService', 'original_base_url': base_url} # Store the original base_url
             )
 
             # Save to repository

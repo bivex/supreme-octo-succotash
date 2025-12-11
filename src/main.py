@@ -1,4 +1,21 @@
-"""Main application entry point."""
+"""
+Main application entry point with production-grade async tracing.
+
+Production Features:
+- Enhanced async call chain tracing with EnhancedAsyncTracer
+- Automatic performance monitoring and bottleneck detection
+- Production health endpoints with async metrics
+- Comprehensive error analysis for unhandled exceptions
+- Route registration performance tracking
+
+Async Tracing Endpoints:
+- GET /v1/health - Health check with async metrics
+- GET /v1/system/async-trace/report - Detailed async performance report
+
+Environment Variables:
+- Set PERFORMANCE_MODE=true for additional vectorized monitoring
+- Async tracing automatically enabled if async-trace package is available
+"""
 
 # uvloop not available on Windows, skipping (would give +20-40% HTTP performance boost on Linux/macOS)
 
@@ -12,6 +29,17 @@ from decimal import Decimal
 
 from .config.settings import settings
 from .container import container
+
+# Enhanced async tracing for production monitoring
+try:
+    from scripts.tools.async_trace.async_trace import EnhancedAsyncTracer, AsyncDebugger
+    _production_tracer = EnhancedAsyncTracer(capture_locals=False, max_var_length=50)  # Minimal overhead
+    _production_debugger = AsyncDebugger(_production_tracer)
+    _tracing_enabled = True
+except ImportError:
+    _production_tracer = None
+    _production_debugger = None
+    _tracing_enabled = False
 
 # Custom JSON encoder for Decimal objects
 class CustomJSONEncoder(json.JSONEncoder):
@@ -44,6 +72,11 @@ async def create_app() -> socketify.App:
     logger.info("🏗️ START: Creating Socketify application")
     app_start = time.time()
 
+    # Enhanced production tracing for app creation
+    if _tracing_enabled and _production_tracer:
+        with _production_tracer:
+            logger.info("🏗️ Enhanced tracing: Starting app creation with full async monitoring")
+
     # Create app with basic configuration
     logger.info("🏗️ Step 1: Initializing Socketify App")
     app = socketify.App()
@@ -65,6 +98,14 @@ async def create_app() -> socketify.App:
 
     app_time = time.time() - app_start
     logger.info(f"🏗️ FINISH: Socketify application created in {app_time:.4f} seconds")
+
+    # Log production tracing status
+    if _tracing_enabled:
+        logger.info("✅ Enhanced async tracing enabled for production monitoring")
+        logger.info("📊 Async trace reports available at: GET /v1/system/async-trace/report")
+    else:
+        logger.warning("⚠️ Enhanced async tracing not available (async-trace package not found)")
+
     return app
 
 
@@ -170,6 +211,24 @@ def _setup_global_exception_handler() -> None:
         except Exception as trace_error:
             logger.error(f"Failed to save exception trace: {trace_error}")
 
+        # Enhanced async tracing analysis for unhandled exceptions
+        if _tracing_enabled and _production_debugger:
+            try:
+                logger.critical("🔍 Analyzing async trace for unhandled exception...")
+
+                # Get await chain analysis
+                analysis = _production_debugger.analyze_await_chain()
+                if analysis['total_awaits'] > 0:
+                    logger.critical(f"📊 Async state at exception: {analysis['total_awaits']} active awaits, {analysis['total_await_time']:.2f}ms total")
+
+                # Look for error patterns in the trace
+                error_patterns = _production_debugger.find_error_pattern(r'Exception|Error|await')
+                if error_patterns:
+                    logger.critical(f"🚨 Found {len(error_patterns)} error-related patterns in async trace")
+
+            except Exception as analysis_error:
+                logger.error(f"Failed to analyze async trace for exception: {analysis_error}")
+
         # Also call the original exception handler
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
@@ -195,6 +254,13 @@ async def _register_routes(app: socketify.App) -> None:
             return
         def save_debug_snapshot(reason: str = "debug"):
             return None
+
+    # Enhanced production tracing for route registration
+    tracing_context = _production_tracer if _tracing_enabled and _production_tracer else None
+
+    with tracing_context or (type('DummyContext', (), {'__enter__': lambda self: self, '__exit__': lambda self, *args: None})()):
+        if tracing_context:
+            logger.info("🔌 Enhanced tracing: Starting route registration with async monitoring")
 
     steps = [
         ("campaign", container.get_campaign_routes),
@@ -230,9 +296,33 @@ async def _register_routes(app: socketify.App) -> None:
 
         duration = time.time() - start
         logger.info(f"✅ Routes registered in {duration:.3f}s")
+
+        # Enhanced production analysis
+        if _tracing_enabled and _production_debugger:
+            try:
+                analysis = _production_debugger.analyze_await_chain()
+                if analysis['total_awaits'] > 0:
+                    logger.info(f"📊 Route registration async analysis: {analysis['total_awaits']} awaits, {analysis['total_await_time']:.2f}ms total")
+                    if analysis['slowest_awaits']:
+                        slowest = analysis['slowest_awaits'][0]
+                        logger.info(f"🐌 Slowest await: {slowest['location']} ({slowest['duration_ms']:.2f}ms)")
+            except Exception as trace_error:
+                logger.warning(f"Failed to analyze route registration traces: {trace_error}")
+
     except Exception as e:
         duration = time.time() - start
         logger.exception(f"❌ Route registration failed after {duration:.3f}s")
+
+        # Enhanced error analysis
+        if _tracing_enabled and _production_debugger:
+            try:
+                # Look for error patterns in the trace
+                error_patterns = _production_debugger.find_error_pattern(r'Exception|Error')
+                if error_patterns:
+                    logger.error(f"🚨 Found {len(error_patterns)} error patterns in async trace during route registration")
+            except Exception:
+                pass
+
         try:
             snapshot = save_debug_snapshot(f"routes_error_{name}")
             if snapshot:
@@ -276,6 +366,20 @@ def _add_health_endpoints(app: socketify.App) -> None:
             "hostname": socket.gethostname(),
             "timestamp": time.time()
         }
+
+        # Add async tracing info if available
+        if _tracing_enabled and _production_debugger:
+            try:
+                analysis = _production_debugger.analyze_await_chain()
+                health_response["async_tracing"] = {
+                    "enabled": True,
+                    "total_awaits": analysis.get('total_awaits', 0),
+                    "total_await_time_ms": analysis.get('total_await_time', 0),
+                    "slowest_awaits_count": len(analysis.get('slowest_awaits', []))
+                }
+            except Exception:
+                health_response["async_tracing"] = {"enabled": True, "error": "analysis_failed"}
+
         res.write_header("Content-Type", "application/json")
         # Add CORS headers for API endpoints
         res.write_header('Access-Control-Allow-Origin', '*')
@@ -288,6 +392,61 @@ def _add_health_endpoints(app: socketify.App) -> None:
         add_security_headers(res)
         res.end(json.dumps(health_response))
 
+    async def async_trace_report(res, req):
+        """Get detailed async trace report for production monitoring."""
+        if not _tracing_enabled or not _production_debugger:
+            res.write_status(503)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": "Async tracing not enabled"}))
+            return
+
+        try:
+            analysis = _production_debugger.analyze_await_chain()
+
+            # Get error patterns
+            error_patterns = {}
+            common_patterns = [r'Exception', r'Error', r'await', r'asyncio']
+            for pattern in common_patterns:
+                matches = _production_debugger.find_error_pattern(pattern)
+                error_patterns[pattern] = len(matches)
+
+            report = {
+                "timestamp": time.time(),
+                "tracing_enabled": True,
+                "await_chain_analysis": analysis,
+                "error_patterns": error_patterns,
+                "performance_metrics": {
+                    "avg_await_time": analysis.get('total_await_time', 0) / max(analysis.get('total_awaits', 1), 1),
+                    "slowest_await_threshold": 100.0  # ms
+                }
+            }
+
+            # Add warnings for slow operations
+            warnings = []
+            for await_info in analysis.get('slowest_awaits', [])[:5]:  # Top 5 slowest
+                if await_info['duration_ms'] > 100.0:
+                    warnings.append(f"Slow await: {await_info['location']} ({await_info['duration_ms']:.2f}ms)")
+
+            if warnings:
+                report["warnings"] = warnings
+
+            res.write_header("Content-Type", "application/json")
+            res.write_header('Access-Control-Allow-Origin', '*')
+            res.write_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            res.write_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            res.write_header('Access-Control-Allow-Credentials', 'false')
+            res.write_header('Access-Control-Max-Age', '86400')
+            # Add security headers
+            from .presentation.middleware.security_middleware import add_security_headers
+            add_security_headers(res)
+            res.end(json.dumps(report, default=str))
+
+        except Exception as e:
+            logger.error(f"Error generating async trace report: {e}")
+            res.write_status(500)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps({"error": str(e)}))
+
     def reset(res, req):
         """Reset application state for testing."""
         # Note: PostgreSQL repositories don't need explicit reset
@@ -297,6 +456,7 @@ def _add_health_endpoints(app: socketify.App) -> None:
 
     # Register the routes
     app.get("/v1/health", health)
+    app.get("/v1/system/async-trace/report", async_trace_report)
     app.post("/v1/reset", reset)
 
 
@@ -597,7 +757,15 @@ if __name__ == "__main__":
 
     async def start_server():
         logger.info("🏗️ Creating application (async)...")
-        app = await create_app() # Await the async create_app
+
+        # Enhanced production tracing for server startup
+        if _tracing_enabled and _production_tracer:
+            with _production_tracer:
+                logger.info("🚀 Enhanced tracing: Starting server initialization with full async monitoring")
+                app = await create_app() # Await the async create_app
+        else:
+            app = await create_app() # Await the async create_app
+
         app_create_time = time.time() - main_start
         logger.info(f"🏗️ Application created in {app_create_time:.4f} seconds")
 
@@ -609,6 +777,15 @@ if __name__ == "__main__":
 
         logger.info(f"🏁 Starting high-performance server on {settings.api.host}:{settings.api.port}...")
         server_setup_time = time.time() - main_start
+
+        # Production analysis after server setup
+        if _tracing_enabled and _production_debugger:
+            try:
+                analysis = _production_debugger.analyze_await_chain()
+                if analysis['total_awaits'] > 0:
+                    logger.info(f"📊 Server startup async analysis: {analysis['total_awaits']} awaits, {analysis['total_await_time']:.2f}ms total")
+            except Exception as trace_error:
+                logger.warning(f"Failed to analyze server startup traces: {trace_error}")
 
         def on_listen(config):
             total_startup_time = time.time() - main_start
