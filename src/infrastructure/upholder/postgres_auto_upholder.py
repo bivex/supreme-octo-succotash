@@ -8,7 +8,17 @@ from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import threading
-import schedule
+
+logger = logging.getLogger(__name__)
+
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.interval import IntervalTrigger
+    logger.info("✅ APScheduler imported successfully")
+except ImportError as e:
+    logger.error(f"Failed to import APScheduler: {e}")
+    logger.error("Please install APScheduler: pip install apscheduler")
+    raise
 
 # Import our optimization modules
 from ..monitoring.postgres_query_analyzer import PostgresQueryAnalyzer, QueryAnalysisResult
@@ -20,8 +30,6 @@ from ..monitoring.adaptive_connection_pool_optimizer import AdaptiveConnectionPo
 from ..database.postgres_connection_pool_monitor import PostgresConnectionPoolMonitor
 from ..repositories.postgres_bulk_loader import PostgresBulkLoader
 from ..repositories.postgres_prepared_statements import PreparedStatementsManager
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -98,7 +106,9 @@ class PostgresAutoUpholder:
         self.report_handlers: List[Callable[[UpholderReport], None]] = []
         self.alert_handlers: List[Callable[[str, str], None]] = []  # (alert_type, message)
 
-        # Note: Using schedule module directly (no Scheduler class needed)
+        # Initialize APScheduler
+        self.scheduler = AsyncIOScheduler()
+        logger.info("✅ APScheduler initialized")
 
     def start(self) -> None:
         """Start the auto upholder."""
@@ -132,9 +142,9 @@ class PostgresAutoUpholder:
         )
         monitoring_thread.start()
 
-        # Start scheduler thread
-        self._scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
-        self._scheduler_thread.start()
+        # Start APScheduler
+        self.scheduler.start()
+        logger.info("✅ APScheduler started")
 
         logger.info("PostgreSQL Auto Upholder started successfully")
 
@@ -147,7 +157,11 @@ class PostgresAutoUpholder:
         self.is_running = False
         self.cache_monitor.stop_monitoring()
         self.connection_pool_monitor.stop_monitoring()
-        schedule.clear()
+        try:
+            self.scheduler.shutdown(wait=True)
+            logger.info("APScheduler shut down successfully")
+        except Exception as e:
+            logger.error(f"Failed to shutdown scheduler: {e}")
         logger.info("PostgreSQL Auto Upholder stopped")
 
     def run_full_audit(self) -> UpholderReport:
@@ -347,32 +361,40 @@ class PostgresAutoUpholder:
 
     def _setup_scheduled_tasks(self) -> None:
         """Setup scheduled optimization tasks."""
-        # Full audit every hour
-        schedule.every(self.config.query_analysis_interval).minutes.do(
-            self.run_full_audit
-        )
+        try:
+            # Full audit every hour
+            self.scheduler.add_job(
+                self.run_full_audit,
+                IntervalTrigger(minutes=self.config.query_analysis_interval),
+                id='full_audit',
+                name='Full PostgreSQL Audit'
+            )
 
-        # Index audit every 4 hours
-        schedule.every(self.config.index_audit_interval).minutes.do(
-            self._run_index_audit
-        )
+            # Index audit every 4 hours
+            self.scheduler.add_job(
+                self._run_index_audit,
+                IntervalTrigger(minutes=self.config.index_audit_interval),
+                id='index_audit',
+                name='Index Audit'
+            )
 
-        # Bulk optimization check every 15 minutes
-        schedule.every(self.config.bulk_optimization_interval).minutes.do(
-            self._check_bulk_optimizations
-        )
+            # Bulk optimization check every 15 minutes
+            self.scheduler.add_job(
+                self._check_bulk_optimizations,
+                IntervalTrigger(minutes=self.config.bulk_optimization_interval),
+                id='bulk_optimization',
+                name='Bulk Optimization Check'
+            )
 
-        logger.info("Scheduled tasks configured")
+            logger.info("✅ Scheduled tasks configured with APScheduler")
+        except Exception as e:
+            logger.error(f"Failed to setup scheduled tasks: {e}")
+            raise
 
     def _run_scheduler(self) -> None:
-        """Run the scheduler loop."""
-        while self.is_running:
-            try:
-                schedule.run_pending()
-                time.sleep(60)  # Check every minute
-            except Exception as e:
-                logger.error(f"Scheduler error: {e}")
-                time.sleep(60)
+        """APScheduler runs automatically - this method is kept for compatibility."""
+        # APScheduler handles its own scheduling loop
+        logger.info("APScheduler is running automatically")
 
     def _run_index_audit(self) -> None:
         """Run periodic index audit."""

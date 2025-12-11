@@ -23,8 +23,8 @@ requests>=2.32.0
 # Environment variables
 python-dotenv>=1.0.0
 
-# Scheduling library for automated tasks
-schedule>=1.2.0
+# Advanced scheduling library for automated tasks
+APScheduler>=3.10.0
 
 # Data analysis (for performance testing and analytics) - install separately if needed
 # pandas>=2.2.0
