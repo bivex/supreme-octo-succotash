@@ -164,10 +164,21 @@ class TrackingManager:
 
                 if response.status == 200:
                     result = await response.json()
-                    short_url = result.get("short_url") or result.get("tracking_url")
+                    api_url = result.get("short_url") or result.get("tracking_url")
 
-                    if short_url:
-                        logger.info(f"Successfully generated short tracking URL: {short_url}")
+                    if api_url:
+                        # Convert API URL format to expected /v1/click format
+                        from urllib.parse import urlparse, parse_qs
+                        parsed = urlparse(api_url)
+                        params = parse_qs(parsed.query)
+
+                        # Extract cid from query params
+                        cid = params.get('cid', ['camp_9061'])[0]
+
+                        # Build proper URL format
+                        short_url = f"{self.api_base_url}/v1/click?cid={cid}"
+
+                        logger.info(f"Successfully generated short tracking URL: {short_url} (from API: {api_url})")
                         return short_url
                     else:
                         logger.error(f"API response missing URL: {result}")
