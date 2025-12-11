@@ -33,6 +33,13 @@ json.dumps = custom_dumps
 
 async def create_app() -> socketify.App:
     """Create and configure socketify application with maximum performance settings."""
+    # Import async debug here to avoid circular imports
+    try:
+        from .utils.async_debug import debug_async_trace
+        debug_async_trace("Starting Socketify application creation")
+    except ImportError:
+        pass
+
     logger.info("🏗️ START: Creating Socketify application")
     app_start = time.time()
 
@@ -69,6 +76,13 @@ def _configure_socketify_app(app: socketify.App) -> None:
 
 def _configure_logging(app: socketify.App) -> None:
     """Configure logging for the application."""
+    # Import async debug here to avoid circular imports
+    try:
+        from .utils.async_debug import debug_async_trace
+        debug_async_trace("Configuring logging system")
+    except ImportError:
+        pass
+
     # Configure loguru with detailed format including file, line, function
     log_level = settings.logging.level.upper()
     log_format = (
@@ -122,6 +136,13 @@ def _configure_logging(app: socketify.App) -> None:
 
 def _setup_global_exception_handler() -> None:
     """Setup global exception handler to catch all unhandled exceptions."""
+    # Import async debug here to avoid circular imports
+    try:
+        from .utils.async_debug import debug_async_trace
+        debug_async_trace("Setting up global exception handler")
+    except ImportError:
+        pass
+
     import sys
     import traceback
     import functools
@@ -500,6 +521,13 @@ def _add_upholder_endpoints(app: socketify.App, upholder) -> None:
 
 def _apply_middleware(app: socketify.App) -> None:
     """Apply middleware to the application."""
+    # Import async debug here to avoid circular imports
+    try:
+        from .utils.async_debug import debug_async_trace
+        debug_async_trace("Applying middleware to application")
+    except ImportError:
+        pass
+
     from .presentation.middleware.security_middleware import setup_security_middleware
     setup_security_middleware(app)
 

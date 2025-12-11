@@ -259,9 +259,17 @@ class ServerRunner:
 
     async def run_server(self) -> None:
         """Run the server with full lifecycle management."""
+        # Import async debug here to avoid circular imports
+        try:
+            from src.utils.async_debug import debug_async_trace
+            debug_async_trace("Starting server runner")
+        except ImportError:
+            pass
+
         self.setup_signal_handlers()
 
         # Await the asynchronous create_app function
+        logger.info("🚀 Creating app...")
         app = await create_app()
         port = settings.api.port
 
