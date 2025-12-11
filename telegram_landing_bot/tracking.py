@@ -1,6 +1,6 @@
 """
 Module for tracking clicks and conversions
-Integrates with Supreme Tracker (Supreme)
+Integrates with Advertising Platform API for comprehensive tracking
 """
 
 import asyncio
@@ -27,24 +27,27 @@ DEFAULT_TRACKING_PARAMS = {
     "sub5": "premium_offer"
 }
 
-# Import shared URL shortener
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from shared_url_shortener import url_shortener
+# Note: Now using Advertising Platform API instead of direct URL shortener calls
 
 
 class TrackingManager:
-    """Tracking manager for Supreme integration"""
+    """Tracking manager for Advertising Platform API integration"""
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
-        self.tracker_base_url = "https://api.supreme-tracker.com"  # Supreme tracker domain
-        # Use ngrok HTTPS URL for Supreme API access
-        self.local_landing_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+        # Advertising Platform API base URL
+        self.api_base_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+        # Fallback URL for manual URL building
+        self.local_landing_url = self.api_base_url
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        # Initialize HTTP session for API calls
+        self.session = aiohttp.ClientSession(
+            headers={
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+            }
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -64,31 +67,13 @@ class TrackingManager:
 
         return click_id
 
-    def _build_tracking_url(self, click_id: str, additional_params: Optional[Dict[str, Any]] = None) -> str:
-        """Build tracking URL for local landing page"""
-
-        # Base parameters for local endpoint
-        params = {
-            "click_id": click_id,
-            "source": "telegram_bot",
-            "cid": "camp_9061",
-            **DEFAULT_TRACKING_PARAMS
-        }
-
-        # Add additional parameters
-        if additional_params:
-            params.update(additional_params)
-
-        # Form URL - redirect to public landing page via ngrok
-        query_string = urlencode(params, safe='')
-        tracking_url = f"{self.local_landing_url}/v1/click?{query_string}"
-
-        return tracking_url
-
     async def generate_tracking_link(self,
                                    user_id: int,
                                    source: str = "telegram_bot",
-                                   additional_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                                   additional_params: Optional[Dict[str, Any]] = None,
+                                   lp_id: Optional[int] = None,
+                                   offer_id: Optional[int] = None,
+                                   ts_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Generate tracking link for user using API URL generation
 
@@ -104,8 +89,17 @@ class TrackingManager:
         timestamp = time.time()
         click_id = self._generate_click_id(user_id, timestamp)
 
+        # Объединить параметры с ID для разрешения
+        api_params = additional_params.copy() if additional_params else {}
+        if lp_id:
+            api_params["lp_id"] = lp_id
+        if offer_id:
+            api_params["offer_id"] = offer_id
+        if ts_id:
+            api_params["ts_id"] = ts_id
+
         # Use API to generate tracking URL with direct parameters
-        tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, additional_params or {})
+        tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, api_params)
 
         # Save click information (if database exists)
         click_data = {
@@ -129,35 +123,65 @@ class TrackingManager:
         }
 
     async def _generate_short_tracking_url(self, user_id: int, click_id: str, source: str, additional_params: Dict[str, Any]) -> str:
-        """Generate tracking URL using URLShortener directly (bypass API for now)"""
+        """Generate tracking URL using Advertising Platform API"""
         try:
-            logger.info("Generating tracking URL with URLShortener (direct approach)...")
+            logger.info("Generating tracking URL via Advertising Platform API...")
 
-            # Create short tracking URL using high-level API (as shown in demo_bindings)
-            from shared_url_shortener import create_tracking_link, EncodingStrategy
+            # Prepare payload for API call
+            payload = {
+                "base_url": self.api_base_url,
+                "campaign_id": 9061,  # Numeric ID as required by API
+                "tracking_params": {
+                    "click_id": click_id,
+                    "source": source,
+                    "sub1": additional_params.get("sub1", source),
+                    "sub2": additional_params.get("sub2", "telegram"),
+                    "sub3": additional_params.get("sub3", "callback_offer"),
+                    "sub4": str(user_id),
+                    "sub5": additional_params.get("sub5", "premium_offer"),
+                    "lp_id": additional_params.get("lp_id"),
+                    "offer_id": additional_params.get("offer_id"),
+                    "ts_id": additional_params.get("ts_id"),
+                    "aff_sub": additional_params.get("aff_sub"),
+                    "aff_sub2": additional_params.get("aff_sub2"),
+                    "aff_sub3": additional_params.get("aff_sub3"),
+                    "aff_sub4": additional_params.get("aff_sub4"),
+                    "aff_sub5": additional_params.get("aff_sub5"),
+                    "user_id": user_id, # Add user_id to tracking params for PreClickData
+                    "bot_source": "telegram",
+                    "generated_at": int(time.time()),
+                    **(additional_params.get("metadata", {}) if additional_params else {})
+                }
+            }
 
-            short_url = create_tracking_link(
-                base_url=self.local_landing_url,
-                cid="camp_9061",
-                sub1=additional_params.get("sub1", source),
-                sub2=additional_params.get("sub2", "telegram"),
-                sub3=additional_params.get("sub3", "callback_offer"),
-                sub4=str(user_id),
-                sub5=additional_params.get("sub5", "premium_offer"),
-                click_id=click_id,
-                strategy=EncodingStrategy.COMPRESSED
-            )
+            # Remove None values from tracking_params
+            payload["tracking_params"] = {k: v for k, v in payload["tracking_params"].items() if v is not None}
 
-            logger.info(f"Successfully generated short tracking URL: {short_url}")
-            return short_url
+            # Call Advertising Platform API
+            url = f"{self.api_base_url}/v1/click/generate"
+            logger.info(f"Calling API: {url} with payload: {json.dumps(payload, indent=2)}")
+
+            async with self.session.post(url, json=payload) as response:
+                logger.info(f"API response status: {response.status}")
+
+                if response.status == 200:
+                    result = await response.json()
+                    api_url = result.get("short_url")
+
+                    if api_url:
+                        logger.info(f"Successfully generated short tracking URL: {api_url}")
+                        return api_url
+                    else:
+                        logger.error(f"API response missing 'short_url': {result}")
+                        raise ValueError("API response missing tracking URL")
+                else:
+                    response_text = await response.text()
+                    logger.error(f"API call failed (status {response.status}): {response_text}")
+                    raise Exception(f"API call failed: {response.status}")
 
         except Exception as e:
-            logger.error(f"Error generating tracking URL with URLShortener: {e}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            # Fallback to manual URL building
-            logger.info("Falling back to manual URL generation")
-            return self._build_tracking_url(click_id, additional_params)
+            logger.error(f"Error generating tracking URL via API: {e}", exc_info=True)
+            raise Exception(f"Failed to generate tracking URL: {str(e)}")
 
     async def track_event(self,
                          click_id: str,
@@ -179,13 +203,9 @@ class TrackingManager:
             logger.warning("HTTP session not initialized - skipping event tracking")
             return False
 
-        # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = True  # Skip remote tracking for demo/development
-
-        if skip_remote:
-            logger.info(f"Remote tracking skipped (demo mode): {event_type} for click_id {click_id}")
-            # Try to track locally for debugging
-            return await self._track_event_locally(click_id, event_type, event_data)
+        # Use Advertising Platform API for tracking
+        logger.info(f"Tracking event via Advertising Platform API: {event_type} for click_id {click_id}")
+        return await self._track_event_locally(click_id, event_type, event_data)
 
         try:
             payload = {
@@ -211,27 +231,36 @@ class TrackingManager:
             return False
 
     async def _track_event_locally(self, click_id: str, event_type: str, event_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Track event to Supreme server endpoint"""
+        """Track event via Advertising Platform API"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping Supreme event tracking")
+            logger.warning("HTTP session not initialized - skipping event tracking")
             return False
 
         try:
-            campaign_id_num = 9061
-            logger.info(f"Using campaign_id: camp_9061 -> {campaign_id_num}")
+            # Prepare payload according to API docs
             payload = {
+                "click_id": click_id,
                 "event_type": event_type,
                 "event_name": event_data.get("event_name", event_type) if event_data else event_type,
-                "click_id": click_id,
-                "campaign_id": str(campaign_id_num)
+                "campaign_id": "camp_9061",  # String ID for events API
+                "url": event_data.get("url", f"{self.local_landing_url}/landing") if event_data else f"{self.local_landing_url}/landing",
+                "timestamp": int(time.time()),
+                "properties": {
+                    "source": "telegram_bot",
+                    "user_agent": event_data.get("user_agent") if event_data else None,
+                    "ip_address": event_data.get("ip_address") if event_data else None,
+                    **(event_data.get("properties", {}) if event_data else {})
+                }
             }
 
-            # Add landing_page_id if available (from API docs example)
-            # For now, we'll keep it simple with just required fields
+            # Remove None values
+            payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
 
-            url = f"{self.local_landing_url}/events/track"
+            url = f"{self.api_base_url}/events/track"
 
-            logger.info(f"Sending event payload: {payload}")
+            logger.info(f"Sending event to API: {url}")
+            logger.info(f"Event payload: {payload}")
+
             async with self.session.post(url, json=payload) as response:
                 logger.info(f"Event tracking response status: {response.status}")
                 response_text = await response.text()
@@ -240,17 +269,17 @@ class TrackingManager:
                 if response.status == 200:
                     result = await response.json()
                     if result.get("status") == "success":
-                        logger.info(f"Supreme event tracked: {event_type} for click_id {click_id}")
+                        logger.info(f"Event tracked successfully: {event_type} for click_id {click_id}")
                         return True
                     else:
-                        logger.warning(f"Supreme event tracking failed: {result}")
+                        logger.warning(f"Event tracking failed: {result}")
                         return False
                 else:
-                    logger.warning(f"Supreme event tracking failed (status {response.status})")
+                    logger.warning(f"Event tracking failed (status {response.status}): {response_text}")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error tracking Supreme event: {e}")
+            logger.warning(f"Error tracking event: {e}")
             return False
 
     async def track_conversion(self,
@@ -275,13 +304,9 @@ class TrackingManager:
             logger.warning("HTTP session not initialized - skipping conversion tracking")
             return False
 
-        # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = True  # Skip remote tracking for demo/development
-
-        if skip_remote:
-            logger.info(f"Remote conversion tracking skipped (demo mode): {conversion_type} for click_id {click_id}")
-            # Skip local tracking in demo mode to avoid API validation errors
-            return True
+        # Use Advertising Platform API for conversion tracking
+        logger.info(f"Tracking conversion via Advertising Platform API: {conversion_type} for click_id {click_id}")
+        return await self._track_conversion_locally(click_id, conversion_type, conversion_value, conversion_data)
 
         try:
             payload = {
@@ -309,50 +334,55 @@ class TrackingManager:
             return False
 
     async def _track_conversion_locally(self, click_id: str, conversion_type: str, conversion_value: float = 0.0, conversion_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Track conversion to Supreme server endpoint"""
+        """Track conversion via Advertising Platform API"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping Supreme conversion tracking")
+            logger.warning("HTTP session not initialized - skipping conversion tracking")
             return False
 
         try:
-            # Map conversion_type to event_type for the events API
-            event_type_map = {
-                "lead": "conversion",
-                "sale": "purchase",
-                "signup": "signup"
-            }
-
+            # Prepare payload according to API docs
             payload = {
-                "event_type": event_type_map.get(conversion_type, "conversion"),
-                "event_name": f"{conversion_type}_conversion",
                 "click_id": click_id,
-                "campaign_id": "9061",  # Keep as string for events API
-                "url": f"{self.local_landing_url}/landing",
+                "conversion_type": conversion_type,
+                "conversion_value": conversion_value,
+                "currency": "RUB",
+                "campaign_id": "camp_9061",  # String ID for conversions API
+                "timestamp": int(time.time()),
                 "properties": {
-                    "conversion_value": conversion_value,
-                    "currency": "RUB",
                     "source": "telegram_bot",
+                    "user_id": conversion_data.get("user_id") if conversion_data else None,
+                    "order_id": conversion_data.get("order_id") if conversion_data else None,
                     **(conversion_data or {})
                 }
             }
 
-            url = f"{self.local_landing_url}/events/track"
+            # Remove None values
+            payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
+
+            url = f"{self.api_base_url}/conversions/track"
+
+            logger.info(f"Sending conversion to API: {url}")
+            logger.info(f"Conversion payload: {payload}")
 
             async with self.session.post(url, json=payload) as response:
+                logger.info(f"Conversion tracking response status: {response.status}")
+                response_text = await response.text()
+                logger.info(f"Conversion tracking response: {response_text}")
+
                 if response.status == 200:
                     result = await response.json()
-                    if result.get("status") == "success":
-                        logger.info(f"Supreme conversion tracked: {conversion_type} for click_id {click_id}")
+                    if result.get("status") == "success" or result.get("recorded"):
+                        logger.info(f"Conversion tracked successfully: {conversion_type} for click_id {click_id}")
                         return True
                     else:
-                        logger.warning(f"Supreme conversion tracking failed: {result}")
+                        logger.warning(f"Conversion tracking failed: {result}")
                         return False
                 else:
-                    logger.warning(f"Supreme conversion tracking failed (status {response.status})")
+                    logger.warning(f"Conversion tracking failed (status {response.status}): {response_text}")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error tracking Supreme conversion: {e}")
+            logger.warning(f"Error tracking conversion: {e}")
             return False
 
     async def send_postback(self,
@@ -375,13 +405,9 @@ class TrackingManager:
             logger.warning("HTTP session not initialized - skipping postback")
             return False
 
-        # Skip tracking if using placeholder domain (but still try local endpoint)
-        skip_remote = True  # Skip remote tracking for demo/development
-
-        if skip_remote:
-            logger.info(f"Remote postback skipped (demo mode): {postback_type} for click_id {click_id}")
-            # Still try to track locally
-            return await self._send_postback_locally(click_id, postback_type, postback_data)
+        # Use Advertising Platform API for postback sending
+        logger.info(f"Sending postback via Advertising Platform API: {postback_type} for click_id {click_id}")
+        return await self._send_postback_locally(click_id, postback_type, postback_data)
 
         try:
             payload = {
@@ -407,42 +433,53 @@ class TrackingManager:
             return False
 
     async def _send_postback_locally(self, click_id: str, postback_type: str, postback_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Send postback to Supreme server endpoint"""
+        """Send postback via Advertising Platform API"""
         if not self.session:
-            logger.warning("HTTP session not initialized - skipping Supreme postback")
+            logger.warning("HTTP session not initialized - skipping postback")
             return False
 
         try:
+            # Prepare payload according to API docs
             payload = {
-                "event_type": "postback",
-                "event_name": f"{postback_type}_postback",
                 "click_id": click_id,
-                "campaign_id": "9061",  # Keep as string for events API
-                "url": f"{self.local_landing_url}/landing",
+                "postback_type": postback_type,
+                "campaign_id": "camp_9061",  # String ID for postbacks API
+                "timestamp": int(time.time()),
                 "properties": {
-                    "postback_type": postback_type,
                     "source": "telegram_bot",
+                    "webhook_url": postback_data.get("webhook_url") if postback_data else None,
+                    "partner_id": postback_data.get("partner_id") if postback_data else None,
                     **(postback_data or {})
                 }
             }
 
-            url = f"{self.local_landing_url}/events/track"
+            # Remove None values
+            payload["properties"] = {k: v for k, v in payload["properties"].items() if v is not None}
+
+            url = f"{self.api_base_url}/postbacks/send"
+
+            logger.info(f"Sending postback to API: {url}")
+            logger.info(f"Postback payload: {payload}")
 
             async with self.session.post(url, json=payload) as response:
+                logger.info(f"Postback response status: {response.status}")
+                response_text = await response.text()
+                logger.info(f"Postback response: {response_text}")
+
                 if response.status == 200:
                     result = await response.json()
-                    if result.get("status") == "success":
-                        logger.info(f"Supreme postback sent: {postback_type} for click_id {click_id}")
+                    if result.get("status") == "success" or result.get("delivered"):
+                        logger.info(f"Postback sent successfully: {postback_type} for click_id {click_id}")
                         return True
                     else:
-                        logger.warning(f"Supreme postback failed: {result}")
+                        logger.warning(f"Postback failed: {result}")
                         return False
                 else:
-                    logger.warning(f"Supreme postback failed (status {response.status})")
+                    logger.warning(f"Postback failed (status {response.status}): {response_text}")
                     return False
 
         except Exception as e:
-            logger.warning(f"Error sending Supreme postback: {e}")
+            logger.warning(f"Error sending postback: {e}")
             return False
 
     def extract_click_id_from_url(self, url: str) -> Optional[str]:

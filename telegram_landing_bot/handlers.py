@@ -59,7 +59,10 @@ async def callback_visit_landing(callback: CallbackQuery):
                 "sub3": "direct_visit",
                 "sub4": callback.from_user.username or "user",
                 "click_id": click_id
-            }
+            },
+            lp_id=settings.default_lp_id,
+            offer_id=settings.default_offer_id,
+            ts_id=settings.default_ts_id
         )
 
         tracking_url = tracking_result["tracking_url"]
@@ -100,15 +103,26 @@ async def callback_get_offer(callback: CallbackQuery):
         # Generate tracking link
         tracking_result = await get_tracking_manager().generate_tracking_link(
             user_id=user_id,
-            source="telegram_bot_start",
+            source="telegram_bot_visit",
             additional_params={
-                "sub3": "callback_offer",
-                "sub4": username,
-                "user_id": user_id
-            }
+                "sub1": "telegram_bot_visit", # Added sub1
+                "sub2": "callback", # Added sub2
+                "sub3": "direct_visit",
+                "sub4": callback.from_user.username or "user",
+                "sub5": "offer_page", # Added sub5
+                "aff_sub": "test_aff_sub_1", # Added for testing aff_sub
+                "aff_sub2": "test_aff_sub_2", # Added for testing aff_sub2
+                "aff_sub3": "test_aff_sub_3", # Added for testing aff_sub3
+                "aff_sub4": "test_aff_sub_4", # Added for testing aff_sub4
+                "aff_sub5": "test_aff_sub_5", # Added for testing aff_sub5
+                # "click_id": click_id # Removed click_id here
+            },
+            lp_id=settings.default_lp_id,
+            offer_id=settings.default_offer_id,
+            ts_id=settings.default_ts_id
         )
 
-        click_id = tracking_result["click_id"]
+        click_id = tracking_result["click_id"] # click_id is assigned here
         tracking_url = tracking_result["tracking_url"]
 
         logger.info(f"Generated tracking link for user {user_id}: {click_id}")

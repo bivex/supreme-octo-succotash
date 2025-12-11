@@ -3,78 +3,109 @@
 from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from loguru import logger
+from datetime import datetime, timezone
 
+from src.domain.entities.pre_click_data import PreClickData
+from src.domain.repositories.pre_click_data_repository import PreClickDataRepository
+from src.domain.value_objects import ClickId, CampaignId
 
 class ClickGenerationService:
     """Service for generating personalized click tracking links."""
 
-    def __init__(self):
+    def __init__(self, pre_click_data_repository: PreClickDataRepository):
+        self._pre_click_data_repository = pre_click_data_repository
         self._valid_traffic_sources = {
             'facebook', 'google', 'taboola', 'outbrain', 'twitter', 'linkedin',
             'email', 'direct', 'referral', 'organic', 'paid', 'social'
         }
 
-    def generate_tracking_url(
+    async def generate_tracking_url(
         self,
         base_url: str,
         campaign_id: int,
         tracking_params: Dict[str, Any],
         landing_page_id: Optional[int] = None,
-        offer_id: Optional[int] = None
+        offer_id: Optional[int] = None,
+        traffic_source_id: Optional[int] = None
     ) -> str:
         """Generate a tracking URL with all necessary parameters."""
         try:
-            # Parse base URL
-            parsed = urlparse(base_url)
+            logger.info("=== CLICK GENERATION SERVICE DEBUG ===")
+            logger.info(f"Input parameters for pre-click data: base_url={base_url}, campaign_id={campaign_id}")
+            logger.info(f"landing_page_id: {landing_page_id} (type: {type(landing_page_id)})")
+            logger.info(f"offer_id: {offer_id} (type: {type(offer_id)})")
+            logger.info(f"traffic_source_id: {traffic_source_id} (type: {type(traffic_source_id)})")
+            logger.info(f"tracking_params: {tracking_params}")
 
-            # Get existing query parameters
-            existing_params = parse_qs(parsed.query)
+            # Generate a unique click_id
+            generated_click_id = ClickId.generate()
 
-            # Build tracking parameters
-            tracking_data = {
-                'cid': f"camp_{campaign_id}",
-                'ts': str(int(__import__('time').time())),  # timestamp
+            # Collect all tracking parameters to be stored
+            all_tracking_params = {
+                'ts': str(int(__import__('time').time())),
             }
 
-            # Add optional targeting parameters
-            if landing_page_id:
-                tracking_data['landing_page_id'] = str(landing_page_id)
-            if offer_id:
-                tracking_data['campaign_offer_id'] = str(offer_id)
+            if landing_page_id is not None:
+                all_tracking_params['lp_id'] = str(landing_page_id)
+            if offer_id is not None:
+                all_tracking_params['offer_id'] = str(offer_id)
+            if traffic_source_id is not None:
+                all_tracking_params['ts_id'] = str(traffic_source_id)
 
             # Add sub-tracking parameters (1-5 levels)
             for i in range(1, 6):
                 sub_key = f'sub{i}'
                 if sub_key in tracking_params:
-                    tracking_data[sub_key] = str(tracking_params[sub_key])
+                    all_tracking_params[sub_key] = str(tracking_params[sub_key])
 
             # Add affiliate network parameters
             affiliate_params = ['click_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5']
             for param in affiliate_params:
                 if param in tracking_params:
-                    tracking_data[param] = str(tracking_params[param])
+                    all_tracking_params[param] = str(tracking_params[param])
 
-            # Merge with existing parameters (tracking takes precedence)
-            merged_params = {**existing_params, **tracking_data}
+            # Also include any other generic tracking_params that might be passed
+            for key, value in tracking_params.items():
+                if key not in all_tracking_params: # Avoid overwriting explicit params
+                    all_tracking_params[key] = str(value)
 
-            # Build new query string
-            new_query = urlencode(merged_params, doseq=True)
+            # Create PreClickData entity
+            pre_click_data = PreClickData(
+                click_id=generated_click_id,
+                campaign_id=CampaignId(f"camp_{campaign_id}"), # CampaignId constructor takes 'camp_9061' format
+                timestamp=datetime.now(timezone.utc),
+                tracking_params=all_tracking_params,
+                metadata={'generated_from': 'ClickGenerationService'}
+            )
 
-            # Construct final URL
-            final_url = urlunparse((
-                parsed.scheme,
-                parsed.netloc,
-                parsed.path,
-                parsed.params,
-                new_query,
-                parsed.fragment
+            # Save to repository
+            await self._pre_click_data_repository.save(pre_click_data)
+            logger.info(f"PreClickData saved for click_id: {generated_click_id.value}")
+
+            # Construct the short URL
+            # The short URL will only contain cid and the generated click_id
+            parsed_base = urlparse(base_url)
+            short_query_params = {
+                'cid': f"camp_{campaign_id}",
+                'click_id': generated_click_id.value,
+            }
+            short_query = urlencode(short_query_params, doseq=True)
+
+            final_short_url = urlunparse((
+                parsed_base.scheme,
+                parsed_base.netloc,
+                '/v1/click',
+                '',
+                short_query,
+                ''
             ))
 
-            logger.info(f"Generated tracking URL for campaign {campaign_id}: {final_url}")
-            return final_url
+            logger.info(f"Generated short tracking URL for campaign {campaign_id}: {final_short_url}")
+            logger.info("=== END CLICK GENERATION SERVICE DEBUG ===")
+            return final_short_url
 
         except Exception as e:
-            logger.error(f"Error generating tracking URL: {e}")
+            logger.error(f"Error generating tracking URL: {e}", exc_info=True)
             raise ValueError(f"Failed to generate tracking URL: {str(e)}")
 
     def validate_tracking_parameters(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:

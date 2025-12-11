@@ -3,6 +3,7 @@ import hashlib
 import zlib
 import json
 import os
+import secrets
 from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass, field
 from enum import Enum
@@ -44,42 +45,68 @@ class URLParams:
 
 class URLShortener:
     """
-    Высокопроизводительный URL shortener с множественными стратегиями
+    URL shortener с short-key подходом для надежного кодирования/декодирования
     """
-    
+
     # Алфавит для base62 (URL-safe, читаемый)
     BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
     BASE62_LEN = len(BASE62)
-    
-    def __init__(self, mappings_file: str = "url_shortener_mappings.json", autosave: bool = True):
-        # In-memory маппинг для sequential strategy
-        self.seq_to_params: Dict[int, URLParams] = {}
-        self.params_to_seq: Dict[str, int] = {}
-        self.next_seq_id = 1
 
-        # Маппинг известных кампаний для сокращения
-        self.campaign_map: Dict[str, int] = {}
-        self.reverse_campaign_map: Dict[int, str] = {}
-        self.next_campaign_id = 1
-
-        # Маппинг для sub-параметров (для hybrid восстановления)
-        self.sub_value_map: Dict[int, str] = {}
-        self.reverse_sub_value_map: Dict[str, int] = {}
-        self.next_sub_id = 1
+    def __init__(self, storage_file: str = "url_shortener_storage.json", autosave: bool = True):
+        # Short-key storage: key -> URLParams
+        self.key_to_params: Dict[str, URLParams] = {}
 
         # Кэш для быстрого доступа
         self.decode_cache: Dict[str, URLParams] = {}
 
-        # Persistence settings
-        self.mappings_file = mappings_file
+        # Storage settings
+        self.storage_file = storage_file
         self.autosave = autosave
 
-        # Load existing mappings
+        # Load existing storage
         if self.autosave:
-            self.load_mappings_from_file(self.mappings_file)
+            self.load_storage_from_file(self.storage_file)
         
-    # ==================== SEQUENTIAL STRATEGY ====================
-    
+    # ==================== SHORT-KEY METHODS ====================
+
+    def _generate_short_key(self) -> str:
+        """Генерировать короткий случайный ключ (8 символов)"""
+        # 6 байт -> base64 -> ~8 символов (без padding)
+        return base64.urlsafe_b64encode(secrets.token_bytes(6)).decode().rstrip('=')
+
+    def _store_params(self, key: str, params: URLParams):
+        """Сохранить параметры под ключом"""
+        self.key_to_params[key] = params
+        if self.autosave:
+            self.save_storage_to_file(self.storage_file)
+
+    def _retrieve_params(self, key: str) -> Optional[URLParams]:
+        """Получить параметры по ключу"""
+        return self.key_to_params.get(key)
+
+    # ==================== SHORT-KEY ENCODING ====================
+
+    def encode_short_key(self, params: URLParams) -> str:
+        """
+        Кодирование с использованием short-key подхода
+        Формат: s[key_8_chars]
+        Длина: 9 символов (s + 8)
+        """
+        # Генерируем уникальный ключ
+        key = self._generate_short_key()
+
+        # Гарантируем уникальность
+        while key in self.key_to_params:
+            key = self._generate_short_key()
+
+        # Сохраняем параметры
+        self._store_params(key, params)
+
+        # Возвращаем код
+        return f"s{key}"
+
+    # ==================== LEGACY STRATEGIES (FOR COMPATIBILITY) ====================
+
     def encode_sequential(self, params: URLParams) -> str:
         """
         Стратегия 1: Sequential ID для повторяющихся параметров
@@ -311,6 +338,7 @@ class URLShortener:
     def encode(self, params: URLParams, strategy: EncodingStrategy = EncodingStrategy.SMART) -> str:
         """
         Унифицированный метод кодирования
+        По умолчанию использует short-key подход для надежности
         """
         if strategy == EncodingStrategy.SEQUENTIAL:
             code = self.encode_sequential(params)
@@ -319,20 +347,13 @@ class URLShortener:
         elif strategy == EncodingStrategy.HYBRID:
             code = self.encode_hybrid(params)
         elif strategy == EncodingStrategy.SMART:
-            code = self.encode_smart(params)
+            # По умолчанию используем short-key для надежности
+            code = self.encode_short_key(params)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
-        
-        # Все стратегии гарантируют максимум 10 символов для совместимости
-        if len(code) > 10:
-            code = code[:10]
-        
+
         # Кэшируем для быстрого декодирования
         self.decode_cache[code] = params
-
-        # Autosave mappings if enabled
-        if self.autosave:
-            self.save_mappings_to_file(self.mappings_file)
 
         return code
     
@@ -343,31 +364,45 @@ class URLShortener:
         # Проверяем кэш
         if code in self.decode_cache:
             return self.decode_cache[code]
-        
+
         # Определяем стратегию по префиксу
         result = None
-        if code.startswith('s'):
+
+        if code.startswith('s') and len(code) == 9:  # Short-key: s + 8 chars
+            result = self.decode_short_key(code)
+        elif code.startswith('s'):  # Legacy sequential
             result = self.decode_sequential(code)
         elif code.startswith('c'):
             result = self.decode_compressed(code)
         elif code.startswith('h'):
             result = self.decode_hybrid(code)
         else:
-            # Пробуем все стратегии
-            result = (self.decode_sequential(code) or 
-                     self.decode_compressed(code) or 
+            # Пробуем все стратегии по порядку
+            result = (self.decode_short_key(code) or
+                     self.decode_sequential(code) or
+                     self.decode_compressed(code) or
                      self.decode_hybrid(code))
-        
+
         if result:
             self.decode_cache[code] = result
-        
+
         return result
+
+    def decode_short_key(self, code: str) -> Optional[URLParams]:
+        """Декодирование short-key формата"""
+        if not code.startswith('s') or len(code) != 9:
+            return None
+
+        key = code[1:]  # Убираем префикс 's'
+        return self._retrieve_params(key)
 
     def get_strategy_info(self, code: str) -> str:
         """
         Возвращает информацию о стратегии кодирования для кода
         """
-        if code.startswith('s'):
+        if code.startswith('s') and len(code) == 9:
+            return "Short-Key (надежное хранение, 9 символов)"
+        elif code.startswith('s'):
             return "Sequential (повторяющиеся параметры, 2-7 символов)"
         elif code.startswith('c'):
             return "Compressed (сжатие с кампаниями, 9-10 символов)"
@@ -471,11 +506,9 @@ class URLShortener:
     def get_stats(self) -> Dict:
         """Статистика использования"""
         return {
-            "sequential_mappings": len(self.seq_to_params),
-            "campaigns_mapped": len(self.campaign_map),
-            "sub_values_mapped": len(self.sub_value_map),
+            "short_keys_stored": len(self.key_to_params),
             "cache_size": len(self.decode_cache),
-            "next_seq_id": self.next_seq_id,
+            "storage_file": self.storage_file,
             "memory_estimate_mb": self._estimate_memory_usage()
         }
     
@@ -483,10 +516,7 @@ class URLShortener:
         """Оценка использования памяти в MB"""
         import sys
         total = 0
-        total += sys.getsizeof(self.seq_to_params)
-        total += sys.getsizeof(self.params_to_seq)
-        total += sys.getsizeof(self.campaign_map)
-        total += sys.getsizeof(self.sub_value_map)
+        total += sys.getsizeof(self.key_to_params)
         total += sys.getsizeof(self.decode_cache)
         return total / (1024 * 1024)
     
@@ -494,63 +524,71 @@ class URLShortener:
         """Очистка кэша для освобождения памяти"""
         self.decode_cache.clear()
     
-    def export_mappings(self) -> Dict:
-        """Экспорт маппингов для персистентности"""
+    def export_storage(self) -> Dict:
+        """Экспорт хранилища для персистентности"""
         return {
-            "seq_to_params": {k: v.to_dict() for k, v in self.seq_to_params.items()},
-            "campaign_map": self.campaign_map,
-            "sub_value_map": self.sub_value_map,
-            "next_seq_id": self.next_seq_id,
-            "next_campaign_id": self.next_campaign_id,
-            "next_sub_id": self.next_sub_id
+            "key_to_params": {k: v.to_dict() for k, v in self.key_to_params.items()},
+            # Также сохраняем legacy mappings для обратной совместимости
+            "seq_to_params": {},
+            "campaign_map": {},
+            "sub_value_map": {},
+            "next_seq_id": 1,
+            "next_campaign_id": 1,
+            "next_sub_id": 1
         }
-    
-    def import_mappings(self, data: Dict):
-        """Импорт маппингов для восстановления состояния"""
-        # Восстановление seq_to_params
-        for seq_id, params_dict in data.get("seq_to_params", {}).items():
+
+    def import_storage(self, data: Dict):
+        """Импорт хранилища для восстановления состояния"""
+        # Восстановление key_to_params
+        for key, params_dict in data.get("key_to_params", {}).items():
             params = URLParams(**params_dict)
-            self.seq_to_params[int(seq_id)] = params
-            self.params_to_seq[self._params_to_key(params)] = int(seq_id)
+            self.key_to_params[key] = params
 
-        # Восстановление campaign_map
-        self.campaign_map = data.get("campaign_map", {})
-        self.reverse_campaign_map = {v: k for k, v in self.campaign_map.items()}
+        # Legacy mappings (пустые для новой версии)
+        print(f"Loaded {len(self.key_to_params)} stored keys")
 
-        # Восстановление sub_value_map
-        self.sub_value_map = {int(k): v for k, v in data.get("sub_value_map", {}).items()}
-        self.reverse_sub_value_map = {v: k for k, v in self.sub_value_map.items()}
-
-        # Восстановление счетчиков
-        self.next_seq_id = data.get("next_seq_id", 1)
-        self.next_campaign_id = data.get("next_campaign_id", 1)
-        self.next_sub_id = data.get("next_sub_id", 1)
-
-    def save_mappings_to_file(self, filepath: str = "url_shortener_mappings.json"):
-        """Сохранить маппинги в JSON файл"""
+    def save_storage_to_file(self, filepath: str = "url_shortener_storage.json"):
+        """Сохранить хранилище в JSON файл"""
         try:
-            data = self.export_mappings()
+            data = self.export_storage()
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            print(f"Mappings saved to {filepath}")
+            print(f"Storage saved to {filepath} ({len(self.key_to_params)} keys)")
         except Exception as e:
-            print(f"Error saving mappings: {e}")
+            print(f"Error saving storage: {e}")
 
-    def load_mappings_from_file(self, filepath: str = "url_shortener_mappings.json"):
-        """Загрузить маппинги из JSON файла"""
+    def load_storage_from_file(self, filepath: str = "url_shortener_storage.json"):
+        """Загрузить хранилище из JSON файла"""
         try:
             if os.path.exists(filepath):
                 with open(filepath, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                self.import_mappings(data)
-                print(f"Mappings loaded from {filepath}")
+                self.import_storage(data)
+                print(f"Storage loaded from {filepath}")
                 return True
             else:
-                print(f"Mappings file {filepath} not found")
+                print(f"Storage file {filepath} not found")
                 return False
         except Exception as e:
-            print(f"Error loading mappings: {e}")
+            print(f"Error loading storage: {e}")
             return False
+
+    # Legacy compatibility methods
+    def export_mappings(self) -> Dict:
+        """Legacy method for backward compatibility"""
+        return self.export_storage()
+
+    def import_mappings(self, data: Dict):
+        """Legacy method for backward compatibility"""
+        return self.import_storage(data)
+
+    def save_mappings_to_file(self, filepath: str = "url_shortener_mappings.json"):
+        """Legacy method for backward compatibility"""
+        return self.save_storage_to_file(filepath)
+
+    def load_mappings_from_file(self, filepath: str = "url_shortener_mappings.json"):
+        """Legacy method for backward compatibility"""
+        return self.load_storage_from_file(filepath)
 
 
 # ==================== PYTHON BINDINGS ====================
