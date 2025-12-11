@@ -27,7 +27,7 @@ class UpdateCampaignHandler:
             ValueError: If campaign not found
         """
         # Get existing campaign
-        campaign = await self._campaign_repository.find_by_id(command.campaign_id)
+        campaign = self._campaign_repository.find_by_id(command.campaign_id)
         if not campaign:
             raise ValueError(f"Campaign with ID {command.campaign_id.value} not found")
 
@@ -62,6 +62,6 @@ class UpdateCampaignHandler:
         campaign.updated_at = datetime.now(timezone.utc)
 
         # Save updated campaign
-        await self._campaign_repository.save(campaign)
+        self._campaign_repository.save(campaign)
 
         return campaign

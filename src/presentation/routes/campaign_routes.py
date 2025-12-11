@@ -576,7 +576,10 @@ class CampaignRoutes:
                 add_security_headers(res)
                 res.end(json.dumps(response))
 
-            except Exception:
+            except Exception as e:
+                logger.error(f"ERROR: Failed to update campaign: {e}")
+                import traceback
+                logger.error(f"TRACEBACK: {traceback.format_exc()}")
                 error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
