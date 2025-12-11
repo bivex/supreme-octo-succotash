@@ -190,22 +190,21 @@ class TrackingManager:
                             click_id = self._generate_click_id(user_id, time.time())
                             return self._build_tracking_url(click_id, additional_params)
 
-                        # Encode parameters into short URL using SIMPLE strategy (cross-process compatible)
+                        # Create short tracking URL using high-level API (as shown in demo_bindings)
                         try:
-                            from shared_url_shortener import URLParams, EncodingStrategy
-                            url_params = URLParams(
+                            from shared_url_shortener import create_tracking_link, EncodingStrategy
+
+                            short_url = create_tracking_link(
+                                base_url=self.local_landing_url,
                                 cid="camp_9061",
                                 sub1=payload["params"].get("sub1", "telegram_bot"),
                                 sub2=payload["params"].get("sub2", "telegram"),
                                 sub3=payload["params"].get("sub3", "callback_offer"),
                                 sub4=str(user_id),
                                 sub5=payload["params"].get("sub5", "premium_offer"),
-                                click_id=click_id
+                                click_id=click_id,
+                                strategy=EncodingStrategy.COMPRESSED
                             )
-
-                            # Use COMPRESSED strategy - cross-process compatible
-                            short_code = url_shortener.encode(url_params, EncodingStrategy.COMPRESSED)
-                            short_url = f"{self.local_landing_url}/s/{short_code}"
 
                             # Return short URL
                             logger.info(f"Generated short tracking URL: {short_url}")
