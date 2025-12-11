@@ -205,7 +205,11 @@ class TrackingManager:
 
         # Use Advertising Platform API for tracking
         logger.info(f"Tracking event via Advertising Platform API: {event_type} for click_id {click_id}")
-        return await self._track_event_locally(click_id, event_type, event_data)
+        try:
+            return await self._track_event_locally(click_id, event_type, event_data)
+        except Exception as e:
+            logger.warning(f"Event tracking failed for {event_type} (click_id: {click_id}): {e} - continuing without event tracking")
+            return False  # Don't fail the whole operation
 
         try:
             payload = {
