@@ -138,11 +138,8 @@ class URLShortener:
         campaign_code = self._encode_base62(campaign_id).zfill(2)[:2]
         result = f"c{campaign_code}{encoded_params}"
 
-        # Если слишком длинное, используем hybrid стратегию как fallback
-        if len(result) > 10:
-            return self.encode_hybrid(params)
-
-        return result[:10]
+        # COMPRESSED стратегия может возвращать коды до 80 символов
+        return result
     
     def decode_compressed(self, code: str) -> Optional[URLParams]:
         """Декодирование compressed формата"""
@@ -296,9 +293,14 @@ class URLShortener:
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
         
-        # Гарантируем максимум 10 символов
-        if len(code) > 10:
-            code = code[:10]
+        # Для COMPRESSED стратегии разрешаем до 120 символов
+        if strategy == EncodingStrategy.COMPRESSED:
+            if len(code) > 120:
+                code = code[:120]
+        else:
+            # Для других стратегий гарантируем максимум 10 символов
+            if len(code) > 10:
+                code = code[:10]
         
         # Кэшируем для быстрого декодирования
         self.decode_cache[code] = params
@@ -829,7 +831,7 @@ class TrackingURLDecoder:
         Автоматически определяет стратегию по префиксу
 
         Args:
-            short_code: Короткий код (например, "c1eNoztCpJ")
+            short_code: Короткий код (например, "c01eNoztCp")
 
         Returns:
             DecodedTrackingParams или None если декодирование не удалось
@@ -898,10 +900,10 @@ class TrackingURLDecoder:
         Декодирование compressed формата
         Формат: c[campaign_id_base62][compressed_params_base64]
 
-        Пример: c1eNoztCpJ
+        Пример: c01eNoztCp
         - 'c' = compressed strategy
-        - '1' = campaign_id в base62 (1-3 символа)
-        - 'eNoztCpJ' = сжатые параметры в base64
+        - '01' = campaign_id в base62 (2 символа)
+        - 'eNoztCp' = сжатые параметры в base64
 
         СТРАТЕГИЯ: Пробуем разные длины campaign_id (1, 2, 3 символа)
         и проверяем, декодируются ли остальные данные как base64+zlib
@@ -909,8 +911,8 @@ class TrackingURLDecoder:
         if not code.startswith('c') or len(code) < 3:
             return None
 
-        # Пробуем разные длины campaign_id: 1, 2, 3 символа
-        for campaign_len in [1, 2, 3]:
+        # Пробуем разные длины campaign_id: 3, 2, 1 символа (сначала более длинные)
+        for campaign_len in [3, 2, 1]:
             if len(code) <= campaign_len + 1:  # +1 для префикса 'c'
                 continue
 
@@ -932,7 +934,10 @@ class TrackingURLDecoder:
                 print(f"  Campaign ID number: {campaign_id_num}")
 
                 # Получаем реальный campaign_id из маппинга
-                campaign_id = self.reverse_campaign_map.get(campaign_id_num, str(campaign_id_num))
+                campaign_id = self.reverse_campaign_map.get(campaign_id_num)
+                if campaign_id is None:
+                    print(f"  [SKIP] Campaign ID {campaign_id_num} not found in mapping")
+                    continue
                 print(f"  Campaign ID: {campaign_id}")
 
                 # Пытаемся декодировать параметры
@@ -1101,7 +1106,7 @@ class TrackingURLDecoder:
         Декодирование из полного URL
 
         Args:
-            url: Полный URL (например, "https://domain.com/s/c1eNoztCpJ")
+            url: Полный URL (например, "https://domain.com/s/c01eNoztCp")
 
         Returns:
             DecodedTrackingParams или None
@@ -1156,7 +1161,7 @@ def decode_your_tracking_url(url_or_code: str) -> Optional[Dict]:
 
     Args:
         url_or_code: URL или короткий код
-                    "https://domain.com/s/c1eNoztCpJ" или "c1eNoztCpJ"
+                    "https://domain.com/s/c01eNoztCp" или "c01eNoztCp"
 
     Returns:
         Словарь с параметрами или None
@@ -1188,7 +1193,7 @@ def test_decoder():
     test_cases = [
         {
             "name": "Ваш пример из логов",
-            "url": "https://gladsomely-unvitriolized-trudie.ngrok-free.dev/s/c1eNoztCpJ",
+            "url": "https://gladsomely-unvitriolized-trudie.ngrok-free.dev/s/c01eNoztCp",
             "expected": {
                 "campaign_id": "9061",
                 "sub1": "telegram_bot_start",
@@ -1242,7 +1247,7 @@ def test_decoder():
     print("QUICK CAMPAIGN ID EXTRACTION")
     print("=" * 70)
 
-    code = "c1eNoztCpJ"
+    code = "c01eNoztCp"
     campaign_id = decoder.get_campaign_id_from_code(code)
     print(f"Code: {code}")
     print(f"Campaign ID: {campaign_id}")
@@ -1514,12 +1519,31 @@ if __name__ == "__main__":
     # Функции
     from shared_url_shortener import decode_your_tracking_url, test_decoder
 
-    # Пример использования
-    decoder = TrackingURLDecoder()
-    result = decoder.decode('c1eNoztCpJ')  # Декодирование
+    # Пример использования (создаем реальный код для тестирования)
+    from shared_url_shortener import URLShortener, URLParams, EncodingStrategy
+
+    # Создаем тестовые параметры
+    test_params = URLParams(
+        cid='9061',
+        sub1='telegram_bot_start',
+        sub2='telegram',
+        sub3='callback_offer',
+        sub4='test_user',
+        sub5='premium_offer'
+    )
+
+    # Генерируем код
+    shortener = URLShortener()
+    test_code = shortener.encode(test_params, EncodingStrategy.COMPRESSED)
+    mappings = shortener.export_mappings()
+
+    # Тестируем декодирование
+    decoder = TrackingURLDecoder(mappings)
+    result = decoder.decode(test_code)  # Декодирование
 
     handler = TrackingURLHandler()
-    params = handler.handle_tracking_redirect('c1eNoztCpJ')  # Обработка редиректа
+    handler.decoder = decoder  # Устанавливаем декодер с маппингами
+    params = handler.handle_tracking_redirect(test_code)  # Обработка редиректа
 
-    result = decode_your_tracking_url('c1eNoztCpJ')  # Простая функция
+    result = decode_your_tracking_url(test_code)  # Простая функция
     print(f"\nDecoded parameters: {result}")
