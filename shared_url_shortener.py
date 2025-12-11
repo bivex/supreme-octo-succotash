@@ -1,6 +1,8 @@
 import base64
 import hashlib
 import zlib
+import json
+import os
 from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass, field
 from enum import Enum
@@ -49,24 +51,32 @@ class URLShortener:
     BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
     BASE62_LEN = len(BASE62)
     
-    def __init__(self):
+    def __init__(self, mappings_file: str = "url_shortener_mappings.json", autosave: bool = True):
         # In-memory маппинг для sequential strategy
         self.seq_to_params: Dict[int, URLParams] = {}
         self.params_to_seq: Dict[str, int] = {}
         self.next_seq_id = 1
-        
+
         # Маппинг известных кампаний для сокращения
         self.campaign_map: Dict[str, int] = {}
         self.reverse_campaign_map: Dict[int, str] = {}
         self.next_campaign_id = 1
-        
+
         # Маппинг для sub-параметров (для hybrid восстановления)
         self.sub_value_map: Dict[int, str] = {}
         self.reverse_sub_value_map: Dict[str, int] = {}
         self.next_sub_id = 1
-        
+
         # Кэш для быстрого доступа
         self.decode_cache: Dict[str, URLParams] = {}
+
+        # Persistence settings
+        self.mappings_file = mappings_file
+        self.autosave = autosave
+
+        # Load existing mappings
+        if self.autosave:
+            self.load_mappings_from_file(self.mappings_file)
         
     # ==================== SEQUENTIAL STRATEGY ====================
     
@@ -319,7 +329,11 @@ class URLShortener:
         
         # Кэшируем для быстрого декодирования
         self.decode_cache[code] = params
-        
+
+        # Autosave mappings if enabled
+        if self.autosave:
+            self.save_mappings_to_file(self.mappings_file)
+
         return code
     
     def decode(self, code: str) -> Optional[URLParams]:
@@ -498,19 +512,45 @@ class URLShortener:
             params = URLParams(**params_dict)
             self.seq_to_params[int(seq_id)] = params
             self.params_to_seq[self._params_to_key(params)] = int(seq_id)
-        
+
         # Восстановление campaign_map
         self.campaign_map = data.get("campaign_map", {})
         self.reverse_campaign_map = {v: k for k, v in self.campaign_map.items()}
-        
+
         # Восстановление sub_value_map
         self.sub_value_map = {int(k): v for k, v in data.get("sub_value_map", {}).items()}
         self.reverse_sub_value_map = {v: k for k, v in self.sub_value_map.items()}
-        
+
         # Восстановление счетчиков
         self.next_seq_id = data.get("next_seq_id", 1)
         self.next_campaign_id = data.get("next_campaign_id", 1)
         self.next_sub_id = data.get("next_sub_id", 1)
+
+    def save_mappings_to_file(self, filepath: str = "url_shortener_mappings.json"):
+        """Сохранить маппинги в JSON файл"""
+        try:
+            data = self.export_mappings()
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            print(f"Mappings saved to {filepath}")
+        except Exception as e:
+            print(f"Error saving mappings: {e}")
+
+    def load_mappings_from_file(self, filepath: str = "url_shortener_mappings.json"):
+        """Загрузить маппинги из JSON файла"""
+        try:
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                self.import_mappings(data)
+                print(f"Mappings loaded from {filepath}")
+                return True
+            else:
+                print(f"Mappings file {filepath} not found")
+                return False
+        except Exception as e:
+            print(f"Error loading mappings: {e}")
+            return False
 
 
 # ==================== PYTHON BINDINGS ====================

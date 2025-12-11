@@ -461,7 +461,6 @@ class ClickRoutes:
                             # Try to decode campaign_id
                             try:
                                 campaign_code = short_code[1:2]
-                                from shared_url_shortener import url_shortener
                                 campaign_id = url_shortener._decode_base62(campaign_code)
                                 diagnostics.append(f"Campaign ID: {campaign_id}")
                             except:
