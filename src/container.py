@@ -140,8 +140,30 @@ class Container:
         }
 
     def get_db_connection(self):
-        """Get a database connection from the pool."""
-        pool = self.get_db_connection_pool()
+        """Get a database connection from the pool (synchronous)."""
+        pool = self.get_db_connection_pool_sync()
+
+        if pool is None:
+            logger.warning("🔌 DB pool not initialized; creating synchronously (may block event loop)...")
+            # Create pool synchronously as a fallback
+            pool = AdvancedConnectionPool(
+                minconn=5,
+                maxconn=32,
+                host="localhost",
+                port=5432,
+                database="supreme_octosuccotash_db",
+                user="app_user",
+                password="app_password",
+                client_encoding='utf8',
+                connect_timeout=10,
+                keepalives=1,
+                keepalives_idle=30,
+                keepalives_interval=10,
+                keepalives_count=5,
+                tcp_user_timeout=60000,
+            )
+            self._singletons['db_connection_pool'] = pool
+
         return pool.getconn()
 
     def release_db_connection(self, conn):

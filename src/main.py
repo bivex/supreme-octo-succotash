@@ -7,6 +7,7 @@ from loguru import logger
 import json
 import os
 import time
+import inspect
 from decimal import Decimal
 
 from .config.settings import settings
@@ -220,7 +221,9 @@ async def _register_routes(app: socketify.App) -> None:
             logger.info(f"🔌 Route step START: {name}")
             debug_async_trace(f"Before route step: {name}")
             routes = await getter()
-            await routes.register(app)
+            register_result = routes.register(app)
+            if inspect.isawaitable(register_result):
+                await register_result
             step_duration = time.time() - step_start
             logger.info(f"✅ Route step DONE: {name} in {step_duration:.3f}s")
             debug_async_trace(f"After route step: {name}")
