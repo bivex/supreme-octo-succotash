@@ -9,7 +9,7 @@ from ...application.handlers.track_click_handler import TrackClickHandler
 
 # Import shared URL shortener
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from shared_url_shortener import url_shortener
+from shared_url_shortener import url_shortener, recover_unknown_code
 
 # Cache functions removed - now using Supreme API for URL generation
 
@@ -433,23 +433,58 @@ class ClickRoutes:
                 try:
                     url_params = url_shortener.decode(short_code)
 
+                    # If normal decoding fails, try recovery
                     if not url_params:
-                        # Try legacy decoding or provide diagnostic info
-                        logger.warning(f"Failed to decode short link: {short_code} (length: {len(short_code)})")
+                        logger.warning(f"Normal decoding failed, trying recovery for: {short_code}")
+                        url_params = recover_unknown_code(short_code)
 
-                        # Check if it's a known format
+                    if not url_params:
+                        # Provide detailed diagnostic info
+                        logger.warning(f"Failed to decode/recover short link: {short_code} (length: {len(short_code)})")
+
+                        # Analyze the code structure
+                        diagnostics = []
                         if short_code.startswith(('s', 'c', 'h')):
                             strategy = "Sequential" if short_code.startswith('s') else "Compressed" if short_code.startswith('c') else "Hybrid"
-                            logger.warning(f"Code appears to be {strategy} format but decoding failed")
+                            diagnostics.append(f"Format: {strategy}")
                         else:
-                            logger.warning(f"Unknown code format - does not start with s/c/h")
+                            diagnostics.append("Format: Unknown (should start with s/c/h)")
+                            diagnostics.append("This may be from a different URL shortener system")
 
-                        # For now, return a more informative error
+                        # Check for common issues
+                        if len(short_code) != 10:
+                            diagnostics.append(f"Length: {len(short_code)} (expected 10 for current system)")
+                        else:
+                            diagnostics.append("Length: Correct (10 characters)")
+
+                        if short_code.startswith('c'):
+                            # Try to decode campaign_id
+                            try:
+                                campaign_code = short_code[1:2]
+                                from shared_url_shortener import url_shortener
+                                campaign_id = url_shortener._decode_base62(campaign_code)
+                                diagnostics.append(f"Campaign ID: {campaign_id}")
+                            except:
+                                diagnostics.append("Campaign ID: Invalid base62 encoding")
+
+                        # Log diagnostics
+                        for diag in diagnostics:
+                            logger.warning(f"  {diag}")
+
+                        # Return informative error page
+                        diag_html = "".join(f"<li>{d}</li>" for d in diagnostics)
                         error_html = f"""<html><body>
                         <h1>Short Link Error</h1>
                         <p>Unable to decode short link: <code>{short_code}</code></p>
-                        <p>This may be an old or corrupted link.</p>
-                        <p>Please contact support if you believe this is an error.</p>
+                        <h2>Technical Details:</h2>
+                        <ul>{diag_html}</ul>
+                        <p><strong>Possible causes:</strong></p>
+                        <ul>
+                        <li>Old or corrupted link from previous system version</li>
+                        <li>Link was truncated or modified</li>
+                        <li>Link from different URL shortener service</li>
+                        </ul>
+                        <p>Please contact support with this code if you believe this is an error.</p>
                         </body></html>"""
                         res.write_status(404)
                         res.write_header("Content-Type", "text/html")

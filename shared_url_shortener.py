@@ -106,8 +106,8 @@ class URLShortener:
     def encode_compressed(self, params: URLParams) -> str:
         """
         Стратегия 2: Компрессия параметров с известными кампаниями
-        Формат: [strategy:1][campaign_id:1-2][compressed_params:variable]
-        Длина: до 10 символов с эффективной упаковкой
+        Формат: [strategy:1][campaign_id:1][params_indices:9]
+        Длина: ровно 10 символов
         """
         # Получаем или создаем campaign ID
         cid = params.cid
@@ -118,61 +118,86 @@ class URLShortener:
 
         campaign_id = self.campaign_map[cid]
 
-        # Собираем параметры (без cid) в более компактном формате
-        params_parts = []
+        # Индексируем значения как в hybrid стратегии
+        sub_indices = []
         for i in range(1, 6):
             val = getattr(params, f"sub{i}")
             if val:
-                params_parts.append(f"{i}:{val}")
+                if val not in self.reverse_sub_value_map:
+                    self.reverse_sub_value_map[val] = self.next_sub_id
+                    self.sub_value_map[self.next_sub_id] = val
+                    self.next_sub_id += 1
+                sub_indices.append(self.reverse_sub_value_map[val])
+            else:
+                sub_indices.append(0)
+
+        # Click ID
+        click_idx = 0
         if params.click_id:
-            params_parts.append(f"k:{params.click_id}")
-        params_str = "|".join(params_parts)
+            if params.click_id not in self.reverse_sub_value_map:
+                self.reverse_sub_value_map[params.click_id] = self.next_sub_id
+                self.sub_value_map[self.next_sub_id] = params.click_id
+                self.next_sub_id += 1
+            click_idx = self.reverse_sub_value_map[params.click_id]
 
-        # Сжимаем и кодируем
-        compressed = zlib.compress(params_str.encode(), level=9)
+        # Упаковываем: 5 sub_indices (по 1 символу) + click_idx (1 символ) + padding (3 символа)
+        sub_codes = ''.join([self._encode_base62(idx)[:1] for idx in sub_indices])
+        click_code = self._encode_base62(click_idx)[:1]
+        padding = 'A' * 3  # Заполнитель
 
-        # Пробуем base64 (обычно короче)
-        encoded_params = base64.urlsafe_b64encode(compressed).decode().rstrip('=')
+        params_code = f"{sub_codes}{click_code}{padding}"
 
-        # Формат: 'c' + campaign_id(base62, 1 символ) + compressed_data(base64, усеченное до 8 символов)
-        campaign_code = self._encode_base62(campaign_id)[:1]  # Только 1 символ для campaign_id
-        # Обрезаем encoded_params до 8 символов для гарантированных 10 символов итого
-        truncated_params = encoded_params[:8] if len(encoded_params) > 8 else encoded_params.ljust(8, 'A')
-        result = f"c{campaign_code}{truncated_params}"
+        # Формат: 'c' + campaign_id(1 символ) + params(9 символов)
+        campaign_code = self._encode_base62(campaign_id)[:1]
+        result = f"c{campaign_code}{params_code}"
 
-        # Гарантируем ровно 10 символов
-        return result[:10]
+        return result
     
     def decode_compressed(self, code: str) -> Optional[URLParams]:
         """Декодирование compressed формата"""
-        if not code.startswith('c') or len(code) < 4:  # 'c' + 2 символа campaign + минимум 1 символ params
+        if not code.startswith('c') or len(code) != 10:
             return None
 
         try:
-            # Фиксированный формат: 'c' + campaign_id(2 символа) + compressed_params(base64)
-            campaign_part = code[1:3]
-            params_part = code[3:]
+            # Фиксированный формат: 'c' + campaign_id(1 символ) + params(9 символов)
+            campaign_part = code[1:2]
+            params_part = code[2:]
 
-            if not params_part:  # Нет параметров
-                return None
-
-            campaign_id = self._decode_base62(campaign_part)
-            cid = self.reverse_campaign_map.get(campaign_id)
+            campaign_id_num = self._decode_base62(campaign_part)
+            cid = self.reverse_campaign_map.get(campaign_id_num)
 
             if not cid:
                 return None
 
-            # Декодируем сжатые параметры из base64
-            # Добавляем padding для base64
-            padding = (4 - len(params_part) % 4) % 4
-            params_part_padded = params_part + '=' * padding
+            params = URLParams(cid=cid)
 
-            compressed = base64.urlsafe_b64decode(params_part_padded)
-            params_str = zlib.decompress(compressed).decode()
+            if not params_part or params_part == 'A' * 9:
+                # Нет параметров
+                return params
 
-            return self._deserialize_params(params_str, cid)
+            # Распаковываем: 5 sub_indices (по 1 символу) + click_idx (1 символ)
+            if len(params_part) >= 6:
+                sub_parts = [params_part[i] for i in range(5)]
+                click_part = params_part[5]
 
-        except Exception as e:
+                # Восстанавливаем sub-параметры
+                for i, sub_char in enumerate(sub_parts, 1):
+                    sub_idx = self._decode_base62(sub_char)
+                    if sub_idx > 0:
+                        val = self.sub_value_map.get(sub_idx)
+                        if val:
+                            setattr(params, f"sub{i}", val)
+
+                # Восстанавливаем click_id
+                click_idx = self._decode_base62(click_part)
+                if click_idx > 0:
+                    val = self.sub_value_map.get(click_idx)
+                    if val:
+                        params.click_id = val
+
+            return params
+
+        except Exception:
             return None
     
     # ==================== HYBRID STRATEGY (УЛУЧШЕННАЯ) ====================
@@ -714,6 +739,71 @@ def expand_url(short_url: str) -> tuple[str | None, dict | None]:
     return full_url, params_dict
 
 
+# ==================== RECOVERY FUNCTIONS ====================
+
+def recover_unknown_code(code: str) -> Optional[URLParams]:
+    """
+    Try to recover parameters from unknown/damaged short codes.
+    Attempts various fallback decoding strategies.
+    """
+    from shared_url_shortener import URLShortener
+
+    shortener = URLShortener()
+
+    # First try normal decoding
+    result = shortener.decode(code)
+    if result:
+        return result
+
+    # Try alternative approaches for compressed codes
+    if code.startswith('c') and len(code) >= 3:
+        try:
+            # Try different campaign_id lengths and parameter interpretations
+            for campaign_len in [1, 2, 3]:
+                if len(code) <= campaign_len + 1:
+                    continue
+
+                campaign_part = code[1:1+campaign_len]
+                params_part = code[1+campaign_len:]
+
+                if not all(c in shortener.BASE62 for c in campaign_part):
+                    continue
+
+                try:
+                    campaign_id_num = shortener._decode_base62(campaign_part)
+
+                    # Try interpreting params_part as direct parameter string
+                    if '|' in params_part:
+                        # Direct parameter format like "1:value1|2:value2|k:click_id"
+                        result = shortener._parse_params_string(params_part, str(campaign_id_num))
+                        if result:
+                            return result
+
+                    # Try as raw base64 without zlib
+                    try:
+                        padding = (4 - len(params_part) % 4) % 4
+                        padded = params_part + '=' * padding
+                        decoded = base64.urlsafe_b64decode(padded)
+
+                        # Try as direct UTF-8
+                        try:
+                            text = decoded.decode('utf-8')
+                            if '|' in text:
+                                result = shortener._parse_params_string(text, str(campaign_id_num))
+                                if result:
+                                    return result
+                        except:
+                            pass
+                    except:
+                        pass
+
+                except:
+                    continue
+        except:
+            pass
+
+    return None
+
 # ==================== PUBLIC API ====================
 
 # Main public instance for import
@@ -888,97 +978,71 @@ class TrackingURLDecoder:
     def _decode_compressed(self, code: str) -> Optional[DecodedTrackingParams]:
         """
         Декодирование compressed формата
-        Формат: c[campaign_id_base62][compressed_params_base64]
-
-        Пример: c01eNoztCp
-        - 'c' = compressed strategy
-        - '01' = campaign_id в base62 (2 символа)
-        - 'eNoztCp' = сжатые параметры в base64
-
-        СТРАТЕГИЯ: Пробуем разные длины campaign_id (1, 2, 3 символа)
-        и проверяем, декодируются ли остальные данные как base64+zlib
+        Формат: c[campaign_id:1][sub_indices:5][click_idx:1][padding:3]
+        Длина: ровно 10 символов
         """
-        if not code.startswith('c') or len(code) < 3:
+        if not code.startswith('c') or len(code) != 10:
             return None
 
-        # Пробуем разные длины campaign_id: 1, 2, 3 символа (сначала короткие для 10-символьных кодов)
-        for campaign_len in [1, 2, 3]:
-            if len(code) <= campaign_len + 1:  # +1 для префикса 'c'
-                continue
+        try:
+            # Фиксированный формат: 'c' + campaign_id(1 символ) + params(9 символов)
+            campaign_part = code[1:2]
+            params_part = code[2:]
 
-            try:
-                campaign_part = code[1:1+campaign_len]
-                params_part = code[1+campaign_len:]
+            print(f"\nCompressed decode:")
+            print(f"  Campaign part: '{campaign_part}'")
+            print(f"  Params part: '{params_part}'")
 
-                print(f"\nTrying campaign_len={campaign_len}:")
-                print(f"  Campaign part: '{campaign_part}'")
-                print(f"  Params part: '{params_part}'")
+            # Декодируем campaign_id
+            campaign_id_num = self._decode_base62(campaign_part)
+            print(f"  Campaign ID number: {campaign_id_num}")
 
-                # Проверяем, что campaign_part - валидный base62
-                if not all(c in self.BASE62 for c in campaign_part):
-                    print(f"  [FAIL] Invalid base62 in campaign part")
-                    continue
+            campaign_id = self.reverse_campaign_map.get(campaign_id_num)
+            if campaign_id is None:
+                print(f"  [FAIL] Campaign ID {campaign_id_num} not found in mapping")
+                return None
+            print(f"  Campaign ID: {campaign_id}")
 
-                # Декодируем campaign_id
-                campaign_id_num = self._decode_base62(campaign_part)
-                print(f"  Campaign ID number: {campaign_id_num}")
+            result = DecodedTrackingParams(campaign_id=campaign_id)
 
-                # Получаем реальный campaign_id из маппинга
-                campaign_id = self.reverse_campaign_map.get(campaign_id_num)
-                if campaign_id is None:
-                    print(f"  [SKIP] Campaign ID {campaign_id_num} not found in mapping")
-                    continue
-                print(f"  Campaign ID: {campaign_id}")
+            if not params_part or params_part == 'A' * 9:
+                # Нет параметров
+                print(f"  [OK] No params, returning campaign only")
+                return result
 
-                # Для 10-символьных кодов пытаемся восстановить усеченные base64 данные
-                if len(code) == 10 and campaign_len == 1:
-                    # Пытаемся добавить недостающие символы к base64
-                    for suffix in ['', 'A', 'AA', 'AAA', 'AAAA', 'B', 'BA', 'BAA', 'BAAA']:
-                        try:
-                            extended_params = params_part + suffix
-                            print(f"  Trying extended params: '{extended_params}'")
+            # Распаковываем: 5 sub_indices (по 1 символу) + click_idx (1 символ)
+            if len(params_part) >= 6:
+                sub_parts = [params_part[i] for i in range(5)]
+                click_part = params_part[5]
 
-                            test_params_str = self._decompress_params(extended_params)
-                            if test_params_str:
-                                print(f"  [OK] Successfully decompressed extended params: '{test_params_str}'")
+                print(f"  Sub parts: {sub_parts}")
+                print(f"  Click part: '{click_part}'")
 
-                                # Парсим параметры
-                                result = self._parse_params_string(test_params_str, campaign_id)
-                                if result:
-                                    return result
-                        except:
-                            continue
+                # Восстанавливаем sub-параметры
+                for i, sub_char in enumerate(sub_parts, 1):
+                    sub_idx = self._decode_base62(sub_char)
+                    print(f"    Sub{i} index: {sub_idx}")
+                    if sub_idx > 0:
+                        val = self.sub_value_map.get(sub_idx)
+                        print(f"    Sub{i} value: '{val}'")
+                        if val:
+                            setattr(result, f"sub{i}", val)
 
-                # Пытаемся декодировать параметры обычным способом
-                params_str = self._decompress_params(params_part)
+                # Восстанавливаем click_id
+                click_idx = self._decode_base62(click_part)
+                print(f"    Click index: {click_idx}")
+                if click_idx > 0:
+                    val = self.sub_value_map.get(click_idx)
+                    print(f"    Click value: '{val}'")
+                    if val:
+                        result.click_id = val
 
-                if params_str:
-                    print(f"  [OK] Successfully decompressed params: '{params_str}'")
+            print(f"  [OK] Successfully decoded compressed")
+            return result
 
-                    # Парсим параметры
-                    result = self._parse_params_string(params_str, campaign_id)
-                    if result:
-                        return result
-                else:
-                    # Если декомпрессия не удалась, попробуем интерпретировать params_part как сырые данные
-                    print(f"  Trying raw params interpretation: '{params_part}'")
-                    try:
-                        result = self._parse_params_string(params_part, campaign_id)
-                        if result:
-                            print(f"  [OK] Raw params parsed successfully")
-                            return result
-                    except:
-                        pass
-
-                if not params_str:
-                    print(f"  [FAIL] Failed to decompress params")
-
-            except Exception as e:
-                print(f"  [FAIL] Error with campaign_len={campaign_len}: {e}")
-                continue
-
-        print(f"\n[FAIL] All campaign_len attempts failed")
-        return None
+        except Exception as e:
+            print(f"  [FAIL] Compressed decode error: {e}")
+            return None
 
     def _decompress_params(self, encoded_params: str) -> Optional[str]:
         """
@@ -1023,7 +1087,8 @@ class TrackingURLDecoder:
     def _parse_params_string(self, params_str: str, campaign_id: str) -> DecodedTrackingParams:
         """
         Парсинг строки параметров
-        Формат: "1:value1|2:value2|k:click_id"
+        Новый формат: "1:idx1|2:idx2|k:click_idx" (с индексами)
+        Старый формат: "1:value1|2:value2|k:click_id" (прямые значения)
 
         Args:
             params_str: Строка с параметрами
@@ -1045,14 +1110,56 @@ class TrackingURLDecoder:
                     # sub1-sub5
                     sub_num = int(key)
                     if 1 <= sub_num <= 5:
-                        setattr(result, f"sub{sub_num}", val)
+                        # Пробуем интерпретировать как индекс
+                        try:
+                            idx = int(val)
+                            real_val = self.sub_value_map.get(idx)
+                            if real_val:
+                                setattr(result, f"sub{sub_num}", real_val)
+                            else:
+                                # Fallback: используем как прямое значение
+                                setattr(result, f"sub{sub_num}", val)
+                        except ValueError:
+                            # Не число - прямое значение
+                            setattr(result, f"sub{sub_num}", val)
                 elif key == "k":
                     # click_id
-                    result.click_id = val
+                    try:
+                        idx = int(val)
+                        real_val = self.sub_value_map.get(idx)
+                        if real_val:
+                            result.click_id = real_val
+                        else:
+                            # Fallback: используем как прямое значение
+                            result.click_id = val
+                    except ValueError:
+                        # Не число - прямое значение
+                        result.click_id = val
 
             except Exception as e:
                 print(f"    Warning: Failed to parse param '{part}': {e}")
                 continue
+
+        return result
+
+    def _parse_params_string_legacy(self, params_str: str, campaign_id: str) -> Optional[DecodedTrackingParams]:
+        """Парсинг устаревшего формата для обратной совместимости"""
+        result = DecodedTrackingParams(campaign_id=campaign_id)
+
+        try:
+            # Пробуем распарсить как "1:value1|2:value2|k:click_id"
+            for part in params_str.split("|"):
+                if ":" not in part:
+                    continue
+                key, val = part.split(":", 1)
+                if key.isdigit():
+                    sub_num = int(key)
+                    if 1 <= sub_num <= 5:
+                        setattr(result, f"sub{sub_num}", val)
+                elif key == "k":
+                    result.click_id = val
+        except:
+            return None
 
         return result
 
@@ -1107,6 +1214,15 @@ class TrackingURLDecoder:
             result = result * self.BASE62_LEN + self.BASE62.index(char)
 
         return result
+
+    def _decode_bytes_base62(self, s: str) -> bytes:
+        """Декодирование base62 в байты"""
+        num = self._decode_base62(s)
+        if num == 0:
+            return b'\x00'
+
+        byte_len = (num.bit_length() + 7) // 8
+        return num.to_bytes(byte_len, 'big')
 
     # ==================== UTILITIES ====================
 
