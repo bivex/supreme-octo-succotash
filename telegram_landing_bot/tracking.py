@@ -16,9 +16,16 @@ import aiohttp
 from loguru import logger
 
 # Cache functions removed - now using Supreme API for URL generation
-# Removed config import to avoid circular dependencies
+# Import config directly
 
-from config import DEFAULT_TRACKING_PARAMS
+# Default tracking parameters (inline to avoid import issues)
+DEFAULT_TRACKING_PARAMS = {
+    "sub1": "telegram_bot",
+    "sub2": "local_landing",
+    "sub3": "supreme_company",
+    "sub4": "direct_message",
+    "sub5": "premium_offer"
+}
 
 # Import shared URL shortener
 import sys
@@ -122,108 +129,35 @@ class TrackingManager:
         }
 
     async def _generate_short_tracking_url(self, user_id: int, click_id: str, source: str, additional_params: Dict[str, Any]) -> str:
-        """Generate tracking URL using Supreme API /clicks/generate endpoint"""
+        """Generate tracking URL using URLShortener directly (bypass API for now)"""
         try:
-            # Prepare payload for API URL generation
-            campaign_id_num = 9061  # Fixed campaign ID
-            payload = {
-                "campaign_id": campaign_id_num,
-                "base_url": self.local_landing_url,
-                "params": {
-                    "sub1": additional_params.get("sub1", source),
-                    "sub2": additional_params.get("sub2", "telegram"),
-                    "sub3": additional_params.get("sub3", "callback_offer"),
-                    "sub4": additional_params.get("sub4", str(user_id)),
-                    "sub5": additional_params.get("sub5", "premium_offer")
-                }
-            }
+            logger.info("Generating tracking URL with URLShortener (direct approach)...")
 
-            # Add optional parameters if provided
-            if additional_params.get("landing_page_id"):
-                payload["landing_page_id"] = additional_params["landing_page_id"]
-            if additional_params.get("offer_id"):
-                payload["offer_id"] = additional_params["offer_id"]
+            # Create short tracking URL using high-level API (as shown in demo_bindings)
+            from shared_url_shortener import create_tracking_link, EncodingStrategy
 
-            url = f"{self.local_landing_url}/clicks/generate"
-            headers = {'Authorization': 'Bearer test_jwt_token_12345', 'Content-Type': 'application/json'}
+            short_url = create_tracking_link(
+                base_url=self.local_landing_url,
+                cid="camp_9061",
+                sub1=additional_params.get("sub1", source),
+                sub2=additional_params.get("sub2", "telegram"),
+                sub3=additional_params.get("sub3", "callback_offer"),
+                sub4=str(user_id),
+                sub5=additional_params.get("sub5", "premium_offer"),
+                click_id=click_id,
+                strategy=EncodingStrategy.COMPRESSED
+            )
 
-            logger.info(f"Generating tracking URL with payload: {payload}")
-
-            async with self.session.post(url, json=payload, headers=headers) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    if result.get("status") == "success" and result.get("tracking_url"):
-                        api_tracking_url = result["tracking_url"]
-
-                        # Use new URLShortener to create optimized short URL
-                        from shared_url_shortener import URLParams, EncodingStrategy
-
-                        # Extract parameters from API tracking URL
-                        from urllib.parse import urlparse, parse_qs
-                        parsed = urlparse(api_tracking_url)
-                        query_params = parse_qs(parsed.query)
-
-                        # Create URLParams object for optimal encoding
-                        try:
-                            url_params = URLParams(
-                                cid=str(payload["campaign_id"]),
-                                sub1=payload["params"].get("sub1", "telegram_bot"),
-                                sub2=payload["params"].get("sub2", "telegram"),
-                                sub3=payload["params"].get("sub3", "callback_offer"),
-                                sub4=payload["params"].get("sub4", str(user_id)),
-                                sub5=payload["params"].get("sub5", "premium_offer"),
-                                click_id=query_params.get('click_id', [None])[0],
-                                extra={
-                                    'landing_page_id': str(payload.get('landing_page_id')) if payload.get('landing_page_id') else None,
-                                    'offer_id': str(payload.get('offer_id')) if payload.get('offer_id') else None
-                                }
-                            )
-
-                            # Validate required cid parameter
-                            if not url_params.cid:
-                                raise ValueError("Campaign ID (cid) is required for URL encoding")
-
-                        except Exception as params_error:
-                            logger.warning(f"Error creating URLParams: {params_error}")
-                            # Fallback to manual URL building
-                            logger.info("Falling back to manual URL generation due to params error")
-                            click_id = self._generate_click_id(user_id, time.time())
-                            return self._build_tracking_url(click_id, additional_params)
-
-                        # Create short tracking URL using high-level API (as shown in demo_bindings)
-                        try:
-                            from shared_url_shortener import create_tracking_link, EncodingStrategy
-
-                            short_url = create_tracking_link(
-                                base_url=self.local_landing_url,
-                                cid="camp_9061",
-                                sub1=payload["params"].get("sub1", "telegram_bot"),
-                                sub2=payload["params"].get("sub2", "telegram"),
-                                sub3=payload["params"].get("sub3", "callback_offer"),
-                                sub4=str(user_id),
-                                sub5=payload["params"].get("sub5", "premium_offer"),
-                                click_id=click_id,
-                                strategy=EncodingStrategy.COMPRESSED
-                            )
-
-                            # Return short URL
-                            logger.info(f"Generated short tracking URL: {short_url}")
-                            return short_url
-                        except Exception as encode_error:
-                            logger.warning(f"Error building tracking URL: {encode_error}")
-                            # Fallback to manual URL building
-                            return self._build_tracking_url(click_id, additional_params)
-                    else:
-                        logger.warning(f"API returned error: {result}")
-                else:
-                    logger.warning(f"API request failed with status {response.status}")
+            logger.info(f"Successfully generated short tracking URL: {short_url}")
+            return short_url
 
         except Exception as e:
-            logger.warning(f"Error generating tracking URL via API: {e}")
-
-        # Fallback to direct URL building
-        logger.info("Falling back to manual URL generation")
-        return self._build_tracking_url(click_id, additional_params)
+            logger.error(f"Error generating tracking URL with URLShortener: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Fallback to manual URL building
+            logger.info("Falling back to manual URL generation")
+            return self._build_tracking_url(click_id, additional_params)
 
     async def track_event(self,
                          click_id: str,
