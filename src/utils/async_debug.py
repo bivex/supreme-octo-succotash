@@ -3,7 +3,7 @@
 import logging
 import time
 from typing import Dict, Any, Optional
-
+import asyncio
 logger = logging.getLogger(__name__)
 
 # Check if async-trace is available
@@ -27,6 +27,14 @@ def debug_async_trace(message: str = "Async call stack:") -> None:
 
     print(f"\n🔍 {message}")
     try:
+        # Determine if we are in an async context
+        try:
+            asyncio.get_running_loop()
+            ctx = "(async context)"
+        except RuntimeError:
+            ctx = "(sync context)"
+
+        print(f"🧭 Context: {ctx}")
         print_trace()
     except Exception as e:
         logger.error(f"Error getting async trace: {e}")
@@ -138,18 +146,17 @@ def log_trace_to_continuous_file(filename: str = "async_trace_continuous.jsonl")
         return None
 
 def save_debug_snapshot(reason: str = "debug") -> Optional[str]:
-    """Save a debug snapshot of current async state.
-
-    Args:
-        reason: Reason for the snapshot (used in filename)
-
-    Returns:
-        Path to saved HTML file or None
-    """
+    """Save a debug snapshot of current async state (HTML) with threads/loop info if available."""
     timestamp = time.strftime("%H%M%S")
     filename = f"debug_snapshot_{reason}_{timestamp}.html"
 
-    filepath = save_trace_to_file(filename, "html")
+    try:
+        # Prefer richer snapshot if extended API is present
+        from async_trace import save_full_trace
+        filepath = save_full_trace(filename, format="html")
+    except Exception:
+        filepath = save_trace_to_file(filename, "html")
+
     if filepath:
         logger.info(f"📸 Debug snapshot saved: {filepath}")
     return filepath

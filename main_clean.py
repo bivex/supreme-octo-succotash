@@ -12,6 +12,8 @@ import sys
 import threading
 import time
 import weakref
+import inspect
+import asyncio
 from contextlib import contextmanager
 
 # Async trace import (optional)
@@ -186,9 +188,15 @@ class DatabaseConnectionTester:
             try:
                 import psycopg2
 
-                # Use connection pool from container with thread-safe access
+                # Use connection pool from container with thread-safe access (sync)
                 with self._container_lock:
-                    pool = self.container.get_db_connection_pool()
+                    pool = self.container.get_db_connection_pool_sync()
+                    if pool is None:
+                        # Create pool synchronously as a fallback
+                        conn = self.container.get_db_connection()
+                        pool = self.container.get_db_connection_pool_sync()
+                        if conn and pool:
+                            pool.putconn(conn)
                 conn = None
 
                 try:
@@ -266,9 +274,8 @@ class ServerRunner:
         finally:
             self.service_manager.stop_all_services()
 
-    async def run_server(self) -> None:
-        """Run the server with full lifecycle management."""
-        # Import async debug here to avoid circular imports
+    def run_server(self) -> None:
+        """Run the server with full lifecycle management (sync entrypoint)."""
         try:
             from src.utils.async_debug import debug_async_trace
             debug_async_trace("Starting server runner")
@@ -277,9 +284,9 @@ class ServerRunner:
 
         self.setup_signal_handlers()
 
-        # Await the asynchronous create_app function
         logger.info("🚀 Creating app...")
-        app = await create_app()
+        # create_app is async; run it once to get the socketify app
+        app = asyncio.run(create_app())
         port = settings.api.port
 
         def on_listen(cfg):
@@ -287,9 +294,13 @@ class ServerRunner:
 
         try:
             with self.managed_services():
-                # Await app.listen and app.run as they might be async depending on socketify version
-                await app.listen(port, on_listen)
-                await app.run()
+                listen_result = app.listen(port, on_listen)
+                # app.listen may be sync; if it returns awaitable, wait for it
+                if inspect.isawaitable(listen_result):
+                    asyncio.run(listen_result)
+
+                # Run socketify loop in the main thread (blocking)
+                app.run()
         except KeyboardInterrupt:
             logger.info("Received keyboard interrupt, shutting down...")
         except Exception as e:
@@ -381,8 +392,8 @@ class HotReloadManager:
             observer.join()
 
 
-async def main_async(): # New async main function
-    """Main entry point for the application (async)."""
+def main_async(): # Now synchronous wrapper, keeps arg parsing logic
+    """Main entry point for the application (sync wrapper)."""
     parser = argparse.ArgumentParser(
         description='Clean Architecture Affiliate Marketing API Server',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -439,7 +450,7 @@ Examples:
 
     if args.no_reload:
         # This is a subprocess started by the reload handler
-        await ServerRunner().run_server()
+        ServerRunner().run_server()
     elif args.reload:
         # Start with hot reload
         try:
@@ -448,12 +459,11 @@ Examples:
         except ImportError as e:
             logger.error(str(e))
             logger.info("Falling back to normal run mode")
-            await ServerRunner().run_server() # Await in fallback
+            ServerRunner().run_server() # fallback
     else:
         # Normal server run
-        await ServerRunner().run_server()
+        ServerRunner().run_server()
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main_async()) # Run the async main function
+    main_async()

@@ -130,7 +130,16 @@ class Container:
 
     def get_pool_stats(self):
         """Get database connection pool statistics."""
-        pool = self.get_db_connection_pool()
+        pool = self.get_db_connection_pool_sync()
+        if pool is None:
+            logger.warning("🔌 DB pool stats requested but pool not initialized")
+            return {
+                'minconn': 'unknown',
+                'maxconn': 'unknown',
+                'used': 0,
+                'available': 0,
+                'total_connections': 0,
+            }
         return {
             'minconn': getattr(pool, '_minconn', 'unknown'),
             'maxconn': getattr(pool, '_maxconn', 'unknown'),
@@ -168,7 +177,10 @@ class Container:
 
     def release_db_connection(self, conn):
         """Release a database connection back to the pool."""
-        pool = self.get_db_connection_pool()
+        pool = self.get_db_connection_pool_sync()
+        if pool is None:
+            logger.warning("🔌 Attempted to release DB connection but pool is not initialized")
+            return
         pool.putconn(conn)
 
     async def get_campaign_repository(self):
