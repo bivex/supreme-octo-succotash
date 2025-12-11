@@ -26,7 +26,8 @@ from typing import Optional
 
 from loguru import logger
 
-from src.config.settings import settings
+from src.config.settings import load_settings
+settings = load_settings()
 from src.container import container
 from src.main import create_app
 
