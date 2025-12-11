@@ -67,28 +67,6 @@ class TrackingManager:
 
         return click_id
 
-    def _build_tracking_url(self, click_id: str, additional_params: Optional[Dict[str, Any]] = None) -> str:
-        """Build tracking URL using simple URL construction as fallback"""
-
-        # Simple fallback URL construction
-        params = {
-            "click_id": click_id,
-            "source": "telegram_bot_fallback",
-            "cid": "camp_9061",
-            **DEFAULT_TRACKING_PARAMS
-        }
-
-        # Add additional parameters
-        if additional_params:
-            params.update(additional_params)
-
-        # Form URL
-        query_string = urlencode(params, safe='')
-        tracking_url = f"{self.api_base_url}/v1/click?{query_string}"
-
-        logger.info(f"Generated fallback tracking URL: {tracking_url}")
-        return tracking_url
-
     async def generate_tracking_link(self,
                                    user_id: int,
                                    source: str = "telegram_bot",
@@ -153,87 +131,57 @@ class TrackingManager:
             payload = {
                 "base_url": self.api_base_url,
                 "campaign_id": 9061,  # Numeric ID as required by API
-                "click_id": click_id,
-                "source": source,
-                "sub1": additional_params.get("sub1", source),
-                "sub2": additional_params.get("sub2", "telegram"),
-                "sub3": additional_params.get("sub3", "callback_offer"),
-                "sub4": str(user_id),
-                "sub5": additional_params.get("sub5", "premium_offer"),
-                # Добавить параметры для разрешения по ID
-                "lp_id": additional_params.get("lp_id"),  # Landing Page ID
-                "offer_id": additional_params.get("offer_id"),  # Offer ID
-                "ts_id": additional_params.get("ts_id"),  # Traffic Source ID
-                "aff_sub": additional_params.get("aff_sub"), # Add aff_sub
-                "aff_sub2": additional_params.get("aff_sub2"), # Add aff_sub2
-                "aff_sub3": additional_params.get("aff_sub3"), # Add aff_sub3
-                "aff_sub4": additional_params.get("aff_sub4"), # Add aff_sub4
-                "aff_sub5": additional_params.get("aff_sub5"), # Add aff_sub5
-                "metadata": {
-                    "user_id": user_id,
+                "tracking_params": {
+                    "click_id": click_id,
+                    "source": source,
+                    "sub1": additional_params.get("sub1", source),
+                    "sub2": additional_params.get("sub2", "telegram"),
+                    "sub3": additional_params.get("sub3", "callback_offer"),
+                    "sub4": str(user_id),
+                    "sub5": additional_params.get("sub5", "premium_offer"),
+                    "lp_id": additional_params.get("lp_id"),
+                    "offer_id": additional_params.get("offer_id"),
+                    "ts_id": additional_params.get("ts_id"),
+                    "aff_sub": additional_params.get("aff_sub"),
+                    "aff_sub2": additional_params.get("aff_sub2"),
+                    "aff_sub3": additional_params.get("aff_sub3"),
+                    "aff_sub4": additional_params.get("aff_sub4"),
+                    "aff_sub5": additional_params.get("aff_sub5"),
+                    "user_id": user_id, # Add user_id to tracking params for PreClickData
                     "bot_source": "telegram",
-                    "generated_at": int(time.time())
+                    "generated_at": int(time.time()),
+                    **(additional_params.get("metadata", {}) if additional_params else {})
                 }
             }
 
+            # Remove None values from tracking_params
+            payload["tracking_params"] = {k: v for k, v in payload["tracking_params"].items() if v is not None}
+
             # Call Advertising Platform API
-            url = f"{self.api_base_url}/clicks/generate"
-            logger.info(f"Calling API: {url} with payload: {payload}")
+            url = f"{self.api_base_url}/v1/click/generate"
+            logger.info(f"Calling API: {url} with payload: {json.dumps(payload, indent=2)}")
 
             async with self.session.post(url, json=payload) as response:
                 logger.info(f"API response status: {response.status}")
 
                 if response.status == 200:
                     result = await response.json()
-                    api_url = result.get("short_url") or result.get("tracking_url")
+                    api_url = result.get("short_url")
 
                     if api_url:
-                        # Convert API URL format to expected /v1/click format
-                        from urllib.parse import urlparse, parse_qs, urlencode
-                        parsed = urlparse(api_url)
-                        params = parse_qs(parsed.query)
-
-                        # Keep ALL parameters from API response, including lp_id, offer_id, ts_id
-                        # Remove any conflicting parameters and ensure proper format
-                        final_params = {}
-                        for key, values in params.items():
-                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'ts', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5']:
-                                final_params[key] = values[0] if isinstance(values, list) else values
-
-                        # Ensure we have at least cid
-                        if 'cid' not in final_params:
-                            final_params['cid'] = 'camp_9061'
-
-                        # Build proper URL format with ALL parameters
-                        query_string = urlencode(final_params)
-                        short_url = f"{self.api_base_url}/v1/click?{query_string}"
-
-                        logger.info(f"Successfully generated short tracking URL: {short_url} (from API: {api_url})")
-                        logger.info(f"Preserved parameters: {list(final_params.keys())}")
-                        return short_url
+                        logger.info(f"Successfully generated short tracking URL: {api_url}")
+                        return api_url
                     else:
-                        logger.error(f"API response missing URL: {result}")
+                        logger.error(f"API response missing 'short_url': {result}")
                         raise ValueError("API response missing tracking URL")
-
                 else:
                     response_text = await response.text()
                     logger.error(f"API call failed (status {response.status}): {response_text}")
                     raise Exception(f"API call failed: {response.status}")
 
         except Exception as e:
-            logger.error(f"Error generating tracking URL via API: {e}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-
-            # Check if it's a network/connectivity issue
-            if "503" in str(e) or "Connection" in str(e) or "timeout" in str(e).lower():
-                logger.warning("API appears to be unavailable, using fallback URL generation")
-            else:
-                logger.warning("API returned error, using fallback URL generation")
-
-            # Fallback to manual URL building
-            logger.info("Falling back to manual URL generation")
-            return self._build_tracking_url(click_id, additional_params)
+            logger.error(f"Error generating tracking URL via API: {e}", exc_info=True)
+            raise Exception(f"Failed to generate tracking URL: {str(e)}")
 
     async def track_event(self,
                          click_id: str,

@@ -11,6 +11,7 @@ from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.repositories.landing_page_repository import LandingPageRepository
 from ...domain.repositories.offer_repository import OfferRepository
+from ...domain.repositories.pre_click_data_repository import PreClickDataRepository
 from ...domain.services.click import ClickValidationService
 from ...domain.value_objects import ClickId, CampaignId, Url
 
@@ -23,14 +24,16 @@ class TrackClickHandler:
                  campaign_repository: CampaignRepository,
                  landing_page_repository: LandingPageRepository,
                  offer_repository: OfferRepository,
+                 pre_click_data_repository: PreClickDataRepository,
                  click_validation_service: ClickValidationService):
         self._click_repository = click_repository
         self._campaign_repository = campaign_repository
         self._landing_page_repository = landing_page_repository
         self._offer_repository = offer_repository
+        self._pre_click_data_repository = pre_click_data_repository
         self._click_validation_service = click_validation_service
 
-    def handle(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
+    async def handle(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
         """
         Handle track click command.
 
@@ -42,7 +45,7 @@ class TrackClickHandler:
         if not campaign:
             return self._handle_unknown_campaign(command)
 
-        click = self._create_click_from_command(command)
+        click = await self._create_click_from_command(command) # Await the async call
         is_valid = self._validate_click_and_mark_fraud(click)
 
         redirect_url = self._determine_redirect_url(campaign, is_valid, command.test_mode, click.id.value, command)
@@ -140,31 +143,70 @@ class TrackClickHandler:
         campaign.update_performance(clicks_increment=1)
         self._campaign_repository.save(campaign)
 
-    def _create_click_from_command(self, command: TrackClickCommand) -> Click:
-        """Create Click entity from command."""
-        click_id = ClickId.generate()
-        click_data = {
-            'id': click_id,
-            'campaign_id': command.campaign_id,
-            'ip_address': command.ip_address,
-            'user_agent': command.user_agent,
-            'referrer': command.referrer,
-            'sub1': command.sub1,
-            'sub2': command.sub2,
-            'sub3': command.sub3,
-            'sub4': command.sub4,
-            'sub5': command.sub5,
-            'click_id_param': command.click_id_param,
-            'affiliate_sub': command.affiliate_sub,
-            'affiliate_sub2': command.affiliate_sub2,
-            'affiliate_sub3': command.affiliate_sub3,
-            'affiliate_sub4': command.affiliate_sub4,
-            'affiliate_sub5': command.affiliate_sub5,
-            'landing_page_id': command.landing_page_id,
-            'campaign_offer_id': command.campaign_offer_id,
-            'traffic_source_id': command.traffic_source_id,
-            'is_valid': True,
-            'fraud_score': 0.0,
-            'fraud_reason': None,
-        }
+    async def _create_click_from_command(self, command: TrackClickCommand) -> Click:
+        """Create Click entity from command, enriched with PreClickData."""
+        click_id = ClickId.from_string(command.click_id_param)
+
+        # Retrieve all stored tracking parameters using the click_id
+        pre_click_data = await self._pre_click_data_repository.find_by_click_id(click_id)
+
+        if not pre_click_data:
+            logger.warning(f"No PreClickData found for click_id: {click_id.value}. Creating click with limited data.")
+            # Fallback to creating a click with only data from the command if pre_click_data is not found
+            click_data = {
+                'id': click_id,
+                'campaign_id': command.campaign_id,
+                'ip_address': command.ip_address,
+                'user_agent': command.user_agent,
+                'referrer': command.referrer,
+                'sub1': command.sub1,
+                'sub2': command.sub2,
+                'sub3': command.sub3,
+                'sub4': command.sub4,
+                'sub5': command.sub5,
+                'click_id_param': command.click_id_param,
+                'affiliate_sub': command.affiliate_sub,
+                'affiliate_sub2': command.affiliate_sub2,
+                'affiliate_sub3': command.affiliate_sub3,
+                'affiliate_sub4': command.affiliate_sub4,
+                'affiliate_sub5': command.affiliate_sub5,
+                'landing_page_id': command.landing_page_id,
+                'campaign_offer_id': command.campaign_offer_id,
+                'traffic_source_id': command.traffic_source_id,
+                'is_valid': True,
+                'fraud_score': 0.0,
+                'fraud_reason': None,
+            }
+        else:
+            # Populate click_data with parameters from pre_click_data, falling back to command if not present
+            tracking_params = pre_click_data.tracking_params
+            click_data = {
+                'id': click_id,
+                'campaign_id': pre_click_data.campaign_id.value,
+                'ip_address': command.ip_address,
+                'user_agent': command.user_agent,
+                'referrer': command.referrer,
+                'sub1': tracking_params.get('sub1', command.sub1),
+                'sub2': tracking_params.get('sub2', command.sub2),
+                'sub3': tracking_params.get('sub3', command.sub3),
+                'sub4': tracking_params.get('sub4', command.sub4),
+                'sub5': tracking_params.get('sub5', command.sub5),
+                'click_id_param': tracking_params.get('click_id', command.click_id_param),
+                'affiliate_sub': tracking_params.get('aff_sub', command.affiliate_sub),
+                'affiliate_sub2': tracking_params.get('aff_sub2', command.affiliate_sub2),
+                'affiliate_sub3': tracking_params.get('aff_sub3', command.affiliate_sub3),
+                'affiliate_sub4': tracking_params.get('aff_sub4', command.affiliate_sub4),
+                'affiliate_sub5': tracking_params.get('aff_sub5', command.affiliate_sub5),
+                'landing_page_id': int(tracking_params['lp_id']) if 'lp_id' in tracking_params else command.landing_page_id,
+                'campaign_offer_id': int(tracking_params['offer_id']) if 'offer_id' in tracking_params else command.campaign_offer_id,
+                'traffic_source_id': int(tracking_params['ts_id']) if 'ts_id' in tracking_params else command.traffic_source_id,
+                'is_valid': True,
+                'fraud_score': 0.0,
+                'fraud_reason': None,
+            }
+
+            # After successfully retrieving and using pre-click data, delete it
+            await self._pre_click_data_repository.delete_by_click_id(click_id)
+            logger.info(f"PreClickData deleted for click_id: {click_id.value}")
+
         return Click(**click_data)

@@ -305,12 +305,14 @@ class Container:
             landing_page_repo = self.get_landing_page_repository()
             offer_repo = self.get_offer_repository()
             validation_svc = self.get_click_validation_service()
+            pre_click_data_repo = self.get_postgres_pre_click_data_repository()
 
             track_click_handler = TrackClickHandler(
                 click_repository=click_repo,
                 campaign_repository=campaign_repo,
                 landing_page_repository=landing_page_repo,
                 offer_repository=offer_repo,
+                pre_click_data_repository=pre_click_data_repo,
                 click_validation_service=validation_svc,
             )
             self._singletons['track_click_handler'] = track_click_handler

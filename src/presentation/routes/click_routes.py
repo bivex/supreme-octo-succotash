@@ -28,7 +28,7 @@ class ClickRoutes:
 
     def register(self, app):
         """Register routes with socketify app."""
-        def track_click(res, req):
+        async def track_click(res, req):
             """Handle click tracking and redirection."""
             try:
                 # Log incoming click request details
@@ -40,69 +40,17 @@ class ClickRoutes:
                 logger.info(f"IP Address: {client_ip}")
                 logger.info(f"User Agent: {user_agent}")
                 logger.info(f"Referrer: {referrer}")
-                # Get request URL (socketify specific)
-                try:
-                    request_url = req.get_url()
-                except AttributeError:
-                    try:
-                        method = req.get_method()
-                        path = req.get_path()
-                        request_url = f"{method} {path}"
-                    except AttributeError:
-                        request_url = "Unknown URL"
 
-                # Get query string (socketify specific)
-                # Socketify doesn't have get_query_string(), let's try alternative approaches
-                query_string = ""
+                # Extract only campaign_id and click_id from the URL
+                campaign_id_param = req.get_query('cid')
+                click_id_param = req.get_query('click_id')
 
-                # Try to get query string from URL
-                try:
-                    full_url = req.get_full_url()
-                    logger.info(f"Full URL from req.get_full_url(): {repr(full_url)}")
+                logger.info(f"Campaign ID from URL: {campaign_id_param}")
+                logger.info(f"Click ID from URL: {click_id_param}")
 
-                    # Extract query string from full URL
-                    if '?' in full_url:
-                        query_string = full_url.split('?', 1)[1]
-                        logger.info(f"Extracted query string: {repr(query_string)}")
-                    else:
-                        query_string = "No query params"
-                        logger.info("No query parameters in URL")
-
-                except AttributeError:
-                    logger.warning("req.get_full_url() not available")
-                    # Try get_url() and see if it includes query
-                    try:
-                        url = req.get_url()
-                        logger.info(f"URL from req.get_url(): {repr(url)}")
-                        if '?' in url:
-                            query_string = url.split('?', 1)[1]
-                            logger.info(f"Query string from get_url(): {repr(query_string)}")
-                        else:
-                            query_string = "No query params"
-                    except AttributeError:
-                        logger.warning("req.get_url() not available either")
-                        # Last resort: build from individual parameters
-                        query_params = []
-                        for param in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'lp_id', 'offer_id', 'ts_id']:
-                            try:
-                                value = req.get_query(param)
-                                if value:
-                                    query_params.append(f"{param}={value}")
-                            except AttributeError:
-                                continue
-                        query_string = "&".join(query_params) if query_params else "No query params"
-
-                logger.info(f"Request URL: {request_url}")
-                logger.info(f"Query String: {query_string}")
-
-                # Validate required parameters
-                campaign_id = req.get_query('cid')
-                ts = req.get_query('ts')
-                logger.info(f"Campaign ID: {campaign_id}")
-
-                if not campaign_id:
-                    logger.warning("Missing required campaign_id parameter")
-                    error_html = "<html><body><h1>Error</h1><p>Campaign not found</p></body></html>"
+                if not campaign_id_param or not click_id_param:
+                    logger.warning("Missing required campaign_id or click_id parameter")
+                    error_html = "<html><body><h1>Error</h1><p>Campaign or Click ID not found</p></body></html>"
                     res.write_status(404)
                     res.write_header("Content-Type", "text/html")
                     res.end(error_html)
@@ -110,143 +58,26 @@ class ClickRoutes:
 
                 # Check if test mode
                 test_mode = req.get_query('test_mode') == '1'
-
-                # Extract all tracking parameters (with safe error handling)
-                try:
-                    sub1 = req.get_query('sub1')
-                    sub2 = req.get_query('sub2')
-                    sub3 = req.get_query('sub3')
-                    sub4 = req.get_query('sub4')
-                    sub5 = req.get_query('sub5')
-
-                    aff_sub = req.get_query('aff_sub') # Extract aff_sub
-                    aff_sub2 = req.get_query('aff_sub2') # Extract aff_sub2
-                    aff_sub3 = req.get_query('aff_sub3') # Extract aff_sub3
-                    aff_sub4 = req.get_query('aff_sub4') # Extract aff_sub4
-                    aff_sub5 = req.get_query('aff_sub5') # Extract aff_sub5
-
-                    click_id_param = req.get_query('click_id')
-                    lp_id = self._safe_int_convert(req.get_query('lp_id'))
-                    offer_id = self._safe_int_convert(req.get_query('offer_id'))
-                    ts_id = self._safe_int_convert(req.get_query('ts_id'))
-                    ts_param = self._safe_int_convert(req.get_query('ts')) # Extract the 'ts' parameter
-                except AttributeError as e:
-                    logger.error(f"Error accessing query parameters: {e}")
-                    # Set defaults to None
-                    sub1 = sub2 = sub3 = sub4 = sub5 = click_id_param = lp_id = offer_id = ts_id = ts_param = None
-
-                logger.info("=== TRACKING PARAMETERS ===")
-                logger.info(f"sub1 (source): {repr(sub1)}")
-                logger.info(f"sub2 (medium): {repr(sub2)}")
-                logger.info(f"sub3 (campaign): {repr(sub3)}")
-                logger.info(f"sub4 (user_id): {repr(sub4)}")
-                logger.info(f"sub5 (content): {repr(sub5)}")
-                logger.info(f"click_id: {repr(click_id_param)}")
-                logger.info(f"lp_id (landing page): {repr(req.get_query('lp_id'))} -> {lp_id}")
-                logger.info(f"offer_id (offer): {repr(req.get_query('offer_id'))} -> {offer_id}")
-                logger.info(f"ts_id (traffic source): {repr(req.get_query('ts_id'))} -> {ts_id}")
-                logger.info(f"ts (timestamp): '{ts}' -> {self._safe_int_convert(ts)}")
-                logger.info(f"test_mode: {test_mode}")
-                logger.info(f"aff_sub: '{aff_sub}'")
-                logger.info(f"aff_sub2: '{aff_sub2}'")
-                logger.info(f"aff_sub3: '{aff_sub3}'")
-                logger.info(f"aff_sub4: '{aff_sub4}'")
-                logger.info(f"aff_sub5: '{aff_sub5}'")
-
-                # Debug: check all query parameters
-                logger.info("=== ALL QUERY PARAMETERS ===")
-                all_params = {}
-                for param_name in ['cid', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id', 'lp_id', 'offer_id', 'ts_id', 'aff_sub', 'aff_sub2', 'aff_sub3', 'aff_sub4', 'aff_sub5']:
-                    try:
-                        param_value = req.get_query(param_name)
-                        all_params[param_name] = param_value
-                        logger.info(f"{param_name}: {repr(param_value)} (type: {type(param_value).__name__})")
-                    except Exception as e:
-                        logger.error(f"Error getting {param_name}: {e}")
-                logger.info(f"Total parameters found: {len([p for p in all_params.values() if p is not None])}")
-
-                # Additional debugging for req object
-                logger.info("=== REQ OBJECT DEBUGGING ===")
-                try:
-                    logger.info(f"req type: {type(req)}")
-                    logger.info(f"req methods: {[m for m in dir(req) if not m.startswith('_')][:10]}...")
-
-                    # Try different ways to get query parameters
-                    try:
-                        url = req.get_url()
-                        logger.info(f"Full URL: {url}")
-                    except:
-                        logger.info("Could not get full URL")
-
-                    try:
-                        method = req.get_method()
-                        logger.info(f"HTTP Method: {method}")
-                    except:
-                        logger.info("Could not get HTTP method")
-
-                    # Try to get all query parameters at once (if supported)
-                    try:
-                        # Some frameworks support iterating over query params
-                        query_params_dict = {}
-                        # Try common methods
-                        if hasattr(req, 'query'):
-                            query_params_dict = dict(req.query)
-                            logger.info(f"req.query found: {query_params_dict}")
-                        elif hasattr(req, 'args'):
-                            query_params_dict = dict(req.args)
-                            logger.info(f"req.args found: {query_params_dict}")
-                        elif hasattr(req, 'get_parameters'):
-                            # Socketify specific method
-                            try:
-                                all_params = req.get_parameters()
-                                logger.info(f"req.get_parameters() returned: {all_params} (type: {type(all_params)})")
-                                if hasattr(all_params, 'items'):
-                                    query_params_dict = dict(all_params.items())
-                                elif isinstance(all_params, dict):
-                                    query_params_dict = all_params
-                                elif hasattr(all_params, '__iter__'):
-                                    query_params_dict = {k: v for k, v in all_params}
-                                logger.info(f"Parsed parameters: {query_params_dict}")
-                            except Exception as e2:
-                                logger.warning(f"req.get_parameters() failed: {e2}")
-                        else:
-                            logger.info("No bulk query parameter access method found")
-                    except Exception as e:
-                        logger.warning(f"Could not get bulk query params: {e}")
-
-                except Exception as e:
-                    logger.error(f"Error debugging req object: {e}")
+                logger.info(f"Test mode: {test_mode}")
 
                 # Create track click command
                 from ...application.commands.track_click_command import TrackClickCommand
 
                 command = TrackClickCommand(
-                    campaign_id=campaign_id,
+                    campaign_id=campaign_id_param,
+                    click_id_param=click_id_param,
                     ip_address=client_ip,
                     user_agent=user_agent,
                     referrer=referrer,
-                    sub1=sub1,
-                    sub2=sub2,
-                    sub3=sub3,
-                    sub4=sub4,
-                    sub5=sub5,
-                    click_id_param=click_id_param,
-                    affiliate_sub=aff_sub,
-                    affiliate_sub2=aff_sub2,
-                    affiliate_sub3=aff_sub3,
-                    affiliate_sub4=aff_sub4,
-                    affiliate_sub5=aff_sub5,
-                    landing_page_id=self._safe_int_convert(lp_id),
-                    campaign_offer_id=self._safe_int_convert(offer_id),
-                    traffic_source_id=self._safe_int_convert(ts_id),
                     test_mode=test_mode
+                    # Other parameters will be fetched from PreClickData inside the handler
                 )
 
-                logger.info("TrackClickCommand created successfully")
+                logger.info("TrackClickCommand created successfully with short parameters")
 
                 # Handle click tracking
                 logger.info("Processing click through TrackClickHandler...")
-                click, redirect_url, is_valid = self.track_click_handler.handle(command)
+                click, redirect_url, is_valid = await self.track_click_handler.handle(command)
 
                 logger.info("=== CLICK PROCESSING RESULT ===")
                 logger.info(f"Click ID: {click.id.value}")
@@ -257,17 +88,17 @@ class ClickRoutes:
 
                 # Check if we got fallback URL and campaign needs configuration
                 if redirect_url.value == "http://localhost:5000/mock-safe-page":
-                    logger.warning(f"Campaign {campaign_id} is not properly configured with offer/safe URLs")
+                    logger.warning(f"Campaign {campaign_id_param} is not properly configured with offer/safe URLs")
 
                     if is_valid:
-                        logger.warning(f"VALID click for campaign {campaign_id} redirected to fallback - campaign needs proper URLs!")
-                        logger.warning(f"Set offer_page_url for campaign {campaign_id} via: PUT /v1/campaigns/{campaign_id}")
+                        logger.warning(f"VALID click for campaign {campaign_id_param} redirected to fallback - campaign needs proper URLs!")
+                        logger.warning(f"Set offer_page_url for campaign {campaign_id_param} via: PUT /v1/campaigns/{campaign_id_param}")
                     else:
-                        logger.info(f"Invalid/fraud click for campaign {campaign_id} - correctly using safe fallback")
+                        logger.info(f"Invalid/fraud click for campaign {campaign_id_param} - correctly using safe fallback")
 
                     # Provide helpful setup instructions
                     logger.warning("To configure campaign URLs:")
-                    logger.warning(f"  curl -X PUT http://localhost:5000/v1/campaigns/{campaign_id} \\")
+                    logger.warning(f"  curl -X PUT http://localhost:5000/v1/campaigns/{campaign_id_param} \\")
                     logger.warning("    -H 'Content-Type: application/json' \\")
                     logger.warning("    -d '{\"offer_page_url\": \"https://your-offer.com\", \"safe_page_url\": \"https://your-safe.com\"}'")
 

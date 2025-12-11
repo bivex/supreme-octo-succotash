@@ -12,7 +12,7 @@ class GenerateClickHandler:
     def __init__(self, click_generation_service: ClickGenerationService):
         self.click_generation_service = click_generation_service
 
-    def handle(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate click tracking URL(s)."""
         try:
             logger.info("Processing click generation request")
@@ -27,10 +27,10 @@ class GenerateClickHandler:
             # Check if bulk generation or single URL
             if 'variations' in request_data:
                 # Bulk generation
-                return self._handle_bulk_generation(request_data)
+                return await self._handle_bulk_generation(request_data)
             else:
                 # Single URL generation
-                return self._handle_single_generation(request_data)
+                return await self._handle_single_generation(request_data)
 
         except Exception as e:
             logger.error(f"Error in generate_click handler: {e}", exc_info=True)
@@ -39,7 +39,7 @@ class GenerateClickHandler:
                 "message": str(e)
             }
 
-    def _handle_single_generation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_single_generation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle single URL generation."""
         try:
             # Validate required fields
@@ -93,7 +93,7 @@ class GenerateClickHandler:
             logger.info(f"  traffic_source_id: {traffic_source_id}")
             logger.info(f"  optimized_params: {optimized_params}")
 
-            tracking_url = self.click_generation_service.generate_tracking_url(
+            tracking_url = await self.click_generation_service.generate_tracking_url(
                 base_url=base_url,
                 campaign_id=campaign_id,
                 tracking_params=optimized_params,
@@ -119,7 +119,7 @@ class GenerateClickHandler:
                 "message": f"Failed to generate tracking URL: {str(e)}"
             }
 
-    def _handle_bulk_generation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_bulk_generation(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle bulk URL generation."""
         try:
             # Validate required fields for bulk generation
@@ -152,7 +152,7 @@ class GenerateClickHandler:
             campaign_id = request_data['campaign_id']
 
             # Generate bulk URLs
-            results = self.click_generation_service.generate_bulk_tracking_urls(
+            results = await self.click_generation_service.generate_bulk_tracking_urls(
                 base_url=base_url,
                 campaign_id=campaign_id,
                 variations=variations
