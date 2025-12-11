@@ -39,6 +39,7 @@ async def create_app() -> socketify.App:
     # Create app with basic configuration
     logger.info("🏗️ Step 1: Initializing Socketify App")
     app = socketify.App()
+    logger.info("🏗️ Step 1: Socketify App created successfully")
 
     # Set uWebSockets environment variables for maximum performance
     os.environ.setdefault('UWS_MAX_HEADER_SIZE', '32768')
@@ -155,17 +156,17 @@ def _setup_global_exception_handler() -> None:
 async def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
     await (await container.get_campaign_routes()).register(app)
-    (await container.get_click_routes()).register(app)
-    (await container.get_webhook_routes()).register(app)
-    (await container.get_event_routes()).register(app)
-    (await container.get_conversion_routes()).register(app)
-    (await container.get_postback_routes()).register(app)
-    (await container.get_click_generation_routes()).register(app)
-    (await container.get_goal_routes()).register(app)
-    (await container.get_journey_routes()).register(app)
-    (await container.get_ltv_routes()).register(app)
-    (await container.get_form_routes()).register(app)
-    (await container.get_retention_routes()).register(app)
+    await (await container.get_click_routes()).register(app)
+    await (await container.get_webhook_routes()).register(app)
+    await (await container.get_event_routes()).register(app)
+    await (await container.get_conversion_routes()).register(app)
+    await (await container.get_postback_routes()).register(app)
+    await (await container.get_click_generation_routes()).register(app)
+    await (await container.get_goal_routes()).register(app)
+    await (await container.get_journey_routes()).register(app)
+    await (await container.get_ltv_routes()).register(app)
+    await (await container.get_form_routes()).register(app)
+    await (await container.get_retention_routes()).register(app)
     # New feature routes
     (await container.get_bulk_operations_routes()).register(app)
     (await container.get_fraud_routes()).register(app)

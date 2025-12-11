@@ -1042,7 +1042,11 @@ class CampaignRoutes:
         async def create_campaign_offer(res, req):
             """Create an offer for a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...utils.async_debug import debug_http_request, debug_database_call
             import json
+
+            # Debug: Show async call stack for HTTP requests
+            debug_http_request("create_campaign_offer")
 
             # Validate request (authentication, rate limiting, etc.)
             if validate_request(req, res):
@@ -1111,6 +1115,9 @@ class CampaignRoutes:
                     weight=body_data.get('weight', 100),
                     is_control=body_data.get('isControl', False)
                 )
+
+                # Debug: Show async call stack before database operation
+                debug_database_call("create_offer_command")
 
                 # Handle command
                 offer = (await self.create_offer_handler).handle(command)

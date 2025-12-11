@@ -13,6 +13,13 @@ import threading
 import time
 import weakref
 from contextlib import contextmanager
+
+# Async trace import (optional)
+try:
+    import async_trace
+    ASYNC_TRACE_AVAILABLE = True
+except ImportError:
+    ASYNC_TRACE_AVAILABLE = False
 from typing import Optional
 
 from loguru import logger
@@ -271,6 +278,11 @@ class ServerRunner:
         except Exception as e:
             logger.error(f"Server error: {e}")
             raise
+        except KeyboardInterrupt:
+            logger.info("Received keyboard interrupt, shutting down...")
+        except Exception as e:
+            logger.error(f"Server error: {e}")
+            raise
 
 
 class HotReloadManager:
@@ -373,8 +385,21 @@ Examples:
         action='store_true',
         help='Internal flag for reload subprocess (do not use manually)'
     )
+    parser.add_argument(
+        '--async-trace',
+        action='store_true',
+        help='Enable async-trace for debugging asyncio tasks'
+    )
 
     args = parser.parse_args()
+
+    # Enable async tracing if requested and available
+    if args.async_trace:
+        if ASYNC_TRACE_AVAILABLE:
+            async_trace.enable_tracing()
+            logger.info("🔍 Async-trace enabled for debugging asyncio tasks")
+        else:
+            logger.warning("⚠️  Async-trace requested but not available. Install with: pip install async-trace")
 
     if args.no_reload:
         # This is a subprocess started by the reload handler
