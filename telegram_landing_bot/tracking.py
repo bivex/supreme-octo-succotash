@@ -158,7 +158,7 @@ class TrackingManager:
             payload["tracking_params"] = {k: v for k, v in payload["tracking_params"].items() if v is not None}
 
             # Call Advertising Platform API
-            url = f"{self.api_base_url}/v1/click/generate"
+            url = f"{self.api_base_url}/clicks/generate"
             logger.info(f"Calling API: {url} with payload: {json.dumps(payload, indent=2)}")
 
             async with self.session.post(url, json=payload) as response:
