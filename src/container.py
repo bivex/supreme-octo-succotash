@@ -27,6 +27,7 @@ from .infrastructure.repositories import (
     PostgresGoalRepository,
     PostgresLandingPageRepository,
     PostgresOfferRepository,
+    PostgresPreClickDataRepository,
     PostgresLTVRepository,
     PostgresRetentionRepository,
     PostgresFormRepository,
@@ -201,14 +202,14 @@ class Container:
     def get_bulk_optimizer(self):
         """Get PostgreSQL bulk optimizer."""
         if 'bulk_optimizer' not in self._singletons:
-            connection_pool = self.get_connection_pool()
+            connection_pool = self.get_db_connection_pool()
             self._singletons['bulk_optimizer'] = PostgresBulkOptimizer(connection_pool)
         return self._singletons['bulk_optimizer']
 
     def get_vectorized_cache_monitor(self):
         """Get vectorized cache monitor."""
         if 'vectorized_cache_monitor' not in self._singletons:
-            connection_pool = self.get_connection_pool()
+            connection_pool = self.get_db_connection_pool()
             self._singletons['vectorized_cache_monitor'] = VectorizedCacheMonitor(connection_pool)
         return self._singletons['vectorized_cache_monitor']
 
@@ -505,7 +506,9 @@ class Container:
     def get_click_generation_service(self):
         """Get click generation service."""
         if 'click_generation_service' not in self._singletons:
-            self._singletons['click_generation_service'] = ClickGenerationService()
+            self._singletons['click_generation_service'] = ClickGenerationService(
+                pre_click_data_repository=self.get_postgres_pre_click_data_repository()
+            )
         return self._singletons['click_generation_service']
 
     def get_generate_click_handler(self):
@@ -652,6 +655,12 @@ class Container:
         if 'postgres_offer_repository' not in self._singletons:
             self._singletons['postgres_offer_repository'] = PostgresOfferRepository(container=self)
         return self._singletons['postgres_offer_repository']
+
+    def get_postgres_pre_click_data_repository(self):
+        """Get PostgreSQL pre-click data repository."""
+        if 'postgres_pre_click_data_repository' not in self._singletons:
+            self._singletons['postgres_pre_click_data_repository'] = PostgresPreClickDataRepository(container=self)
+        return self._singletons['postgres_pre_click_data_repository']
 
     def get_landing_page_repository(self):
         """Get landing page repository."""
