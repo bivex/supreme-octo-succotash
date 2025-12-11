@@ -156,8 +156,8 @@ class BackgroundServiceManager:
         with self._service_lock:
             try:
                 logger.info("Closing database connections...")
-                pool = container.get_db_connection_pool()
-                if hasattr(pool, '_closeall'):
+                pool = container.get_db_connection_pool_sync()
+                if pool and hasattr(pool, '_closeall'):
                     pool._closeall()
                     logger.info("Database connections closed successfully")
             except Exception as e:
@@ -250,11 +250,12 @@ class ServerRunner:
         finally:
             self.service_manager.stop_all_services()
 
-    def run_server(self) -> None:
+    async def run_server(self) -> None:
         """Run the server with full lifecycle management."""
         self.setup_signal_handlers()
 
-        app = create_app()
+        # Await the asynchronous create_app function
+        app = await create_app()
         port = settings.api.port
 
         def on_listen(cfg):
@@ -262,8 +263,9 @@ class ServerRunner:
 
         try:
             with self.managed_services():
-                app.listen(port, on_listen)
-                app.run()
+                # Await app.listen and app.run as they might be async depending on socketify version
+                await app.listen(port, on_listen)
+                await app.run()
         except KeyboardInterrupt:
             logger.info("Received keyboard interrupt, shutting down...")
         except Exception as e:
@@ -292,15 +294,16 @@ class HotReloadManager:
         def __init__(self, script_path: str):
             from watchdog.events import FileSystemEventHandler
             import subprocess
+            import asyncio # Import asyncio here
 
             self.FileSystemEventHandler = FileSystemEventHandler
             self.subprocess = subprocess
             self.script_path = script_path
             self.process: Optional[subprocess.Popen] = None
-            self.restart_server()
+            asyncio.run(self.restart_server()) # Run restart_server as async
 
-        def restart_server(self) -> None:
-            """Restart the server process."""
+        async def restart_server(self) -> None:
+            """Restart the server process (async)."""
             if self.process:
                 logger.info("Stopping current server process...")
                 self.process.terminate()
@@ -320,7 +323,8 @@ class HotReloadManager:
             if (event.src_path.endswith('.py') and
                 not event.src_path.endswith(('__pycache__', '__init__.py'))):
                 logger.info(f"File changed: {event.src_path}")
-                self.restart_server()
+                import asyncio
+                asyncio.run(self.restart_server())
 
     def run_with_reload(self, script_path: str) -> None:
         """Run server with hot reload watching for file changes."""
@@ -348,8 +352,8 @@ class HotReloadManager:
             observer.join()
 
 
-def main():
-    """Main entry point for the application."""
+async def main_async(): # New async main function
+    """Main entry point for the application (async)."""
     parser = argparse.ArgumentParser(
         description='Clean Architecture Affiliate Marketing API Server',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -374,7 +378,7 @@ Examples:
 
     if args.no_reload:
         # This is a subprocess started by the reload handler
-        ServerRunner().run_server()
+        await ServerRunner().run_server()
     elif args.reload:
         # Start with hot reload
         try:
@@ -383,11 +387,12 @@ Examples:
         except ImportError as e:
             logger.error(str(e))
             logger.info("Falling back to normal run mode")
-            ServerRunner().run_server()
+            await ServerRunner().run_server() # Await in fallback
     else:
         # Normal server run
-        ServerRunner().run_server()
+        await ServerRunner().run_server()
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main_async()) # Run the async main function

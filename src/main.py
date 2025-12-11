@@ -31,7 +31,7 @@ def custom_dumps(obj, **kwargs):
 json.dumps = custom_dumps
 
 
-def create_app() -> socketify.App:
+async def create_app() -> socketify.App:
     """Create and configure socketify application with maximum performance settings."""
     logger.info("🏗️ START: Creating Socketify application")
     app_start = time.time()
@@ -49,12 +49,13 @@ def create_app() -> socketify.App:
     _configure_logging(app)
     _setup_global_exception_handler()
     _apply_middleware(app)
-    _register_routes(app)
+    await _register_routes(app) # Await the async function
     _register_error_handlers(app)
     _add_health_endpoints(app)
     # _initialize_postgres_upholder(app) # Removed, will be called in background tasks
 
     app_time = time.time() - app_start
+    logger.info(f"🏗️ FINISH: Socketify application created in {app_time:.4f} seconds")
     return app
 
 
@@ -151,25 +152,25 @@ def _setup_global_exception_handler() -> None:
     logger.info("Global exception handler configured (JSON encoder already set up) - Hot reload ready - Test change")
 
 
-def _register_routes(app: socketify.App) -> None:
+async def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
-    container.get_campaign_routes().register(app)
-    container.get_click_routes().register(app)
-    container.get_webhook_routes().register(app)
-    container.get_event_routes().register(app)
-    container.get_conversion_routes().register(app)
-    container.get_postback_routes().register(app)
-    container.get_click_generation_routes().register(app)
-    container.get_goal_routes().register(app)
-    container.get_journey_routes().register(app)
-    container.get_ltv_routes().register(app)
-    container.get_form_routes().register(app)
-    container.get_retention_routes().register(app)
+    await (await container.get_campaign_routes()).register(app)
+    (await container.get_click_routes()).register(app)
+    (await container.get_webhook_routes()).register(app)
+    (await container.get_event_routes()).register(app)
+    (await container.get_conversion_routes()).register(app)
+    (await container.get_postback_routes()).register(app)
+    (await container.get_click_generation_routes()).register(app)
+    (await container.get_goal_routes()).register(app)
+    (await container.get_journey_routes()).register(app)
+    (await container.get_ltv_routes()).register(app)
+    (await container.get_form_routes()).register(app)
+    (await container.get_retention_routes()).register(app)
     # New feature routes
-    container.get_bulk_operations_routes().register(app)
-    container.get_fraud_routes().register(app)
-    container.get_system_routes().register(app)
-    container.get_analytics_routes().register(app)
+    (await container.get_bulk_operations_routes()).register(app)
+    (await container.get_fraud_routes()).register(app)
+    (await container.get_system_routes()).register(app)
+    (await container.get_analytics_routes()).register(app)
 
 
 def _register_error_handlers(app: socketify.App) -> None:
@@ -184,7 +185,7 @@ async def _start_background_tasks(app: socketify.App):
     """Start background tasks like PostgreSQL upholder and cache monitoring."""
     import asyncio
     logger.info("🚀 Starting background tasks...")
-    _initialize_postgres_upholder(app)
+    await _initialize_postgres_upholder(app) # Await here
     logger.info("✅ Background tasks started.")
 
 
@@ -230,13 +231,13 @@ def _add_health_endpoints(app: socketify.App) -> None:
     app.post("/v1/reset", reset)
 
 
-def _initialize_postgres_upholder(app: socketify.App) -> None:
+async def _initialize_postgres_upholder(app: socketify.App) -> None: # Made async
     """Initialize PostgreSQL Auto Upholder system."""
     try:
         logger.info("🔧 Initializing PostgreSQL Auto Upholder...")
 
         # Get upholder instance from container
-        upholder = container.get_postgres_upholder()
+        upholder = await container.get_postgres_upholder() # Await here
 
         # Add custom alert handler that integrates with app logging
         def app_alert_handler(alert_type: str, message: str):
@@ -516,67 +517,73 @@ if __name__ == "__main__":
     main_start = time.time()
 
     import multiprocessing
+    import asyncio # Import asyncio here if not already imported
 
-    logger.info("🏗️ Creating application...")
-    app = create_app()
-    app_create_time = time.time() - main_start
+    async def start_server():
+        logger.info("🏗️ Creating application (async)...")
+        app = await create_app() # Await the async create_app
+        app_create_time = time.time() - main_start
+        logger.info(f"🏗️ Application created in {app_create_time:.4f} seconds")
 
-    # Compatible listen options for current socketify version
-    listen_options = socketify.AppListenOptions(
-        port=settings.api.port,
-        host=settings.api.host,
-    )
+        # Compatible listen options for current socketify version
+        listen_options = socketify.AppListenOptions(
+            port=settings.api.port,
+            host=settings.api.host,
+        )
 
-    logger.info(f"🏁 Starting high-performance server on {settings.api.host}:{settings.api.port}...")
-    server_setup_time = time.time() - main_start
-    def on_listen(config):
-        total_startup_time = time.time() - main_start
-        logger.info(f"🚀 Server listening on {config.host}:{config.port} with maximum performance settings")
-        logger.info("✅ Compression: DISABLED | Backlog: 16384 | Idle timeout: NONE | Reuse port: ENABLED")
-        logger.info(f"🚀 Server listening on {config.host}:{config.port} with maximum performance settings")
-        logger.info("✅ Compression: DISABLED | Backlog: 16384 | Idle timeout: NONE | Reuse port: ENABLED")
+        logger.info(f"🏁 Starting high-performance server on {settings.api.host}:{settings.api.port}...")
+        server_setup_time = time.time() - main_start
 
-    # For true multi-CPU scaling, spawn multiple processes
-    num_processes = settings.api.workers or multiprocessing.cpu_count()
+        def on_listen(config):
+            total_startup_time = time.time() - main_start
+            logger.info(f"🚀 Server listening on {config.host}:{config.port} with maximum performance settings")
+            logger.info("✅ Compression: DISABLED | Backlog: 16384 | Idle timeout: NONE | Reuse port: ENABLED")
+            # Removed duplicated log line
 
-    if num_processes > 1:
-        logger.info(f"🔥 Spawning {num_processes} processes for maximum CPU utilization...")
+        # For true multi-CPU scaling, spawn multiple processes
+        num_processes = settings.api.workers or multiprocessing.cpu_count()
 
-        def run_worker():
-            worker_app = create_app()
-            worker_app.listen(listen_options, on_listen)
-            worker_app.run()
+        if num_processes > 1:
+            logger.info(f"🔥 Spawning {num_processes} processes for maximum CPU utilization...")
 
-        processes = []
-        for i in range(num_processes):
-            process = multiprocessing.Process(
-                target=run_worker,
-                name=f"Socketify-Worker-{i+1}",
-                daemon=True
-            )
-            process.start()
-            processes.append(process)
+            def run_worker():
+                # Each worker needs its own app instance and event loop
+                worker_app = asyncio.run(create_app()) # Run create_app in new event loop for worker
+                # Initialize background tasks for each worker as well
+                asyncio.run(_start_background_tasks(worker_app))
+                worker_app.listen(listen_options, on_listen)
+                worker_app.run()
 
-        try:
-            logger.info("🎯 All workers started! Server ready for maximum throughput.")
-            # Start background tasks in the main process
-            import asyncio
-            asyncio.create_task(_start_background_tasks(app))
+            processes = []
+            for i in range(num_processes):
+                process = multiprocessing.Process(
+                    target=run_worker,
+                    name=f"Socketify-Worker-{i+1}",
+                    daemon=True
+                )
+                process.start()
+                processes.append(process)
 
-            for process in processes:
-                process.join()
-        except KeyboardInterrupt:
-            logger.info("🛑 Shutting down workers...")
-            for process in processes:
-                process.terminate()
-            for process in processes:
-                process.join()
-    else:
-        # Single process mode
-        # Start background tasks in the single process
-        import asyncio
-        asyncio.create_task(_start_background_tasks(app))
-        
-        app.listen(listen_options, on_listen)
-        logger.info("🎯 Single-process mode. For maximum performance, set WORKERS environment variable.")
-        app.run()
+            try:
+                logger.info("🎯 All workers started! Server ready for maximum throughput.")
+                # Start background tasks in the main process (only once)
+                await _start_background_tasks(app) # Await the background tasks
+
+                for process in processes:
+                    process.join()
+            except KeyboardInterrupt:
+                logger.info("🛑 Shutting down workers...")
+                for process in processes:
+                    process.terminate()
+                for process in processes:
+                    process.join()
+        else:
+            # Single process mode
+            # Start background tasks in the single process
+            await _start_background_tasks(app) # Await here
+            
+            app.listen(listen_options, on_listen)
+            logger.info("🎯 Single-process mode. For maximum performance, set WORKERS environment variable.")
+            app.run()
+
+    asyncio.run(start_server()) # Run the async server startup
