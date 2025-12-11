@@ -7,25 +7,28 @@ psycopg2-binary>=2.9.0
 # Logging
 loguru>=0.7.0
 
-# Telegram bot dependencies
-aiogram>=3.4.0
-aiohttp>=3.9.0
-fastapi>=0.104.0
-uvicorn>=0.24.0
+# Telegram bot dependencies (Python 3.13 compatible versions)
+aiogram>=3.13.0
+aiohttp>=3.10.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 
-# Configuration and validation
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
+# Configuration and validation (Python 3.13 compatible)
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
 
 # HTTP client
-requests>=2.31.0
+requests>=2.32.0
 
 # Environment variables
 python-dotenv>=1.0.0
 
-# Data analysis (for performance testing and analytics)
-pandas>=2.0.0
-numpy>=1.24.0
+# Scheduling library for automated tasks
+schedule>=1.2.0
+
+# Data analysis (for performance testing and analytics) - install separately if needed
+# pandas>=2.2.0
+# numpy>=1.26.0
 
 # Optional: High-performance async I/O (Linux/macOS only)
-# uvloop>=0.17.0
+# uvloop>=0.20.0

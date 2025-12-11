@@ -98,8 +98,7 @@ class PostgresAutoUpholder:
         self.report_handlers: List[Callable[[UpholderReport], None]] = []
         self.alert_handlers: List[Callable[[str, str], None]] = []  # (alert_type, message)
 
-        # Scheduler
-        self.scheduler = schedule.Scheduler()
+        # Note: Using schedule module directly (no Scheduler class needed)
 
     def start(self) -> None:
         """Start the auto upholder."""
@@ -148,7 +147,7 @@ class PostgresAutoUpholder:
         self.is_running = False
         self.cache_monitor.stop_monitoring()
         self.connection_pool_monitor.stop_monitoring()
-        self.scheduler.clear()
+        schedule.clear()
         logger.info("PostgreSQL Auto Upholder stopped")
 
     def run_full_audit(self) -> UpholderReport:
@@ -349,17 +348,17 @@ class PostgresAutoUpholder:
     def _setup_scheduled_tasks(self) -> None:
         """Setup scheduled optimization tasks."""
         # Full audit every hour
-        self.scheduler.every(self.config.query_analysis_interval).minutes.do(
+        schedule.every(self.config.query_analysis_interval).minutes.do(
             self.run_full_audit
         )
 
         # Index audit every 4 hours
-        self.scheduler.every(self.config.index_audit_interval).minutes.do(
+        schedule.every(self.config.index_audit_interval).minutes.do(
             self._run_index_audit
         )
 
         # Bulk optimization check every 15 minutes
-        self.scheduler.every(self.config.bulk_optimization_interval).minutes.do(
+        schedule.every(self.config.bulk_optimization_interval).minutes.do(
             self._check_bulk_optimizations
         )
 
@@ -369,7 +368,7 @@ class PostgresAutoUpholder:
         """Run the scheduler loop."""
         while self.is_running:
             try:
-                self.scheduler.run_pending()
+                schedule.run_pending()
                 time.sleep(60)  # Check every minute
             except Exception as e:
                 logger.error(f"Scheduler error: {e}")
