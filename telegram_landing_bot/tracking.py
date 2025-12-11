@@ -166,7 +166,7 @@ class TrackingManager:
 
                 if response.status == 200:
                     result = await response.json()
-                    api_url = result.get("short_url")
+                    api_url = result.get("tracking_url")
 
                     if api_url:
                         logger.info(f"Successfully generated short tracking URL: {api_url}")

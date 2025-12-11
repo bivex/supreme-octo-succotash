@@ -546,8 +546,8 @@ class CampaignRoutes:
                     cost_model=body_data.get('costModel'),
                     payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
                                           body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
-                    safe_page_url=Url(body_data['safePage']) if body_data.get('safePage') else None,
-                    offer_page_url=Url(body_data['offerPage']) if body_data.get('offerPage') else None,
+                    safe_page_url=Url(body_data['safe_page_url']) if body_data.get('safe_page_url') else None,
+                    offer_page_url=Url(body_data['offer_page_url']) if body_data.get('offer_page_url') else None,
                     daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
                                                 body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
                     total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
@@ -556,20 +556,19 @@ class CampaignRoutes:
                     end_date=body_data.get('endDate')
                 )
 
-                # Handle command
-                campaign = self.update_campaign_handler.handle(command)
+                updated_campaign = await self.update_campaign_handler.handle(command)
 
                 # Convert to response
                 response = {
-                    "id": campaign.id.value,
-                    "name": campaign.name,
-                    "status": campaign.status.value,
+                    "id": updated_campaign.id.value,
+                    "name": updated_campaign.name,
+                    "status": updated_campaign.status.value,
                     "urls": {
-                        "safePage": campaign.safe_page_url.value if campaign.safe_page_url else None,
-                        "offerPage": campaign.offer_page_url.value if campaign.offer_page_url else None
+                        "safePage": updated_campaign.safe_page_url.value if updated_campaign.safe_page_url else None,
+                        "offerPage": updated_campaign.offer_page_url.value if updated_campaign.offer_page_url else None
                     },
-                    "createdAt": campaign.created_at.isoformat(),
-                    "updatedAt": campaign.updated_at.isoformat()
+                    "createdAt": updated_campaign.created_at.isoformat(),
+                    "updatedAt": updated_campaign.updated_at.isoformat()
                 }
 
                 res.write_status(200)
