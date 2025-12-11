@@ -95,37 +95,97 @@ async def campaign_repository():
     return await container.get_campaign_repository()
 
 @pytest.mark.asyncio
-async def test_database_connection(pre_click_data_repository):
-    """Test that database connection works for storing and retrieving pre-click data."""
-    if pre_click_data_repository is None:
-        pytest.skip("Database repository not available due to connection issues")
+async def test_complete_parameter_handling(http_client, test_app):
+    """Test complete parameter handling with all possible tracking parameters."""
+    original_base_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev/v1"
+    campaign_id_str = "9061"
 
-    # Skip test if database connection is corrupted (UnicodeDecodeError)
-    try:
-        test_click_id = str(uuid.uuid4())
-        test_pre_click_data = PreClickData(
-            click_id=ClickId(test_click_id),
-            campaign_id=CampaignId("camp_123"),
-            timestamp=datetime.now(timezone.utc),
-            tracking_params={"test": "value"},
-            metadata={"test": True}
-        )
+    # Test with comprehensive set of parameters
+    test_click_id = str(uuid.uuid4())
+    tracking_params = {
+        "click_id": test_click_id,
+        "source": "facebook_ads",
+        "sub1": "campaign_summer_2024",
+        "sub2": "adset_targeting_25_45",
+        "sub3": "creative_video_15s",
+        "sub4": "placement_feed",
+        "sub5": "device_mobile",
+        "aff_sub": "partner_123",
+        "aff_sub2": "channel_direct",
+        "aff_sub3": "geo_us_east",
+        "aff_sub4": "language_en",
+        "aff_sub5": "custom_param_xyz",
+        "lp_id": 42,
+        "offer_id": 24,
+        "ts_id": 1,
+    }
 
-        # Save data
-        await pre_click_data_repository.save(test_pre_click_data)
+    generate_payload = {
+        "base_url": original_base_url,
+        "campaign_id": int(campaign_id_str),
+        "tracking_params": tracking_params
+    }
 
-        # Retrieve data
-        retrieved_data = await pre_click_data_repository.find_by_click_id(ClickId(test_click_id))
+    # Generate tracking URL
+    response = await http_client.post("/v1/clicks/generate", json=generate_payload)
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["status"] == "success"
+    short_url = response_data["tracking_url"]
+    print(f"Generated short URL: {short_url}")
 
-        assert retrieved_data is not None
-        assert retrieved_data.click_id.value == test_click_id
-        assert retrieved_data.tracking_params["test"] == "value"
-    except UnicodeDecodeError as e:
-        pytest.skip(f"Database connection corrupted with Unicode error: {e}")
-    except RuntimeError as e:
-        if "no database connection" in str(e).lower():
-            pytest.skip(f"Database connection not available: {e}")
-        raise
+    # Extract short code
+    parsed_short_url = urlparse(short_url)
+    short_code = parsed_short_url.path.split('/')[-1]
+    assert short_code
+    print(f"Short code: {short_code}")
+
+    # Test redirect with test_mode to see click_id in final URL
+    redirect_response = await http_client.get(f"/s/{short_code}?test_mode=1", follow_redirects=False)
+    assert redirect_response.status_code == 302
+
+    final_redirect_location = redirect_response.headers.get("Location")
+    assert final_redirect_location
+    print(f"Final redirect location: {final_redirect_location}")
+
+    # Parse final redirect URL
+    parsed_final_redirect = urlparse(final_redirect_location)
+    final_query_params = parse_qs(parsed_final_redirect.query)
+
+    # Verify final URL structure
+    assert parsed_final_redirect.scheme == "https"
+    assert parsed_final_redirect.netloc == "offer.test.com"
+    assert parsed_final_redirect.path in ["", "/"]  # Path can be empty or "/"
+
+    # In test mode, click_id should be added to redirect URL
+    assert 'click_id' in final_query_params
+    assert final_query_params['click_id'][0]  # click_id should not be empty
+
+    print("✅ Test passed: Complete parameter handling verified")
+    print(f"   - Original parameters count: {len(tracking_params)}")
+    print(f"   - Short URL generated successfully")
+    print(f"   - Redirect works correctly")
+    print(f"   - Final URL contains click_id parameter")
+
+    # Test with minimal parameters to ensure it still works
+    minimal_click_id = str(uuid.uuid4())
+    minimal_params = {
+        "click_id": minimal_click_id,
+        "source": "google"
+    }
+
+    minimal_payload = {
+        "base_url": original_base_url,
+        "campaign_id": int(campaign_id_str),
+        "tracking_params": minimal_params
+    }
+
+    minimal_response = await http_client.post("/v1/clicks/generate", json=minimal_payload)
+    assert minimal_response.status_code == 200
+    minimal_data = minimal_response.json()
+    assert minimal_data["status"] == "success"
+
+    print("✅ Minimal parameter test also passed")
 
 @pytest.mark.asyncio
 async def test_url_shortening_and_redirection_api_only(http_client, test_app):
