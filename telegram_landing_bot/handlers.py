@@ -59,7 +59,10 @@ async def callback_visit_landing(callback: CallbackQuery):
                 "sub3": "direct_visit",
                 "sub4": callback.from_user.username or "user",
                 "click_id": click_id
-            }
+            },
+            lp_id=settings.default_lp_id,
+            offer_id=settings.default_offer_id,
+            ts_id=settings.default_ts_id
         )
 
         tracking_url = tracking_result["tracking_url"]
@@ -105,7 +108,10 @@ async def callback_get_offer(callback: CallbackQuery):
                 "sub3": "callback_offer",
                 "sub4": username,
                 "user_id": user_id
-            }
+            },
+            lp_id=settings.default_lp_id,
+            offer_id=settings.default_offer_id,
+            ts_id=settings.default_ts_id
         )
 
         click_id = tracking_result["click_id"]

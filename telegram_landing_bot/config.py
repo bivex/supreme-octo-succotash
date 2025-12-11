@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Landing Page
     landing_url: str = Field(..., env="LANDING_URL")
 
+    # Default targeting parameters for click tracking
+    default_lp_id: Optional[int] = Field(42, env="DEFAULT_LP_ID")  # Default landing page ID
+    default_offer_id: Optional[int] = Field(24, env="DEFAULT_OFFER_ID")  # Default offer ID
+    default_ts_id: Optional[int] = Field(1, env="DEFAULT_TS_ID")  # Default traffic source ID
+
     # Database (optional)
     database_url: Optional[str] = Field(None, env="DATABASE_URL")
 

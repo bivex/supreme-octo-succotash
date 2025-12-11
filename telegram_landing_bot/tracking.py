@@ -184,17 +184,27 @@ class TrackingManager:
 
                     if api_url:
                         # Convert API URL format to expected /v1/click format
-                        from urllib.parse import urlparse, parse_qs
+                        from urllib.parse import urlparse, parse_qs, urlencode
                         parsed = urlparse(api_url)
                         params = parse_qs(parsed.query)
 
-                        # Extract cid from query params
-                        cid = params.get('cid', ['camp_9061'])[0]
+                        # Keep ALL parameters from API response, including lp_id, offer_id, ts_id
+                        # Remove any conflicting parameters and ensure proper format
+                        final_params = {}
+                        for key, values in params.items():
+                            if key in ['cid', 'lp_id', 'offer_id', 'ts_id', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'click_id']:
+                                final_params[key] = values[0] if isinstance(values, list) else values
 
-                        # Build proper URL format
-                        short_url = f"{self.api_base_url}/v1/click?cid={cid}"
+                        # Ensure we have at least cid
+                        if 'cid' not in final_params:
+                            final_params['cid'] = 'camp_9061'
+
+                        # Build proper URL format with ALL parameters
+                        query_string = urlencode(final_params)
+                        short_url = f"{self.api_base_url}/v1/click?{query_string}"
 
                         logger.info(f"Successfully generated short tracking URL: {short_url} (from API: {api_url})")
+                        logger.info(f"Preserved parameters: {list(final_params.keys())}")
                         return short_url
                     else:
                         logger.error(f"API response missing URL: {result}")
