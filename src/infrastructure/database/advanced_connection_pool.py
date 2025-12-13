@@ -109,8 +109,8 @@ class AdvancedConnectionPool:
             **kwargs
         }
 
-        # Connection pool
-        self._pool = pool.SimpleConnectionPool(**self._config)
+        # Connection pool (ThreadedConnectionPool is thread-safe for async/multi-threaded usage)
+        self._pool = pool.ThreadedConnectionPool(**self._config)
 
         # Statistics and monitoring
         self._stats = ConnectionPoolStats()
