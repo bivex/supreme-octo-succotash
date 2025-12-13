@@ -7,9 +7,13 @@ import time
 from src.container import container
 
 
-def test_pool_stats():
+import pytest
+
+@pytest.mark.asyncio
+async def test_pool_stats():
     """Test database connection pool statistics."""
     print("=== Testing Database Connection Pool ===")
+    await container.get_db_connection_pool()
 
     # Get initial pool stats
     initial_stats = container.get_pool_stats()

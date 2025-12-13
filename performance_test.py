@@ -2,6 +2,7 @@
 """Performance test script to demonstrate optimizations."""
 
 import asyncio
+import pytest
 import time
 import os
 import sys
@@ -39,6 +40,7 @@ def generate_test_clicks(count: int = 1000) -> List[Dict[str, Any]]:
 
     return clicks
 
+@pytest.mark.asyncio
 async def test_bulk_optimizer():
     """Test bulk optimizer performance."""
     print("🔥 Testing Bulk Optimizer Performance")
@@ -78,6 +80,7 @@ async def test_bulk_optimizer():
 
     return result
 
+@pytest.mark.asyncio
 async def test_async_io_processor():
     """Test async I/O processor performance."""
     print("\n🌐 Testing Async I/O Processor")
