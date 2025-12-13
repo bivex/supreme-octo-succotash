@@ -637,11 +637,15 @@ class ClickRoutes:
             if ip:
                 # X-Forwarded-For can contain multiple IPs
                 ip = ip.split(',')[0].strip()
+                logger.debug(f"IP from header '{header}': {ip}")
                 return ip
 
         # Fallback for socketify - remote address access may vary
+        logger.debug("No IP found in headers. Attempting remote address fallback.")
         try:
-            return request.get_remote_address() or '127.0.0.1'
+            final_ip = request.get_remote_address() or '127.0.0.1'
+            logger.debug(f"IP from remote address: {final_ip}")
+            return final_ip
         except AttributeError:
-            # Socketify may not provide direct remote address access
+            logger.debug("Remote address not available. Using default fallback.")
             return '127.0.0.1'
