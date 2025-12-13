@@ -85,7 +85,7 @@ def _configure_logging(app: socketify.App) -> None:
         pass
 
     # Configure loguru with detailed format including file, line, function
-    log_level = settings.logging.level.upper()
+    log_level = "DEBUG"
     log_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
