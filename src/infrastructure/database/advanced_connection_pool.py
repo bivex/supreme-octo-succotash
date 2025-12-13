@@ -123,7 +123,9 @@ class AdvancedConnectionPool:
         self._stats_cache_time = 0
         self._stats_cache_ttl = 5  # Кеш на 5 секунд
 
-        logger.info(f"AdvancedConnectionPool initialized: minconn={minconn}, maxconn={maxconn}")
+        import traceback
+        logger.warning(f"🔴 NEW AdvancedConnectionPool created! minconn={minconn}, maxconn={maxconn}")
+        logger.warning(f"🔴 Call stack:\n{''.join(traceback.format_stack()[-5:])}")
 
     def getconn(self) -> psycopg2.extensions.connection:
         """

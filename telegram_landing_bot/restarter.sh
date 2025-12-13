@@ -155,6 +155,32 @@ kill_all_bots() {
     fi
 }
 
+# Function to clean up Python bytecode cache
+cleanup_bytecode() {
+    print_info "Cleaning up Python bytecode cache..."
+
+    # Get the bot directory
+    BOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Count .pyc and .pyo files
+    PYC_COUNT=$(find "$BOT_DIR" -type f \( -name "*.pyc" -o -name "*.pyo" \) 2>/dev/null | wc -l | tr -d ' ')
+    PYCACHE_COUNT=$(find "$BOT_DIR" -type d -name "__pycache__" 2>/dev/null | wc -l | tr -d ' ')
+
+    if [ "$PYC_COUNT" -gt 0 ] || [ "$PYCACHE_COUNT" -gt 0 ]; then
+        print_warning "Found $PYC_COUNT bytecode files and $PYCACHE_COUNT __pycache__ directories"
+
+        # Delete .pyc and .pyo files
+        find "$BOT_DIR" -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null || true
+
+        # Delete __pycache__ directories
+        find "$BOT_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+        print_status "Cleaned up Python bytecode cache"
+    else
+        print_status "No bytecode cache found"
+    fi
+}
+
 # Function to cleanup on exit
 cleanup() {
     print_info "Cleaning up..."
@@ -173,6 +199,7 @@ trap cleanup SIGINT SIGTERM
 
 # Kill any interfering instances before starting
 kill_all_bots
+cleanup_bytecode
 
 print_info "Setting up localhost.run tunnel..."
 

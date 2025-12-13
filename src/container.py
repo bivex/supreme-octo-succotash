@@ -741,7 +741,11 @@ class Container:
         if 'postgres_pre_click_data_repository' not in self._singletons:
             start = time.time()
             logger.info("🗂️ Creating PostgresPreClickDataRepository...")
+            logger.info(f"🔍 Repository class: {PostgresPreClickDataRepository}")
+            logger.info(f"🔍 Repository module: {PostgresPreClickDataRepository.__module__}")
+            logger.info(f"🔍 Repository file: {PostgresPreClickDataRepository.__module__.__file__ if hasattr(PostgresPreClickDataRepository.__module__, '__file__') else 'N/A'}")
             repo = PostgresPreClickDataRepository(container=self)
+            logger.info(f"🔍 Created repo instance: {type(repo)}, id: {id(repo)}")
             # Kick off async DB initialization
             try:
                 asyncio.get_running_loop().create_task(repo._initialize_db())

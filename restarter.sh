@@ -83,6 +83,33 @@ cleanup_db_connections() {
     fi
 }
 
+# Function to clean up Python bytecode cache
+cleanup_bytecode() {
+    echo
+    echo "Cleaning up Python bytecode cache..."
+
+    # Get the project directory
+    PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Count .pyc and .pyo files
+    PYC_COUNT=$(find "$PROJECT_DIR" -type f \( -name "*.pyc" -o -name "*.pyo" \) 2>/dev/null | wc -l | tr -d ' ')
+    PYCACHE_COUNT=$(find "$PROJECT_DIR" -type d -name "__pycache__" 2>/dev/null | wc -l | tr -d ' ')
+
+    if [ "$PYC_COUNT" -gt 0 ] || [ "$PYCACHE_COUNT" -gt 0 ]; then
+        echo "Found $PYC_COUNT bytecode files and $PYCACHE_COUNT __pycache__ directories"
+
+        # Delete .pyc and .pyo files
+        find "$PROJECT_DIR" -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete 2>/dev/null || true
+
+        # Delete __pycache__ directories
+        find "$PROJECT_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+        echo "✓ Cleaned up Python bytecode cache"
+    else
+        echo "✓ No bytecode cache found"
+    fi
+}
+
 # Function to start the application
 start_application() {
     echo
@@ -119,4 +146,5 @@ trap cleanup_on_exit INT TERM
 kill_all_servers
 cleanup_processes
 cleanup_db_connections
+cleanup_bytecode
 start_application

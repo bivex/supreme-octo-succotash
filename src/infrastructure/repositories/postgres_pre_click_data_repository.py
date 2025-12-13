@@ -16,6 +16,8 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
     """PostgreSQL implementation of PreClickDataRepository."""
 
     def __init__(self, container):
+        logger.info(f"🟢 PostgresPreClickDataRepository.__init__ called - NEW CODE LOADED v2")
+        logger.info(f"🔍 __init__ called from file: {__file__}")
         self._container = container
         self._db_initialized_event = asyncio.Event()  # Use asyncio.Event for lazy async initialization
 
@@ -28,8 +30,40 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         # Ensure pool is initialized in the async context, then get sync connection in executor
         await self._container.get_db_connection_pool()
         pool = self._container.get_db_connection_pool_sync()
-        conn = await loop.run_in_executor(None, pool.getconn)
-        return conn
+
+        # Log pool state before attempting to get connection
+        try:
+            logger.info(f"🔍 Attempting to get connection from pool (id: {id(pool)})")
+            logger.info(f"🔍 Pool type: {type(pool._pool).__name__}")
+            logger.info(f"🔍 Pool config: minconn={getattr(pool._pool, '_minconn', '?')}, maxconn={getattr(pool._pool, '_maxconn', '?')}")
+
+            # Get pool stats safely
+            try:
+                stats = pool.get_stats()
+                logger.info(f"🔍 Pool stats BEFORE getconn: {stats}")
+            except Exception as stats_error:
+                logger.warning(f"Could not get pool stats: {stats_error}")
+
+            # Attempt to get connection
+            conn = await loop.run_in_executor(None, pool.getconn)
+            logger.info(f"✅ Successfully got connection from pool")
+            return conn
+
+        except Exception as e:
+            logger.error(f"❌ FAILED to get connection from pool!")
+            logger.error(f"❌ Exception type: {type(e).__name__}")
+            logger.error(f"❌ Exception message: {str(e)}")
+            logger.error(f"❌ Pool instance id: {id(pool)}")
+            logger.error(f"❌ Pool._pool type: {type(pool._pool).__name__}")
+
+            # Try to get final stats
+            try:
+                final_stats = pool.get_stats()
+                logger.error(f"❌ Pool stats AFTER failure: {final_stats}")
+            except Exception as final_stats_error:
+                logger.error(f"❌ Could not get final pool stats: {final_stats_error}")
+
+            raise
 
     async def _initialize_db(self) -> None:
         """Initialize database schema (runs once in background)."""
@@ -89,6 +123,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
 
     async def save(self, pre_click_data: PreClickData) -> None:
         """Saves pre-click data."""
+        logger.info(f"🟢 save() method called for click_id: {pre_click_data.click_id.value} - NEW CODE LOADED")
         await self._db_initialized_event.wait()  # Wait for DB to be initialized
         conn = None
         try:
