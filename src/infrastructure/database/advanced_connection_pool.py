@@ -78,7 +78,7 @@ class AdvancedConnectionPool:
 
     def __init__(self,
                  minconn: int = 5,
-                 maxconn: int = 32,
+                 maxconn: int = 100,
                  host: str = "localhost",
                  port: int = 5432,
                  database: str = "supreme_octosuccotash_db",
