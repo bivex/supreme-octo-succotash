@@ -23,11 +23,11 @@ COLORS = {
     'bg_input': '#1e2433',         # Input fields
 
     # Text hierarchy - Crisp and readable
-    'text_primary': '#f8f9fa',     # Crisp white for main content
-    'text_secondary': '#b4bac5',   # Muted for secondary info
-    'text_tertiary': '#8891a8',    # Subtle for labels
-    'text_disabled': '#4a5568',    # Clearly disabled
-    'text_placeholder': '#5a6579', # Form placeholders
+    'text_primary': '#d1d9e6',     # Soft light gray for main content
+    'text_secondary': '#a0a8b9',   # Muted for secondary info
+    'text_tertiary': '#7a849c',    # Subtle for labels
+    'text_disabled': '#3e4853',    # Clearly disabled
+    'text_placeholder': '#4d5b6a', # Form placeholders
 
     # Brand & Primary Actions - Distinctive cyan-blue
     'primary': '#00d9ff',          # Vibrant cyan (distinctive!)
@@ -75,6 +75,16 @@ COLORS = {
 }
 
 
+def get_colors() -> dict:
+    """
+    Get the complete color palette dictionary.
+
+    Returns the full COLORS dictionary for programmatic access
+    to theme colors.
+    """
+    return COLORS
+
+
 def get_stylesheet() -> str:
     """
     Get the complete Neo-Professional dark theme stylesheet.
@@ -90,7 +100,7 @@ def get_stylesheet() -> str:
     QMainWindow, QWidget, QDialog {{
         background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
-        font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
         selection-background-color: {COLORS['primary']};
         selection-color: {COLORS['bg_deepest']};
@@ -134,17 +144,14 @@ def get_stylesheet() -> str:
         font-weight: 600;
         font-size: 13px;
         min-width: 90px;
-        transition: all 0.2s ease;
     }}
 
     QPushButton:hover {{
         background-color: {COLORS['primary_hover']};
-        transform: translateY(-1px);
     }}
 
     QPushButton:pressed {{
         background-color: {COLORS['primary_pressed']};
-        transform: translateY(0px);
     }}
 
     QPushButton:disabled {{
@@ -526,227 +533,26 @@ def get_stylesheet() -> str:
     QLabel#successLabel {{
         color: {COLORS['status_active']};
         font-weight: 600;
-    }}
-
-    QLabel#errorLabel {{
-        color: {COLORS['status_error']};
-        font-weight: 600;
+        font-size: 13px;
     }}
 
     QLabel#warningLabel {{
-        color: {COLORS['status_paused']};
+        color: {COLORS['warning']};
         font-weight: 600;
-    }}
-
-    /* ========================================
-       PROGRESS BAR - Loading states
-       ======================================== */
-
-    QProgressBar {{
-        background-color: {COLORS['bg_tertiary']};
-        border: 1px solid {COLORS['border_default']};
-        border-radius: 7px;
-        text-align: center;
-        color: {COLORS['text_primary']};
-        font-weight: 600;
-        font-size: 12px;
-        height: 24px;
-    }}
-
-    QProgressBar::chunk {{
-        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                    stop:0 {COLORS['primary']},
-                                    stop:1 {COLORS['primary_hover']});
-        border-radius: 6px;
-        margin: 1px;
-    }}
-
-    /* ========================================
-       MENU BAR - Application menu
-       ======================================== */
-
-    QMenuBar {{
-        background-color: {COLORS['bg_elevated']};
-        color: {COLORS['text_primary']};
-        border-bottom: 1px solid {COLORS['border_default']};
-        padding: 6px;
-        spacing: 4px;
-    }}
-
-    QMenuBar::item {{
-        padding: 8px 14px;
-        background-color: transparent;
-        border-radius: 6px;
-        font-weight: 500;
-    }}
-
-    QMenuBar::item:selected {{
-        background-color: {COLORS['primary']};
-        color: {COLORS['bg_deepest']};
-    }}
-
-    QMenuBar::item:pressed {{
-        background-color: {COLORS['primary_pressed']};
-    }}
-
-    QMenu {{
-        background-color: {COLORS['bg_elevated']};
-        color: {COLORS['text_primary']};
-        border: 1px solid {COLORS['border_strong']};
-        border-radius: 8px;
-        padding: 6px;
-    }}
-
-    QMenu::item {{
-        padding: 10px 32px 10px 16px;
-        border-radius: 6px;
-        margin: 2px;
-    }}
-
-    QMenu::item:selected {{
-        background-color: {COLORS['primary']};
-        color: {COLORS['bg_deepest']};
-    }}
-
-    QMenu::separator {{
-        height: 1px;
-        background-color: {COLORS['border_default']};
-        margin: 6px 8px;
-    }}
-
-    /* ========================================
-       CHECKBOXES - Toggle options
-       ======================================== */
-
-    QCheckBox {{
-        color: {COLORS['text_primary']};
-        spacing: 10px;
         font-size: 13px;
     }}
 
-    QCheckBox::indicator {{
-        width: 22px;
-        height: 22px;
-        border: 2px solid {COLORS['border_default']};
-        border-radius: 6px;
-        background-color: {COLORS['bg_input']};
-    }}
-
-    QCheckBox::indicator:checked {{
-        background-color: {COLORS['primary']};
-        border-color: {COLORS['primary']};
-        image: none;
-    }}
-
-    QCheckBox::indicator:hover {{
-        border-color: {COLORS['border_hover']};
-    }}
-
-    QCheckBox::indicator:checked:hover {{
-        background-color: {COLORS['primary_hover']};
-        border-color: {COLORS['primary_hover']};
-    }}
-
-    QCheckBox:disabled {{
-        color: {COLORS['text_disabled']};
-    }}
-
-    QCheckBox::indicator:disabled {{
-        background-color: {COLORS['bg_tertiary']};
-        border-color: {COLORS['border_subtle']};
-    }}
-
-    /* ========================================
-       DATE EDIT - Date picker
-       ======================================== */
-
-    QDateEdit {{
-        background-color: {COLORS['bg_input']};
-        color: {COLORS['text_secondary']};
-        border: 1px solid {COLORS['border_default']};
-        border-radius: 7px;
-        padding: 10px 14px;
+    QLabel#dangerLabel {{
+        color: {COLORS['danger']};
+        font-weight: 600;
         font-size: 13px;
     }}
 
-    QDateEdit:focus {{
-        border: 2px solid {COLORS['border_focus']};
-        padding: 9px 13px;
-        color: {COLORS['text_primary']};
-    }}
-
-    QDateEdit::drop-down {{
-        border: none;
-        width: 24px;
-        margin-right: 6px;
-    }}
-
-    QDateEdit::down-arrow {{
-        image: none;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 6px solid {COLORS['text_secondary']};
-        margin-right: 6px;
-    }}
-
-    QDateEdit::down-arrow:hover {{
-        border-top-color: {COLORS['primary']};
-    }}
-
-    QCalendarWidget {{
-        background-color: {COLORS['bg_elevated']};
-        color: {COLORS['text_primary']};
-    }}
-
-    /* ========================================
-       TOOLTIPS - Hover information
-       ======================================== */
-
-    QToolTip {{
-        background-color: {COLORS['bg_elevated']};
-        color: {COLORS['text_primary']};
-        border: 1px solid {COLORS['border_strong']};
-        border-radius: 6px;
-        padding: 8px 12px;
-        font-size: 12px;
-    }}
-
-    /* ========================================
-       SPECIAL ELEMENTS
-       ======================================== */
-
-    QFrame[frameShape="4"], /* HLine */
-    QFrame[frameShape="5"]  /* VLine */
-    {{
-        background-color: {COLORS['border_default']};
+    QLabel#infoLabel {{
+        color: {COLORS['info']};
+        font-weight: 600;
+        font-size: 13px;
     }}
     """
 
-
-def get_colors() -> dict:
-    """Get the complete color palette."""
-    return COLORS.copy()
-
-
-def get_status_color(status: str) -> str:
-    """Get color for a specific status."""
-    status_map = {
-        'active': COLORS['status_active'],
-        'paused': COLORS['status_paused'],
-        'draft': COLORS['status_draft'],
-        'error': COLORS['status_error'],
-        'completed': COLORS['status_completed'],
-    }
-    return status_map.get(status.lower(), COLORS['text_secondary'])
-
-
-def get_chart_colors() -> list:
-    """Get colors for data visualization charts."""
-    return [
-        COLORS['chart_1'],
-        COLORS['chart_2'],
-        COLORS['chart_3'],
-        COLORS['chart_4'],
-        COLORS['chart_5'],
-        COLORS['chart_6'],
-    ]
+# The complete stylesheet can be applied to the UI
