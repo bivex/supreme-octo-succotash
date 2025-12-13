@@ -137,7 +137,7 @@ class PostgresClickRepository(ClickRepository):
                 conversion_type = EXCLUDED.conversion_type,
                 converted_at = EXCLUDED.converted_at
         """, (
-            click.id.value, click.campaign_id, click.ip_address, click.user_agent, click.referrer,
+            click.id.value, click.campaign_id.value, click.ip_address, click.user_agent, click.referrer,
             click.is_valid, click.sub1, click.sub2, click.sub3, click.sub4, click.sub5,
             click.click_id_param, click.affiliate_sub, click.affiliate_sub2,
             click.landing_page_id, click.campaign_offer_id, click.traffic_source_id,
