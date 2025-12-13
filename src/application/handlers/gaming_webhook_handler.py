@@ -161,10 +161,23 @@ class GamingWebhookHandler:
                     "step": "response_preparation"
                 }
 
+                logger.info(f"Response data keys: {list(response_data.keys())}")
+
                 # Test JSON serialization before returning
                 import json
-                test_json = json.dumps(response_data, default=str)
-                logger.info(f"✅ Response JSON serialization test passed | TX:{transaction_id}")
+                try:
+                    test_json = json.dumps(response_data, default=str)
+                    logger.info(f"✅ Response JSON serialization test passed | TX:{transaction_id}")
+                except Exception as json_e:
+                    logger.error(f"❌ JSON serialization failed | TX:{transaction_id} | Error: {json_e}")
+                    logger.error(f"Response data: {response_data}")
+                    # Try to identify problematic field
+                    for key, value in response_data.items():
+                        try:
+                            json.dumps({key: value}, default=str)
+                        except Exception as field_e:
+                            logger.error(f"❌ Problematic field '{key}' | TX:{transaction_id} | Error: {field_e} | Value: {repr(str(value))}")
+                    raise
 
                 logger.info(f"🎉 FINISH: Deposit webhook processing successful | TX:{transaction_id} | Conv:{conversion.id}")
                 return response_data
@@ -248,7 +261,7 @@ class GamingWebhookHandler:
 
             try:
                 conversion_value = Money(amount=Decimal(str(amount)), _currency=currency)
-                logger.info(f"   ✅ Money object created | TX:{transaction_id} | Value:{conversion_value}")
+                logger.info(f"   ✅ Money object created | TX:{transaction_id} | Value:{str(conversion_value)}")
             except Exception as e:
                 logger.error(f"   ❌ ERROR creating Money object | TX:{transaction_id} | {e}")
                 raise

@@ -153,6 +153,14 @@ class PostgresConversionRepository(ConversionRepository):
             'referrer': conversion.referrer,
         })
 
+        # Debug metadata before JSON serialization
+        try:
+            metadata_json = json.dumps(metadata, cls=CustomJSONEncoder)
+        except Exception as e:
+            print(f"DEBUG: Failed to serialize metadata: {e}")
+            print(f"DEBUG: Metadata content: {metadata}")
+            raise
+
         cursor.execute("""
             INSERT INTO conversions
             (id, click_id, campaign_id, conversion_type, conversion_value,
@@ -172,7 +180,7 @@ class PostgresConversionRepository(ConversionRepository):
             conversion.id, conversion.click_id, str(conversion.campaign_id) if conversion.campaign_id else None,
             conversion.conversion_type, conversion_value,
             currency, status, external_id,
-            json.dumps(metadata, cls=CustomJSONEncoder), conversion.created_at, conversion.updated_at
+            metadata_json, conversion.created_at, conversion.updated_at
         ))
 
         conn.commit()
