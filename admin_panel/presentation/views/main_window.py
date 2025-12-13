@@ -476,7 +476,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Connection Error", f"Failed to connect: {e}")
             self.connection_status.setText("Connection failed")
-            self.connection_status.setStyleSheet("color: red; font-weight: bold;")
+            self.connection_status.setObjectName("dangerLabel")
 
     def test_connection(self):
         """Test API connection."""
@@ -532,9 +532,9 @@ class MainWindow(QMainWindow):
             status = result.get('status', 'unknown')
             self.health_status.setText(status.upper())
             if status == 'healthy':
-                self.health_status.setStyleSheet("color: #27ae60; font-size: 14px; font-weight: bold;")
+                self.health_status.setObjectName("successLabel")
             else:
-                self.health_status.setStyleSheet("color: #e74c3c; font-size: 14px; font-weight: bold;")
+                self.health_status.setObjectName("dangerLabel")
 
             self.log_activity(f"✓ Health check: {status}")
 
@@ -568,7 +568,7 @@ class MainWindow(QMainWindow):
             goals = result.get('data', [])
             self.stats_labels["Total Goals"].setText(f"🎯 Total Goals: {len(goals)}")
 
-        goals_worker = APIWorker(self.client.get_goals)
+        goals_worker = self.create_worker(self.client.get_goals)
         goals_worker.finished.connect(on_goals_success)
         goals_worker.error.connect(lambda e: None)
         goals_worker.start()
@@ -624,7 +624,7 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Error", f"Failed to load campaigns: {error_msg}")
 
-        worker = APIWorker(self.client.get_campaigns)
+        worker = self.create_worker(self.client.get_campaigns)
         worker.finished.connect(on_success)
         worker.error.connect(on_error)
         worker.start()
@@ -722,7 +722,7 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Error", f"Failed to load goals: {error_msg}")
 
-        worker = APIWorker(self.client.get_goals)
+        worker = self.create_worker(self.client.get_goals)
         worker.finished.connect(on_success)
         worker.error.connect(on_error)
         worker.start()
@@ -790,7 +790,7 @@ class MainWindow(QMainWindow):
                 else:
                     QMessageBox.warning(self, "Error", f"Failed to load analytics: {error_msg}")
 
-            worker = APIWorker(self.client.get_campaign_analytics, campaign_id)
+            worker = self.create_worker(self.client.get_campaign_analytics, campaign_id)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -800,7 +800,7 @@ class MainWindow(QMainWindow):
                 self.display_analytics(result)
                 self.status_bar.showMessage("Analytics loaded successfully")
 
-            worker = APIWorker(self.client.get_real_time_analytics)
+            worker = self.create_worker(self.client.get_real_time_analytics)
             worker.finished.connect(on_success)
             worker.error.connect(lambda e: QMessageBox.warning(self, "Error", f"Failed to load analytics: {e}"))
             worker.start()
@@ -851,7 +851,7 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Error", f"Failed to load clicks: {error_msg}")
 
-        worker = APIWorker(self.client.get_clicks, campaign_id=campaign_id)
+        worker = self.create_worker(self.client.get_clicks, campaign_id=campaign_id)
         worker.finished.connect(on_success)
         worker.error.connect(on_error)
         worker.start()
@@ -898,7 +898,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to create campaign")
                 QMessageBox.warning(self, "Error", f"Failed to create campaign: {error_msg}")
 
-            worker = APIWorker(self.client.create_campaign, campaign_data)
+            worker = self.create_worker(self.client.create_campaign, campaign_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -916,7 +916,7 @@ class MainWindow(QMainWindow):
         # Load goal templates if not already loaded
         if not self.goal_templates:
             try:
-                worker = APIWorker(self.client.get_goal_templates)
+                worker = self.create_worker(self.client.get_goal_templates)
                 worker.finished.connect(lambda templates: setattr(self, 'goal_templates', templates))
                 worker.start()
             except:
@@ -938,7 +938,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to create goal")
                 QMessageBox.warning(self, "Error", f"Failed to create goal: {error_msg}")
 
-            worker = APIWorker(self.client.create_goal, goal_data)
+            worker = self.create_worker(self.client.create_goal, goal_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -977,7 +977,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to generate click URL")
                 QMessageBox.warning(self, "Error", f"Failed to generate click URL: {error_msg}")
 
-            worker = APIWorker(self.client.generate_click, click_data)
+            worker = self.create_worker(self.client.generate_click, click_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -1005,7 +1005,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to update campaign")
                 QMessageBox.warning(self, "Error", f"Failed to update campaign: {error_msg}")
 
-            worker = APIWorker(self.client.update_campaign, campaign_id, campaign_data)
+            worker = self.create_worker(self.client.update_campaign, campaign_id, campaign_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -1033,9 +1033,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", f"Failed to {action} campaign: {error_msg}")
 
         if is_active:
-            worker = APIWorker(self.client.pause_campaign, campaign_id)
+            worker = self.create_worker(self.client.pause_campaign, campaign_id)
         else:
-            worker = APIWorker(self.client.resume_campaign, campaign_id)
+            worker = self.create_worker(self.client.resume_campaign, campaign_id)
 
         worker.finished.connect(on_success)
         worker.error.connect(on_error)
@@ -1067,7 +1067,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to delete campaign")
                 QMessageBox.warning(self, "Error", f"Failed to delete campaign: {error_msg}")
 
-            worker = APIWorker(self.client.delete_campaign, campaign_id)
+            worker = self.create_worker(self.client.delete_campaign, campaign_id)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -1099,7 +1099,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to update goal")
                 QMessageBox.warning(self, "Error", f"Failed to update goal: {error_msg}")
 
-            worker = APIWorker(self.client.update_goal, goal_id, goal_data)
+            worker = self.create_worker(self.client.update_goal, goal_id, goal_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -1130,7 +1130,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to delete goal")
                 QMessageBox.warning(self, "Error", f"Failed to delete goal: {error_msg}")
 
-            worker = APIWorker(self.client.delete_goal, goal_id)
+            worker = self.create_worker(self.client.delete_goal, goal_id)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
@@ -1180,7 +1180,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Failed to track conversion")
                 QMessageBox.warning(self, "Error", f"Failed to track conversion: {error_msg}")
 
-            worker = APIWorker(self.client.track_conversion, conversion_data)
+            worker = self.create_worker(self.client.track_conversion, conversion_data)
             worker.finished.connect(on_success)
             worker.error.connect(on_error)
             worker.start()
