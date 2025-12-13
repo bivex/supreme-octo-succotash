@@ -181,7 +181,7 @@ class TrackClickHandler:
             tracking_params = pre_click_data.tracking_params
             click_data = {
                 'id': click_id,
-                'campaign_id': pre_click_data.campaign_id,
+                'campaign_id': pre_click_data.campaign_id.value,
                 'ip_address': str(command.ip_address) if command.ip_address is not None else '127.0.0.1',
                 'user_agent': command.user_agent,
                 'referrer': command.referrer,
