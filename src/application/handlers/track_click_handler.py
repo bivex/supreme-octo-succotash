@@ -41,7 +41,7 @@ class TrackClickHandler:
         campaign = self._find_campaign(command.campaign_id)
 
         if not campaign:
-            return self._handle_unknown_campaign(command)
+            return await self._handle_unknown_campaign(command)
 
         click = await self._create_click_from_command(command) # Await the async call
         is_valid = self._validate_click_and_mark_fraud(click)
@@ -62,10 +62,10 @@ class TrackClickHandler:
         campaign_id = CampaignId.from_string(campaign_id_str)
         return self._campaign_repository.find_by_id(campaign_id)
 
-    def _handle_unknown_campaign(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
+    async def _handle_unknown_campaign(self, command: TrackClickCommand) -> Tuple[Click, Url, bool]:
         """Handle clicks for unknown campaigns."""
         safe_url = Url("http://localhost:5000/mock-safe-page")
-        click = self._create_click_from_command(command)
+        click = await self._create_click_from_command(command)
         return click, safe_url, False
 
     def _validate_click_and_mark_fraud(self, click: Click) -> bool:
