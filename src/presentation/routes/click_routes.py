@@ -71,7 +71,7 @@ class ClickRoutes:
                 command = TrackClickCommand(
                     campaign_id=campaign_id_param,
                     click_id_param=click_id_param,
-                    ip_address=client_ip,
+                    ip_address=client_ip if client_ip is not None else '127.0.0.1',
                     user_agent=user_agent,
                     referrer=referrer,
                     test_mode=test_mode
@@ -638,15 +638,11 @@ class ClickRoutes:
             if ip:
                 # X-Forwarded-For can contain multiple IPs
                 ip = ip.split(',')[0].strip()
-                logger.debug(f"IP from header '{header}': {ip}")
                 return ip
 
         # Fallback for socketify - remote address access may vary
-        logger.debug("No IP found in headers. Attempting remote address fallback.")
         try:
-            final_ip = request.get_remote_address() or '127.0.0.1'
-            logger.debug(f"IP from remote address: {final_ip}")
-            return final_ip
+            return request.get_remote_address() or '127.0.0.1'
         except AttributeError:
-            logger.debug("Remote address not available. Using default fallback.")
+            # Socketify may not provide direct remote address access
             return '127.0.0.1'

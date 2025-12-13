@@ -137,7 +137,7 @@ def load_settings() -> Settings:
         ),
         external_services=_load_external_settings(),
         logging=LoggingSettings(
-            level="DEBUG",
+            level=os.getenv("LOG_LEVEL", "INFO"),
             format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
             file_path=os.getenv("LOG_FILE"),
         ),
