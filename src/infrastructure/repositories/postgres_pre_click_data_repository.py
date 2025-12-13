@@ -35,7 +35,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         try:
             logger.info(f"🔍 Attempting to get connection from pool (id: {id(pool)})")
             logger.info(f"🔍 Pool type: {type(pool._pool).__name__}")
-            logger.info(f"🔍 Pool config: minconn={getattr(pool._pool, '_minconn', '?')}, maxconn={getattr(pool._pool, '_maxconn', '?')}")
+            logger.info(f"🔍 Pool config: minconn={pool._pool.minconn}, maxconn={pool._pool.maxconn}")
 
             # Get pool stats safely
             try:
