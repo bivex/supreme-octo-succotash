@@ -28,7 +28,8 @@ class PostgresClickRepository(ClickRepository):
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS clicks (
                     id TEXT PRIMARY KEY,
-                    campaign_id TEXT,
+                    campaign_id TEXT NOT NULL,
+                    click_id TEXT NOT NULL,
                     ip_address INET NOT NULL,
                     user_agent TEXT,
                     referrer TEXT,
@@ -50,17 +51,8 @@ class PostgresClickRepository(ClickRepository):
                 )
             """)
 
-            # Alter table to allow NULL campaign_id if it was previously NOT NULL
-            try:
-                cursor.execute("ALTER TABLE clicks ALTER COLUMN campaign_id DROP NOT NULL")
-            except psycopg2.Error:
-                # Column might already be nullable, ignore error
-                pass
-
-            # Create indexes for performance
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_campaign_id ON clicks(campaign_id)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_created_at ON clicks(created_at)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_is_valid ON clicks(is_valid)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_click_id ON clicks(click_id)")
 
             conn.commit()
         except Exception as e:
@@ -113,13 +105,14 @@ class PostgresClickRepository(ClickRepository):
 
             cursor.execute("""
                 INSERT INTO clicks
-                (id, campaign_id, ip_address, user_agent, referrer, is_valid,
+                (id, campaign_id, click_id, ip_address, user_agent, referrer, is_valid,
                 sub1, sub2, sub3, sub4, sub5, click_id_param, affiliate_sub, affiliate_sub2,
                 landing_page_id, campaign_offer_id, traffic_source_id,
                 conversion_type, converted_at, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE SET
                     campaign_id = EXCLUDED.campaign_id,
+                    click_id = EXCLUDED.click_id,
                     ip_address = EXCLUDED.ip_address,
                     user_agent = EXCLUDED.user_agent,
                     referrer = EXCLUDED.referrer,
@@ -138,7 +131,7 @@ class PostgresClickRepository(ClickRepository):
                     conversion_type = EXCLUDED.conversion_type,
                     converted_at = EXCLUDED.converted_at
             """, (
-                self._extract_value(click.id), self._extract_value(click.campaign_id) if click.campaign_id is not None else None,
+                self._extract_value(click.id), self._extract_value(click.campaign_id), self._extract_value(click.id),
                 click.ip_address, click.user_agent, click.referrer,
                 click.is_valid, click.sub1, click.sub2, click.sub3, click.sub4, click.sub5,
                 click.click_id_param, click.affiliate_sub, click.affiliate_sub2,
