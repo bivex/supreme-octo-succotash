@@ -387,6 +387,22 @@ class AdminPanel(QMainWindow):
             QMessageBox.warning(self, "Error", "Please enter a base URL")
             return
 
+        # Validate base URL format
+        if not self._validate_url(base_url):
+            QMessageBox.warning(self, "Invalid URL",
+                "The base URL format is incorrect.\n\n"
+                "URL should start with 'http://' or 'https://' and be a valid web address.\n"
+                "Example: http://127.0.0.1:5000/v1")
+            return
+
+        # Validate auth token format
+        if auth_token and not self._validate_token(auth_token):
+            QMessageBox.warning(self, "Invalid Token",
+                "The authentication token format is incorrect.\n\n"
+                "Token should be a valid Bearer token (usually starts with 'Bearer ' or is a JWT-like string).\n"
+                "Please check your token and try again.")
+            return
+
         try:
             self.client = AdvertisingPlatformClient(
                 base_url=base_url,
@@ -418,7 +434,22 @@ class AdminPanel(QMainWindow):
             self.connection_status.setText("Connection failed")
             self.connection_status.setStyleSheet("color: red; font-weight: bold;")
             self.status_bar.showMessage(f"Connection failed: {error_msg}")
-            QMessageBox.warning(self, "Connection Error", f"Failed to connect to API: {error_msg}")
+
+            # Provide more specific error messages for common issues
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                QMessageBox.warning(self, "Authentication Error",
+                    "Failed to connect to API: Invalid or expired authentication token.\n\n"
+                    "Please check your authentication token and try again.")
+            elif "403" in error_msg or "forbidden" in error_msg.lower():
+                QMessageBox.warning(self, "Access Denied",
+                    "Failed to connect to API: Access denied.\n\n"
+                    "Your token may not have the required permissions.")
+            elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
+                QMessageBox.warning(self, "Connection Error",
+                    "Failed to connect to API: Network connection issue.\n\n"
+                    "Please check your internet connection and API URL.")
+            else:
+                QMessageBox.warning(self, "Connection Error", f"Failed to connect to API: {error_msg}")
 
         worker = APIWorker(self.client.get_health)
         worker.finished.connect(on_success)
@@ -481,7 +512,18 @@ class AdminPanel(QMainWindow):
 
         def on_error(error_msg):
             self.status_bar.showMessage(f"Failed to load campaigns: {error_msg}")
-            QMessageBox.warning(self, "Error", f"Failed to load campaigns: {error_msg}")
+
+            # Provide specific error messages for auth issues
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                QMessageBox.warning(self, "Authentication Error",
+                    "Failed to load campaigns: Your authentication token is invalid or expired.\n\n"
+                    "Please reconnect to the API with a valid token.")
+            elif "403" in error_msg or "forbidden" in error_msg.lower():
+                QMessageBox.warning(self, "Access Denied",
+                    "Failed to load campaigns: Access denied.\n\n"
+                    "Your token may not have permission to view campaigns.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to load campaigns: {error_msg}")
 
         worker = APIWorker(self.client.get_campaigns)
         worker.finished.connect(on_success)
@@ -575,7 +617,18 @@ class AdminPanel(QMainWindow):
 
         def on_error(error_msg):
             self.status_bar.showMessage(f"Failed to load goals: {error_msg}")
-            QMessageBox.warning(self, "Error", f"Failed to load goals: {error_msg}")
+
+            # Provide specific error messages for auth issues
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                QMessageBox.warning(self, "Authentication Error",
+                    "Failed to load goals: Your authentication token is invalid or expired.\n\n"
+                    "Please reconnect to the API with a valid token.")
+            elif "403" in error_msg or "forbidden" in error_msg.lower():
+                QMessageBox.warning(self, "Access Denied",
+                    "Failed to load goals: Access denied.\n\n"
+                    "Your token may not have permission to view goals.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to load goals: {error_msg}")
 
         worker = APIWorker(self.client.get_goals)
         worker.finished.connect(on_success)
@@ -628,7 +681,18 @@ class AdminPanel(QMainWindow):
 
             def on_error(error_msg):
                 self.status_bar.showMessage(f"Failed to load analytics: {error_msg}")
-                QMessageBox.warning(self, "Error", f"Failed to load analytics: {error_msg}")
+
+                # Provide specific error messages for auth issues
+                if "401" in error_msg or "unauthorized" in error_msg.lower():
+                    QMessageBox.warning(self, "Authentication Error",
+                        "Failed to load analytics: Your authentication token is invalid or expired.\n\n"
+                        "Please reconnect to the API with a valid token.")
+                elif "403" in error_msg or "forbidden" in error_msg.lower():
+                    QMessageBox.warning(self, "Access Denied",
+                        "Failed to load analytics: Access denied.\n\n"
+                        "Your token may not have permission to view analytics.")
+                else:
+                    QMessageBox.warning(self, "Error", f"Failed to load analytics: {error_msg}")
 
             worker = APIWorker(self.client.get_campaign_analytics, campaign_id)
             worker.finished.connect(on_success)
@@ -678,7 +742,18 @@ class AdminPanel(QMainWindow):
 
         def on_error(error_msg):
             self.status_bar.showMessage(f"Failed to load clicks: {error_msg}")
-            QMessageBox.warning(self, "Error", f"Failed to load clicks: {error_msg}")
+
+            # Provide specific error messages for auth issues
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                QMessageBox.warning(self, "Authentication Error",
+                    "Failed to load clicks: Your authentication token is invalid or expired.\n\n"
+                    "Please reconnect to the API with a valid token.")
+            elif "403" in error_msg or "forbidden" in error_msg.lower():
+                QMessageBox.warning(self, "Access Denied",
+                    "Failed to load clicks: Access denied.\n\n"
+                    "Your token may not have permission to view clicks.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to load clicks: {error_msg}")
 
         worker = APIWorker(self.client.get_clicks, campaign_id=campaign_id)
         worker.finished.connect(on_success)
@@ -746,6 +821,33 @@ class AdminPanel(QMainWindow):
 
     def save_settings(self):
         """Save settings."""
+        base_url = self.settings_base_url.text().strip()
+        bearer_token = self.settings_bearer_token.text().strip()
+        api_key = self.settings_api_key.text().strip()
+
+        # Validate base URL if provided
+        if base_url and not self._validate_url(base_url):
+            QMessageBox.warning(self, "Invalid Base URL",
+                "The base URL format is incorrect.\n\n"
+                "URL should start with 'http://' or 'https://' and be a valid web address.\n"
+                "Example: http://127.0.0.1:5000/v1")
+            return
+
+        # Validate tokens if provided
+        if bearer_token and not self._validate_token(bearer_token):
+            QMessageBox.warning(self, "Invalid Bearer Token",
+                "The Bearer token format is incorrect.\n\n"
+                "Token should be a valid Bearer token (usually starts with 'Bearer ' or is a JWT-like string).\n"
+                "Please check your token and try again.")
+            return
+
+        if api_key and not self._validate_api_key(api_key):
+            QMessageBox.warning(self, "Invalid API Key",
+                "The API key format is incorrect.\n\n"
+                "API key should be alphanumeric with allowed special characters (-, _, .).\n"
+                "Please check your API key and try again.")
+            return
+
         QMessageBox.information(self, "Settings", "Settings saved successfully")
 
     def show_about(self):
@@ -767,6 +869,63 @@ class AdminPanel(QMainWindow):
         """Load configuration from environment or config file."""
         # This would load saved settings
         pass
+
+    def _validate_token(self, token):
+        """Validate authentication token format."""
+        import re
+
+        if not token or len(token.strip()) == 0:
+            return False
+
+        # Basic validation: should be reasonably long and contain valid characters
+        # Allow Bearer tokens, JWT tokens, or API keys
+        if len(token) < 10:
+            return False
+
+        # Check for invalid characters (basic check)
+        if re.search(r'[<>]', token):
+            return False
+
+        # Allow alphanumeric, dots, hyphens, underscores, plus signs (common in tokens)
+        if not re.match(r'^[A-Za-z0-9._\-+/=]+$', token):
+            return False
+
+        return True
+
+    def _validate_api_key(self, api_key):
+        """Validate API key format."""
+        import re
+
+        if not api_key or len(api_key.strip()) == 0:
+            return False
+
+        # API keys are typically shorter than auth tokens
+        if len(api_key) < 8:
+            return False
+
+        # Allow alphanumeric with common separators
+        if not re.match(r'^[A-Za-z0-9._\-]+$', api_key):
+            return False
+
+        return True
+
+    def _validate_url(self, url):
+        """Validate URL format."""
+        import re
+
+        if not url or len(url.strip()) == 0:
+            return False
+
+        # Basic URL validation
+        url_pattern = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+            r'localhost|'  # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)  # path
+
+        return url_pattern.match(url) is not None
 
     def closeEvent(self, event):
         """Handle application close event."""
