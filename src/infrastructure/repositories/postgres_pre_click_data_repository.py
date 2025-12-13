@@ -45,7 +45,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
                 logger.warning(f"Could not get pool stats: {stats_error}")
 
             # Attempt to get connection
-            conn = await loop.run_in_executor(None, pool.getconn)
+            conn = pool.getconn()
             logger.info(f"✅ Successfully got connection from pool")
             return conn
 
@@ -111,7 +111,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(pool.putconn, conn))
+                    pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
@@ -166,7 +166,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(pool.putconn, conn))
+                    pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
@@ -199,7 +199,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(pool.putconn, conn))
+                    pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
@@ -228,7 +228,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
-                    await asyncio.get_event_loop().run_in_executor(None, functools.partial(pool.putconn, conn))
+                    pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
