@@ -94,6 +94,7 @@ class GenerateClickHandler:
             logger.info(f"  traffic_source_id: {traffic_source_id}")
             logger.info(f"  optimized_params: {optimized_params}")
 
+            logger.info("About to call click_generation_service.generate_tracking_url")
             tracking_url = await self.click_generation_service.generate_tracking_url(
                 base_url=base_url,
                 campaign_id=campaign_id,
@@ -102,6 +103,7 @@ class GenerateClickHandler:
                 offer_id=offer_id,
                 traffic_source_id=traffic_source_id
             )
+            logger.info(f"Generated tracking URL: {tracking_url}")
 
             return {
                 "status": "success",

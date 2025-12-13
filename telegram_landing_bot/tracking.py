@@ -7,6 +7,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import os
 import time
 import uuid
 from typing import Dict, Any, Optional, List, Tuple
@@ -35,8 +36,8 @@ class TrackingManager:
 
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
-        # Advertising Platform API base URL
-        self.api_root_url = "https://gladsomely-unvitriolized-trudie.ngrok-free.dev"
+        # Advertising Platform API base URL - use localhost since API server runs locally
+        self.api_root_url = os.getenv("ADVERTISING_API_URL", "http://localhost:5000")
         # v1 prefix is used for click generation/redirect endpoints
         self.api_base_url = f"{self.api_root_url}/v1"
         # Fallback URL for manual URL building (landing)

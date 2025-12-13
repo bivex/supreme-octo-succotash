@@ -18,6 +18,10 @@ class ClickGenerationService:
             'facebook', 'google', 'taboola', 'outbrain', 'twitter', 'linkedin',
             'email', 'direct', 'referral', 'organic', 'paid', 'social'
         }
+        # Public domain for tracking URLs (configurable for production)
+        import os
+        self._public_domain = os.getenv("PUBLIC_TRACKING_DOMAIN", "https://gladsomely-unvitriolized-trudie.ngrok-free.dev")
+        logger.info(f"ClickGenerationService initialized with public domain: {self._public_domain}")
 
     async def generate_tracking_url(
         self,
@@ -84,7 +88,8 @@ class ClickGenerationService:
 
             # Construct the short URL
             # The short URL will only contain cid and the generated click_id
-            parsed_base = urlparse(base_url)
+            # Use public domain for publicly accessible tracking URLs
+            parsed_base = urlparse(self._public_domain)
             short_query_params = {
                 'cid': f"camp_{campaign_id}",
                 'click_id': generated_click_id.value,
@@ -101,6 +106,9 @@ class ClickGenerationService:
             ))
 
             logger.info(f"Generated short tracking URL for campaign {campaign_id}: {final_short_url}")
+            logger.info(f"Using public domain: {self._public_domain} (parsed: {parsed_base.scheme}://{parsed_base.netloc})")
+            print(f"DEBUG: Final URL: {final_short_url}")
+            print(f"DEBUG: Public domain: {self._public_domain}")
             logger.info("=== END CLICK GENERATION SERVICE DEBUG ===")
             return final_short_url
 
