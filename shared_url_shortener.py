@@ -4,7 +4,7 @@ import zlib
 import json
 import os
 import secrets
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import struct
@@ -791,7 +791,7 @@ def shorten_url(original_url: str) -> tuple[str, dict]:
     return short_url, url_params.to_dict()
 
 
-def expand_url(short_url: str) -> tuple[str | None, dict | None]:
+def expand_url(short_url: str) -> tuple[Union[str, None], Union[dict, None]]:
     """
     Legacy interface compatibility - decodes and reconstructs URL
     """

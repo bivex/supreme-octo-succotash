@@ -27,11 +27,11 @@ python-dotenv>=1.0.0
 APScheduler>=3.10.0
 
 # Async debugging and tracing
--e file:./scripts/tools/async-trace
+git+https://github.com/r4u-dev/async-trace.git
 
 # Data analysis (for performance testing and analytics) - install separately if needed
-# pandas>=2.2.0
-# numpy>=1.26.0
+pandas>=2.2.0
+numpy>=1.26.0
 
 # Optional: High-performance async I/O (Linux/macOS only)
 # uvloop>=0.20.0
