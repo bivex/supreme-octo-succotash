@@ -6,8 +6,6 @@ PyQt6-based admin interface for managing Advertising Platform business tasks.
 """
 
 import sys
-import os
-import asyncio
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -17,12 +15,10 @@ sys.path.insert(0, str(parent_dir))
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget,
-    QTableWidgetItem, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox,
-    QGroupBox, QFormLayout, QMessageBox, QSplitter, QTreeWidget,
-    QTreeWidgetItem, QProgressBar, QStatusBar, QMenuBar, QMenu
+    QTableWidgetItem, QTextEdit, QComboBox, QSpinBox, QGroupBox, QFormLayout, QMessageBox, QStatusBar
 )
-from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QDateTime
-from PyQt6.QtGui import QAction, QFont, QPalette, QColor
+from PyQt6.QtCore import QThread, pyqtSignal, QDateTime
+from PyQt6.QtGui import QAction
 
 from advertising_platform_sdk import AdvertisingPlatformClient
 from advertising_platform_sdk.exceptions import *

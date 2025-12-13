@@ -5,6 +5,9 @@ import psycopg2.extensions
 from typing import Optional, List, Dict
 from datetime import datetime
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from ...domain.entities.campaign import Campaign, CampaignStatus
 from ...domain.repositories.campaign_repository import CampaignRepository
@@ -228,33 +231,55 @@ class PostgresCampaignRepository(CampaignRepository):
     def find_all(self, limit: int = 50, offset: int = 0) -> List[Campaign]:
         """Find all campaigns with pagination."""
         conn = None
-        try:
-            conn = self._container.get_db_connection()
-            cursor = conn.cursor()
+        max_retries = 3
+        retry_delay = 0.5
 
-            cursor.execute("""
-                SELECT * FROM campaigns
-                WHERE is_deleted = FALSE
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-            """, (limit, offset))
+        for attempt in range(max_retries):
+            try:
+                conn = self._container.get_db_connection()
+                cursor = conn.cursor()
 
-            campaigns = []
-            columns = [desc[0] for desc in cursor.description]
-            for i, row in enumerate(cursor.fetchall()):
-                try:
-                    row_dict = dict(zip(columns, row))
-                    campaign = self._row_to_campaign(row_dict)
-                    campaigns.append(campaign)
-                except Exception as row_error:
-                    print(f"Error processing campaign row {i} with ID {row[0] if row else 'unknown'}: {row_error}")
-                    # Skip this row and continue
+                cursor.execute("""
+                    SELECT * FROM campaigns
+                    WHERE is_deleted = FALSE
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (limit, offset))
+
+                campaigns = []
+                columns = [desc[0] for desc in cursor.description]
+                for i, row in enumerate(cursor.fetchall()):
+                    try:
+                        row_dict = dict(zip(columns, row))
+                        campaign = self._row_to_campaign(row_dict)
+                        campaigns.append(campaign)
+                    except Exception as row_error:
+                        print(f"Error processing campaign row {i} with ID {row[0] if row else 'unknown'}: {row_error}")
+                        # Skip this row and continue
+                        continue
+
+                return campaigns
+
+            except psycopg2.OperationalError as e:
+                if "server closed the connection unexpectedly" in str(e) and attempt < max_retries - 1:
+                    logger.warning(f"Database connection lost (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                    if conn:
+                        try:
+                            self._container.release_db_connection(conn)
+                        except:
+                            pass
+                    conn = None
+                    import time
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
                     continue
-
-            return campaigns
-        finally:
-            if conn:
-                self._container.release_db_connection(conn)
+                else:
+                    raise
+            except Exception:
+                raise
+            finally:
+                if conn:
+                    self._container.release_db_connection(conn)
 
     def exists_by_id(self, campaign_id: CampaignId) -> bool:
         """Check if campaign exists by ID."""

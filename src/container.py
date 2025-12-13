@@ -117,6 +117,15 @@ class Container:
                     ))
                     duration = time.time() - start
                     logger.info(f"✅ DB pool ready in {duration:.3f}s")
+
+                    # Initialize connection monitor
+                    from .infrastructure.database.connection_monitor import ConnectionMonitor, default_alert_callback
+                    monitor = ConnectionMonitor(self)
+                    monitor.add_alert_callback(default_alert_callback)
+                    monitor.start_monitoring()
+                    self._singletons['connection_monitor'] = monitor
+                    logger.info("🔍 Connection monitor initialized and started")
+
                 except Exception:
                     duration = time.time() - start
                     logger.exception(f"❌ DB pool creation failed after {duration:.3f}s")

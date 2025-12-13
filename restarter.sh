@@ -68,18 +68,37 @@ cleanup_db_connections() {
     DB_USER="app_user"
     DB_PASS="app_password"
 
-    # Terminate all connections except the current one
-    TERMINATED=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
-        "SELECT count(*) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" 2>/dev/null)
+    # Check if main_clean.py is currently running (indicates active application)
+    MAIN_CLEAN_RUNNING=$(ps aux | grep "python3 main_clean.py" | grep -v grep | wc -l)
 
-    if [ -n "$TERMINATED" ] && [ "$TERMINATED" -gt 0 ]; then
-        echo "Found $TERMINATED hanging connections, terminating them..."
+    if [ "$MAIN_CLEAN_RUNNING" -gt 0 ]; then
+        echo "⚠️  WARNING: main_clean.py is currently running!"
+        echo "⚠️  Skipping database connection cleanup to avoid terminating active connections."
+        echo "⚠️  If you need to clean connections, stop the application first."
+        return
+    fi
+
+    # Terminate connections that have been idle for more than 5 minutes
+    # This avoids terminating active connections but cleans up stale ones
+    IDLE_CONNECTIONS=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
+        "SELECT count(*) FROM pg_stat_activity
+         WHERE datname = '$DB_NAME'
+         AND pid <> pg_backend_pid()
+         AND state = 'idle'
+         AND now() - state_change > interval '5 minutes';" 2>/dev/null)
+
+    if [ -n "$IDLE_CONNECTIONS" ] && [ "$IDLE_CONNECTIONS" -gt 0 ]; then
+        echo "Found $IDLE_CONNECTIONS idle connections (>5 minutes), terminating them..."
         PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c \
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" \
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+             WHERE datname = '$DB_NAME'
+             AND pid <> pg_backend_pid()
+             AND state = 'idle'
+             AND now() - state_change > interval '5 minutes';" \
             > /dev/null 2>&1
-        echo "✓ Terminated $TERMINATED hanging database connections"
+        echo "✓ Terminated $IDLE_CONNECTIONS idle database connections"
     else
-        echo "✓ No hanging connections found"
+        echo "✓ No idle connections found (>5 minutes)"
     fi
 }
 
