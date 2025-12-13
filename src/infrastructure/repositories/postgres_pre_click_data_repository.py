@@ -33,20 +33,20 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
 
         # Log pool state before attempting to get connection
         try:
-            logger.info(f"🔍 Attempting to get connection from pool (id: {id(pool)})")
-            logger.info(f"🔍 Pool type: {type(pool._pool).__name__}")
-            logger.info(f"🔍 Pool config: minconn={pool._pool.minconn}, maxconn={pool._pool.maxconn}")
+            logger.debug(f"🔍 Attempting to get connection from pool (id: {id(pool)})")
+            logger.debug(f"🔍 Pool type: {type(pool._pool).__name__}")
+            logger.debug(f"🔍 Pool config: minconn={pool._pool.minconn}, maxconn={pool._pool.maxconn}")
 
             # Get pool stats safely
             try:
                 stats = pool.get_stats()
-                logger.info(f"🔍 Pool stats BEFORE getconn: {stats}")
+                logger.debug(f"🔍 Pool stats BEFORE getconn: {stats}")
             except Exception as stats_error:
                 logger.warning(f"Could not get pool stats: {stats_error}")
 
-            # Attempt to get connection
+            # Attempt to get connection - DIRECT CALL
             conn = pool.getconn()
-            logger.info(f"✅ Successfully got connection from pool")
+            logger.debug(f"✅ Successfully got connection from pool: {conn}")
             return conn
 
         except Exception as e:
@@ -111,10 +111,12 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
+                    logger.debug(f"Returning connection {conn} to pool")
                     pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
+                        logger.warning(f"Closing orphaned connection {conn}")
                         conn.close()
                     except Exception as e:
                         logger.error(f"Error closing orphaned connection: {e}")
@@ -166,10 +168,12 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
+                    logger.debug(f"Returning connection {conn} to pool")
                     pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
+                        logger.warning(f"Closing orphaned connection {conn}")
                         conn.close()
                     except Exception as e:
                         logger.error(f"Error closing orphaned connection: {e}")
@@ -199,10 +203,12 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
+                    logger.debug(f"Returning connection {conn} to pool")
                     pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
+                        logger.warning(f"Closing orphaned connection {conn}")
                         conn.close()
                     except Exception as e:
                         logger.error(f"Error closing orphaned connection: {e}")
@@ -228,10 +234,12 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             if conn:
                 pool = self._container.get_db_connection_pool_sync()
                 if pool:
+                    logger.debug(f"Returning connection {conn} to pool")
                     pool.putconn(conn)
                 else:
                     logger.error("Cannot return connection: pool is None")
                     try:
+                        logger.warning(f"Closing orphaned connection {conn}")
                         conn.close()
                     except Exception as e:
                         logger.error(f"Error closing orphaned connection: {e}")
