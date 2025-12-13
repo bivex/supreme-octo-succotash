@@ -66,6 +66,25 @@ class BackgroundServiceManager:
         """Start the PostgreSQL connection upholder service."""
         with self._service_lock:
             try:
+                def _resolve_awaitable(maybe_awaitable):
+                    """Resolve coroutine to a concrete object for sync contexts."""
+                    if not inspect.isawaitable(maybe_awaitable):
+                        return maybe_awaitable
+                    try:
+                        return asyncio.run(maybe_awaitable)
+                    except RuntimeError:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            temp_loop = asyncio.new_event_loop()
+                            try:
+                                return temp_loop.run_until_complete(maybe_awaitable)
+                            finally:
+                                temp_loop.close()
+                        return loop.run_until_complete(maybe_awaitable)
+                    except Exception as e:
+                        logger.error(f"Failed to resolve awaitable: {e}")
+                        return maybe_awaitable
+
                 # Check if already started by this manager
                 if any(name == 'postgres_upholder' for name, _ in self._services):
                     logger.info("PostgreSQL upholder already started by this manager")
@@ -76,7 +95,12 @@ class BackgroundServiceManager:
                     logger.info("Skipping postgres upholder start - not primary manager")
                     return
 
-                upholder = container.get_postgres_upholder()
+                upholder_factory = container.get_postgres_upholder
+                if inspect.iscoroutinefunction(upholder_factory):
+                    upholder = asyncio.run(upholder_factory())
+                else:
+                    upholder = upholder_factory()
+                upholder = _resolve_awaitable(upholder)
                 if hasattr(upholder, 'start'):
                     logger.info("Starting PostgreSQL upholder...")
                     upholder.start()
@@ -104,7 +128,12 @@ class BackgroundServiceManager:
                     logger.info("Skipping cache monitor start - not primary manager")
                     return
 
-                cache_monitor = container.get_postgres_cache_monitor()
+                cache_monitor_factory = container.get_postgres_cache_monitor
+                if inspect.iscoroutinefunction(cache_monitor_factory):
+                    cache_monitor = asyncio.run(cache_monitor_factory())
+                else:
+                    cache_monitor = cache_monitor_factory()
+                cache_monitor = _resolve_awaitable(cache_monitor)
                 logger.info("Starting cache monitor...")
                 cache_monitor.start_monitoring(interval_seconds=interval_seconds)
 

@@ -8,12 +8,15 @@
 - Общую стабильность при параллельном доступе
 """
 
+import asyncio
 import threading
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
 from unittest.mock import patch, MagicMock
+
+import pytest
 
 from src.container import container
 from main_clean import BackgroundServiceManager, DatabaseConnectionTester
@@ -231,8 +234,9 @@ class TestThreadingSynchronization(unittest.TestCase):
         self.assertEqual(len(errors), 0,
                         f"Не должно быть ошибок: {errors}")
 
+    @pytest.mark.asyncio
     @patch('main_clean.logger')
-    def test_service_manager_lock_behavior(self, mock_logger):
+    async def test_service_manager_lock_behavior(self, mock_logger):
         """Тест поведения блокировок в BackgroundServiceManager."""
         # Создаем primary manager для тестирования
         from main_clean import BackgroundServiceManager
@@ -255,9 +259,15 @@ class TestThreadingSynchronization(unittest.TestCase):
         # Удаляем stop, чтобы проверить stop_monitoring
         del mock_cache_monitor.stop
 
-        # Патчим методы контейнера
-        with patch.object(container, 'get_postgres_upholder', return_value=mock_upholder), \
-             patch.object(container, 'get_postgres_cache_monitor', return_value=mock_cache_monitor):
+        # Патчим методы контейнера - возвращаем async функции, которые возвращают моки
+        async def mock_get_upholder():
+            return mock_upholder
+
+        async def mock_get_cache_monitor():
+            return mock_cache_monitor
+
+        with patch.object(container, 'get_postgres_upholder', side_effect=mock_get_upholder), \
+             patch.object(container, 'get_postgres_cache_monitor', side_effect=mock_get_cache_monitor):
 
             # Запускаем сервисы на primary manager
             primary_manager.start_postgres_upholder()

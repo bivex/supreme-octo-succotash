@@ -107,7 +107,7 @@ class PostgresCampaignRepository(CampaignRepository):
                 name=str(row["name"] or ""),
                 description=row["description"],
                 status=CampaignStatus(str(row["status"] or "draft")),
-                cost_model=str(row["cost_model"] or "CPA"),
+                cost_model=str(row["cost_model"] or "CPA").upper(),
                 payout=safe_money_from_float(row["payout_amount"], row["payout_currency"]) if row["payout_amount"] is not None else None,
                 safe_page_url=safe_url(row["safe_page_url"]),
                 offer_page_url=safe_url(row["offer_page_url"]),

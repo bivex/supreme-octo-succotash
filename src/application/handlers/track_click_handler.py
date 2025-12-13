@@ -181,7 +181,7 @@ class TrackClickHandler:
             tracking_params = pre_click_data.tracking_params
             click_data = {
                 'id': click_id,
-                'campaign_id': pre_click_data.campaign_id.value,
+                'campaign_id': pre_click_data.campaign_id,
                 'ip_address': command.ip_address,
                 'user_agent': command.user_agent,
                 'referrer': command.referrer,
@@ -190,7 +190,6 @@ class TrackClickHandler:
                 'sub3': tracking_params.get('sub3', command.sub3),
                 'sub4': tracking_params.get('sub4', command.sub4),
                 'sub5': tracking_params.get('sub5', command.sub5),
-                'click_id_param': tracking_params.get('click_id', command.click_id_param),
                 'affiliate_sub': tracking_params.get('aff_sub', command.affiliate_sub),
                 'affiliate_sub2': tracking_params.get('aff_sub2', command.affiliate_sub2),
                 'affiliate_sub3': tracking_params.get('aff_sub3', command.affiliate_sub3),

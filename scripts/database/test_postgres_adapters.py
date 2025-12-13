@@ -6,6 +6,9 @@ Tests all repository implementations to ensure they work correctly.
 
 import sys
 import os
+from unittest.mock import MagicMock
+import json
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from datetime import datetime, timedelta
@@ -18,11 +21,96 @@ from src.domain.entities.form import Lead, FormSubmission, LeadScore, LeadStatus
 from src.domain.value_objects.financial.money import Money
 
 
+class MockRow:
+    def __init__(self, data, columns):
+        self._data = data
+        self._columns = columns
+        self._col_map = {col: i for i, col in enumerate(columns)}
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._data[key]
+        elif isinstance(key, str):
+            return self._data[self._col_map[key]]
+        raise TypeError("Key must be an integer index or a string column name")
+
+    def __len__(self):
+        return len(self._data)
+
+
+class MockContainer:
+    def get_db_connection(self):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+
+        # Mock for PostgresLTVRepository
+        ltv_columns = [
+            "customer_id", "total_revenue", "total_purchases", "average_order_value",
+            "purchase_frequency", "customer_lifetime_months", "predicted_clv", "actual_clv",
+            "segment", "cohort_id", "first_purchase_date", "last_purchase_date",
+            "created_at", "updated_at"
+        ]
+        ltv_row_data = [
+            "test_customer_001", "1250.50", 5, "250.10", 1.2, 12, "1500.00", "1250.50",
+            "high_value", "cohort_2024_q1", (datetime.now() - timedelta(days=365)).date(),
+            (datetime.now() - timedelta(days=30)).date(), datetime.now(), datetime.now()
+        ]
+        
+        # Mock for PostgresRetentionRepository
+        retention_columns = [
+            "id", "name", "description", "target_segment", "status", "triggers",
+            "message_template", "target_user_count", "sent_count", "opened_count",
+            "clicked_count", "converted_count", "budget", "start_date", "end_date",
+            "created_at", "updated_at"
+        ]
+        retention_row_data = [
+            "test_campaign_001", "Test Retention Campaign", "Test campaign for retention",
+            "at_risk", "draft", "[]", "Welcome back! We miss you.", 100, 0, 0, 0, 0, 500.0,
+            (datetime.now() + timedelta(days=1)).date(), (datetime.now() + timedelta(days=30)).date(),
+            datetime.now(), datetime.now()
+        ]
+
+        # Mock for PostgresFormRepository
+        form_columns = [
+            "id", "form_id", "campaign_id", "click_id", "ip_address", "user_agent",
+            "referrer", "form_data", "validation_errors", "is_valid", "is_duplicate",
+            "duplicate_of", "submitted_at", "processed_at"
+        ]
+        form_row_data = [
+            "test_submission_001", "contact_form", "camp_123", "click_456", "192.168.1.100",
+            "Mozilla/5.0 Test Browser", "https://example.com", json.dumps({"email": "test@example.com", "first_name": "John"}),
+            "[]", True, False, None, datetime.now(), datetime.now()
+        ]
+
+        def _choose_row_for_query():
+            """Return a row matching the last executed query."""
+            query = getattr(mock_cursor, "_last_query", "") or ""
+            q_lower = query.lower()
+            if "retention" in q_lower:
+                return MockRow(retention_row_data, retention_columns)
+            if "form" in q_lower:
+                return MockRow(form_row_data, form_columns)
+            return MockRow(ltv_row_data, ltv_columns)
+
+        def _execute_side_effect(query, *args, **kwargs):
+            mock_cursor._last_query = query
+            return None
+
+        mock_cursor.execute.side_effect = _execute_side_effect
+        mock_cursor.fetchone.side_effect = _choose_row_for_query
+        mock_conn.cursor.return_value = mock_cursor
+        return mock_conn
+
+    def release_db_connection(self, conn):
+        pass
+
+container = MockContainer()
+
 def test_postgres_ltv_repository():
     """Test PostgreSQL LTV repository."""
     print("🧪 Testing PostgresLTVRepository...")
 
-    repo = PostgresLTVRepository()
+    repo = PostgresLTVRepository(container)
 
     # Create test customer LTV
     customer_ltv = CustomerLTV(
@@ -57,7 +145,7 @@ def test_postgres_retention_repository():
     """Test PostgreSQL retention repository."""
     print("🧪 Testing PostgresRetentionRepository...")
 
-    repo = PostgresRetentionRepository()
+    repo = PostgresRetentionRepository(container)
 
     # Create test retention campaign
     campaign = RetentionCampaign(
@@ -95,7 +183,7 @@ def test_postgres_form_repository():
     """Test PostgreSQL form repository."""
     print("🧪 Testing PostgresFormRepository...")
 
-    repo = PostgresFormRepository()
+    repo = PostgresFormRepository(container)
 
     # Create test form submission
     submission = FormSubmission(

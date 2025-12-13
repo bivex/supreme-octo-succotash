@@ -59,6 +59,19 @@ class URLShortener:
         # Кэш для быстрого доступа
         self.decode_cache: Dict[str, URLParams] = {}
 
+        # Sequential strategy mappings
+        self.params_to_seq: Dict[str, int] = {}
+        self.seq_to_params: Dict[int, URLParams] = {}
+        self.next_seq_id: int = 1
+
+        # Compressed strategy mappings
+        self.campaign_map: Dict[str, int] = {}
+        self.reverse_campaign_map: Dict[int, str] = {}
+        self.next_campaign_id: int = 1
+        self.sub_value_map: Dict[int, str] = {}
+        self.reverse_sub_value_map: Dict[str, int] = {}
+        self.next_sub_id: int = 1
+
         # Storage settings
         self.storage_file = storage_file
         self.autosave = autosave

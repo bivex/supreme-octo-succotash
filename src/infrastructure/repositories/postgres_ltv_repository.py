@@ -368,7 +368,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def _row_to_customer_ltv(self, row) -> CustomerLTV:
         """Convert database row to CustomerLTV entity."""
-        from ...value_objects.financial import Money
+        from src.domain.value_objects.financial import Money
 
         return CustomerLTV(
             customer_id=row[0],
@@ -390,7 +390,7 @@ class PostgresLTVRepository(LTVRepository):
     def _row_to_cohort(self, row) -> Cohort:
         """Convert database row to Cohort entity."""
         import json
-        from ...value_objects.financial import Money
+        from src.domain.value_objects.financial import Money
 
         return Cohort(
             id=row[0],
@@ -406,7 +406,7 @@ class PostgresLTVRepository(LTVRepository):
 
     def _row_to_ltv_segment(self, row) -> LTVSegment:
         """Convert database row to LTVSegment entity."""
-        from ...value_objects.financial import Money
+        from src.domain.value_objects.financial import Money
 
         return LTVSegment(
             id=row[0],

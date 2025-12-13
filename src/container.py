@@ -140,12 +140,28 @@ class Container:
                 'available': 0,
                 'total_connections': 0,
             }
+
+        def _safe_count(collection):
+            if collection is None:
+                return 0
+            if hasattr(collection, '__len__'):
+                try:
+                    return len(collection)
+                except TypeError:
+                    pass
+            if hasattr(collection, 'qsize'):
+                try:
+                    return collection.qsize()
+                except TypeError:
+                    return 0
+            return 0
+
         return {
             'minconn': getattr(pool, '_minconn', 'unknown'),
             'maxconn': getattr(pool, '_maxconn', 'unknown'),
-            'used': len(getattr(pool, '_used', [])),
-            'available': len(getattr(pool, '_pool', [])),
-            'total_connections': len(getattr(pool, '_used', [])) + len(getattr(pool, '_pool', []))
+            'used': _safe_count(getattr(pool, '_used', None)),
+            'available': _safe_count(getattr(pool, '_pool', None)),
+            'total_connections': _safe_count(getattr(pool, '_used', None)) + _safe_count(getattr(pool, '_pool', None))
         }
 
     def get_db_connection(self):

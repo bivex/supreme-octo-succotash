@@ -10,11 +10,10 @@ import pandas as pd
 import numpy as np
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer, BulkOperationMetrics
-from infrastructure.async_io_processor import AsyncIOProcessor
-from infrastructure.repositories.optimized_analytics_repository import OptimizedAnalyticsRepository
+from src.infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer, BulkOperationMetrics
+from src.infrastructure.async_io_processor import AsyncIOProcessor
+from src.infrastructure.repositories.optimized_analytics_repository import OptimizedAnalyticsRepository
 
 def generate_test_clicks(count: int = 1000) -> List[Dict[str, Any]]:
     """Generate test click data."""

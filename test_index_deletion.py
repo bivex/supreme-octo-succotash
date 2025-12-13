@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Тест автоматического удаления индексов."""
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from container import container
-from infrastructure.upholder.postgres_auto_upholder import UpholderConfig, PostgresAutoUpholder
+from src.container import container
+from src.infrastructure.upholder.postgres_auto_upholder import UpholderConfig, PostgresAutoUpholder
 
 def test_index_deletion():
     print("🚀 Тестирование автоматического удаления индексов...")

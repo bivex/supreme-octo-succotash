@@ -1,6 +1,14 @@
 import asyncio
 from tracking import init_tracking, get_tracking_manager
-from config import settings
+
+class MockSettings:
+    bot_token: str = "test_bot_token"
+    tracker_domain: str = "http://test-tracker.com"
+    landing_url: str = "http://test-landing.com"
+    campaign_id: int = 12345
+
+settings = MockSettings()
+
 
 async def test_short_url():
     print(f"Settings campaign_id: {settings.campaign_id}")

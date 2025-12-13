@@ -68,7 +68,7 @@ class SQLiteCampaignRepository(CampaignRepository):
             name=row["name"],
             description=row["description"],
             status=row["status"],
-            cost_model=row["cost_model"],
+            cost_model=row["cost_model"].upper(),
             payout=Money.from_float(row["payout_amount"], row["payout_currency"]),
             safe_page_url=Url(row["safe_page_url"]),
             offer_page_url=Url(row["offer_page_url"]),

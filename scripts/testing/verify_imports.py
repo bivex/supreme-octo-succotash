@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 """Test script to verify all imports work correctly."""
 
-import sys
-import os
-from loguru import logger
-
-# Add current directory and src to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
-sys.path.insert(0, os.path.join(current_dir, 'src'))
-
-try:
-    logger.info("Testing imports...")
 
     # Test config first
-    from config.settings import settings
+    from src.config.settings import settings
     logger.info("OK: config.settings imported")
 
     # Test domain modules first
