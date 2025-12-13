@@ -33,6 +33,7 @@ from .infrastructure.repositories import (
     PostgresOfferRepository,
     PostgresPreClickDataRepository,
     PostgresLTVRepository,
+    PostgresCustomerLtvRepository,
     PostgresRetentionRepository,
     PostgresFormRepository,
 )
@@ -53,6 +54,7 @@ from .domain.services import (
 from .domain.services.webhook import WebhookService
 from .domain.services.event import EventService
 from .domain.services.conversion import ConversionService
+from .domain.services.gaming import GamingWebhookService
 from .domain.services.postback import PostbackService
 from .domain.services.click import ClickGenerationService
 from .domain.services.goal import GoalService
@@ -62,7 +64,7 @@ from .domain.services.journey import JourneyService
 from .application.handlers import (
     CreateCampaignHandler, UpdateCampaignHandler, PauseCampaignHandler, ResumeCampaignHandler,
     CreateLandingPageHandler, CreateOfferHandler,
-    TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler,
+    TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, GamingWebhookHandler,
     SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler,
     BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler,
     LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
@@ -77,7 +79,7 @@ from .application.queries import (
 )
 
 # Presentation
-from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes
+from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes, GamingWebhookRoutes
 
 
 class Container:
@@ -521,6 +523,14 @@ class Container:
             )
         return self._singletons['conversion_service']
 
+    async def get_gaming_webhook_service(self):
+        """Get gaming webhook service."""
+        if 'gaming_webhook_service' not in self._singletons:
+            self._singletons['gaming_webhook_service'] = GamingWebhookService(
+                click_repository=await self.get_click_repository()
+            )
+        return self._singletons['gaming_webhook_service']
+
     async def get_track_conversion_handler(self):
         """Get track conversion handler."""
         if 'track_conversion_handler' not in self._singletons:
@@ -531,6 +541,18 @@ class Container:
             )
         return self._singletons['track_conversion_handler']
 
+    async def get_gaming_webhook_handler(self):
+        """Get gaming webhook handler."""
+        if 'gaming_webhook_handler' not in self._singletons:
+            self._singletons['gaming_webhook_handler'] = GamingWebhookHandler(
+                conversion_repository=await self.get_conversion_repository(),
+                click_repository=await self.get_click_repository(),
+                customer_ltv_repository=await self.get_postgres_customer_ltv_repository(),
+                conversion_service=await self.get_conversion_service(),
+                gaming_webhook_service=await self.get_gaming_webhook_service()
+            )
+        return self._singletons['gaming_webhook_handler']
+
     async def get_conversion_routes(self):
         """Get conversion routes."""
         if 'conversion_routes' not in self._singletons:
@@ -538,6 +560,14 @@ class Container:
                 track_conversion_handler=await self.get_track_conversion_handler(),
             )
         return self._singletons['conversion_routes']
+
+    async def get_gaming_webhook_routes(self):
+        """Get gaming webhook routes."""
+        if 'gaming_webhook_routes' not in self._singletons:
+            self._singletons['gaming_webhook_routes'] = GamingWebhookRoutes(
+                gaming_webhook_handler=await self.get_gaming_webhook_handler(),
+            )
+        return self._singletons['gaming_webhook_routes']
 
     async def get_postback_repository(self):
         """Get postback repository."""
@@ -711,6 +741,11 @@ class Container:
         if 'postgres_ltv_repository' not in self._singletons:
             self._singletons['postgres_ltv_repository'] = PostgresLTVRepository(container=self)
         return self._singletons['postgres_ltv_repository']
+
+    async def get_postgres_customer_ltv_repository(self):
+        if 'postgres_customer_ltv_repository' not in self._singletons:
+            self._singletons['postgres_customer_ltv_repository'] = PostgresCustomerLtvRepository(container=self)
+        return self._singletons['postgres_customer_ltv_repository']
 
     async def get_postgres_retention_repository(self):
         """Get PostgreSQL retention repository."""

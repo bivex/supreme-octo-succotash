@@ -5,6 +5,7 @@ from .click_routes import ClickRoutes
 from .webhook_routes import WebhookRoutes
 from .event_routes import EventRoutes
 from .conversion_routes import ConversionRoutes
+from .gaming_webhook_routes import GamingWebhookRoutes
 from .postback_routes import PostbackRoutes
 from .click_generation_routes import ClickGenerationRoutes
 from .goal_routes import GoalRoutes

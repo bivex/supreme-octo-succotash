@@ -216,6 +216,7 @@ async def _register_routes(app: socketify.App) -> None:
         ("webhook", container.get_webhook_routes),
         ("event", container.get_event_routes),
         ("conversion", container.get_conversion_routes),
+        ("gaming_webhook", container.get_gaming_webhook_routes),
         ("postback", container.get_postback_routes),
         ("click_generation", container.get_click_generation_routes),
         ("goal", container.get_goal_routes),
