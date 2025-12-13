@@ -291,16 +291,20 @@ class ServerRunner:
         # create_app is async; run it once on the current loop (do not close it)
         app = loop.run_until_complete(create_app())
         port = settings.api.port
-        host = settings.api.host
 
         def on_listen(cfg):
-            logger.info(f"Server listening on {host}:{cfg.port}")
+            logger.info(f"Server listening on port {cfg.port}")
 
         try:
             with self.managed_services():
-                # Ensure we're binding to the correct host
-                logger.info(f"Binding to host: {host}, port: {port}")
-                listen_result = app.listen(port, on_listen, host=host)
+                # Create listen options to bind to 0.0.0.0
+                import socketify
+                listen_options = socketify.AppListenOptions(
+                    host="0.0.0.0",
+                    port=port
+                )
+                logger.info(f"Binding to host: {listen_options.host}, port: {listen_options.port}")
+                listen_result = app.listen(listen_options, on_listen)
                 # app.listen may be sync; if it returns awaitable, wait for it on the same loop
                 if inspect.isawaitable(listen_result):
                     loop.run_until_complete(listen_result)
