@@ -1,0 +1,185 @@
+2025-12-13 08:46:13.173 | INFO     | src.main:_configure_logging:135 | Logging system initialized with loguru
+2025-12-13 08:46:13.173 | INFO     | src.main:_setup_global_exception_handler:183 | Global exception handler configured (JSON encoder already set up) - Hot reload ready - Test change
+2025-12-13 08:46:13.175 | INFO     | src.presentation.middleware.security_middleware:setup_security_middleware:24 | 🛡️ Setting up security middleware
+2025-12-13 08:46:13.175 | INFO     | src.main:_register_routes:188 | 🔌 Registering routes...
+2025-12-13 08:46:13.175 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: campaign
+2025-12-13 08:46:13.175 | DEBUG    | src.presentation.routes.campaign_routes:_register_campaign_landing_pages:743 | _register_campaign_landing_pages called
+2025-12-13 08:46:13.175 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: campaign in 0.000s
+2025-12-13 08:46:13.175 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: click
+2025-12-13 08:46:13.175 | INFO     | src.container:get_track_click_handler:367 | 🖱️ Creating TrackClickHandler and dependencies...
+2025-12-13 08:46:13.175 | INFO     | src.container:get_click_repository:202 | 🖱️ Creating click_repository (PostgreSQL preferred)...
+2025-12-13 08:46:13.175 | INFO     | src.container:get_click_repository:206 | 🖱️ click_repository ready (PostgreSQL) in 0.000s
+2025-12-13 08:46:13.175 | INFO     | src.container:get_postgres_pre_click_data_repository:743 | 🗂️ Creating PostgresPreClickDataRepository...
+2025-12-13 08:46:13.175 | INFO     | src.container:get_postgres_pre_click_data_repository:744 | 🔍 Repository class: <class 'src.infrastructure.repositories.postgres_pre_click_data_repository.PostgresPreClickDataRepository'>
+2025-12-13 08:46:13.175 | INFO     | src.container:get_postgres_pre_click_data_repository:745 | 🔍 Repository module: src.infrastructure.repositories.postgres_pre_click_data_repository
+2025-12-13 08:46:13.175 | INFO     | src.container:get_postgres_pre_click_data_repository:746 | 🔍 Repository file: N/A
+2025-12-13 08:46:13.175 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:__init__:19 | 🟢 PostgresPreClickDataRepository.__init__ called - NEW CODE LOADED v2
+2025-12-13 08:46:13.175 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:__init__:20 | 🔍 __init__ called from file: /Users/password9090/Documents/GitHub/supreme-octo-succotash/src/infrastructure/repositories/postgres_pre_click_data_repository.py
+2025-12-13 08:46:13.175 | INFO     | src.container:get_postgres_pre_click_data_repository:748 | 🔍 Created repo instance: <class 'src.infrastructure.repositories.postgres_pre_click_data_repository.PostgresPreClickDataRepository'>, id: 4579125504
+2025-12-13 08:46:13.175 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:76 | Starting database schema initialization for pre_click_data...
+2025-12-13 08:46:13.175 | INFO     | src.container:get_db_connection_pool:97 | 🔌 DB pool: creating AdvancedConnectionPool (localhost:5432)...
+2025-12-13 08:46:13.214 | INFO     | src.container:get_db_connection_pool:117 | ✅ DB pool ready in 0.039s
+2025-12-13 08:46:13.214 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:36 | 🔍 Attempting to get connection from pool (id: 4579128192)
+2025-12-13 08:46:13.214 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:37 | 🔍 Pool type: SimpleConnectionPool
+2025-12-13 08:46:13.214 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:38 | 🔍 Pool config: minconn=5, maxconn=100
+2025-12-13 08:46:13.214 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:43 | 🔍 Pool stats BEFORE getconn: {'minconn': 5, 'maxconn': 100, 'used': 0, 'available': 5, 'connections_created': 0, 'connections_returned': 0, 'connections_failed': 0, 'query_count': 0, 'avg_query_time_ms': 0.0, 'slow_queries': 0, 'errors': 0, 'qps': 0.0, 'uptime_seconds': 0.0, 'pool_efficiency': 40.0, 'health_status': 'HEALTHY', 'cached': False, 'timestamp': 1765608373.214881}
+2025-12-13 08:46:13.215 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:49 | ✅ Successfully got connection from pool: <connection object at 0x110effca0; dsn: 'user=app_user password=xxx connect_timeout=10 dbname=supreme_octosuccotash_db host=localhost port=5432 client_encoding=utf8 keepalives=1 keepalives_idle=30 keepalives_interval=10 keepalives_count=5 tcp_user_timeout=60000', closed: 0>
+2025-12-13 08:46:13.215 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:81 | Attempting to create pre_click_data table if not exists...
+2025-12-13 08:46:13.215 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:91 | Table pre_click_data created or already exists.
+2025-12-13 08:46:13.215 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:93 | Attempting to create indexes for pre_click_data table...
+2025-12-13 08:46:13.217 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:96 | Indexes for pre_click_data table created or already exist.
+2025-12-13 08:46:13.217 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:99 | Database schema initialization committed.
+2025-12-13 08:46:13.217 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:101 | Database schema initialization completed.
+2025-12-13 08:46:13.217 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:114 | Returning connection <connection object at 0x110effca0; dsn: 'user=app_user password=xxx connect_timeout=10 dbname=supreme_octosuccotash_db host=localhost port=5432 client_encoding=utf8 keepalives=1 keepalives_idle=30 keepalives_interval=10 keepalives_count=5 tcp_user_timeout=60000', closed: 0> to pool
+2025-12-13 08:46:13.217 | INFO     | src.container:get_postgres_pre_click_data_repository:766 | 🗂️ PostgresPreClickDataRepository ready in 0.042s
+2025-12-13 08:46:13.217 | INFO     | src.container:get_track_click_handler:385 | 🖱️ TrackClickHandler ready in 0.042s
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:31 | 🔧 ClickRoutes.register() called with app: <class 'socketify.socketify.App'>
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:590 | 🔧 Registering click routes with socketify app...
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:592 | 🔧 Registered POST /clicks
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:594 | 🔧 Registered GET /v1/click
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:596 | 🔧 Registered GET /v1/click/:click_id
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:598 | 🔧 Registered GET /v1/clicks
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:600 | 🔧 Registered GET /s/:encoded_data
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:602 | 🔧 Registered GET /mock-offer
+2025-12-13 08:46:13.217 | INFO     | src.presentation.routes.click_routes:register:604 | ✅ Click routes registration completed
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: click in 0.042s
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: webhook
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: webhook in 0.000s
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: event
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: event in 0.000s
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: conversion
+2025-12-13 08:46:13.217 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:13.217 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: conversion in 0.000s
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: postback
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: postback in 0.000s
+2025-12-13 08:46:13.217 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: click_generation
+2025-12-13 08:46:13.218 | DEBUG    | src.container:get_postgres_pre_click_data_repository:768 | 🗂️ Reusing PostgresPreClickDataRepository singleton
+2025-12-13 08:46:13.218 | INFO     | src.domain.services.click.click_generation_service:__init__:24 | ClickGenerationService initialized with public domain: https://gladsomely-unvitriolized-trudie.ngrok-free.dev
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: click_generation in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: goal
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: goal in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: journey
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: journey in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: ltv
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: ltv in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: form
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: form in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: retention
+2025-12-13 08:46:13.218 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: retention in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: bulk_operations
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: bulk_operations in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: fraud
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: fraud in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: system
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: system in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: analytics
+2025-12-13 08:46:13.218 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:13.218 | INFO     | src.container:get_postgres_analytics_repository:663 | 📊 Creating PostgresAnalyticsRepository...
+2025-12-13 08:46:13.218 | INFO     | src.container:get_postgres_analytics_repository:672 | 📊 PostgresAnalyticsRepository ready in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: analytics in 0.000s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_routes:232 | ✅ Routes registered in 0.044s
+2025-12-13 08:46:13.218 | INFO     | src.main:_register_error_handlers:250 | Error handlers configured (using global exception handler)
+2025-12-13 08:46:13.218 | INFO     | src.main:create_app:67 | 🏗️ FINISH: Socketify application created in 0.0520 seconds
+2025-12-13 08:46:13.219 | INFO     | __main__:log_database_info:275 | Database driver: PostgreSQL
+2025-12-13 08:46:13.219 | INFO     | __main__:run_server:348 | Binding to host: 0.0.0.0, port: 5000
+2025-12-13 08:46:13.221 | INFO     | __main__:on_listen:338 | Server listening on port 5000
+2025-12-13 08:46:29.030 | INFO     | __main__:signal_handler:288 | Received signal 15, initiating graceful shutdown...
+2025-12-13 08:46:29.030 | INFO     | __main__:signal_handler:294 | 📸 Signal shutdown trace saved: None
+2025-12-13 08:46:29.031 | INFO     | __main__:stop_all_services:165 | Stopping background services (managing 0 services)...
+2025-12-13 08:46:29.031 | INFO     | __main__:_close_database_connections:210 | Closing database connections...
+2025-12-13 08:46:29.031 | INFO     | __main__:stop_all_services:195 | All background services stopped (stopped 0 services)
+2025-12-13 08:46:59.026 | INFO     | src.main:_configure_logging:135 | Logging system initialized with loguru
+2025-12-13 08:46:59.026 | INFO     | src.main:_setup_global_exception_handler:183 | Global exception handler configured (JSON encoder already set up) - Hot reload ready - Test change
+2025-12-13 08:46:59.028 | INFO     | src.presentation.middleware.security_middleware:setup_security_middleware:24 | 🛡️ Setting up security middleware
+2025-12-13 08:46:59.028 | INFO     | src.main:_register_routes:188 | 🔌 Registering routes...
+2025-12-13 08:46:59.028 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: campaign
+2025-12-13 08:46:59.028 | DEBUG    | src.presentation.routes.campaign_routes:_register_campaign_landing_pages:743 | _register_campaign_landing_pages called
+2025-12-13 08:46:59.028 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: campaign in 0.000s
+2025-12-13 08:46:59.028 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: click
+2025-12-13 08:46:59.028 | INFO     | src.container:get_track_click_handler:367 | 🖱️ Creating TrackClickHandler and dependencies...
+2025-12-13 08:46:59.028 | INFO     | src.container:get_click_repository:202 | 🖱️ Creating click_repository (PostgreSQL preferred)...
+2025-12-13 08:46:59.028 | INFO     | src.container:get_click_repository:206 | 🖱️ click_repository ready (PostgreSQL) in 0.000s
+2025-12-13 08:46:59.028 | INFO     | src.container:get_postgres_pre_click_data_repository:743 | 🗂️ Creating PostgresPreClickDataRepository...
+2025-12-13 08:46:59.028 | INFO     | src.container:get_postgres_pre_click_data_repository:744 | 🔍 Repository class: <class 'src.infrastructure.repositories.postgres_pre_click_data_repository.PostgresPreClickDataRepository'>
+2025-12-13 08:46:59.028 | INFO     | src.container:get_postgres_pre_click_data_repository:745 | 🔍 Repository module: src.infrastructure.repositories.postgres_pre_click_data_repository
+2025-12-13 08:46:59.028 | INFO     | src.container:get_postgres_pre_click_data_repository:746 | 🔍 Repository file: N/A
+2025-12-13 08:46:59.028 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:__init__:19 | 🟢 PostgresPreClickDataRepository.__init__ called - NEW CODE LOADED v2
+2025-12-13 08:46:59.028 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:__init__:20 | 🔍 __init__ called from file: /Users/password9090/Documents/GitHub/supreme-octo-succotash/src/infrastructure/repositories/postgres_pre_click_data_repository.py
+2025-12-13 08:46:59.028 | INFO     | src.container:get_postgres_pre_click_data_repository:748 | 🔍 Created repo instance: <class 'src.infrastructure.repositories.postgres_pre_click_data_repository.PostgresPreClickDataRepository'>, id: 4429179136
+2025-12-13 08:46:59.028 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:76 | Starting database schema initialization for pre_click_data...
+2025-12-13 08:46:59.028 | INFO     | src.container:get_db_connection_pool:97 | 🔌 DB pool: creating AdvancedConnectionPool (localhost:5432)...
+2025-12-13 08:46:59.067 | INFO     | src.container:get_db_connection_pool:117 | ✅ DB pool ready in 0.039s
+2025-12-13 08:46:59.067 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:36 | 🔍 Attempting to get connection from pool (id: 4429181824)
+2025-12-13 08:46:59.067 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:37 | 🔍 Pool type: SimpleConnectionPool
+2025-12-13 08:46:59.067 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:38 | 🔍 Pool config: minconn=5, maxconn=100
+2025-12-13 08:46:59.067 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:43 | 🔍 Pool stats BEFORE getconn: {'minconn': 5, 'maxconn': 100, 'used': 0, 'available': 5, 'connections_created': 0, 'connections_returned': 0, 'connections_failed': 0, 'query_count': 0, 'avg_query_time_ms': 0.0, 'slow_queries': 0, 'errors': 0, 'qps': 0.0, 'uptime_seconds': 0.0, 'pool_efficiency': 40.0, 'health_status': 'HEALTHY', 'cached': False, 'timestamp': 1765608419.067958}
+2025-12-13 08:46:59.068 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_get_blocking_connection:49 | ✅ Successfully got connection from pool: <connection object at 0x107fffca0; dsn: 'user=app_user password=xxx connect_timeout=10 dbname=supreme_octosuccotash_db host=localhost port=5432 client_encoding=utf8 keepalives=1 keepalives_idle=30 keepalives_interval=10 keepalives_count=5 tcp_user_timeout=60000', closed: 0>
+2025-12-13 08:46:59.068 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:81 | Attempting to create pre_click_data table if not exists...
+2025-12-13 08:46:59.068 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:91 | Table pre_click_data created or already exists.
+2025-12-13 08:46:59.068 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:93 | Attempting to create indexes for pre_click_data table...
+2025-12-13 08:46:59.069 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:96 | Indexes for pre_click_data table created or already exist.
+2025-12-13 08:46:59.069 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:99 | Database schema initialization committed.
+2025-12-13 08:46:59.069 | INFO     | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:101 | Database schema initialization completed.
+2025-12-13 08:46:59.069 | DEBUG    | src.infrastructure.repositories.postgres_pre_click_data_repository:_initialize_db:114 | Returning connection <connection object at 0x107fffca0; dsn: 'user=app_user password=xxx connect_timeout=10 dbname=supreme_octosuccotash_db host=localhost port=5432 client_encoding=utf8 keepalives=1 keepalives_idle=30 keepalives_interval=10 keepalives_count=5 tcp_user_timeout=60000', closed: 0> to pool
+2025-12-13 08:46:59.070 | INFO     | src.container:get_postgres_pre_click_data_repository:766 | 🗂️ PostgresPreClickDataRepository ready in 0.041s
+2025-12-13 08:46:59.070 | INFO     | src.container:get_track_click_handler:385 | 🖱️ TrackClickHandler ready in 0.041s
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:31 | 🔧 ClickRoutes.register() called with app: <class 'socketify.socketify.App'>
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:590 | 🔧 Registering click routes with socketify app...
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:592 | 🔧 Registered POST /clicks
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:594 | 🔧 Registered GET /v1/click
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:596 | 🔧 Registered GET /v1/click/:click_id
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:598 | 🔧 Registered GET /v1/clicks
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:600 | 🔧 Registered GET /s/:encoded_data
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:602 | 🔧 Registered GET /mock-offer
+2025-12-13 08:46:59.070 | INFO     | src.presentation.routes.click_routes:register:604 | ✅ Click routes registration completed
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: click in 0.042s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: webhook
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: webhook in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: event
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: event in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: conversion
+2025-12-13 08:46:59.070 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:59.070 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: conversion in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: postback
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: postback in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: click_generation
+2025-12-13 08:46:59.070 | DEBUG    | src.container:get_postgres_pre_click_data_repository:768 | 🗂️ Reusing PostgresPreClickDataRepository singleton
+2025-12-13 08:46:59.070 | INFO     | src.domain.services.click.click_generation_service:__init__:24 | ClickGenerationService initialized with public domain: https://gladsomely-unvitriolized-trudie.ngrok-free.dev
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: click_generation in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: goal
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: goal in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: journey
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: journey in 0.000s
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: ltv
+2025-12-13 08:46:59.070 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: ltv in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: form
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: form in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: retention
+2025-12-13 08:46:59.071 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: retention in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: bulk_operations
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: bulk_operations in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: fraud
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: fraud in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: system
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: system in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:221 | 🔌 Route step START: analytics
+2025-12-13 08:46:59.071 | DEBUG    | src.container:get_click_repository:213 | 🖱️ Reusing click_repository singleton
+2025-12-13 08:46:59.071 | INFO     | src.container:get_postgres_analytics_repository:663 | 📊 Creating PostgresAnalyticsRepository...
+2025-12-13 08:46:59.071 | INFO     | src.container:get_postgres_analytics_repository:672 | 📊 PostgresAnalyticsRepository ready in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:228 | ✅ Route step DONE: analytics in 0.000s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_routes:232 | ✅ Routes registered in 0.043s
+2025-12-13 08:46:59.071 | INFO     | src.main:_register_error_handlers:250 | Error handlers configured (using global exception handler)
+2025-12-13 08:46:59.071 | INFO     | src.main:create_app:67 | 🏗️ FINISH: Socketify application created in 0.0516 seconds
+2025-12-13 08:46:59.071 | INFO     | __main__:log_database_info:275 | Database driver: PostgreSQL
+2025-12-13 08:46:59.071 | INFO     | __main__:run_server:348 | Binding to host: 0.0.0.0, port: 5000
+2025-12-13 08:46:59.074 | INFO     | __main__:on_listen:338 | Server listening on port 5000
+2025-12-13 08:46:59.709 | INFO     | __main__:stop_all_services:165 | Stopping background services (managing 0 services)...
+2025-12-13 08:46:59.709 | INFO     | __main__:signal_handler:288 | Received signal 15, initiating graceful shutdown...
+2025-12-13 08:46:59.709 | INFO     | __main__:signal_handler:294 | 📸 Signal shutdown trace saved: None
+2025-12-13 08:46:59.709 | INFO     | __main__:stop_all_services:165 | Stopping background services (managing 0 services)...
+2025-12-13 08:46:59.709 | INFO     | __main__:_close_database_connections:210 | Closing database connections...
+2025-12-13 08:46:59.709 | INFO     | __main__:stop_all_services:195 | All background services stopped (stopped 0 services)

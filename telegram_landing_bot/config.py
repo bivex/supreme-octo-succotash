@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     database_url: Optional[str] = Field(None, env="DATABASE_URL")
 
     # Logging
-    log_level: str = Field("INFO", env="LOG_LEVEL")
+    log_level: str = Field("DEBUG", env="LOG_LEVEL")
 
     class Config:
         env_file = ".env"
