@@ -36,6 +36,33 @@ cleanup_processes() {
     fi
 }
 
+# Function to clean up hanging database connections
+cleanup_db_connections() {
+    echo
+    echo "Cleaning up hanging database connections..."
+
+    # Database credentials
+    DB_HOST="localhost"
+    DB_PORT="5432"
+    DB_NAME="supreme_octosuccotash_db"
+    DB_USER="app_user"
+    DB_PASS="app_password"
+
+    # Terminate all connections except the current one
+    TERMINATED=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c \
+        "SELECT count(*) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" 2>/dev/null)
+
+    if [ -n "$TERMINATED" ] && [ "$TERMINATED" -gt 0 ]; then
+        echo "Found $TERMINATED hanging connections, terminating them..."
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c \
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" \
+            > /dev/null 2>&1
+        echo "✓ Terminated $TERMINATED hanging database connections"
+    else
+        echo "✓ No hanging connections found"
+    fi
+}
+
 # Function to start the application
 start_application() {
     echo
@@ -70,4 +97,5 @@ trap cleanup_on_exit INT TERM
 
 # Main execution
 cleanup_processes
+cleanup_db_connections
 start_application

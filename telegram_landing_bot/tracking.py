@@ -9,11 +9,9 @@ import hashlib
 import json
 import os
 import sys
-# Add project root to sys.path for absolute imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import time
 import uuid
-from src.config import settings
+from config import settings
 from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
@@ -83,7 +81,6 @@ class TrackingManager:
         click_id = self._generate_click_id(user_id, timestamp)
 
         # Объединить параметры с ID для разрешения
-        from .config import settings
         api_params = additional_params.copy() if additional_params else {}
         if lp_id:
             api_params["lp_id"] = lp_id
@@ -122,10 +119,17 @@ class TrackingManager:
         try:
             logger.info("Generating tracking URL via Advertising Platform API...")
 
+            # Extract numeric campaign_id (remove "camp_" prefix if present)
+            campaign_id_raw = additional_params.get("campaign_id")
+            if isinstance(campaign_id_raw, str) and campaign_id_raw.startswith("camp_"):
+                campaign_id = int(campaign_id_raw.replace("camp_", ""))
+            else:
+                campaign_id = int(campaign_id_raw) if campaign_id_raw else None
+
             # Prepare payload for API call
             payload = {
                 "base_url": self.api_base_url,
-                "campaign_id": additional_params.get("campaign_id"),
+                "campaign_id": campaign_id,
                 "tracking_params": {
                     "click_id": click_id,
                     "source": source,

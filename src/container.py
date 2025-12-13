@@ -98,7 +98,7 @@ class Container:
                 try:
                     self._singletons['db_connection_pool'] = await loop.run_in_executor(None, lambda: AdvancedConnectionPool(
                         minconn=5,          # Увеличено для лучшей производительности
-                        maxconn=32,         # Оптимально для большинства приложений
+                        maxconn=100,        # Temporarily increased to debug connection leaks
                         host="localhost",
                         port=5432,
                         database="supreme_octosuccotash_db",
@@ -172,13 +172,8 @@ class Container:
             logger.error("🔌 DB connection pool not initialized. This should be called after async initialization.")
             raise RuntimeError("Database connection pool not initialized")
 
-        conn = None
-        try:
-            conn = pool.getconn()
-            return conn
-        finally:
-            if conn:
-                pool.putconn(conn)
+        conn = pool.getconn()
+        return conn
 
     def release_db_connection(self, conn):
         """Release a database connection back to the pool."""
