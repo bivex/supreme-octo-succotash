@@ -64,9 +64,13 @@ class Application:
         # Create main window with Clean Architecture
         main_window = MainWindow()
 
-        # Inject container into window for access to use cases
+        # Inject dependencies into window
         # This allows gradual migration to use cases in the future
         main_window.container = self.container
+        main_window.app_settings = self.settings
+
+        # Reload config now that settings are injected
+        main_window.load_config()
 
         main_window.show()
 

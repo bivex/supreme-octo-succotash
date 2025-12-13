@@ -8,8 +8,8 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget,
     QTableWidgetItem, QTextEdit, QComboBox, QSpinBox, QGroupBox,
-    QFormLayout, QMessageBox, QStatusBar, QDoubleSpinBox, 
-    QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea
+    QFormLayout, QMessageBox, QStatusBar, QDoubleSpinBox,
+    QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea, QDialog
 )
 from PyQt6.QtCore import QThread, pyqtSignal, QDateTime, Qt, QTimer, QDate
 from PyQt6.QtGui import QAction, QPalette, QColor, QFont
@@ -34,6 +34,10 @@ class MainWindow(QMainWindow):
         self.current_clicks = []
         self.current_conversions = []
         self.goal_templates = []
+
+        # Dependency injection (set by Application)
+        self.container = None
+        self.app_settings = None
 
         # Auto-refresh timer
         self.refresh_timer = QTimer()
@@ -1243,7 +1247,7 @@ class MainWindow(QMainWindow):
             self.conversions_campaign_select.addItem(campaign.get('name', ''), campaign.get('id', ''))
 
     def save_settings(self):
-        """Save settings."""
+        """Save settings to INI file."""
         base_url = self.settings_base_url.text().strip()
         bearer_token = self.settings_bearer_token.text().strip()
         api_key = self.settings_api_key.text().strip()
@@ -1271,7 +1275,24 @@ class MainWindow(QMainWindow):
                 "Please check your API key and try again.")
             return
 
-        QMessageBox.information(self, "Settings", "Settings saved successfully")
+        # Update app_settings and save to INI file
+        if self.app_settings:
+            self.app_settings.api_base_url = base_url
+            self.app_settings.bearer_token = bearer_token if bearer_token else None
+            self.app_settings.api_key = api_key if api_key else None
+
+            try:
+                self.app_settings.save_to_ini()
+                QMessageBox.information(self, "Settings Saved",
+                    f"Settings saved successfully to:\n{self.app_settings.INI_FILE_PATH}")
+                self.log_activity("✅ Settings saved to config.ini")
+            except Exception as e:
+                QMessageBox.critical(self, "Error Saving Settings",
+                    f"Failed to save settings:\n{str(e)}")
+                self.log_activity(f"❌ Error saving settings: {str(e)}")
+        else:
+            QMessageBox.warning(self, "Settings",
+                "Settings object not available. Please restart the application.")
 
     def show_about(self):
         """Show about dialog."""
@@ -1289,8 +1310,21 @@ class MainWindow(QMainWindow):
         self.activity_log.append(f"<span style='color: #7f8c8d;'>[{timestamp}]</span> {message}")
 
     def load_config(self):
-        """Load configuration from environment or config file."""
-        # This would load saved settings
+        """Load configuration from INI file via app_settings."""
+        # Load settings into UI fields if app_settings is available
+        if self.app_settings:
+            # Populate connection panel fields
+            self.base_url_edit.setText(self.app_settings.api_base_url)
+            if self.app_settings.bearer_token:
+                self.auth_token_edit.setText(self.app_settings.bearer_token)
+
+            # Populate settings tab fields
+            self.settings_base_url.setText(self.app_settings.api_base_url)
+            if self.app_settings.bearer_token:
+                self.settings_bearer_token.setText(self.app_settings.bearer_token)
+            if self.app_settings.api_key:
+                self.settings_api_key.setText(self.app_settings.api_key)
+
         self.log_activity("🚀 <b>Welcome to Advertising Platform Admin Panel!</b>")
         self.log_activity("ℹ️  Connect to the API to get started.")
 

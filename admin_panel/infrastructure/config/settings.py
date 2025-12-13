@@ -1,13 +1,18 @@
 """Application Configuration."""
 
 import os
-from dataclasses import dataclass
+import configparser
+from pathlib import Path
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 
 @dataclass
 class Settings:
-    """Application settings loaded from environment."""
+    """Application settings loaded from environment or INI file."""
+
+    # Default INI file location
+    INI_FILE_PATH = Path(__file__).parent.parent.parent / "config.ini"
 
     # API Configuration
     api_base_url: str = "http://127.0.0.1:5000/v1"
@@ -27,16 +32,109 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> 'Settings':
-        """Load settings from environment variables."""
+        """Load settings from INI file, then override with environment variables."""
+        # Try to load from INI file first
+        if cls.INI_FILE_PATH.exists():
+            settings = cls.load_from_ini()
+        else:
+            settings = cls()
+
+        # Override with environment variables if present
+        if os.getenv('API_BASE_URL'):
+            settings.api_base_url = os.getenv('API_BASE_URL')
+        if os.getenv('API_TIMEOUT'):
+            settings.api_timeout = float(os.getenv('API_TIMEOUT'))
+        if os.getenv('API_MAX_RETRIES'):
+            settings.api_max_retries = int(os.getenv('API_MAX_RETRIES'))
+        if os.getenv('API_BEARER_TOKEN'):
+            settings.bearer_token = os.getenv('API_BEARER_TOKEN')
+        if os.getenv('API_KEY'):
+            settings.api_key = os.getenv('API_KEY')
+        if os.getenv('AUTO_REFRESH'):
+            settings.auto_refresh_enabled = os.getenv('AUTO_REFRESH', 'true').lower() == 'true'
+        if os.getenv('LOG_LEVEL'):
+            settings.log_level = os.getenv('LOG_LEVEL')
+
+        return settings
+
+    @classmethod
+    def load_from_ini(cls, file_path: Optional[Path] = None) -> 'Settings':
+        """Load settings from INI file."""
+        ini_path = file_path or cls.INI_FILE_PATH
+
+        config = configparser.ConfigParser()
+        config.read(ini_path)
+
+        # Helper to safely get values
+        def get_str(section: str, key: str, default: str = None) -> Optional[str]:
+            try:
+                value = config.get(section, key)
+                return value if value else default
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                return default
+
+        def get_float(section: str, key: str, default: float) -> float:
+            try:
+                return config.getfloat(section, key)
+            except (configparser.NoSectionError, configparser.NoOptionError, ValueError):
+                return default
+
+        def get_int(section: str, key: str, default: int) -> int:
+            try:
+                return config.getint(section, key)
+            except (configparser.NoSectionError, configparser.NoOptionError, ValueError):
+                return default
+
+        def get_bool(section: str, key: str, default: bool) -> bool:
+            try:
+                return config.getboolean(section, key)
+            except (configparser.NoSectionError, configparser.NoOptionError, ValueError):
+                return default
+
         return cls(
-            api_base_url=os.getenv('API_BASE_URL', cls.api_base_url),
-            api_timeout=float(os.getenv('API_TIMEOUT', cls.api_timeout)),
-            api_max_retries=int(os.getenv('API_MAX_RETRIES', cls.api_max_retries)),
-            bearer_token=os.getenv('API_BEARER_TOKEN'),
-            api_key=os.getenv('API_KEY'),
-            auto_refresh_enabled=os.getenv('AUTO_REFRESH', 'true').lower() == 'true',
-            log_level=os.getenv('LOG_LEVEL', cls.log_level),
+            api_base_url=get_str('API', 'base_url', cls.api_base_url),
+            api_timeout=get_float('API', 'timeout', cls.api_timeout),
+            api_max_retries=get_int('API', 'max_retries', cls.api_max_retries),
+            bearer_token=get_str('API', 'bearer_token'),
+            api_key=get_str('API', 'api_key'),
+            auto_refresh_enabled=get_bool('UI', 'auto_refresh_enabled', cls.auto_refresh_enabled),
+            auto_refresh_interval=get_int('UI', 'auto_refresh_interval', cls.auto_refresh_interval),
+            log_level=get_str('Logging', 'log_level', cls.log_level),
         )
+
+    def save_to_ini(self, file_path: Optional[Path] = None) -> None:
+        """Save settings to INI file."""
+        ini_path = file_path or self.INI_FILE_PATH
+
+        config = configparser.ConfigParser()
+
+        # API section
+        config['API'] = {
+            'base_url': self.api_base_url,
+            'timeout': str(self.api_timeout),
+            'max_retries': str(self.api_max_retries),
+        }
+
+        # Add optional authentication values only if they exist
+        if self.bearer_token:
+            config['API']['bearer_token'] = self.bearer_token
+        if self.api_key:
+            config['API']['api_key'] = self.api_key
+
+        # UI section
+        config['UI'] = {
+            'auto_refresh_enabled': str(self.auto_refresh_enabled),
+            'auto_refresh_interval': str(self.auto_refresh_interval),
+        }
+
+        # Logging section
+        config['Logging'] = {
+            'log_level': self.log_level,
+        }
+
+        # Write to file
+        with open(ini_path, 'w') as configfile:
+            config.write(configfile)
 
     def update_from_ui(
         self,
