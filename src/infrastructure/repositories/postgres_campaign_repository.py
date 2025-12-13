@@ -1,6 +1,7 @@
 """PostgreSQL campaign repository implementation."""
 
 import psycopg2
+import psycopg2.extensions
 from typing import Optional, List, Dict
 from datetime import datetime
 import json
@@ -9,11 +10,29 @@ from ...domain.entities.campaign import Campaign, CampaignStatus
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.value_objects import CampaignId, Money, Url
 
+# Register adapter for CampaignId
+def adapt_campaign_id(campaign_id):
+    print(f"DEBUG: Adapting CampaignId {campaign_id} to {campaign_id.value}")
+    return psycopg2.extensions.adapt(campaign_id.value)
+
+psycopg2.extensions.register_adapter(CampaignId, adapt_campaign_id)
+
 
 class PostgresCampaignRepository(CampaignRepository):
     """PostgreSQL implementation of CampaignRepository."""
 
     def __init__(self, container):
+        self._container = container
+        self._connection = None
+        self._db_initialized = False
+
+    def _extract_value(self, obj):
+        """Extract string value from value objects or return the object if it's already a basic type."""
+        if hasattr(obj, 'value'):
+            return obj.value
+        return obj
+
+    def _get_connection(self):
         self._container = container
         self._connection = None
         self._db_initialized = False

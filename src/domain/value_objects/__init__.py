@@ -2,6 +2,13 @@
 
 # Identifiers
 from .identifiers import CampaignId, ClickId, ImpressionId
+import psycopg2.extensions
+
+# Register adapter for CampaignId
+def adapt_campaign_id(campaign_id):
+    return psycopg2.extensions.adapt(campaign_id.value)
+
+psycopg2.extensions.register_adapter(CampaignId, adapt_campaign_id)
 
 # Financial
 from .financial import Money

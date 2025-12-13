@@ -143,7 +143,11 @@ class TrackClickHandler:
 
     async def _create_click_from_command(self, command: TrackClickCommand) -> Click:
         """Create Click entity from command, enriched with PreClickData."""
-        click_id = ClickId.from_string(command.click_id_param)
+        if command.click_id_param:
+            click_id = ClickId.from_string(command.click_id_param)
+        else:
+            logger.warning("Click ID parameter is missing, generating a new one.")
+            click_id = ClickId.generate()
 
         # Retrieve all stored tracking parameters using the click_id
         pre_click_data = await self._pre_click_data_repository.find_by_click_id(click_id)
@@ -153,7 +157,7 @@ class TrackClickHandler:
             # Fallback to creating a click with only data from the command if pre_click_data is not found
             click_data = {
                 'id': click_id,
-                'campaign_id': command.campaign_id,
+                'campaign_id': CampaignId(command.campaign_id),
                 'ip_address': str(command.ip_address) if command.ip_address is not None else '127.0.0.1',
                 'user_agent': command.user_agent,
                 'referrer': command.referrer,
@@ -181,7 +185,7 @@ class TrackClickHandler:
             tracking_params = pre_click_data.tracking_params
             click_data = {
                 'id': click_id,
-                'campaign_id': pre_click_data.campaign_id.value,
+                'campaign_id': pre_click_data.campaign_id,
                 'ip_address': str(command.ip_address) if command.ip_address is not None else '127.0.0.1',
                 'user_agent': command.user_agent,
                 'referrer': command.referrer,
@@ -190,6 +194,7 @@ class TrackClickHandler:
                 'sub3': tracking_params.get('sub3', command.sub3),
                 'sub4': tracking_params.get('sub4', command.sub4),
                 'sub5': tracking_params.get('sub5', command.sub5),
+                'click_id_param': command.click_id_param,
                 'affiliate_sub': tracking_params.get('aff_sub', command.affiliate_sub),
                 'affiliate_sub2': tracking_params.get('aff_sub2', command.affiliate_sub2),
                 'affiliate_sub3': tracking_params.get('aff_sub3', command.affiliate_sub3),

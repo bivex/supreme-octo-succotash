@@ -28,7 +28,8 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         # Ensure pool is initialized in the async context, then get sync connection in executor
         await self._container.get_db_connection_pool()
         pool = self._container.get_db_connection_pool_sync()
-        return await loop.run_in_executor(None, pool.getconn)
+        conn = await loop.run_in_executor(None, pool.getconn)
+        return conn
 
     async def _initialize_db(self) -> None:
         """Initialize database schema (runs once in background)."""

@@ -26,6 +26,19 @@ from typing import Optional
 
 from loguru import logger
 
+# Register psycopg2 adapters for value objects
+try:
+    import psycopg2.extensions
+    from src.domain.value_objects import CampaignId
+
+    def adapt_campaign_id(campaign_id):
+        return psycopg2.extensions.adapt(campaign_id.value)
+
+    psycopg2.extensions.register_adapter(CampaignId, adapt_campaign_id)
+    logger.info("Registered psycopg2 adapter for CampaignId")
+except ImportError:
+    logger.warning("psycopg2 not available for adapter registration")
+
 from src.config.settings import load_settings
 settings = load_settings()
 from src.container import container
