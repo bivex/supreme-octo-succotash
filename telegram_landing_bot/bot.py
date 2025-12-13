@@ -52,11 +52,27 @@ class LandingBot:
         self.dp.include_router(router)
 
         # Configure logging
+        # Remove default handlers
+        logger.remove()
+
+        # Add console handler for all levels
+        logger.add(
+            sys.stderr,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>",
+            level=settings.log_level.upper(),
+            colorize=True,
+            backtrace=True,
+            diagnose=True
+        )
+
+        # Add file handler
         logger.add(
             "logs/bot.log",
             rotation="1 day",
             retention="7 days",
-            level=settings.log_level
+            level=settings.log_level.upper(),
+            backtrace=True,
+            diagnose=True
         )
 
         logger.info("Bot setup completed")

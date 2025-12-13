@@ -41,7 +41,14 @@ async def create_app() -> socketify.App:
     except ImportError:
         pass
 
-    logger.info("🏗️ START: Creating Socketify application")
+    logger.info("🚀 ════════════════════════════════════════════════════════════════════════════════════════════════")
+    logger.info("🏗️  APPLICATION INITIALIZATION STARTED")
+    logger.info("🚀 ════════════════════════════════════════════════════════════════════════════════════════════════")
+    logger.info("🌟 Supreme Octo Succotash - High Performance Affiliate API Server")
+    logger.info(f"⚙️  Environment: {settings.environment}")
+    logger.info(f"🔧 Log Level: {settings.logging.level}")
+    logger.info(f"🌐 API Port: {settings.api.port}")
+    logger.info("🚀 ════════════════════════════════════════════════════════════════════════════════════════════════")
     app_start = time.time()
 
     # Create app with basic configuration
@@ -64,7 +71,11 @@ async def create_app() -> socketify.App:
     # _initialize_postgres_upholder(app) # Removed, will be called in background tasks
 
     app_time = time.time() - app_start
-    logger.info(f"🏗️ FINISH: Socketify application created in {app_time:.4f} seconds")
+    logger.info("🚀 ════════════════════════════════════════════════════════════════════════════════════════════════")
+    logger.info("✅ APPLICATION CREATION COMPLETED")
+    logger.info(f"⏱️  Total initialization time: {app_time:.4f} seconds")
+    logger.info("🎯 Application ready for high-performance operation!")
+    logger.info("🚀 ════════════════════════════════════════════════════════════════════════════════════════════════")
     return app
 
 
@@ -84,13 +95,14 @@ def _configure_logging(app: socketify.App) -> None:
     except ImportError:
         pass
 
-    # Configure loguru with detailed format including file, line, function
-    log_level = "DEBUG"
+    # Configure loguru with beautiful format including file, line, function
+    log_level = settings.logging.level.upper()  # Use settings level and ensure uppercase
     log_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
-        "<level>{message}</level>"
+        "┌─ <green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> ─┐\n"
+        "│ <level>{level: <8}</level> │ "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>\n"
+        "│ <level>{message}</level>\n"
+        "└─────────────────────────────────────────────────────────────┘"
     )
 
     # Remove all default handlers
@@ -185,7 +197,9 @@ def _setup_global_exception_handler() -> None:
 
 async def _register_routes(app: socketify.App) -> None:
     """Register application routes."""
-    logger.info("🔌 Registering routes...")
+    logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+    logger.info("🛣️  ROUTE REGISTRATION STARTED")
+    logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
     start = time.time()
 
     try:
@@ -216,23 +230,31 @@ async def _register_routes(app: socketify.App) -> None:
     ]
 
     try:
-        for name, getter in steps:
-            step_start = time.time()
-            logger.info(f"🔌 Route step START: {name}")
-            debug_async_trace(f"Before route step: {name}")
-            routes = await getter()
-            register_result = routes.register(app)
-            if inspect.isawaitable(register_result):
-                await register_result
-            step_duration = time.time() - step_start
-            logger.info(f"✅ Route step DONE: {name} in {step_duration:.3f}s")
-            debug_async_trace(f"After route step: {name}")
+            for i, (name, getter) in enumerate(steps, 1):
+                step_start = time.time()
+                logger.info(f"🔌 [{i:2d}/{len(steps)}] Processing route module: {name}")
+                debug_async_trace(f"Before route step: {name}")
+                routes = await getter()
+                register_result = routes.register(app)
+                if inspect.isawaitable(register_result):
+                    await register_result
+                step_duration = time.time() - step_start
+                logger.info(f"✅ [{i:2d}/{len(steps)}] ✓ {name} registered in {step_duration:.3f}s")
+                debug_async_trace(f"After route step: {name}")
 
-        duration = time.time() - start
-        logger.info(f"✅ Routes registered in {duration:.3f}s")
+            duration = time.time() - start
+            logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+            logger.info("✅ ALL ROUTES REGISTERED SUCCESSFULLY")
+            logger.info(f"⏱️  Total route registration time: {duration:.3f}s")
+            logger.info(f"📊 Registered {len(steps)} route modules")
+            logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
     except Exception as e:
         duration = time.time() - start
-        logger.exception(f"❌ Route registration failed after {duration:.3f}s")
+        logger.error("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.error("❌ ROUTE REGISTRATION FAILED")
+        logger.error(f"⏱️  Failed after {duration:.3f}s")
+        logger.error("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.exception(f"❌ Route registration error: {e}")
         try:
             snapshot = save_debug_snapshot(f"routes_error_{name}")
             if snapshot:
@@ -303,7 +325,9 @@ def _add_health_endpoints(app: socketify.App) -> None:
 async def _initialize_postgres_upholder(app: socketify.App) -> None: # Made async
     """Initialize PostgreSQL Auto Upholder system."""
     try:
-        logger.info("🔧 Initializing PostgreSQL Auto Upholder...")
+        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.info("🗃️  POSTGRESQL AUTO UPHOLDER INITIALIZATION")
+        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
 
         # Get upholder instance from container
         upholder = await container.get_postgres_upholder() # Await here
@@ -320,6 +344,7 @@ async def _initialize_postgres_upholder(app: socketify.App) -> None: # Made asyn
         # Start upholder monitoring
         upholder.start()
         logger.info("✅ PostgreSQL Auto Upholder started successfully")
+        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
 
         # Initialize vectorized cache monitor if performance mode is enabled
         import os
