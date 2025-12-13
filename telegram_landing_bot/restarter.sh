@@ -124,6 +124,37 @@ if [ ! -f ~/.ssh/id_rsa ]; then
     print_status "SSH key generated"
 fi
 
+# Function to kill all interfering bot instances
+kill_all_bots() {
+    print_info "Checking for interfering bot instances..."
+
+    # Find all python3 bot.py processes
+    local PIDS=$(ps aux | grep "python3 bot.py" | grep -v grep | awk '{print $2}')
+
+    if [ -n "$PIDS" ]; then
+        print_warning "Found running bot instances, killing them..."
+        for pid in $PIDS; do
+            echo "  Killing bot PID: $pid"
+            kill -9 "$pid" 2>/dev/null || true
+        done
+        print_status "All interfering bots killed"
+        sleep 1
+    else
+        print_status "No interfering bots found"
+    fi
+
+    # Also kill any orphaned SSH tunnels to localhost.run
+    local TUNNEL_PIDS=$(ps aux | grep "ssh.*localhost.run" | grep -v grep | awk '{print $2}')
+    if [ -n "$TUNNEL_PIDS" ]; then
+        print_warning "Found orphaned SSH tunnels, killing them..."
+        for pid in $TUNNEL_PIDS; do
+            echo "  Killing tunnel PID: $pid"
+            kill -9 "$pid" 2>/dev/null || true
+        done
+        print_status "All orphaned tunnels killed"
+    fi
+}
+
 # Function to cleanup on exit
 cleanup() {
     print_info "Cleaning up..."
@@ -139,6 +170,9 @@ cleanup() {
 
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
+
+# Kill any interfering instances before starting
+kill_all_bots
 
 print_info "Setting up localhost.run tunnel..."
 

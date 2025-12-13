@@ -12,6 +12,26 @@ echo
 
 PID_FILE="main_clean.pid"
 
+# Function to kill all interfering server instances
+kill_all_servers() {
+    echo "Checking for interfering server instances..."
+
+    # Find all python3 main_clean.py processes
+    PIDS=$(ps aux | grep "python3 main_clean.py" | grep -v grep | awk '{print $2}')
+
+    if [ -n "$PIDS" ]; then
+        echo "Found running server instances, killing them..."
+        for pid in $PIDS; do
+            echo "  Killing PID: $pid"
+            kill -9 "$pid" 2>/dev/null || true
+        done
+        echo "✓ All interfering servers killed"
+        sleep 1
+    else
+        echo "✓ No interfering servers found"
+    fi
+}
+
 # Function to clean up processes
 cleanup_processes() {
     if [ -f "$PID_FILE" ]; then
@@ -96,6 +116,7 @@ cleanup_on_exit() {
 trap cleanup_on_exit INT TERM
 
 # Main execution
+kill_all_servers
 cleanup_processes
 cleanup_db_connections
 start_application
