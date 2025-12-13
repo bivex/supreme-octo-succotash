@@ -13,11 +13,24 @@ from decimal import Decimal
 from .config.settings import settings
 from .container import container
 
-# Custom JSON encoder for Decimal objects
+# Custom JSON encoder for Decimal objects, Money objects, and datetime objects
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
             return float(obj)
+        # Handle Money objects
+        try:
+            from .domain.value_objects.financial.money import Money
+            if isinstance(obj, Money):
+                return {
+                    "amount": float(obj.amount),
+                    "currency": obj.currency
+                }
+        except ImportError:
+            pass
+        # Handle datetime objects
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         return super().default(obj)
 
 # Monkey patch json.dumps to handle Decimal objects

@@ -1,0 +1,48 @@
+2025-12-13 19:30:48.451 | INFO     | __main__:setup_bot:78 - Bot setup completed
+2025-12-13 19:30:48.452 | INFO     | __main__:setup_webhook_app:126 - Webhook app setup completed with path: /webhook
+2025-12-13 19:30:48.670 | INFO     | __main__:set_webhook:134 - Webhook set to: https://b2db98a12708a2.lhr.life/webhook
+2025-12-13 19:30:48.670 | INFO     | __main__:main:203 - Starting webhook server on port 3000
+2025-12-13 19:30:50.394 | INFO     | handlers:cmd_start:34 - User 6820152910 (aaa_4441) started the bot
+2025-12-13 19:30:51.249 | INFO     | tracking:_generate_short_tracking_url:120 - Generating tracking URL via Advertising Platform API...
+2025-12-13 19:30:51.250 | INFO     | tracking:_generate_short_tracking_url:161 - Calling API: http://localhost:5000/v1/clicks/generate with payload: {
+  "base_url": "http://localhost:5000/v1",
+  "campaign_id": 9061,
+  "tracking_params": {
+    "click_id": "dc3789774e5299cf",
+    "source": "telegram_bot_visit",
+    "sub1": "telegram_bot_visit",
+    "sub2": "callback",
+    "sub3": "direct_visit",
+    "sub4": "6820152910",
+    "sub5": "offer_page",
+    "lp_id": 42,
+    "offer_id": 24,
+    "ts_id": 1,
+    "aff_sub": "test_aff_sub_1",
+    "aff_sub2": "test_aff_sub_2",
+    "aff_sub3": "test_aff_sub_3",
+    "aff_sub4": "test_aff_sub_4",
+    "aff_sub5": "test_aff_sub_5",
+    "user_id": 6820152910,
+    "bot_source": "telegram",
+    "generated_at": 1765647051
+  }
+}
+2025-12-13 19:30:51.276 | INFO     | tracking:_generate_short_tracking_url:164 - API response status: 200
+2025-12-13 19:30:51.276 | INFO     | tracking:_generate_short_tracking_url:171 - Successfully generated short tracking URL: https://gladsomely-unvitriolized-trudie.ngrok-free.dev/v1/click?cid=camp_9061&click_id=ac82eb30-3727-48a0-9035-a2a163d446f9
+2025-12-13 19:30:51.277 | INFO     | tracking:generate_tracking_link:106 - Generated tracking link for user 6820152910: dc3789774e5299cf
+2025-12-13 19:30:51.277 | INFO     | handlers:callback_get_offer:134 - Generated tracking link for user 6820152910: dc3789774e5299cf
+2025-12-13 19:30:51.351 | INFO     | tracking:track_event:206 - Tracking event via Advertising Platform API: click for click_id dc3789774e5299cf
+2025-12-13 19:30:51.351 | INFO     | tracking:_track_event_locally:264 - Sending event to API: http://localhost:5000/events/track
+2025-12-13 19:30:51.351 | INFO     | tracking:_track_event_locally:265 - Event payload: {'click_id': 'dc3789774e5299cf', 'event_type': 'click', 'event_name': 'click', 'campaign_id': 'camp_9061', 'url': 'http://localhost:5000/landing', 'timestamp': 1765647051, 'properties': {'source': 'telegram_bot'}}
+2025-12-13 19:30:51.355 | INFO     | tracking:_track_event_locally:268 - Event tracking response status: 200
+2025-12-13 19:30:51.355 | INFO     | tracking:_track_event_locally:270 - Event tracking response: {"status": "success", "event_id": "bd05e7dd-c8a2-4194-8339-e1071f5f1621", "categories": ["interaction"], "fraud_detected": false}
+2025-12-13 19:30:51.355 | INFO     | tracking:_track_event_locally:275 - Event tracked successfully: click for click_id dc3789774e5299cf
+2025-12-13 20:23:34.635 | INFO     | __main__:handle_shutdown:239 - Received signal 15. Shutting down...
+2025-12-13 20:23:34.974 | INFO     | __main__:delete_webhook:142 - Webhook deleted
+2025-12-13 20:23:34.974 | INFO     | tracking:close_tracking:526 - Tracking manager closed
+2025-12-13 20:23:35.225 | INFO     | __main__:stop_bot:163 - Bot stopped
+2025-12-13 20:23:40.810 | INFO     | __main__:setup_bot:78 - Bot setup completed
+2025-12-13 20:23:40.810 | INFO     | __main__:setup_webhook_app:126 - Webhook app setup completed with path: /webhook
+2025-12-13 20:23:41.029 | INFO     | __main__:set_webhook:134 - Webhook set to: https://f96ae014900186.lhr.life/webhook
+2025-12-13 20:23:41.029 | INFO     | __main__:main:203 - Starting webhook server on port 3000

@@ -8,6 +8,13 @@ from datetime import datetime
 from ...domain.entities.conversion import Conversion
 from ...domain.repositories.conversion_repository import ConversionRepository
 
+# Import custom JSON encoder to handle Money and datetime objects
+try:
+    from ...main import CustomJSONEncoder
+    _custom_encoder = CustomJSONEncoder()
+except ImportError:
+    _custom_encoder = None
+
 
 class PostgresConversionRepository(ConversionRepository):
     """PostgreSQL implementation of ConversionRepository."""
@@ -148,7 +155,7 @@ class PostgresConversionRepository(ConversionRepository):
             conversion.id, conversion.click_id, str(conversion.campaign_id) if conversion.campaign_id else None,
             conversion.conversion_type, conversion_value,
             currency, status, external_id,
-            json.dumps(metadata), conversion.created_at, conversion.updated_at
+            json.dumps(metadata, cls=CustomJSONEncoder), conversion.created_at, conversion.updated_at
         ))
 
         conn.commit()
