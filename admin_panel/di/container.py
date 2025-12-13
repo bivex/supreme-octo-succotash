@@ -2,15 +2,31 @@
 
 from typing import Optional
 
-from infrastructure.config.settings import Settings
-from infrastructure.api.api_client import AdvertisingAPIClient
-from infrastructure.repositories.api_campaign_repository import ApiCampaignRepository
-from application.use_cases.campaign import (
+from ..infrastructure.config.settings import Settings
+from ..infrastructure.api.api_client import AdvertisingAPIClient
+from ..infrastructure.repositories.api_campaign_repository import ApiCampaignRepository
+from ..infrastructure.repositories.api_offer_repository import ApiOfferRepository
+from ..infrastructure.repositories.api_landing_page_repository import ApiLandingPageRepository
+from ..application.use_cases.campaign import (
     ListCampaignsUseCase,
     CreateCampaignUseCase,
     DeleteCampaignUseCase,
     PauseCampaignUseCase,
     ResumeCampaignUseCase
+)
+from ..application.use_cases.offer import (
+    ListOffersUseCase,
+    CreateOfferUseCase,
+    GetOfferUseCase,
+    UpdateOfferUseCase,
+    DeleteOfferUseCase
+)
+from ..application.use_cases.landing_page import (
+    ListLandingPagesUseCase,
+    CreateLandingPageUseCase,
+    GetLandingPageUseCase,
+    UpdateLandingPageUseCase,
+    DeleteLandingPageUseCase
 )
 
 
@@ -30,6 +46,8 @@ class Container:
         # Infrastructure (lazy initialization)
         self._api_client: Optional[AdvertisingAPIClient] = None
         self._campaign_repository: Optional[ApiCampaignRepository] = None
+        self._offer_repository: Optional[ApiOfferRepository] = None
+        self._landing_page_repository: Optional[ApiLandingPageRepository] = None
 
         # Use cases (lazy initialization)
         self._list_campaigns_use_case: Optional[ListCampaignsUseCase] = None
@@ -37,6 +55,16 @@ class Container:
         self._delete_campaign_use_case: Optional[DeleteCampaignUseCase] = None
         self._pause_campaign_use_case: Optional[PauseCampaignUseCase] = None
         self._resume_campaign_use_case: Optional[ResumeCampaignUseCase] = None
+        self._list_offers_use_case: Optional[ListOffersUseCase] = None
+        self._create_offer_use_case: Optional[CreateOfferUseCase] = None
+        self._get_offer_use_case: Optional[GetOfferUseCase] = None
+        self._update_offer_use_case: Optional[UpdateOfferUseCase] = None
+        self._delete_offer_use_case: Optional[DeleteOfferUseCase] = None
+        self._list_landing_pages_use_case: Optional[ListLandingPagesUseCase] = None
+        self._create_landing_page_use_case: Optional[CreateLandingPageUseCase] = None
+        self._get_landing_page_use_case: Optional[GetLandingPageUseCase] = None
+        self._update_landing_page_use_case: Optional[UpdateLandingPageUseCase] = None
+        self._delete_landing_page_use_case: Optional[DeleteLandingPageUseCase] = None
 
     # Settings
     @property
@@ -74,7 +102,9 @@ class Container:
 
         # Create new client
         self._api_client = None
-        self._campaign_repository = None  # Reset repository too
+        self._campaign_repository = None  # Reset repositories
+        self._offer_repository = None
+        self._landing_page_repository = None
 
         # Force recreation
         _ = self.api_client
@@ -86,6 +116,20 @@ class Container:
         if self._campaign_repository is None:
             self._campaign_repository = ApiCampaignRepository(self.api_client)
         return self._campaign_repository
+
+    @property
+    def offer_repository(self) -> ApiOfferRepository:
+        """Get offer repository (singleton)."""
+        if self._offer_repository is None:
+            self._offer_repository = ApiOfferRepository(self.api_client)
+        return self._offer_repository
+
+    @property
+    def landing_page_repository(self) -> ApiLandingPageRepository:
+        """Get landing page repository (singleton)."""
+        if self._landing_page_repository is None:
+            self._landing_page_repository = ApiLandingPageRepository(self.api_client)
+        return self._landing_page_repository
 
     # Use Cases - Campaigns
     @property
@@ -132,6 +176,98 @@ class Container:
                 self.campaign_repository
             )
         return self._resume_campaign_use_case
+
+    # Use Cases - Offers
+    @property
+    def list_offers_use_case(self) -> ListOffersUseCase:
+        """Get list offers use case."""
+        if self._list_offers_use_case is None:
+            self._list_offers_use_case = ListOffersUseCase(
+                self.offer_repository
+            )
+        return self._list_offers_use_case
+
+    @property
+    def create_offer_use_case(self) -> CreateOfferUseCase:
+        """Get create offer use case."""
+        if self._create_offer_use_case is None:
+            self._create_offer_use_case = CreateOfferUseCase(
+                self.offer_repository
+            )
+        return self._create_offer_use_case
+
+    @property
+    def get_offer_use_case(self) -> GetOfferUseCase:
+        """Get get offer use case."""
+        if self._get_offer_use_case is None:
+            self._get_offer_use_case = GetOfferUseCase(
+                self.offer_repository
+            )
+        return self._get_offer_use_case
+
+    @property
+    def update_offer_use_case(self) -> UpdateOfferUseCase:
+        """Get update offer use case."""
+        if self._update_offer_use_case is None:
+            self._update_offer_use_case = UpdateOfferUseCase(
+                self.offer_repository
+            )
+        return self._update_offer_use_case
+
+    @property
+    def delete_offer_use_case(self) -> DeleteOfferUseCase:
+        """Get delete offer use case."""
+        if self._delete_offer_use_case is None:
+            self._delete_offer_use_case = DeleteOfferUseCase(
+                self.offer_repository
+            )
+        return self._delete_offer_use_case
+
+    # Use Cases - Landing Pages
+    @property
+    def list_landing_pages_use_case(self) -> ListLandingPagesUseCase:
+        """Get list landing pages use case."""
+        if self._list_landing_pages_use_case is None:
+            self._list_landing_pages_use_case = ListLandingPagesUseCase(
+                self.landing_page_repository
+            )
+        return self._list_landing_pages_use_case
+
+    @property
+    def create_landing_page_use_case(self) -> CreateLandingPageUseCase:
+        """Get create landing page use case."""
+        if self._create_landing_page_use_case is None:
+            self._create_landing_page_use_case = CreateLandingPageUseCase(
+                self.landing_page_repository
+            )
+        return self._create_landing_page_use_case
+
+    @property
+    def get_landing_page_use_case(self) -> GetLandingPageUseCase:
+        """Get get landing page use case."""
+        if self._get_landing_page_use_case is None:
+            self._get_landing_page_use_case = GetLandingPageUseCase(
+                self.landing_page_repository
+            )
+        return self._get_landing_page_use_case
+
+    @property
+    def update_landing_page_use_case(self) -> UpdateLandingPageUseCase:
+        """Get update landing page use case."""
+        if self._update_landing_page_use_case is None:
+            self._update_landing_page_use_case = UpdateLandingPageUseCase(
+                self.landing_page_repository
+            )
+        return self._update_landing_page_use_case
+
+    @property
+    def delete_landing_page_use_case(self) -> DeleteLandingPageUseCase:
+        """Get delete landing page use case."""
+        if self._delete_landing_page_use_case is None:
+            self._delete_landing_page_use_case = DeleteLandingPageUseCase(
+                self.landing_page_repository
+            )
+        return self._delete_landing_page_use_case
 
     def close(self) -> None:
         """Close all resources."""

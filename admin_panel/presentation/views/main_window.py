@@ -19,8 +19,8 @@ from advertising_platform_sdk import AdvertisingPlatformClient
 from advertising_platform_sdk.exceptions import *
 
 # Import presentation components
-from presentation.workers import APIWorker
-from presentation.dialogs import CampaignDialog, GoalDialog, GenerateClickDialog
+from ..workers import APIWorker
+from ..dialogs import CampaignDialog, GoalDialog, GenerateClickDialog, OfferDialog, LandingPageDialog
 
 
 class MainWindow(QMainWindow):
@@ -30,6 +30,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.client = None
         self.current_campaigns = []
+        self.current_offers = []
+        self.current_landing_pages = []
         self.current_goals = []
         self.current_clicks = []
         self.current_conversions = []
@@ -74,6 +76,8 @@ class MainWindow(QMainWindow):
         # Create tabs
         self.create_dashboard_tab()
         self.create_campaigns_tab()
+        self.create_offers_tab()
+        self.create_landing_pages_tab()
         self.create_goals_tab()
         self.create_conversions_tab()
         self.create_analytics_tab()
@@ -242,6 +246,72 @@ class MainWindow(QMainWindow):
         self.campaign_status_filter.currentTextChanged.connect(self.filter_campaigns)
 
         self.tab_widget.addTab(campaigns_widget, "Campaigns")
+
+    def create_offers_tab(self):
+        """Create the offers management tab."""
+        offers_widget = QWidget()
+        layout = QVBoxLayout(offers_widget)
+
+        # Controls
+        controls_layout = QHBoxLayout()
+
+        self.offers_campaign_filter = QComboBox()
+        self.offers_campaign_filter.addItem("All Campaigns", None)
+        controls_layout.addWidget(self.offers_campaign_filter)
+
+        refresh_btn = QPushButton("Refresh")
+        refresh_btn.clicked.connect(self.refresh_offers)
+        controls_layout.addWidget(refresh_btn)
+
+        create_btn = QPushButton("Create Offer")
+        create_btn.clicked.connect(self.show_create_offer_dialog)
+        controls_layout.addWidget(create_btn)
+
+        layout.addLayout(controls_layout)
+
+        # Offers table
+        self.offers_table = QTableWidget()
+        self.offers_table.setColumnCount(8)
+        self.offers_table.setHorizontalHeaderLabels([
+            "ID", "Name", "Campaign", "Type", "Payout", "CR", "Profit", "Actions"
+        ])
+        self.offers_table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.offers_table)
+
+        self.tab_widget.addTab(offers_widget, "Offers")
+
+    def create_landing_pages_tab(self):
+        """Create the landing pages management tab."""
+        landing_pages_widget = QWidget()
+        layout = QVBoxLayout(landing_pages_widget)
+
+        # Controls
+        controls_layout = QHBoxLayout()
+
+        self.landing_pages_campaign_filter = QComboBox()
+        self.landing_pages_campaign_filter.addItem("All Campaigns", None)
+        controls_layout.addWidget(self.landing_pages_campaign_filter)
+
+        refresh_btn = QPushButton("Refresh")
+        refresh_btn.clicked.connect(self.refresh_landing_pages)
+        controls_layout.addWidget(refresh_btn)
+
+        create_btn = QPushButton("Create Landing Page")
+        create_btn.clicked.connect(self.show_create_landing_page_dialog)
+        controls_layout.addWidget(create_btn)
+
+        layout.addLayout(controls_layout)
+
+        # Landing pages table
+        self.landing_pages_table = QTableWidget()
+        self.landing_pages_table.setColumnCount(7)
+        self.landing_pages_table.setHorizontalHeaderLabels([
+            "ID", "Name", "Campaign", "Type", "CTR", "CR", "Actions"
+        ])
+        self.landing_pages_table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.landing_pages_table)
+
+        self.tab_widget.addTab(landing_pages_widget, "Landing Pages")
 
     def create_goals_tab(self):
         """Create the goals management tab."""
@@ -943,6 +1013,312 @@ class MainWindow(QMainWindow):
             worker.error.connect(on_error)
             worker.start()
 
+    def refresh_offers(self):
+        """Refresh offers list."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        self.status_bar.showMessage("Loading offers...")
+
+        def on_success(result):
+            self.current_offers = result.get('data', [])
+            self.populate_offers_table()
+            self.status_bar.showMessage("Offers loaded successfully")
+
+        def on_error(error_msg):
+            self.status_bar.showMessage(f"Failed to load offers: {error_msg}")
+            QMessageBox.warning(self, "Error", f"Failed to load offers: {error_msg}")
+
+        # TODO: Replace with actual API call when endpoint is available
+        # worker = self.create_worker(self.client.get_offers)
+        # For now, show empty list
+        self.current_offers = []
+        self.populate_offers_table()
+        self.status_bar.showMessage("Offers loaded (placeholder)")
+
+    def populate_offers_table(self):
+        """Populate the offers table."""
+        self.offers_table.setRowCount(len(self.current_offers))
+
+        for row, offer in enumerate(self.current_offers):
+            self.offers_table.setItem(row, 0, QTableWidgetItem(offer.get('id', '')))
+            self.offers_table.setItem(row, 1, QTableWidgetItem(offer.get('name', '')))
+
+            # Campaign name lookup
+            campaign_name = "Unknown"
+            for campaign in self.current_campaigns:
+                if campaign.get('id') == offer.get('campaign_id'):
+                    campaign_name = campaign.get('name', 'Unknown')
+                    break
+            self.offers_table.setItem(row, 2, QTableWidgetItem(campaign_name))
+
+            self.offers_table.setItem(row, 3, QTableWidgetItem(offer.get('offer_type', '')))
+
+            # Payout
+            payout = offer.get('payout', {})
+            payout_text = f"{payout.get('amount', 0)} {payout.get('currency', '')}"
+            self.offers_table.setItem(row, 4, QTableWidgetItem(payout_text))
+
+            # Conversion rate
+            cr = offer.get('cr', 0)
+            self.offers_table.setItem(row, 5, QTableWidgetItem(f"{cr:.1%}"))
+
+            # Profit
+            profit = offer.get('profit', {})
+            profit_text = f"{profit.get('amount', 0)} {profit.get('currency', '')}"
+            self.offers_table.setItem(row, 6, QTableWidgetItem(profit_text))
+
+            # Actions
+            actions_widget = QWidget()
+            actions_layout = QHBoxLayout(actions_widget)
+            actions_layout.setContentsMargins(0, 0, 0, 0)
+
+            edit_btn = QPushButton("Edit")
+            edit_btn.clicked.connect(lambda checked, o=offer: self.show_edit_offer_dialog(o))
+            actions_layout.addWidget(edit_btn)
+
+            delete_btn = QPushButton("Delete")
+            delete_btn.setObjectName("dangerButton")
+            delete_btn.clicked.connect(lambda checked, o=offer: self.delete_offer(o))
+            actions_layout.addWidget(delete_btn)
+
+            self.offers_table.setCellWidget(row, 7, actions_widget)
+
+    def show_create_offer_dialog(self):
+        """Show dialog to create a new offer."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        if not self.current_campaigns:
+            QMessageBox.warning(self, "Error", "Please load campaigns first")
+            return
+
+        dialog = OfferDialog(self, campaigns=self.current_campaigns)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            offer_data = dialog.get_offer_data()
+
+            self.status_bar.showMessage("Creating offer...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Offer created successfully")
+                self.log_activity(f"Created offer: {offer_data['name']}")
+                self.refresh_offers()
+                QMessageBox.information(self, "Success", "Offer created successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to create offer")
+                QMessageBox.warning(self, "Error", f"Failed to create offer: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.create_offer, offer_data)
+            # For now, just show success
+            on_success({})
+
+    def show_edit_offer_dialog(self, offer):
+        """Show dialog to edit an existing offer."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        dialog = OfferDialog(self, offer=offer, campaigns=self.current_campaigns)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            offer_data = dialog.get_offer_data()
+
+            self.status_bar.showMessage("Updating offer...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Offer updated successfully")
+                self.log_activity(f"Updated offer: {offer_data['name']}")
+                self.refresh_offers()
+                QMessageBox.information(self, "Success", "Offer updated successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to update offer")
+                QMessageBox.warning(self, "Error", f"Failed to update offer: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.update_offer, offer['id'], offer_data)
+            # For now, just show success
+            on_success({})
+
+    def delete_offer(self, offer):
+        """Delete an offer."""
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete offer '{offer.get('name', 'Unknown')}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.status_bar.showMessage("Deleting offer...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Offer deleted successfully")
+                self.log_activity(f"Deleted offer: {offer.get('name', 'Unknown')}")
+                self.refresh_offers()
+                QMessageBox.information(self, "Success", "Offer deleted successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to delete offer")
+                QMessageBox.warning(self, "Error", f"Failed to delete offer: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.delete_offer, offer['id'])
+            # For now, just show success
+            on_success({})
+
+    def refresh_landing_pages(self):
+        """Refresh landing pages list."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        self.status_bar.showMessage("Loading landing pages...")
+
+        def on_success(result):
+            self.current_landing_pages = result.get('data', [])
+            self.populate_landing_pages_table()
+            self.status_bar.showMessage("Landing pages loaded successfully")
+
+        def on_error(error_msg):
+            self.status_bar.showMessage(f"Failed to load landing pages: {error_msg}")
+            QMessageBox.warning(self, "Error", f"Failed to load landing pages: {error_msg}")
+
+        # TODO: Replace with actual API call when endpoint is available
+        # worker = self.create_worker(self.client.get_landing_pages)
+        # For now, show empty list
+        self.current_landing_pages = []
+        self.populate_landing_pages_table()
+        self.status_bar.showMessage("Landing pages loaded (placeholder)")
+
+    def populate_landing_pages_table(self):
+        """Populate the landing pages table."""
+        self.landing_pages_table.setRowCount(len(self.current_landing_pages))
+
+        for row, landing_page in enumerate(self.current_landing_pages):
+            self.landing_pages_table.setItem(row, 0, QTableWidgetItem(landing_page.get('id', '')))
+            self.landing_pages_table.setItem(row, 1, QTableWidgetItem(landing_page.get('name', '')))
+
+            # Campaign name lookup
+            campaign_name = "Unknown"
+            for campaign in self.current_campaigns:
+                if campaign.get('id') == landing_page.get('campaign_id'):
+                    campaign_name = campaign.get('name', 'Unknown')
+                    break
+            self.landing_pages_table.setItem(row, 2, QTableWidgetItem(campaign_name))
+
+            self.landing_pages_table.setItem(row, 3, QTableWidgetItem(landing_page.get('page_type', '')))
+
+            # Click-through rate
+            ctr = landing_page.get('ctr', 0)
+            self.landing_pages_table.setItem(row, 4, QTableWidgetItem(f"{ctr:.1%}"))
+
+            # Conversion rate
+            cr = landing_page.get('cr', 0)
+            self.landing_pages_table.setItem(row, 5, QTableWidgetItem(f"{cr:.1%}"))
+
+            # Actions
+            actions_widget = QWidget()
+            actions_layout = QHBoxLayout(actions_widget)
+            actions_layout.setContentsMargins(0, 0, 0, 0)
+
+            edit_btn = QPushButton("Edit")
+            edit_btn.clicked.connect(lambda checked, lp=landing_page: self.show_edit_landing_page_dialog(lp))
+            actions_layout.addWidget(edit_btn)
+
+            delete_btn = QPushButton("Delete")
+            delete_btn.setObjectName("dangerButton")
+            delete_btn.clicked.connect(lambda checked, lp=landing_page: self.delete_landing_page(lp))
+            actions_layout.addWidget(delete_btn)
+
+            self.landing_pages_table.setCellWidget(row, 6, actions_widget)
+
+    def show_create_landing_page_dialog(self):
+        """Show dialog to create a new landing page."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        if not self.current_campaigns:
+            QMessageBox.warning(self, "Error", "Please load campaigns first")
+            return
+
+        dialog = LandingPageDialog(self, campaigns=self.current_campaigns)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            landing_page_data = dialog.get_landing_page_data()
+
+            self.status_bar.showMessage("Creating landing page...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Landing page created successfully")
+                self.log_activity(f"Created landing page: {landing_page_data['name']}")
+                self.refresh_landing_pages()
+                QMessageBox.information(self, "Success", "Landing page created successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to create landing page")
+                QMessageBox.warning(self, "Error", f"Failed to create landing page: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.create_landing_page, landing_page_data)
+            # For now, just show success
+            on_success({})
+
+    def show_edit_landing_page_dialog(self, landing_page):
+        """Show dialog to edit an existing landing page."""
+        if not self.client:
+            QMessageBox.warning(self, "Error", "Not connected to API")
+            return
+
+        dialog = LandingPageDialog(self, landing_page=landing_page, campaigns=self.current_campaigns)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            landing_page_data = dialog.get_landing_page_data()
+
+            self.status_bar.showMessage("Updating landing page...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Landing page updated successfully")
+                self.log_activity(f"Updated landing page: {landing_page_data['name']}")
+                self.refresh_landing_pages()
+                QMessageBox.information(self, "Success", "Landing page updated successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to update landing page")
+                QMessageBox.warning(self, "Error", f"Failed to update landing page: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.update_landing_page, landing_page['id'], landing_page_data)
+            # For now, just show success
+            on_success({})
+
+    def delete_landing_page(self, landing_page):
+        """Delete a landing page."""
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete landing page '{landing_page.get('name', 'Unknown')}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.status_bar.showMessage("Deleting landing page...")
+
+            def on_success(result):
+                self.status_bar.showMessage("Landing page deleted successfully")
+                self.log_activity(f"Deleted landing page: {landing_page.get('name', 'Unknown')}")
+                self.refresh_landing_pages()
+                QMessageBox.information(self, "Success", "Landing page deleted successfully!")
+
+            def on_error(error_msg):
+                self.status_bar.showMessage("Failed to delete landing page")
+                QMessageBox.warning(self, "Error", f"Failed to delete landing page: {error_msg}")
+
+            # TODO: Replace with actual API call when endpoint is available
+            # worker = self.create_worker(self.client.delete_landing_page, landing_page['id'])
+            # For now, just show success
+            on_success({})
+
     def show_generate_click_dialog(self):
         """Show dialog to generate a click URL."""
         if not self.client:
@@ -1229,6 +1605,18 @@ class MainWindow(QMainWindow):
         self.conversions_campaign_select.addItem("All Campaigns", None)
         for campaign in self.current_campaigns:
             self.conversions_campaign_select.addItem(campaign.get('name', ''), campaign.get('id', ''))
+
+        # Offers tab
+        self.offers_campaign_filter.clear()
+        self.offers_campaign_filter.addItem("All Campaigns", None)
+        for campaign in self.current_campaigns:
+            self.offers_campaign_filter.addItem(campaign.get('name', ''), campaign.get('id', ''))
+
+        # Landing pages tab
+        self.landing_pages_campaign_filter.clear()
+        self.landing_pages_campaign_filter.addItem("All Campaigns", None)
+        for campaign in self.current_campaigns:
+            self.landing_pages_campaign_filter.addItem(campaign.get('name', ''), campaign.get('id', ''))
 
     def save_settings(self):
         """Save settings to INI file."""

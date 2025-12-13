@@ -3,5 +3,6 @@
 from .money import Money
 from .budget import Budget, BudgetType
 from .date_range import DateRange
+from .url import Url
 
-__all__ = ['Money', 'Budget', 'BudgetType', 'DateRange']
+__all__ = ['Money', 'Budget', 'BudgetType', 'DateRange', 'Url']

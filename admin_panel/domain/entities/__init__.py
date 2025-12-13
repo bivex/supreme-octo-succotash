@@ -4,6 +4,8 @@ from .campaign import Campaign, CampaignStatus
 from .goal import Goal, GoalType
 from .click import Click
 from .conversion import Conversion
+from .offer import Offer
+from .landing_page import LandingPage
 
 __all__ = [
     'Campaign',
@@ -11,5 +13,7 @@ __all__ = [
     'Goal',
     'GoalType',
     'Click',
-    'Conversion'
+    'Conversion',
+    'Offer',
+    'LandingPage'
 ]

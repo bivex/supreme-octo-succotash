@@ -20,16 +20,16 @@ sys.path.insert(0, str(parent_dir))
 from PyQt6.QtWidgets import QApplication
 
 # Configuration
-from infrastructure.config.settings import Settings
+from .infrastructure.config.settings import Settings
 
 # Dependency Injection
-from di.container import Container
+from .di.container import Container
 
 # Presentation - Dark Theme
-from presentation.styles import get_stylesheet
+from .presentation.styles import get_stylesheet
 
 # Presentation - Views
-from presentation import MainWindow
+from .presentation import MainWindow
 
 
 class Application:

@@ -3,10 +3,10 @@
 from typing import List, Optional
 from decimal import Decimal
 
-from domain.entities import Campaign, CampaignStatus
-from domain.value_objects import Money, Budget, DateRange, BudgetType
-from domain.repositories import ICampaignRepository
-from infrastructure.api.api_client import AdvertisingAPIClient
+from ...domain.entities import Campaign, CampaignStatus
+from ...domain.value_objects import Money, Budget, DateRange, BudgetType
+from ...domain.repositories import ICampaignRepository
+from ..api.api_client import AdvertisingAPIClient
 
 
 class ApiCampaignRepository(ICampaignRepository):
