@@ -1,10 +1,12 @@
 import asyncio
+import pytest
 import aiohttp
 import json
 import time
 import uuid
 from loguru import logger
 
+@pytest.mark.asyncio
 async def test_generate_tracking_url():
     api_base_url = "http://localhost:5000"
     url = f"{api_base_url}/clicks/generate"

@@ -5,10 +5,12 @@ This script makes HTTP requests to the server to show the full async call stack.
 """
 
 import asyncio
+import pytest
 import aiohttp
 import time
 import sys
 
+@pytest.mark.asyncio
 async def test_campaign_creation():
     """Test creating a campaign to see the async trace in action."""
     print("🌐 Testing campaign creation with async-trace...")
@@ -42,6 +44,7 @@ async def test_campaign_creation():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
 
+@pytest.mark.asyncio
 async def test_campaign_offer_creation():
     """Test creating an offer for a campaign."""
     print("\n🎯 Testing campaign offer creation...")
@@ -86,6 +89,7 @@ async def test_campaign_offer_creation():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
 
+@pytest.mark.asyncio
 async def test_multiple_requests():
     """Test multiple concurrent requests to see task traces."""
     print("\n🔄 Testing multiple concurrent requests...")

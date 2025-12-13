@@ -2,11 +2,13 @@
 """Test script to verify API connectivity for tracking system."""
 
 import asyncio
+import pytest
 import os
 import sys
 import json
 from tracking import TrackingManager
 
+@pytest.mark.asyncio
 async def test_api_connectivity():
     """Test that the tracking system can connect to the API."""
     print("Testing API connectivity...")

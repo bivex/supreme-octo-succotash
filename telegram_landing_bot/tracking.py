@@ -8,27 +8,17 @@ import base64
 import hashlib
 import json
 import os
+import sys
+# Add project root to sys.path for absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import time
 import uuid
+from src.config import settings
 from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
 import aiohttp
 from loguru import logger
-
-# Cache functions removed - now using Supreme API for URL generation
-# Import config directly
-
-# Default tracking parameters (inline to avoid import issues)
-DEFAULT_TRACKING_PARAMS = {
-    "sub1": "telegram_bot",
-    "sub2": "local_landing",
-    "sub3": "supreme_company",
-    "sub4": "direct_message",
-    "sub5": "premium_offer"
-}
-
-# Note: Now using Advertising Platform API instead of direct URL shortener calls
 
 
 class TrackingManager:
@@ -93,6 +83,7 @@ class TrackingManager:
         click_id = self._generate_click_id(user_id, timestamp)
 
         # Объединить параметры с ID для разрешения
+        from .config import settings
         api_params = additional_params.copy() if additional_params else {}
         if lp_id:
             api_params["lp_id"] = lp_id
@@ -100,6 +91,7 @@ class TrackingManager:
             api_params["offer_id"] = offer_id
         if ts_id:
             api_params["ts_id"] = ts_id
+        api_params["campaign_id"] = settings.campaign_id
 
         # Use API to generate tracking URL with direct parameters
         tracking_url = await self._generate_short_tracking_url(user_id, click_id, source, api_params)
@@ -133,7 +125,7 @@ class TrackingManager:
             # Prepare payload for API call
             payload = {
                 "base_url": self.api_base_url,
-                "campaign_id": 9061,  # Numeric ID as required by API
+                "campaign_id": additional_params.get("campaign_id"),
                 "tracking_params": {
                     "click_id": click_id,
                     "source": source,
@@ -169,7 +161,7 @@ class TrackingManager:
 
                 if response.status == 200:
                     result = await response.json()
-                    api_url = result.get("tracking_url")
+                    api_url = result.get("short_url")
 
                     if api_url:
                         logger.info(f"Successfully generated short tracking URL: {api_url}")
