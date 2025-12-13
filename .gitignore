@@ -50,4 +50,5 @@ build/
 
 # Logs
 app.log
+*.logmain_clean.pid
 *.log
