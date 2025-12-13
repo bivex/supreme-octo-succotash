@@ -28,9 +28,13 @@ class ClickRoutes:
 
     def register(self, app):
         """Register routes with socketify app."""
+        logger.info(f"🔧 ClickRoutes.register() called with app: {type(app)}")
+
         async def track_click(res, req):
             """Handle click tracking and redirection."""
+            logger.info("🔥 TRACK_CLICK HANDLER CALLED")
             try:
+                logger.info("🔥 ENTERING TRY BLOCK")
                 # Log incoming click request details
                 user_agent = req.get_header('user-agent') or req.get_header('User-Agent') or 'Unknown'
                 referrer = req.get_header('referer') or req.get_header('Referer') or 'Direct'
@@ -582,12 +586,21 @@ class ClickRoutes:
                 res.end(error_html)
 
         # Register all routes
+        logger.info("🔧 Registering click routes with socketify app...")
         app.post('/clicks', create_click)
+        logger.info("🔧 Registered POST /clicks")
         app.get('/v1/click', track_click)
+        logger.info("🔧 Registered GET /v1/click")
         app.get('/v1/click/:click_id', get_click_details)
+        logger.info("🔧 Registered GET /v1/click/:click_id")
         app.get('/v1/clicks', list_clicks)
+        logger.info("🔧 Registered GET /v1/clicks")
         app.get('/s/:encoded_data', handle_short_link_redirect)
+        logger.info("🔧 Registered GET /s/:encoded_data")
         app.get('/mock-offer', mock_offer)
+        logger.info("🔧 Registered GET /mock-offer")
+
+        logger.info("✅ Click routes registration completed")
 
     def _safe_int_convert(self, value) -> Optional[int]:
         """Safely convert value to int, handling various formats."""
