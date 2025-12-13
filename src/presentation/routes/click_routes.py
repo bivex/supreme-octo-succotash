@@ -39,6 +39,7 @@ class ClickRoutes:
                 user_agent = req.get_header('user-agent') or req.get_header('User-Agent') or 'Unknown'
                 referrer = req.get_header('referer') or req.get_header('Referer') or 'Direct'
                 client_ip = self._get_client_ip(req)
+                logger.debug(f"Client IP after _get_client_ip: {client_ip}")
 
                 logger.info("=== CLICK RECEIVED ===")
                 logger.info(f"IP Address: {client_ip}")
