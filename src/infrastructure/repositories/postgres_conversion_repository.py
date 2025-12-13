@@ -8,12 +8,29 @@ from datetime import datetime
 from ...domain.entities.conversion import Conversion
 from ...domain.repositories.conversion_repository import ConversionRepository
 
-# Import custom JSON encoder to handle Money and datetime objects
-try:
-    from ...main import CustomJSONEncoder
-    _custom_encoder = CustomJSONEncoder()
-except ImportError:
-    _custom_encoder = None
+# Custom JSON encoder to handle Money and datetime objects
+import json
+from datetime import datetime
+from decimal import Decimal
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        # Handle Money objects
+        try:
+            from ...domain.value_objects.financial.money import Money
+            if isinstance(obj, Money):
+                return {
+                    "amount": float(obj.amount),
+                    "currency": obj.currency
+                }
+        except ImportError:
+            pass
+        # Handle datetime objects
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class PostgresConversionRepository(ConversionRepository):

@@ -30,101 +30,161 @@ class GamingWebhookHandler:
 
     def handle_deposit(self, deposit_data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle deposit webhook from gaming platform."""
-        logger.info("🚀 START: Deposit webhook processing")
+        transaction_id = deposit_data.get('transaction_id', 'unknown')
+        user_id = deposit_data.get('user_id', 'unknown')
+        amount = deposit_data.get('amount', 0)
+
+        logger.info(f"🚀 START: Deposit webhook processing | TX:{transaction_id} | User:{user_id} | Amount:{amount}")
+
+        # Log environment context
+        import os
+        import socket
+        logger.info(f"📊 Context: PID={os.getpid()}, Host={socket.gethostname()}, Env={os.getenv('ENVIRONMENT', 'unknown')}")
+
         try:
-            logger.info(f"Processing deposit webhook: {deposit_data.get('transaction_id', 'unknown')}")
-            logger.info(f"Deposit data: {deposit_data}")
+            logger.info(f"📝 Processing deposit webhook | TX:{transaction_id} | Data keys: {list(deposit_data.keys())}")
 
-            # Validate deposit data
-            logger.info("Step 1: Validating deposit data")
-            is_valid, error_message = self.gaming_webhook_service.validate_deposit_data(deposit_data)
-            if not is_valid:
-                logger.warning(f"Invalid deposit data: {error_message}")
+            # Step 1: Validate deposit data
+            logger.info(f"🔍 Step 1: Validating deposit data | TX:{transaction_id}")
+            try:
+                is_valid, error_message = self.gaming_webhook_service.validate_deposit_data(deposit_data)
+                if not is_valid:
+                    logger.warning(f"❌ Deposit data validation failed | TX:{transaction_id} | Error: {error_message}")
+                    return {
+                        "status": "error",
+                        "message": error_message,
+                        "step": "validation",
+                        "transaction_id": transaction_id
+                    }
+                logger.info(f"✅ Deposit data validation passed | TX:{transaction_id}")
+            except Exception as e:
+                logger.error(f"❌ ERROR in validation step | TX:{transaction_id} | {e}", exc_info=True)
                 return {
                     "status": "error",
-                    "message": error_message
+                    "message": f"Validation error: {str(e)}",
+                    "step": "validation",
+                    "transaction_id": transaction_id
                 }
-            logger.info("✅ Deposit data validation passed")
 
-            # Find the original click by user identifier
-            logger.info("Step 2: Finding click by user identifier")
-            click = self.gaming_webhook_service.find_click_by_user_identifier(deposit_data)
-            if not click:
-                logger.warning(f"No click found for deposit: {deposit_data.get('user_id', 'unknown user')}")
+            # Step 2: Find the original click by user identifier
+            logger.info(f"🔍 Step 2: Finding click by user identifier | TX:{transaction_id} | User:{user_id}")
+            try:
+                click = self.gaming_webhook_service.find_click_by_user_identifier(deposit_data)
+                if not click:
+                    logger.warning(f"❌ No click found for deposit | TX:{transaction_id} | User:{user_id}")
+                    return {
+                        "status": "error",
+                        "message": "Click not found for this user",
+                        "step": "click_lookup",
+                        "transaction_id": transaction_id
+                    }
+                logger.info(f"✅ Found click | TX:{transaction_id} | Click:{click.id} | Campaign:{click.campaign_id}")
+            except Exception as e:
+                logger.error(f"❌ ERROR in click lookup step | TX:{transaction_id} | {e}", exc_info=True)
                 return {
                     "status": "error",
-                    "message": "Click not found for this user"
+                    "message": f"Click lookup error: {str(e)}",
+                    "step": "click_lookup",
+                    "transaction_id": transaction_id
                 }
-            logger.info(f"✅ Found click: {click.id} for campaign: {click.campaign_id}")
 
-            # Check for duplicate deposits
-            logger.info("Step 3: Checking for duplicate deposits")
-            if self.gaming_webhook_service.is_duplicate_deposit(deposit_data, click.id):
-                logger.info(f"Duplicate deposit detected for click {click.id}")
+            # Step 3: Check for duplicate deposits
+            logger.info(f"🔍 Step 3: Checking for duplicate deposits | TX:{transaction_id} | Click:{click.id}")
+            try:
+                if self.gaming_webhook_service.is_duplicate_deposit(deposit_data, click.id):
+                    logger.info(f"ℹ️ Duplicate deposit detected | TX:{transaction_id} | Click:{click.id}")
+                    return {
+                        "status": "duplicate",
+                        "message": "Deposit already processed",
+                        "step": "duplicate_check",
+                        "transaction_id": transaction_id
+                    }
+                logger.info(f"✅ No duplicate deposit found | TX:{transaction_id}")
+            except Exception as e:
+                logger.error(f"❌ ERROR in duplicate check step | TX:{transaction_id} | {e}", exc_info=True)
                 return {
-                    "status": "duplicate",
-                    "message": "Deposit already processed"
+                    "status": "error",
+                    "message": f"Duplicate check error: {str(e)}",
+                    "step": "duplicate_check",
+                    "transaction_id": transaction_id
                 }
-            logger.info("✅ No duplicate deposit found")
 
-            # Create deposit conversion
-            logger.info("Step 4: Creating deposit conversion")
+            # Step 4: Create deposit conversion
+            logger.info(f"🔧 Step 4: Creating deposit conversion | TX:{transaction_id} | Click:{click.id}")
             try:
                 conversion = self._create_deposit_conversion(deposit_data, click)
-                logger.info(f"Created conversion: {conversion.id}")
-                logger.info(f"Conversion details: type={conversion.conversion_type}, value={conversion.conversion_value}, order_id={conversion.order_id}")
+                logger.info(f"✅ Created conversion | TX:{transaction_id} | Conv:{conversion.id} | Type:{conversion.conversion_type} | Value:{str(conversion.conversion_value)}")
             except Exception as e:
-                logger.error(f"Error creating conversion: {e}")
-                raise
+                logger.error(f"❌ ERROR in conversion creation step | TX:{transaction_id} | {e}", exc_info=True)
+                return {
+                    "status": "error",
+                    "message": f"Conversion creation error: {str(e)}",
+                    "step": "conversion_creation",
+                    "transaction_id": transaction_id
+                }
 
-            # Save conversion
-            logger.info("Step 5: Saving conversion to database")
-            self.conversion_repository.save(conversion)
-            logger.info(f"Saved conversion: {conversion.id}")
-            logger.info(f"Deposit conversion saved: {conversion.id}")
+            # Step 5: Save conversion
+            logger.info(f"💾 Step 5: Saving conversion to database | TX:{transaction_id} | Conv:{conversion.id}")
+            try:
+                self.conversion_repository.save(conversion)
+                logger.info(f"✅ Saved conversion to database | TX:{transaction_id} | Conv:{conversion.id}")
+            except Exception as e:
+                logger.error(f"❌ ERROR in database save step | TX:{transaction_id} | Conv:{conversion.id} | {e}", exc_info=True)
+                return {
+                    "status": "error",
+                    "message": f"Database save error: {str(e)}",
+                    "step": "database_save",
+                    "transaction_id": transaction_id
+                }
 
-            # TODO: Update LTV for the customer (disabled for debugging)
-            # self._update_customer_ltv(deposit_data, conversion)
-
-            # Trigger postback (this will be handled by the postback system)
-            logger.info("Step 6: Checking postback trigger")
+            # Step 6: Check postback trigger (optional step)
+            logger.info(f"🔄 Step 6: Checking postback trigger | TX:{transaction_id} | Conv:{conversion.id}")
+            should_postback = False
             try:
                 should_postback = self.conversion_service.should_trigger_postback(conversion)
-                logger.info(f"Postback trigger result: {should_postback}")
+                logger.info(f"✅ Postback trigger result | TX:{transaction_id} | Trigger:{should_postback}")
             except Exception as e:
-                logger.error(f"Error checking postback trigger: {e}")
+                logger.warning(f"⚠️ WARNING in postback check step (non-critical) | TX:{transaction_id} | {e}")
                 should_postback = False
 
-            # Prepare response
-            logger.info("Step 7: Preparing response")
-            response_data = {
-                "status": "success",
-                "conversion_id": conversion.id,
-                "click_id": click.id,
-                "campaign_id": click.campaign_id,
-                "deposit_amount": deposit_data.get('amount'),
-                "postback_triggered": should_postback
-            }
-            logger.info(f"Response data prepared: {response_data}")
-
-            # Test JSON serialization before returning
+            # Step 7: Prepare response
+            logger.info(f"📦 Step 7: Preparing response | TX:{transaction_id}")
             try:
+                response_data = {
+                    "status": "success",
+                    "conversion_id": conversion.id,
+                    "click_id": click.id,
+                    "campaign_id": click.campaign_id,
+                    "deposit_amount": amount,
+                    "postback_triggered": should_postback,
+                    "transaction_id": transaction_id,
+                    "step": "response_preparation"
+                }
+
+                # Test JSON serialization before returning
                 import json
                 test_json = json.dumps(response_data, default=str)
-                logger.info("✅ Response JSON serialization test passed")
-            except Exception as e:
-                logger.error(f"❌ Response JSON serialization failed: {e}")
-                logger.error(f"Response data: {response_data}")
-                raise
+                logger.info(f"✅ Response JSON serialization test passed | TX:{transaction_id}")
 
-            logger.info("✅ FINISH: Deposit webhook processing successful")
-            return response_data
+                logger.info(f"🎉 FINISH: Deposit webhook processing successful | TX:{transaction_id} | Conv:{conversion.id}")
+                return response_data
+
+            except Exception as e:
+                logger.error(f"❌ ERROR in response preparation step | TX:{transaction_id} | {e}", exc_info=True)
+                return {
+                    "status": "error",
+                    "message": f"Response preparation error: {str(e)}",
+                    "step": "response_preparation",
+                    "transaction_id": transaction_id
+                }
 
         except Exception as e:
-            logger.error(f"❌ ERROR: Deposit webhook processing failed: {e}", exc_info=True)
+            logger.error(f"❌ CRITICAL ERROR: Unexpected error in deposit webhook processing | TX:{transaction_id} | {e}", exc_info=True)
             return {
                 "status": "error",
-                "message": str(e)
+                "message": f"Unexpected error: {str(e)}",
+                "step": "unexpected_error",
+                "transaction_id": transaction_id
             }
 
     def handle_registration(self, registration_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -173,63 +233,82 @@ class GamingWebhookHandler:
 
     def _create_deposit_conversion(self, deposit_data: Dict[str, Any], click) -> Conversion:
         """Create a deposit conversion entity."""
-        logger.info("Creating deposit conversion entity")
-        from ...domain.value_objects.financial.money import Money
-        import uuid
-        from datetime import datetime
-        from decimal import Decimal
-
-        # Handle monetary value
-        amount = deposit_data.get('amount', 0)
-        currency = deposit_data.get('currency', 'USD')
-        logger.info(f"Conversion value: {amount} {currency}")
-
-        conversion_value = Money(amount=Decimal(str(amount)), _currency=currency)
-        logger.info(f"Money object created: {conversion_value}")
-
-        now = datetime.utcnow()
-        # Create conversion using the standard method
-        # Create Money object directly
-        conversion_value = Money(amount=Decimal(str(amount)), _currency=currency)
-
-        # Prepare metadata
-        metadata = {
-            'gaming_platform': deposit_data.get('platform', 'unknown'),
-            'game_type': deposit_data.get('game_type'),
-            'deposit_method': deposit_data.get('payment_method'),
-            'is_first_deposit': deposit_data.get('is_first_deposit', True),
-            'attribution': {
-                'click_timestamp': str(click.created_at),
-                'campaign_id': click.campaign_id,
-                'sub_parameters': {
-                    'sub1': click.sub1,
-                    'sub2': click.sub2,
-                    'sub3': click.sub3,
-                    'sub4': click.sub4,
-                    'sub5': click.sub5
-                }
-            }
-        }
-        logger.info(f"Metadata prepared: {metadata}")
-
-        conversion_data = {
-            'click_id': click.id,
-            'conversion_type': 'deposit',
-            'conversion_value': conversion_value,
-            'order_id': deposit_data.get('transaction_id'),
-            'campaign_id': int(click.campaign_id) if click.campaign_id.isdigit() else None,
-            'user_id': deposit_data.get('user_id'),
-            'metadata': metadata
-        }
-        logger.info(f"Conversion data prepared: click_id={click.id}, type=deposit, order_id={deposit_data.get('transaction_id')}")
-
+        transaction_id = deposit_data.get('transaction_id', 'unknown')
+        logger.info(f"🔧 Creating deposit conversion entity | TX:{transaction_id}")
         try:
-            conversion = Conversion.create_from_request(conversion_data)
-            logger.info(f"Conversion entity created successfully: {conversion.id}")
-            return conversion
+            from ...domain.value_objects.financial.money import Money
+            import uuid
+            from datetime import datetime
+            from decimal import Decimal
+
+            # Handle monetary value
+            amount = deposit_data.get('amount', 0)
+            currency = deposit_data.get('currency', 'USD')
+            logger.info(f"   💰 Processing monetary value | TX:{transaction_id} | Amount:{amount} {currency}")
+
+            try:
+                conversion_value = Money(amount=Decimal(str(amount)), _currency=currency)
+                logger.info(f"   ✅ Money object created | TX:{transaction_id} | Value:{conversion_value}")
+            except Exception as e:
+                logger.error(f"   ❌ ERROR creating Money object | TX:{transaction_id} | {e}")
+                raise
+
+            # Prepare metadata
+            logger.info(f"   📋 Preparing metadata | TX:{transaction_id}")
+            try:
+                metadata = {
+                    'gaming_platform': deposit_data.get('platform', 'unknown'),
+                    'game_type': deposit_data.get('game_type'),
+                    'deposit_method': deposit_data.get('payment_method'),
+                    'is_first_deposit': deposit_data.get('is_first_deposit', True),
+                    'transaction_id': transaction_id,
+                    'attribution': {
+                        'click_timestamp': str(click.created_at),
+                        'campaign_id': click.campaign_id,
+                        'sub_parameters': {
+                            'sub1': click.sub1,
+                            'sub2': click.sub2,
+                            'sub3': click.sub3,
+                            'sub4': click.sub4,
+                            'sub5': click.sub5
+                        }
+                    }
+                }
+                logger.info(f"   ✅ Metadata prepared | TX:{transaction_id} | Fields:{len(metadata)}")
+            except Exception as e:
+                logger.error(f"   ❌ ERROR preparing metadata | TX:{transaction_id} | {e}")
+                raise
+
+            # Prepare conversion data
+            logger.info(f"   🏗️ Preparing conversion data | TX:{transaction_id}")
+            try:
+                conversion_data = {
+                    'click_id': click.id,
+                    'conversion_type': 'deposit',
+                    'conversion_value': conversion_value,
+                    'order_id': transaction_id,
+                    'campaign_id': int(click.campaign_id) if click.campaign_id and click.campaign_id.isdigit() else None,
+                    'user_id': deposit_data.get('user_id'),
+                    'metadata': metadata
+                }
+                logger.info(f"   ✅ Conversion data prepared | TX:{transaction_id} | Click:{click.id} | Type:deposit")
+            except Exception as e:
+                logger.error(f"   ❌ ERROR preparing conversion data | TX:{transaction_id} | {e}")
+                raise
+
+            # Create conversion entity
+            logger.info(f"   🎯 Creating Conversion entity | TX:{transaction_id}")
+            try:
+                conversion = Conversion.create_from_request(conversion_data)
+                logger.info(f"   ✅ Conversion entity created | TX:{transaction_id} | Conv:{conversion.id}")
+                return conversion
+            except Exception as e:
+                logger.error(f"   ❌ ERROR in Conversion.create_from_request | TX:{transaction_id} | {e}")
+                logger.error(f"   Failed conversion data | TX:{transaction_id} | {conversion_data}")
+                raise
+
         except Exception as e:
-            logger.error(f"Failed to create conversion from request data: {e}")
-            logger.error(f"Conversion data that failed: {conversion_data}")
+            logger.error(f"❌ CRITICAL ERROR in _create_deposit_conversion | TX:{transaction_id} | {e}", exc_info=True)
             raise
 
     def _create_registration_conversion(self, registration_data: Dict[str, Any], click) -> Conversion:
