@@ -35,6 +35,9 @@ class MainWindow(QMainWindow):
         self.current_conversions = []
         self.goal_templates = []
 
+        # Thread management
+        self.active_workers = []  # Keep track of running workers
+
         # Dependency injection (set by Application)
         self.container = None
         self.app_settings = None
@@ -145,7 +148,6 @@ class MainWindow(QMainWindow):
 
         # Connection status
         self.connection_status = QLabel("✗ Not connected")
-        self.connection_status.setStyleSheet("color: #e74c3c; font-weight: bold;")
         layout.addWidget(self.connection_status)
 
         parent_layout.addWidget(connection_group)
@@ -163,28 +165,18 @@ class MainWindow(QMainWindow):
         health_layout = QVBoxLayout()
         health_layout.addWidget(QLabel("API Health:"))
         self.health_status = QLabel("Unknown")
-        self.health_status.setStyleSheet("font-size: 14px; font-weight: bold;")
         health_layout.addWidget(self.health_status)
         overview_layout.addLayout(health_layout)
 
         # Quick stats
         stats_layout = QVBoxLayout()
         stats_heading = QLabel("📈 Quick Statistics")
-        stats_heading.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;")
         stats_layout.addWidget(stats_heading)
 
         self.stats_labels = {}
         stats = ["Total Campaigns", "Active Campaigns", "Total Goals", "Today's Clicks", "Today's Conversions"]
         for stat in stats:
             label = QLabel(f"{stat}: --")
-            label.setStyleSheet("""
-                padding: 8px;
-                background-color: #ecf0f1;
-                border-radius: 4px;
-                border-left: 4px solid #3498db;
-                font-size: 13px;
-                margin: 2px;
-            """)
             self.stats_labels[stat] = label
             stats_layout.addWidget(label)
 
@@ -199,14 +191,6 @@ class MainWindow(QMainWindow):
         self.activity_log = QTextEdit()
         self.activity_log.setMaximumHeight(200)
         self.activity_log.setReadOnly(True)
-        self.activity_log.setStyleSheet("""
-            background-color: #fafafa;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        """)
         activity_layout.addWidget(self.activity_log)
 
         layout.addWidget(activity_group)
@@ -503,7 +487,7 @@ class MainWindow(QMainWindow):
 
         def on_success(result):
             self.connection_status.setText("✓ Connected")
-            self.connection_status.setStyleSheet("color: #27ae60; font-weight: bold;")
+            self.connection_status.setObjectName("successLabel")
             self.status_bar.showMessage("Connected successfully")
             self.refresh_dashboard()
 
@@ -512,7 +496,7 @@ class MainWindow(QMainWindow):
 
         def on_error(error_msg):
             self.connection_status.setText("Connection failed")
-            self.connection_status.setStyleSheet("color: red; font-weight: bold;")
+            self.connection_status.setObjectName("dangerLabel")
             self.status_bar.showMessage(f"Connection failed: {error_msg}")
 
             # Provide more specific error messages for common issues
@@ -531,7 +515,7 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Connection Error", f"Failed to connect to API: {error_msg}")
 
-        worker = APIWorker(self.client.get_health)
+        worker = self.create_worker(self.client.get_health)
         worker.finished.connect(on_success)
         worker.error.connect(on_error)
         worker.start()
@@ -556,10 +540,10 @@ class MainWindow(QMainWindow):
 
         def on_health_error(error):
             self.health_status.setText("ERROR")
-            self.health_status.setStyleSheet("color: #e74c3c; font-size: 14px; font-weight: bold;")
+            self.health_status.setObjectName("dangerLabel")
             self.log_activity(f"✗ Health check failed: {error}")
 
-        health_worker = APIWorker(self.client.get_health)
+        health_worker = self.create_worker(self.client.get_health)
         health_worker.finished.connect(on_health_success)
         health_worker.error.connect(on_health_error)
         health_worker.start()
@@ -574,7 +558,7 @@ class MainWindow(QMainWindow):
             self.stats_labels["Total Campaigns"].setText(f"📊 Total Campaigns: {len(campaigns)}")
             self.stats_labels["Active Campaigns"].setText(f"✅ Active: {active_count} | ⏸️ Paused: {paused_count} | 📝 Draft: {draft_count}")
 
-        campaigns_worker = APIWorker(self.client.get_campaigns)
+        campaigns_worker = self.create_worker(self.client.get_campaigns)
         campaigns_worker.finished.connect(on_campaigns_success)
         campaigns_worker.error.connect(lambda e: None)  # Ignore errors for stats
         campaigns_worker.start()
@@ -604,7 +588,7 @@ class MainWindow(QMainWindow):
             self.stats_labels["Today's Clicks"].setText(f"👆 Today's Clicks: {clicks}")
             self.stats_labels["Today's Conversions"].setText(f"💰 Today's Conversions: {conversions} (${revenue_amount:.2f})")
 
-        analytics_worker = APIWorker(self.client.get_real_time_analytics)
+        analytics_worker = self.create_worker(self.client.get_real_time_analytics)
         analytics_worker.finished.connect(on_analytics_success)
         analytics_worker.error.connect(lambda e: None)
         analytics_worker.start()
@@ -1385,10 +1369,35 @@ class MainWindow(QMainWindow):
 
         return url_pattern.match(url) is not None
 
+    def create_worker(self, func, *args, **kwargs):
+        """Create and track an API worker thread."""
+        worker = APIWorker(func, *args, **kwargs)
+        self.active_workers.append(worker)
+
+        # Remove from active workers when finished
+        def cleanup_worker():
+            if worker in self.active_workers:
+                self.active_workers.remove(worker)
+
+        worker.finished.connect(cleanup_worker)
+        worker.error.connect(cleanup_worker)
+
+        return worker
+
     def closeEvent(self, event):
         """Handle application close event."""
+        # Stop auto-refresh timer
+        self.refresh_timer.stop()
+
+        # Wait for all active workers to finish
+        for worker in self.active_workers[:]:  # Copy list to avoid modification during iteration
+            if worker.isRunning():
+                worker.wait()  # Wait for thread to finish
+
+        # Close client connection
         if self.client:
             self.client.close()
+
         event.accept()
 
 

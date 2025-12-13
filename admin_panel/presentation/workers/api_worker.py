@@ -26,6 +26,7 @@ class APIWorker(QThread):
         self.func = func
         self.args = args
         self.kwargs = kwargs
+        self.is_finished = False
 
     def run(self):
         """Execute the function and emit appropriate signals."""
@@ -34,3 +35,10 @@ class APIWorker(QThread):
             self.finished.emit(result)
         except Exception as e:
             self.error.emit(str(e))
+        finally:
+            self.is_finished = True
+
+    def __del__(self):
+        """Ensure thread cleanup when object is destroyed."""
+        if self.isRunning():
+            self.wait()  # Wait for thread to finish before destruction

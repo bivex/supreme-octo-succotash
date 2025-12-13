@@ -1,8 +1,9 @@
 """
-Neo-Professional Dark Theme for Admin Panel
+Neo-Professional Dark Theme for Admin Panel (Refined Tones)
 
 A distinctive dark interface designed for data-driven professionals.
-Combines sharp contrasts with sophisticated color choices and refined typography.
+Refined to keep background layers in one cohesive navy-slate ramp,
+with smoother midtones and less “jump” between elevations.
 
 Design Philosophy:
 - Deep, rich backgrounds (not flat gray)
@@ -12,66 +13,66 @@ Design Philosophy:
 - Refined details in every component
 """
 
-# Neo-Professional Color Palette
+# Neo-Professional Color Palette (refined tones)
 COLORS = {
-    # Background layers - Deep, rich tones
-    'bg_deepest': '#0a0e27',      # Deep navy-black base
-    'bg_primary': '#0f1419',       # Rich dark slate
-    'bg_secondary': '#1a1f2e',     # Elevated panels
-    'bg_tertiary': '#242b3d',      # Interactive elements
-    'bg_elevated': '#2d3548',      # Highest elevation
-    'bg_input': '#1e2433',         # Input fields
+    # Background layers — cohesive navy-slate ramp
+    'bg_deepest':   '#070B18',  # deepest base (dialogs/overlays/backdrop)
+    'bg_primary':   '#0C111E',  # app base
+    'bg_secondary': '#121A2B',  # panels/cards
+    'bg_tertiary':  '#19233A',  # hovers/interactive surfaces
+    'bg_elevated':  '#1F2B45',  # highest elevation (headers/menus)
+    'bg_input':     '#0F1727',  # inputs (slightly “inkier” than panels)
 
-    # Text hierarchy - Crisp and readable
-    'text_primary': '#d1d9e6',     # Soft light gray for main content
-    'text_secondary': '#a0a8b9',   # Muted for secondary info
-    'text_tertiary': '#7a849c',    # Subtle for labels
-    'text_disabled': '#3e4853',    # Clearly disabled
-    'text_placeholder': '#4d5b6a', # Form placeholders
+    # Text hierarchy — clean contrast
+    'text_primary':     '#D7DEE9',
+    'text_secondary':   '#A8B3C6',
+    'text_tertiary':    '#7F8AA3',
+    'text_disabled':    '#485263',
+    'text_placeholder': '#5D6A7F',
 
-    # Brand & Primary Actions - Distinctive cyan-blue
-    'primary': '#00d9ff',          # Vibrant cyan (distinctive!)
-    'primary_hover': '#00bfea',    # Hover state
-    'primary_pressed': '#00a5d1',  # Pressed state
-    'primary_muted': '#1a4d5f',    # Subtle background
+    # Brand & Primary Actions — distinctive but less neon
+    'primary':         '#00D1F2',
+    'primary_hover':   '#00BBDD',
+    'primary_pressed': '#00A5C6',
+    'primary_muted':   '#103A46',
 
-    # Semantic colors - Professional palette
-    'success': '#00e599',          # Vibrant success green
-    'success_muted': '#1a4d3d',    # Subtle background
-    'warning': '#ffb800',          # Bold warning yellow
-    'warning_muted': '#4d3d1a',    # Subtle background
-    'danger': '#ff3366',           # Sharp danger red
-    'danger_muted': '#4d1a2b',     # Subtle background
-    'info': '#668cff',             # Soft info blue
-    'info_muted': '#1a2d4d',       # Subtle background
+    # Semantic colors — tuned for navy background
+    'success':       '#22E3A1',
+    'success_muted': '#123A31',
+    'warning':       '#FFB020',
+    'warning_muted': '#3A2F16',
+    'danger':        '#FF3B6E',
+    'danger_muted':  '#3A1624',
+    'info':          '#6D8CFF',
+    'info_muted':    '#17254A',
 
-    # Status indicators - Clear and distinct
-    'status_active': '#00e599',    # Green - running
-    'status_paused': '#ffb800',    # Yellow - paused
-    'status_draft': '#8891a8',     # Gray - not started
-    'status_error': '#ff3366',     # Red - failed
-    'status_completed': '#668cff', # Blue - done
+    # Status indicators
+    'status_active':    '#22E3A1',
+    'status_paused':    '#FFB020',
+    'status_draft':     '#8D97AC',
+    'status_error':     '#FF3B6E',
+    'status_completed': '#6D8CFF',
 
-    # Borders & Dividers - Subtle but present
-    'border_subtle': '#2d3548',    # Very subtle dividers
-    'border_default': '#3d4558',   # Standard borders
-    'border_strong': '#4d5668',    # Emphasized borders
-    'border_focus': '#00d9ff',     # Focus state (primary)
-    'border_hover': '#5d6678',     # Hover state
+    # Borders & Dividers — smoother progression
+    'border_subtle':  '#24314B',
+    'border_default': '#2B3A57',
+    'border_strong':  '#334565',
+    'border_focus':   '#00D1F2',
+    'border_hover':   '#3C5175',
 
-    # Data visualization - Professional chart colors
-    'chart_1': '#00d9ff',          # Cyan
-    'chart_2': '#ff3366',          # Pink-red
-    'chart_3': '#00e599',          # Green
-    'chart_4': '#ffb800',          # Yellow
-    'chart_5': '#668cff',          # Blue
-    'chart_6': '#ff6b9d',          # Rose
+    # Data visualization
+    'chart_1': '#00D1F2',
+    'chart_2': '#FF3B6E',
+    'chart_3': '#22E3A1',
+    'chart_4': '#FFB020',
+    'chart_5': '#6D8CFF',
+    'chart_6': '#FF6FA3',
 
     # Special effects
-    'shadow_default': 'rgba(0, 0, 0, 0.3)',
-    'shadow_strong': 'rgba(0, 0, 0, 0.5)',
-    'overlay_dark': 'rgba(10, 14, 39, 0.8)',
-    'shimmer': 'rgba(0, 217, 255, 0.1)',  # Subtle glow
+    'shadow_default': 'rgba(0, 0, 0, 0.32)',
+    'shadow_strong':  'rgba(0, 0, 0, 0.55)',
+    'overlay_dark':   'rgba(7, 11, 24, 0.82)',
+    'shimmer':        'rgba(0, 209, 242, 0.08)',
 }
 
 
@@ -91,6 +92,10 @@ def get_stylesheet() -> str:
 
     Returns CSS-like stylesheet for PyQt6 application with distinctive,
     professional aesthetics designed for data-driven work.
+
+    Notes:
+    - Focus styles are implemented with constant 2px borders to avoid
+      layout “jumping” (no padding compensation needed).
     """
     return f"""
     /* ========================================
@@ -104,6 +109,15 @@ def get_stylesheet() -> str:
         font-size: 13px;
         selection-background-color: {COLORS['primary']};
         selection-color: {COLORS['bg_deepest']};
+    }}
+
+    /* Tooltips */
+    QToolTip {{
+        background-color: {COLORS['bg_elevated']};
+        color: {COLORS['text_primary']};
+        border: 1px solid {COLORS['border_strong']};
+        padding: 6px 10px;
+        border-radius: 6px;
     }}
 
     /* ========================================
@@ -132,13 +146,13 @@ def get_stylesheet() -> str:
     }}
 
     /* ========================================
-       BUTTONS - Primary actions
+       BUTTONS - Primary actions (no focus jump)
        ======================================== */
 
     QPushButton {{
         background-color: {COLORS['primary']};
         color: {COLORS['bg_deepest']};
-        border: none;
+        border: 2px solid transparent;
         border-radius: 7px;
         padding: 10px 20px;
         font-weight: 600;
@@ -160,8 +174,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton:focus {{
-        border: 2px solid {COLORS['border_focus']};
-        padding: 9px 19px;
+        border-color: {COLORS['border_focus']};
     }}
 
     /* Button variants */
@@ -171,7 +184,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#deleteButton:hover {{
-        background-color: #ff4d7a;
+        background-color: #ff527f;
     }}
 
     QPushButton#successButton {{
@@ -180,7 +193,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#successButton:hover {{
-        background-color: #00ffad;
+        background-color: #3af0b3;
     }}
 
     QPushButton#warningButton {{
@@ -189,12 +202,12 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#warningButton:hover {{
-        background-color: #ffc733;
+        background-color: #ffc24d;
     }}
 
     QPushButton#secondaryButton {{
         background-color: transparent;
-        border: 1px solid {COLORS['border_default']};
+        border: 2px solid {COLORS['border_default']};
         color: {COLORS['text_primary']};
     }}
 
@@ -205,22 +218,22 @@ def get_stylesheet() -> str:
 
     /* ========================================
        INPUT FIELDS - Forms & data entry
+       (constant 2px border => no layout jump)
        ======================================== */
 
     QLineEdit, QTextEdit, QPlainTextEdit {{
         background-color: {COLORS['bg_input']};
         color: {COLORS['text_secondary']};
-        border: 1px solid {COLORS['border_default']};
+        border: 2px solid {COLORS['border_default']};
         border-radius: 7px;
-        padding: 10px 14px;
+        padding: 9px 13px;
         selection-background-color: {COLORS['primary']};
         selection-color: {COLORS['bg_deepest']};
         font-size: 13px;
     }}
 
     QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
-        border: 2px solid {COLORS['border_focus']};
-        padding: 9px 13px;
+        border-color: {COLORS['border_focus']};
         background-color: {COLORS['bg_secondary']};
         color: {COLORS['text_primary']};
     }}
@@ -242,16 +255,16 @@ def get_stylesheet() -> str:
     QSpinBox, QDoubleSpinBox {{
         background-color: {COLORS['bg_input']};
         color: {COLORS['text_secondary']};
-        border: 1px solid {COLORS['border_default']};
+        border: 2px solid {COLORS['border_default']};
         border-radius: 7px;
-        padding: 10px 14px;
+        padding: 9px 13px;
         selection-background-color: {COLORS['primary']};
         font-size: 13px;
     }}
 
     QSpinBox:focus, QDoubleSpinBox:focus {{
-        border: 2px solid {COLORS['border_focus']};
-        padding: 9px 13px;
+        border-color: {COLORS['border_focus']};
+        background-color: {COLORS['bg_secondary']};
         color: {COLORS['text_primary']};
     }}
 
@@ -282,9 +295,9 @@ def get_stylesheet() -> str:
     QComboBox {{
         background-color: {COLORS['bg_input']};
         color: {COLORS['text_secondary']};
-        border: 1px solid {COLORS['border_default']};
+        border: 2px solid {COLORS['border_default']};
         border-radius: 7px;
-        padding: 10px 14px;
+        padding: 9px 13px;
         min-width: 120px;
         font-size: 13px;
     }}
@@ -295,8 +308,8 @@ def get_stylesheet() -> str:
     }}
 
     QComboBox:focus {{
-        border: 2px solid {COLORS['border_focus']};
-        padding: 9px 13px;
+        border-color: {COLORS['border_focus']};
+        background-color: {COLORS['bg_secondary']};
         color: {COLORS['text_primary']};
     }}
 
@@ -472,7 +485,7 @@ def get_stylesheet() -> str:
     }}
 
     QScrollBar::handle:vertical:pressed {{
-        background-color: {COLORS['primary']};
+        background-color: {COLORS['primary_pressed']};
     }}
 
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -498,7 +511,11 @@ def get_stylesheet() -> str:
     }}
 
     QScrollBar::handle:horizontal:pressed {{
-        background-color: {COLORS['primary']};
+        background-color: {COLORS['primary_pressed']};
+    }}
+
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+        width: 0;
     }}
 
     /* ========================================
@@ -555,4 +572,6 @@ def get_stylesheet() -> str:
     }}
     """
 
-# The complete stylesheet can be applied to the UI
+
+# Example usage:
+# app.setStyleSheet(get_stylesheet())
