@@ -109,8 +109,15 @@ class AdvancedConnectionPool:
             **kwargs
         }
 
-        # Connection pool (ThreadedConnectionPool is thread-safe for async/multi-threaded usage)
-        self._pool = pool.ThreadedConnectionPool(**self._config)
+        # Connection pool (SimpleConnectionPool is better for asyncio with thread executors)
+        # Extract minconn and maxconn as they must be positional arguments
+        pool_minconn = self._config.pop('minconn')
+        pool_maxconn = self._config.pop('maxconn')
+        self._pool = pool.SimpleConnectionPool(pool_minconn, pool_maxconn, **self._config)
+
+        # Store them back in config for reference
+        self._config['minconn'] = pool_minconn
+        self._config['maxconn'] = pool_maxconn
 
         # Statistics and monitoring
         self._stats = ConnectionPoolStats()
@@ -148,12 +155,17 @@ class AdvancedConnectionPool:
 
             # Test connection health
             if not self._is_connection_healthy(conn):
-                logger.warning("Unhealthy connection detected, creating new one")
+                logger.warning("Unhealthy connection detected, closing and getting another from pool")
                 try:
                     conn.close()
                 except:
                     pass
-                conn = self._create_new_connection()
+                # Try to get another connection from the pool
+                try:
+                    conn = self._pool.getconn()
+                except Exception as pool_error:
+                    logger.error(f"Pool exhausted while trying to replace unhealthy connection: {pool_error}")
+                    raise pool_error
 
             logger.debug(".3f")
             return conn
@@ -257,11 +269,15 @@ class AdvancedConnectionPool:
 
         try:
             # Быстрая операция без внешних вызовов
+            # psycopg2 ThreadedConnectionPool stores connections as:
+            # _pool: list of available connections
+            # _used: dict of thread_id -> connection for used connections
+            # _rused: dict of thread_id -> connection for reserved connections
             pool_stats = {
-                'minconn': getattr(self._pool, '_minconn', 0),
-                'maxconn': getattr(self._pool, '_maxconn', 0),
-                'used': len(getattr(self._pool, '_used', [])),
-                'available': len(getattr(self._pool, '_pool', [])),
+                'minconn': self._pool.minconn,
+                'maxconn': self._pool.maxconn,
+                'used': len(self._pool._used),
+                'available': len(self._pool._pool),
             }
 
             stats = {
