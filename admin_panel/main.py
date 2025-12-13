@@ -28,9 +28,8 @@ from di.container import Container
 # Presentation - Dark Theme
 from presentation.styles import get_stylesheet
 
-# Presentation - Views (importing from old file temporarily)
-# TODO: Move these to presentation/views after full refactoring
-from main_old import AdminPanel as LegacyAdminPanel
+# Presentation - Views
+from presentation import MainWindow
 
 
 class Application:
@@ -62,12 +61,11 @@ class Application:
 
     def run(self) -> int:
         """Run the application."""
-        # Create main window (using legacy for now, will refactor)
-        # TODO: Replace with new architecture-based MainWindow
-        main_window = LegacyAdminPanel()
+        # Create main window with Clean Architecture
+        main_window = MainWindow()
 
         # Inject container into window for access to use cases
-        # This allows gradual migration from old to new architecture
+        # This allows gradual migration to use cases in the future
         main_window.container = self.container
 
         main_window.show()

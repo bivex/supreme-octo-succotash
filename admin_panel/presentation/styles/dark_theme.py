@@ -1,94 +1,150 @@
 """
-Modern Dark Theme for Admin Panel
+Neo-Professional Dark Theme for Admin Panel
 
-Professional dark color scheme optimized for long viewing sessions.
+A distinctive dark interface designed for data-driven professionals.
+Combines sharp contrasts with sophisticated color choices and refined typography.
+
+Design Philosophy:
+- Deep, rich backgrounds (not flat gray)
+- Vibrant but professional accents
+- Excellent readability for long sessions
+- Color-coded for data visualization
+- Refined details in every component
 """
 
-# Color Palette
+# Neo-Professional Color Palette
 COLORS = {
-    # Background colors
-    'bg_primary': '#1e1e2e',      # Main background
-    'bg_secondary': '#2a2a3e',    # Secondary panels
-    'bg_tertiary': '#363650',     # Elevated elements
-    'bg_input': '#2d2d44',        # Input fields
+    # Background layers - Deep, rich tones
+    'bg_deepest': '#0a0e27',      # Deep navy-black base
+    'bg_primary': '#0f1419',       # Rich dark slate
+    'bg_secondary': '#1a1f2e',     # Elevated panels
+    'bg_tertiary': '#242b3d',      # Interactive elements
+    'bg_elevated': '#2d3548',      # Highest elevation
+    'bg_input': '#1e2433',         # Input fields
 
-    # Text colors
-    'text_primary': '#e0e0e0',    # Primary text
-    'text_secondary': '#a0a0b0',  # Secondary text
-    'text_disabled': '#606070',   # Disabled text
+    # Text hierarchy - Crisp and readable
+    'text_primary': '#f8f9fa',     # Crisp white for main content
+    'text_secondary': '#b4bac5',   # Muted for secondary info
+    'text_tertiary': '#8891a8',    # Subtle for labels
+    'text_disabled': '#4a5568',    # Clearly disabled
+    'text_placeholder': '#5a6579', # Form placeholders
 
-    # Accent colors
-    'accent_blue': '#61afef',     # Primary actions
-    'accent_green': '#98c379',    # Success states
-    'accent_red': '#e06c75',      # Danger/delete
-    'accent_yellow': '#e5c07b',   # Warnings
-    'accent_purple': '#c678dd',   # Special highlights
+    # Brand & Primary Actions - Distinctive cyan-blue
+    'primary': '#00d9ff',          # Vibrant cyan (distinctive!)
+    'primary_hover': '#00bfea',    # Hover state
+    'primary_pressed': '#00a5d1',  # Pressed state
+    'primary_muted': '#1a4d5f',    # Subtle background
 
-    # Border colors
-    'border_default': '#3e3e54',
-    'border_focus': '#61afef',
-    'border_hover': '#5a5a70',
+    # Semantic colors - Professional palette
+    'success': '#00e599',          # Vibrant success green
+    'success_muted': '#1a4d3d',    # Subtle background
+    'warning': '#ffb800',          # Bold warning yellow
+    'warning_muted': '#4d3d1a',    # Subtle background
+    'danger': '#ff3366',           # Sharp danger red
+    'danger_muted': '#4d1a2b',     # Subtle background
+    'info': '#668cff',             # Soft info blue
+    'info_muted': '#1a2d4d',       # Subtle background
 
-    # Status colors
-    'status_active': '#98c379',
-    'status_paused': '#e5c07b',
-    'status_draft': '#a0a0b0',
-    'status_error': '#e06c75',
+    # Status indicators - Clear and distinct
+    'status_active': '#00e599',    # Green - running
+    'status_paused': '#ffb800',    # Yellow - paused
+    'status_draft': '#8891a8',     # Gray - not started
+    'status_error': '#ff3366',     # Red - failed
+    'status_completed': '#668cff', # Blue - done
+
+    # Borders & Dividers - Subtle but present
+    'border_subtle': '#2d3548',    # Very subtle dividers
+    'border_default': '#3d4558',   # Standard borders
+    'border_strong': '#4d5668',    # Emphasized borders
+    'border_focus': '#00d9ff',     # Focus state (primary)
+    'border_hover': '#5d6678',     # Hover state
+
+    # Data visualization - Professional chart colors
+    'chart_1': '#00d9ff',          # Cyan
+    'chart_2': '#ff3366',          # Pink-red
+    'chart_3': '#00e599',          # Green
+    'chart_4': '#ffb800',          # Yellow
+    'chart_5': '#668cff',          # Blue
+    'chart_6': '#ff6b9d',          # Rose
+
+    # Special effects
+    'shadow_default': 'rgba(0, 0, 0, 0.3)',
+    'shadow_strong': 'rgba(0, 0, 0, 0.5)',
+    'overlay_dark': 'rgba(10, 14, 39, 0.8)',
+    'shimmer': 'rgba(0, 217, 255, 0.1)',  # Subtle glow
 }
 
 
 def get_stylesheet() -> str:
     """
-    Get the complete dark theme stylesheet.
+    Get the complete Neo-Professional dark theme stylesheet.
 
-    Returns CSS-like stylesheet for PyQt6 application.
+    Returns CSS-like stylesheet for PyQt6 application with distinctive,
+    professional aesthetics designed for data-driven work.
     """
     return f"""
-    /* ===== GLOBAL STYLES ===== */
-    QMainWindow, QWidget {{
+    /* ========================================
+       GLOBAL STYLES & FOUNDATION
+       ======================================== */
+
+    QMainWindow, QWidget, QDialog {{
         background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
-        font-family: 'Segoe UI', 'San Francisco', 'Helvetica Neue', Arial, sans-serif;
+        font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
+        selection-background-color: {COLORS['primary']};
+        selection-color: {COLORS['bg_deepest']};
     }}
 
-    /* ===== GROUP BOXES ===== */
+    /* ========================================
+       GROUP BOXES - Elevated panels
+       ======================================== */
+
     QGroupBox {{
         background-color: {COLORS['bg_secondary']};
         border: 1px solid {COLORS['border_default']};
-        border-radius: 8px;
-        margin-top: 16px;
-        padding: 16px;
+        border-radius: 10px;
+        margin-top: 18px;
+        padding: 20px 16px 16px 16px;
         font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
     }}
 
     QGroupBox::title {{
-        color: {COLORS['text_primary']};
+        color: {COLORS['text_secondary']};
         subcontrol-origin: margin;
+        subcontrol-position: top left;
         left: 16px;
         padding: 0 8px;
         background-color: {COLORS['bg_secondary']};
     }}
 
-    /* ===== BUTTONS ===== */
+    /* ========================================
+       BUTTONS - Primary actions
+       ======================================== */
+
     QPushButton {{
-        background-color: {COLORS['accent_blue']};
-        color: #ffffff;
+        background-color: {COLORS['primary']};
+        color: {COLORS['bg_deepest']};
         border: none;
-        border-radius: 6px;
+        border-radius: 7px;
         padding: 10px 20px;
         font-weight: 600;
+        font-size: 13px;
         min-width: 90px;
+        transition: all 0.2s ease;
     }}
 
     QPushButton:hover {{
-        background-color: #5199d8;
+        background-color: {COLORS['primary_hover']};
+        transform: translateY(-1px);
     }}
 
     QPushButton:pressed {{
-        background-color: #4088c7;
-        padding-top: 11px;
-        padding-bottom: 9px;
+        background-color: {COLORS['primary_pressed']};
+        transform: translateY(0px);
     }}
 
     QPushButton:disabled {{
@@ -96,71 +152,151 @@ def get_stylesheet() -> str:
         color: {COLORS['text_disabled']};
     }}
 
+    QPushButton:focus {{
+        border: 2px solid {COLORS['border_focus']};
+        padding: 9px 19px;
+    }}
+
+    /* Button variants */
     QPushButton#deleteButton {{
-        background-color: {COLORS['accent_red']};
+        background-color: {COLORS['danger']};
+        color: {COLORS['text_primary']};
     }}
 
     QPushButton#deleteButton:hover {{
-        background-color: #d35c6b;
+        background-color: #ff4d7a;
     }}
 
     QPushButton#successButton {{
-        background-color: {COLORS['accent_green']};
+        background-color: {COLORS['success']};
+        color: {COLORS['bg_deepest']};
     }}
 
     QPushButton#successButton:hover {{
-        background-color: #88b369;
+        background-color: #00ffad;
     }}
 
     QPushButton#warningButton {{
-        background-color: {COLORS['accent_yellow']};
-        color: {COLORS['bg_primary']};
+        background-color: {COLORS['warning']};
+        color: {COLORS['bg_deepest']};
     }}
 
-    /* ===== INPUT FIELDS ===== */
-    QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox {{
-        background-color: {COLORS['bg_input']};
-        color: {COLORS['text_primary']};
+    QPushButton#warningButton:hover {{
+        background-color: #ffc733;
+    }}
+
+    QPushButton#secondaryButton {{
+        background-color: transparent;
         border: 1px solid {COLORS['border_default']};
-        border-radius: 6px;
-        padding: 8px 12px;
-        selection-background-color: {COLORS['accent_blue']};
+        color: {COLORS['text_primary']};
     }}
 
-    QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus,
-    QSpinBox:focus, QDoubleSpinBox:focus {{
+    QPushButton#secondaryButton:hover {{
+        background-color: {COLORS['bg_tertiary']};
+        border-color: {COLORS['border_hover']};
+    }}
+
+    /* ========================================
+       INPUT FIELDS - Forms & data entry
+       ======================================== */
+
+    QLineEdit, QTextEdit, QPlainTextEdit {{
+        background-color: {COLORS['bg_input']};
+        color: {COLORS['text_secondary']};
+        border: 1px solid {COLORS['border_default']};
+        border-radius: 7px;
+        padding: 10px 14px;
+        selection-background-color: {COLORS['primary']};
+        selection-color: {COLORS['bg_deepest']};
+        font-size: 13px;
+    }}
+
+    QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
         border: 2px solid {COLORS['border_focus']};
-        padding: 7px 11px;
+        padding: 9px 13px;
+        background-color: {COLORS['bg_secondary']};
+        color: {COLORS['text_primary']};
     }}
 
-    QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled,
-    QSpinBox:disabled, QDoubleSpinBox:disabled {{
+    QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled {{
         background-color: {COLORS['bg_tertiary']};
         color: {COLORS['text_disabled']};
+        border-color: {COLORS['border_subtle']};
     }}
 
-    /* ===== COMBO BOX ===== */
+    QLineEdit::placeholder {{
+        color: {COLORS['text_placeholder']};
+    }}
+
+    /* ========================================
+       SPINBOXES - Numeric inputs
+       ======================================== */
+
+    QSpinBox, QDoubleSpinBox {{
+        background-color: {COLORS['bg_input']};
+        color: {COLORS['text_secondary']};
+        border: 1px solid {COLORS['border_default']};
+        border-radius: 7px;
+        padding: 10px 14px;
+        selection-background-color: {COLORS['primary']};
+        font-size: 13px;
+    }}
+
+    QSpinBox:focus, QDoubleSpinBox:focus {{
+        border: 2px solid {COLORS['border_focus']};
+        padding: 9px 13px;
+        color: {COLORS['text_primary']};
+    }}
+
+    QSpinBox::up-button, QDoubleSpinBox::up-button {{
+        background-color: transparent;
+        border: none;
+        width: 20px;
+        margin-right: 4px;
+    }}
+
+    QSpinBox::down-button, QDoubleSpinBox::down-button {{
+        background-color: transparent;
+        border: none;
+        width: 20px;
+        margin-right: 4px;
+    }}
+
+    QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+    QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
+        background-color: {COLORS['bg_tertiary']};
+        border-radius: 4px;
+    }}
+
+    /* ========================================
+       COMBO BOXES - Dropdowns
+       ======================================== */
+
     QComboBox {{
         background-color: {COLORS['bg_input']};
-        color: {COLORS['text_primary']};
+        color: {COLORS['text_secondary']};
         border: 1px solid {COLORS['border_default']};
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 100px;
+        border-radius: 7px;
+        padding: 10px 14px;
+        min-width: 120px;
+        font-size: 13px;
     }}
 
     QComboBox:hover {{
         border-color: {COLORS['border_hover']};
+        background-color: {COLORS['bg_tertiary']};
     }}
 
     QComboBox:focus {{
         border: 2px solid {COLORS['border_focus']};
-        padding: 7px 11px;
+        padding: 9px 13px;
+        color: {COLORS['text_primary']};
     }}
 
     QComboBox::drop-down {{
         border: none;
-        width: 30px;
+        width: 32px;
+        margin-right: 4px;
     }}
 
     QComboBox::down-arrow {{
@@ -171,33 +307,55 @@ def get_stylesheet() -> str:
         margin-right: 8px;
     }}
 
-    QComboBox QAbstractItemView {{
-        background-color: {COLORS['bg_secondary']};
-        color: {COLORS['text_primary']};
-        border: 1px solid {COLORS['border_default']};
-        selection-background-color: {COLORS['accent_blue']};
-        outline: none;
+    QComboBox::down-arrow:hover {{
+        border-top-color: {COLORS['primary']};
     }}
 
-    /* ===== TABLES ===== */
+    QComboBox QAbstractItemView {{
+        background-color: {COLORS['bg_elevated']};
+        color: {COLORS['text_primary']};
+        border: 1px solid {COLORS['border_strong']};
+        border-radius: 7px;
+        selection-background-color: {COLORS['primary']};
+        selection-color: {COLORS['bg_deepest']};
+        outline: none;
+        padding: 4px;
+    }}
+
+    QComboBox QAbstractItemView::item {{
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 2px;
+    }}
+
+    QComboBox QAbstractItemView::item:hover {{
+        background-color: {COLORS['bg_tertiary']};
+    }}
+
+    /* ========================================
+       TABLES - Data grids
+       ======================================== */
+
     QTableWidget {{
         background-color: {COLORS['bg_secondary']};
         alternate-background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
         border: 1px solid {COLORS['border_default']};
-        border-radius: 8px;
-        gridline-color: {COLORS['border_default']};
-        selection-background-color: {COLORS['accent_blue']};
+        border-radius: 10px;
+        gridline-color: {COLORS['border_subtle']};
+        selection-background-color: {COLORS['primary_muted']};
+        selection-color: {COLORS['primary']};
     }}
 
     QTableWidget::item {{
-        padding: 10px;
+        padding: 12px 16px;
         border: none;
+        font-size: 13px;
     }}
 
     QTableWidget::item:selected {{
-        background-color: {COLORS['accent_blue']};
-        color: #ffffff;
+        background-color: {COLORS['primary_muted']};
+        color: {COLORS['primary']};
     }}
 
     QTableWidget::item:hover {{
@@ -205,12 +363,12 @@ def get_stylesheet() -> str:
     }}
 
     QHeaderView::section {{
-        background-color: {COLORS['bg_tertiary']};
-        color: {COLORS['text_primary']};
-        padding: 12px;
+        background-color: {COLORS['bg_elevated']};
+        color: {COLORS['text_secondary']};
+        padding: 14px 16px;
         border: none;
-        border-right: 1px solid {COLORS['border_default']};
-        border-bottom: 2px solid {COLORS['accent_blue']};
+        border-right: 1px solid {COLORS['border_subtle']};
+        border-bottom: 2px solid {COLORS['primary']};
         font-weight: 600;
         text-transform: uppercase;
         font-size: 11px;
@@ -218,63 +376,87 @@ def get_stylesheet() -> str:
     }}
 
     QHeaderView::section:first {{
-        border-top-left-radius: 8px;
+        border-top-left-radius: 10px;
     }}
 
     QHeaderView::section:last {{
         border-right: none;
-        border-top-right-radius: 8px;
+        border-top-right-radius: 10px;
     }}
 
-    /* ===== TAB WIDGET ===== */
+    QHeaderView::section:hover {{
+        background-color: {COLORS['bg_tertiary']};
+        color: {COLORS['primary']};
+    }}
+
+    /* ========================================
+       TAB WIDGET - Navigation tabs
+       ======================================== */
+
     QTabWidget::pane {{
         border: 1px solid {COLORS['border_default']};
         background-color: {COLORS['bg_secondary']};
-        border-radius: 8px;
+        border-radius: 10px;
         top: -1px;
     }}
 
     QTabBar::tab {{
-        background-color: {COLORS['bg_tertiary']};
+        background-color: transparent;
         color: {COLORS['text_secondary']};
         padding: 12px 24px;
         margin-right: 4px;
+        margin-bottom: 2px;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
         font-weight: 500;
+        font-size: 13px;
+        min-width: 100px;
     }}
 
     QTabBar::tab:selected {{
         background-color: {COLORS['bg_secondary']};
-        color: {COLORS['accent_blue']};
+        color: {COLORS['primary']};
         font-weight: 600;
-        border-bottom: 2px solid {COLORS['accent_blue']};
+        border-bottom: 3px solid {COLORS['primary']};
+        margin-bottom: 0px;
     }}
 
-    QTabBar::tab:hover {{
-        background-color: {COLORS['bg_secondary']};
-        color: {COLORS['text_primary']};
-    }}
-
-    /* ===== STATUS BAR ===== */
-    QStatusBar {{
+    QTabBar::tab:hover:!selected {{
         background-color: {COLORS['bg_tertiary']};
         color: {COLORS['text_primary']};
-        border-top: 1px solid {COLORS['border_default']};
-        font-size: 12px;
     }}
 
-    /* ===== SCROLL BAR ===== */
+    /* ========================================
+       STATUS BAR - Bottom status
+       ======================================== */
+
+    QStatusBar {{
+        background-color: {COLORS['bg_elevated']};
+        color: {COLORS['text_secondary']};
+        border-top: 1px solid {COLORS['border_default']};
+        font-size: 12px;
+        padding: 6px 16px;
+    }}
+
+    QStatusBar::item {{
+        border: none;
+    }}
+
+    /* ========================================
+       SCROLL BARS - Custom scrolling
+       ======================================== */
+
     QScrollBar:vertical {{
         background-color: {COLORS['bg_secondary']};
-        width: 12px;
+        width: 14px;
         margin: 0;
+        border-radius: 7px;
     }}
 
     QScrollBar::handle:vertical {{
-        background-color: {COLORS['bg_tertiary']};
+        background-color: {COLORS['bg_elevated']};
         min-height: 30px;
-        border-radius: 6px;
+        border-radius: 7px;
         margin: 2px;
     }}
 
@@ -282,21 +464,25 @@ def get_stylesheet() -> str:
         background-color: {COLORS['border_hover']};
     }}
 
+    QScrollBar::handle:vertical:pressed {{
+        background-color: {COLORS['primary']};
+    }}
+
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
         height: 0;
     }}
 
-    /* Horizontal */
     QScrollBar:horizontal {{
         background-color: {COLORS['bg_secondary']};
-        height: 12px;
+        height: 14px;
         margin: 0;
+        border-radius: 7px;
     }}
 
     QScrollBar::handle:horizontal {{
-        background-color: {COLORS['bg_tertiary']};
+        background-color: {COLORS['bg_elevated']};
         min-width: 30px;
-        border-radius: 6px;
+        border-radius: 7px;
         margin: 2px;
     }}
 
@@ -304,143 +490,263 @@ def get_stylesheet() -> str:
         background-color: {COLORS['border_hover']};
     }}
 
-    /* ===== LABELS ===== */
+    QScrollBar::handle:horizontal:pressed {{
+        background-color: {COLORS['primary']};
+    }}
+
+    /* ========================================
+       LABELS - Text display
+       ======================================== */
+
     QLabel {{
         color: {COLORS['text_primary']};
         background-color: transparent;
+        border: none;
     }}
 
     QLabel#statLabel {{
-        background-color: {COLORS['bg_tertiary']};
-        border-left: 4px solid {COLORS['accent_blue']};
-        border-radius: 6px;
-        padding: 12px 16px;
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    stop:0 {COLORS['primary_muted']},
+                                    stop:1 {COLORS['bg_elevated']});
+        border-left: 4px solid {COLORS['primary']};
+        border-radius: 8px;
+        padding: 14px 18px;
         font-weight: 600;
         font-size: 14px;
+        color: {COLORS['text_primary']};
     }}
 
     QLabel#metricValue {{
-        font-size: 28px;
+        font-size: 32px;
         font-weight: 700;
-        color: {COLORS['accent_blue']};
+        color: {COLORS['primary']};
+        letter-spacing: -0.5px;
     }}
 
     QLabel#successLabel {{
         color: {COLORS['status_active']};
+        font-weight: 600;
     }}
 
     QLabel#errorLabel {{
         color: {COLORS['status_error']};
-    }}
-
-    /* ===== PROGRESS BAR ===== */
-    QProgressBar {{
-        background-color: {COLORS['bg_tertiary']};
-        border: 1px solid {COLORS['border_default']};
-        border-radius: 6px;
-        text-align: center;
-        color: {COLORS['text_primary']};
         font-weight: 600;
     }}
 
-    QProgressBar::chunk {{
-        background-color: {COLORS['accent_blue']};
-        border-radius: 5px;
+    QLabel#warningLabel {{
+        color: {COLORS['status_paused']};
+        font-weight: 600;
     }}
 
-    /* ===== MENU BAR ===== */
-    QMenuBar {{
+    /* ========================================
+       PROGRESS BAR - Loading states
+       ======================================== */
+
+    QProgressBar {{
         background-color: {COLORS['bg_tertiary']};
+        border: 1px solid {COLORS['border_default']};
+        border-radius: 7px;
+        text-align: center;
+        color: {COLORS['text_primary']};
+        font-weight: 600;
+        font-size: 12px;
+        height: 24px;
+    }}
+
+    QProgressBar::chunk {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    stop:0 {COLORS['primary']},
+                                    stop:1 {COLORS['primary_hover']});
+        border-radius: 6px;
+        margin: 1px;
+    }}
+
+    /* ========================================
+       MENU BAR - Application menu
+       ======================================== */
+
+    QMenuBar {{
+        background-color: {COLORS['bg_elevated']};
         color: {COLORS['text_primary']};
         border-bottom: 1px solid {COLORS['border_default']};
-        padding: 4px;
+        padding: 6px;
+        spacing: 4px;
     }}
 
     QMenuBar::item {{
-        padding: 8px 12px;
+        padding: 8px 14px;
         background-color: transparent;
-        border-radius: 4px;
+        border-radius: 6px;
+        font-weight: 500;
     }}
 
     QMenuBar::item:selected {{
-        background-color: {COLORS['accent_blue']};
+        background-color: {COLORS['primary']};
+        color: {COLORS['bg_deepest']};
+    }}
+
+    QMenuBar::item:pressed {{
+        background-color: {COLORS['primary_pressed']};
     }}
 
     QMenu {{
-        background-color: {COLORS['bg_secondary']};
+        background-color: {COLORS['bg_elevated']};
         color: {COLORS['text_primary']};
-        border: 1px solid {COLORS['border_default']};
-        border-radius: 6px;
-        padding: 8px;
+        border: 1px solid {COLORS['border_strong']};
+        border-radius: 8px;
+        padding: 6px;
     }}
 
     QMenu::item {{
-        padding: 8px 24px 8px 12px;
-        border-radius: 4px;
+        padding: 10px 32px 10px 16px;
+        border-radius: 6px;
+        margin: 2px;
     }}
 
     QMenu::item:selected {{
-        background-color: {COLORS['accent_blue']};
+        background-color: {COLORS['primary']};
+        color: {COLORS['bg_deepest']};
     }}
 
-    /* ===== CHECKBOX ===== */
+    QMenu::separator {{
+        height: 1px;
+        background-color: {COLORS['border_default']};
+        margin: 6px 8px;
+    }}
+
+    /* ========================================
+       CHECKBOXES - Toggle options
+       ======================================== */
+
     QCheckBox {{
         color: {COLORS['text_primary']};
-        spacing: 8px;
+        spacing: 10px;
+        font-size: 13px;
     }}
 
     QCheckBox::indicator {{
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         border: 2px solid {COLORS['border_default']};
-        border-radius: 4px;
+        border-radius: 6px;
         background-color: {COLORS['bg_input']};
     }}
 
     QCheckBox::indicator:checked {{
-        background-color: {COLORS['accent_blue']};
-        border-color: {COLORS['accent_blue']};
-        image: url(none);  /* Add checkmark icon if available */
+        background-color: {COLORS['primary']};
+        border-color: {COLORS['primary']};
+        image: none;
     }}
 
     QCheckBox::indicator:hover {{
         border-color: {COLORS['border_hover']};
     }}
 
-    /* ===== DIALOG ===== */
-    QDialog {{
-        background-color: {COLORS['bg_primary']};
+    QCheckBox::indicator:checked:hover {{
+        background-color: {COLORS['primary_hover']};
+        border-color: {COLORS['primary_hover']};
     }}
 
-    /* ===== DATE EDIT ===== */
+    QCheckBox:disabled {{
+        color: {COLORS['text_disabled']};
+    }}
+
+    QCheckBox::indicator:disabled {{
+        background-color: {COLORS['bg_tertiary']};
+        border-color: {COLORS['border_subtle']};
+    }}
+
+    /* ========================================
+       DATE EDIT - Date picker
+       ======================================== */
+
     QDateEdit {{
         background-color: {COLORS['bg_input']};
-        color: {COLORS['text_primary']};
+        color: {COLORS['text_secondary']};
         border: 1px solid {COLORS['border_default']};
-        border-radius: 6px;
-        padding: 8px 12px;
+        border-radius: 7px;
+        padding: 10px 14px;
+        font-size: 13px;
     }}
 
     QDateEdit:focus {{
         border: 2px solid {COLORS['border_focus']};
+        padding: 9px 13px;
+        color: {COLORS['text_primary']};
     }}
 
     QDateEdit::drop-down {{
         border: none;
-        width: 20px;
+        width: 24px;
+        margin-right: 6px;
     }}
 
-    /* ===== TOOLTIPS ===== */
-    QToolTip {{
-        background-color: {COLORS['bg_tertiary']};
+    QDateEdit::down-arrow {{
+        image: none;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid {COLORS['text_secondary']};
+        margin-right: 6px;
+    }}
+
+    QDateEdit::down-arrow:hover {{
+        border-top-color: {COLORS['primary']};
+    }}
+
+    QCalendarWidget {{
+        background-color: {COLORS['bg_elevated']};
         color: {COLORS['text_primary']};
-        border: 1px solid {COLORS['border_default']};
-        border-radius: 4px;
-        padding: 6px;
+    }}
+
+    /* ========================================
+       TOOLTIPS - Hover information
+       ======================================== */
+
+    QToolTip {{
+        background-color: {COLORS['bg_elevated']};
+        color: {COLORS['text_primary']};
+        border: 1px solid {COLORS['border_strong']};
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }}
+
+    /* ========================================
+       SPECIAL ELEMENTS
+       ======================================== */
+
+    QFrame[frameShape="4"], /* HLine */
+    QFrame[frameShape="5"]  /* VLine */
+    {{
+        background-color: {COLORS['border_default']};
     }}
     """
 
 
 def get_colors() -> dict:
-    """Get the color palette."""
+    """Get the complete color palette."""
     return COLORS.copy()
+
+
+def get_status_color(status: str) -> str:
+    """Get color for a specific status."""
+    status_map = {
+        'active': COLORS['status_active'],
+        'paused': COLORS['status_paused'],
+        'draft': COLORS['status_draft'],
+        'error': COLORS['status_error'],
+        'completed': COLORS['status_completed'],
+    }
+    return status_map.get(status.lower(), COLORS['text_secondary'])
+
+
+def get_chart_colors() -> list:
+    """Get colors for data visualization charts."""
+    return [
+        COLORS['chart_1'],
+        COLORS['chart_2'],
+        COLORS['chart_3'],
+        COLORS['chart_4'],
+        COLORS['chart_5'],
+        COLORS['chart_6'],
+    ]

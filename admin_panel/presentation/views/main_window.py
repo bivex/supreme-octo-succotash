@@ -1,405 +1,29 @@
-#!/usr/bin/env python3
-"""
-Advertising Platform Admin Panel
-
-PyQt6-based admin interface for managing Advertising Platform business tasks.
-"""
+"""Main window for the admin panel."""
 
 import sys
+import os
 from pathlib import Path
-
-# Add parent directory to path for imports
-parent_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(parent_dir))
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget,
-    QTableWidgetItem, QTextEdit, QComboBox, QSpinBox, QGroupBox, QFormLayout, QMessageBox, QStatusBar,
-    QDialog, QDialogButtonBox, QDoubleSpinBox, QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea
+    QTableWidgetItem, QTextEdit, QComboBox, QSpinBox, QGroupBox,
+    QFormLayout, QMessageBox, QStatusBar, QDoubleSpinBox, 
+    QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea
 )
 from PyQt6.QtCore import QThread, pyqtSignal, QDateTime, Qt, QTimer, QDate
 from PyQt6.QtGui import QAction, QPalette, QColor, QFont
 
+# Import SDK
 from advertising_platform_sdk import AdvertisingPlatformClient
 from advertising_platform_sdk.exceptions import *
 
-# Import dark theme
-try:
-    from presentation.styles import get_stylesheet
-    DARK_THEME_AVAILABLE = True
-except ImportError:
-    DARK_THEME_AVAILABLE = False
+# Import presentation components
+from presentation.workers import APIWorker
+from presentation.dialogs import CampaignDialog, GoalDialog, GenerateClickDialog
 
 
-class APIWorker(QThread):
-    """Worker thread for API operations."""
-    finished = pyqtSignal(object)  # Result data
-    error = pyqtSignal(str)       # Error message
-
-    def __init__(self, func, *args, **kwargs):
-        super().__init__()
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-
-    def run(self):
-        try:
-            result = self.func(*self.args, **self.kwargs)
-            self.finished.emit(result)
-        except Exception as e:
-            self.error.emit(str(e))
-
-
-class CampaignDialog(QDialog):
-    """Dialog for creating/editing campaigns."""
-
-    def __init__(self, parent=None, campaign=None):
-        super().__init__(parent)
-        self.campaign = campaign
-        self.is_edit = campaign is not None
-        self.init_ui()
-
-        if self.campaign:
-            self.populate_fields()
-
-    def init_ui(self):
-        """Initialize dialog UI."""
-        self.setWindowTitle("Edit Campaign" if self.is_edit else "Create Campaign")
-        self.setMinimumWidth(500)
-
-        layout = QVBoxLayout(self)
-
-        # Form
-        form_group = QGroupBox("Campaign Details")
-        form_layout = QFormLayout(form_group)
-
-        # Name
-        self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Enter campaign name...")
-        form_layout.addRow("Name *:", self.name_edit)
-
-        # Status
-        self.status_combo = QComboBox()
-        self.status_combo.addItems(["active", "paused", "draft"])
-        form_layout.addRow("Status:", self.status_combo)
-
-        # Budget
-        budget_layout = QHBoxLayout()
-        self.budget_amount = QDoubleSpinBox()
-        self.budget_amount.setRange(0, 1000000)
-        self.budget_amount.setDecimals(2)
-        self.budget_amount.setValue(1000.00)
-        budget_layout.addWidget(self.budget_amount)
-
-        self.budget_currency = QComboBox()
-        self.budget_currency.addItems(["USD", "EUR", "GBP", "RUB"])
-        budget_layout.addWidget(self.budget_currency)
-        form_layout.addRow("Budget *:", budget_layout)
-
-        # Budget Type
-        self.budget_type = QComboBox()
-        self.budget_type.addItems(["daily", "total"])
-        form_layout.addRow("Budget Type:", self.budget_type)
-
-        # Target URL
-        self.target_url = QLineEdit()
-        self.target_url.setPlaceholderText("https://example.com/landing-page")
-        form_layout.addRow("Target URL *:", self.target_url)
-
-        # Start/End dates
-        self.start_date = QDateEdit()
-        self.start_date.setDate(QDate.currentDate())
-        self.start_date.setCalendarPopup(True)
-        form_layout.addRow("Start Date:", self.start_date)
-
-        self.end_date = QDateEdit()
-        self.end_date.setDate(QDate.currentDate().addMonths(1))
-        self.end_date.setCalendarPopup(True)
-        form_layout.addRow("End Date:", self.end_date)
-
-        layout.addWidget(form_group)
-
-        # Buttons
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(self.validate_and_accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-
-    def populate_fields(self):
-        """Populate fields with existing campaign data."""
-        if not self.campaign:
-            return
-
-        self.name_edit.setText(self.campaign.get('name', ''))
-
-        status = self.campaign.get('status', 'draft')
-        index = self.status_combo.findText(status)
-        if index >= 0:
-            self.status_combo.setCurrentIndex(index)
-
-        budget = self.campaign.get('budget', {})
-        self.budget_amount.setValue(float(budget.get('amount', 0)))
-
-        currency = budget.get('currency', 'USD')
-        index = self.budget_currency.findText(currency)
-        if index >= 0:
-            self.budget_currency.setCurrentIndex(index)
-
-        budget_type = budget.get('type', 'daily')
-        index = self.budget_type.findText(budget_type)
-        if index >= 0:
-            self.budget_type.setCurrentIndex(index)
-
-        self.target_url.setText(self.campaign.get('target_url', ''))
-
-    def validate_and_accept(self):
-        """Validate input and accept dialog."""
-        if not self.name_edit.text().strip():
-            QMessageBox.warning(self, "Validation Error", "Campaign name is required")
-            return
-
-        if not self.target_url.text().strip():
-            QMessageBox.warning(self, "Validation Error", "Target URL is required")
-            return
-
-        if self.budget_amount.value() <= 0:
-            QMessageBox.warning(self, "Validation Error", "Budget must be greater than 0")
-            return
-
-        self.accept()
-
-    def get_campaign_data(self):
-        """Get campaign data from form."""
-        return {
-            "name": self.name_edit.text().strip(),
-            "status": self.status_combo.currentText(),
-            "budget": {
-                "amount": self.budget_amount.value(),
-                "currency": self.budget_currency.currentText(),
-                "type": self.budget_type.currentText()
-            },
-            "target_url": self.target_url.text().strip(),
-            "start_date": self.start_date.date().toString("yyyy-MM-dd"),
-            "end_date": self.end_date.date().toString("yyyy-MM-dd")
-        }
-
-
-class GoalDialog(QDialog):
-    """Dialog for creating/editing goals."""
-
-    def __init__(self, parent=None, goal=None, campaigns=None, templates=None):
-        super().__init__(parent)
-        self.goal = goal
-        self.campaigns = campaigns or []
-        self.templates = templates or []
-        self.is_edit = goal is not None
-        self.init_ui()
-
-        if self.goal:
-            self.populate_fields()
-
-    def init_ui(self):
-        """Initialize dialog UI."""
-        self.setWindowTitle("Edit Goal" if self.is_edit else "Create Goal")
-        self.setMinimumWidth(500)
-
-        layout = QVBoxLayout(self)
-
-        # Template selection (only for new goals)
-        if not self.is_edit and self.templates:
-            template_group = QGroupBox("Quick Start")
-            template_layout = QVBoxLayout(template_group)
-
-            template_layout.addWidget(QLabel("Choose a template:"))
-            self.template_combo = QComboBox()
-            self.template_combo.addItem("-- Custom Goal --", None)
-            for template in self.templates:
-                self.template_combo.addItem(template.get('name', ''), template)
-            self.template_combo.currentIndexChanged.connect(self.on_template_selected)
-            template_layout.addWidget(self.template_combo)
-
-            layout.addWidget(template_group)
-
-        # Form
-        form_group = QGroupBox("Goal Details")
-        form_layout = QFormLayout(form_group)
-
-        # Name
-        self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Enter goal name...")
-        form_layout.addRow("Name *:", self.name_edit)
-
-        # Campaign
-        self.campaign_combo = QComboBox()
-        for campaign in self.campaigns:
-            self.campaign_combo.addItem(campaign.get('name', ''), campaign.get('id', ''))
-        form_layout.addRow("Campaign *:", self.campaign_combo)
-
-        # Type
-        self.type_combo = QComboBox()
-        self.type_combo.addItems(["conversion", "click", "impression", "lead", "sale"])
-        form_layout.addRow("Type *:", self.type_combo)
-
-        # Value
-        self.value_spin = QDoubleSpinBox()
-        self.value_spin.setRange(0, 1000000)
-        self.value_spin.setDecimals(2)
-        self.value_spin.setPrefix("$ ")
-        form_layout.addRow("Goal Value:", self.value_spin)
-
-        # URL Match (for conversion tracking)
-        self.url_match = QLineEdit()
-        self.url_match.setPlaceholderText("https://example.com/thank-you")
-        form_layout.addRow("Success URL:", self.url_match)
-
-        layout.addWidget(form_group)
-
-        # Buttons
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(self.validate_and_accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-
-    def on_template_selected(self, index):
-        """Handle template selection."""
-        template = self.template_combo.currentData()
-        if template:
-            self.name_edit.setText(template.get('name', ''))
-
-            goal_type = template.get('type', 'conversion')
-            idx = self.type_combo.findText(goal_type)
-            if idx >= 0:
-                self.type_combo.setCurrentIndex(idx)
-
-            self.value_spin.setValue(float(template.get('value', 0)))
-
-    def populate_fields(self):
-        """Populate fields with existing goal data."""
-        if not self.goal:
-            return
-
-        self.name_edit.setText(self.goal.get('name', ''))
-
-        campaign_id = self.goal.get('campaign_id', '')
-        for i in range(self.campaign_combo.count()):
-            if self.campaign_combo.itemData(i) == campaign_id:
-                self.campaign_combo.setCurrentIndex(i)
-                break
-
-        goal_type = self.goal.get('type', 'conversion')
-        index = self.type_combo.findText(goal_type)
-        if index >= 0:
-            self.type_combo.setCurrentIndex(index)
-
-        self.value_spin.setValue(float(self.goal.get('value', 0)))
-        self.url_match.setText(self.goal.get('url_match', ''))
-
-    def validate_and_accept(self):
-        """Validate input and accept dialog."""
-        if not self.name_edit.text().strip():
-            QMessageBox.warning(self, "Validation Error", "Goal name is required")
-            return
-
-        if self.campaign_combo.count() == 0:
-            QMessageBox.warning(self, "Validation Error", "Please select a campaign")
-            return
-
-        self.accept()
-
-    def get_goal_data(self):
-        """Get goal data from form."""
-        return {
-            "name": self.name_edit.text().strip(),
-            "campaign_id": self.campaign_combo.currentData(),
-            "type": self.type_combo.currentText(),
-            "value": self.value_spin.value(),
-            "url_match": self.url_match.text().strip()
-        }
-
-
-class GenerateClickDialog(QDialog):
-    """Dialog for generating click URLs."""
-
-    def __init__(self, parent=None, campaigns=None):
-        super().__init__(parent)
-        self.campaigns = campaigns or []
-        self.init_ui()
-
-    def init_ui(self):
-        """Initialize dialog UI."""
-        self.setWindowTitle("Generate Click URL")
-        self.setMinimumWidth(500)
-
-        layout = QVBoxLayout(self)
-
-        # Form
-        form_group = QGroupBox("Click Configuration")
-        form_layout = QFormLayout(form_group)
-
-        # Campaign
-        self.campaign_combo = QComboBox()
-        for campaign in self.campaigns:
-            self.campaign_combo.addItem(campaign.get('name', ''), campaign.get('id', ''))
-        form_layout.addRow("Campaign *:", self.campaign_combo)
-
-        # Source
-        self.source_edit = QLineEdit()
-        self.source_edit.setPlaceholderText("e.g., google, facebook, email")
-        form_layout.addRow("Source:", self.source_edit)
-
-        # Medium
-        self.medium_edit = QLineEdit()
-        self.medium_edit.setPlaceholderText("e.g., cpc, social, newsletter")
-        form_layout.addRow("Medium:", self.medium_edit)
-
-        # Campaign Name (UTM)
-        self.utm_campaign = QLineEdit()
-        self.utm_campaign.setPlaceholderText("e.g., summer_sale")
-        form_layout.addRow("UTM Campaign:", self.utm_campaign)
-
-        layout.addWidget(form_group)
-
-        # Generated URL display
-        self.url_display = QTextEdit()
-        self.url_display.setMaximumHeight(100)
-        self.url_display.setReadOnly(True)
-        self.url_display.setPlaceholderText("Generated URL will appear here...")
-        layout.addWidget(QLabel("Generated URL:"))
-        layout.addWidget(self.url_display)
-
-        # Buttons
-        button_layout = QHBoxLayout()
-
-        generate_btn = QPushButton("Generate URL")
-        generate_btn.clicked.connect(self.accept)
-        button_layout.addWidget(generate_btn)
-
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.reject)
-        button_layout.addWidget(cancel_btn)
-
-        layout.addLayout(button_layout)
-
-    def get_click_data(self):
-        """Get click generation data from form."""
-        return {
-            "campaign_id": self.campaign_combo.currentData(),
-            "source": self.source_edit.text().strip(),
-            "medium": self.medium_edit.text().strip(),
-            "utm_campaign": self.utm_campaign.text().strip()
-        }
-
-    def set_generated_url(self, url):
-        """Set the generated URL in the display."""
-        self.url_display.setText(url)
-
-
-class AdminPanel(QMainWindow):
+class MainWindow(QMainWindow):
     """Main admin panel window."""
 
     def __init__(self):
@@ -967,8 +591,14 @@ class AdminPanel(QMainWindow):
             conversions = result.get('conversions', 0)
             revenue = result.get('revenue', 0.0)
 
+            # Handle revenue as dict or float
+            if isinstance(revenue, dict):
+                revenue_amount = float(revenue.get('amount', 0.0))
+            else:
+                revenue_amount = float(revenue)
+
             self.stats_labels["Today's Clicks"].setText(f"👆 Today's Clicks: {clicks}")
-            self.stats_labels["Today's Conversions"].setText(f"💰 Today's Conversions: {conversions} (${revenue:.2f})")
+            self.stats_labels["Today's Conversions"].setText(f"💰 Today's Conversions: {conversions} (${revenue_amount:.2f})")
 
         analytics_worker = APIWorker(self.client.get_real_time_analytics)
         analytics_worker.finished.connect(on_analytics_success)
@@ -1196,7 +826,7 @@ class AdminPanel(QMainWindow):
                 if isinstance(value, dict):
                     self.analytics_text.append(f"{key}:")
                     for sub_key, sub_value in value.items():
-                        self.analytics_text.append(f"  {sub_key}: {sub_value}")
+                        self.analytics_text.append(f"  {sub_key}: {str(sub_value)}")
                 else:
                     self.analytics_text.append(f"{key}: {value}")
                 self.analytics_text.append("")
@@ -1750,5 +1380,3 @@ def main():
     sys.exit(app.exec())
 
 
-if __name__ == "__main__":
-    main()
