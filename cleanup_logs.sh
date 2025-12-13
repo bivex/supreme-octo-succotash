@@ -24,6 +24,7 @@ LOG_DIRS=(
 MAX_LOG_SIZE_MB=10  # Rotate logs larger than 10MB
 MAX_BACKUP_AGE_DAYS=30  # Delete backups older than 30 days
 DRY_RUN=false
+FULL_CLEANUP=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -59,12 +60,14 @@ Log cleanup script for the Supreme Octo Succotash project.
 OPTIONS:
     -s, --max-size MB       Maximum log file size in MB before rotation (default: $MAX_LOG_SIZE_MB)
     -a, --max-age DAYS      Maximum age in days for backup files before deletion (default: $MAX_BACKUP_AGE_DAYS)
+    -f, --full              Full cleanup: rotate all non-empty logs and delete all backups
     -d, --dry-run           Show what would be done without making changes
     -h, --help              Show this help message
 
 EXAMPLES:
     $0                      # Run cleanup with default settings
     $0 -s 5 -a 7            # Rotate logs > 5MB, delete backups > 7 days old
+    $0 --full               # Full cleanup: rotate all logs and delete all backups
     $0 --dry-run            # Preview what would be cleaned up
 
 LOG FILES MANAGED:
@@ -90,6 +93,10 @@ parse_args() {
             -a|--max-age)
                 MAX_BACKUP_AGE_DAYS="$2"
                 shift 2
+                ;;
+            -f|--full)
+                FULL_CLEANUP=true
+                shift
                 ;;
             -d|--dry-run)
                 DRY_RUN=true
@@ -132,7 +139,17 @@ rotate_log() {
 
     local size_mb=$(get_file_size_mb "$log_file")
 
-    if (( $(echo "$size_mb > $MAX_LOG_SIZE_MB" | bc -l) )); then
+    # For full cleanup, rotate any non-empty file
+    # Otherwise, rotate only if file exceeds size limit
+    local should_rotate=false
+    if [[ "$FULL_CLEANUP" == "true" ]] && [[ -s "$log_file" ]]; then
+        # File exists and is not empty
+        should_rotate=true
+    elif (( $(echo "$size_mb > $MAX_LOG_SIZE_MB" | bc -l) )); then
+        should_rotate=true
+    fi
+
+    if [[ "$should_rotate" == "true" ]]; then
         local timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
         local backup_file="${dir_name}/${base_name}.${timestamp}"
 
@@ -229,6 +246,12 @@ cleanup_logs() {
     log_info "Starting log cleanup process"
     if [[ "$DRY_RUN" == "true" ]]; then
         log_warn "DRY RUN MODE - No changes will be made"
+    fi
+
+    if [[ "$FULL_CLEANUP" == "true" ]]; then
+        log_info "FULL CLEANUP MODE - Will rotate all non-empty logs and delete all backups"
+        MAX_LOG_SIZE_MB=0  # Rotate any file > 0 bytes
+        MAX_BACKUP_AGE_DAYS=0  # Delete all backups
     fi
 
     echo "Settings:"
