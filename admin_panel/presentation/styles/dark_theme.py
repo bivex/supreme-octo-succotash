@@ -105,7 +105,7 @@ def get_stylesheet() -> str:
     QMainWindow, QWidget, QDialog {{
         background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
-        font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        font-family: 'Helvetica Neue', Arial;
         font-size: 13px;
         selection-background-color: {COLORS['primary']};
         selection-color: {COLORS['bg_deepest']};
