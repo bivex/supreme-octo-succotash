@@ -75,7 +75,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.get_db_connection_pool_sync().putconn, conn))
 
     def _row_to_pre_click_data(self, row: Dict[str, Any]) -> PreClickData:
         """Convert database row to PreClickData entity."""
@@ -121,7 +121,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.get_db_connection_pool_sync().putconn, conn))
 
     async def find_by_click_id(self, click_id: ClickId) -> Optional[PreClickData]:
         """Finds pre-click data by click ID."""
@@ -146,7 +146,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.get_db_connection_pool_sync().putconn, conn))
 
     async def delete_by_click_id(self, click_id: ClickId) -> None:
         """Deletes pre-click data by click ID."""
@@ -167,4 +167,4 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.get_db_connection_pool_sync().putconn, conn))

@@ -2,7 +2,13 @@
 Command handlers for Telegram bot
 """
 
+import os
+import sys
 from typing import Dict, Any
+
+# Add project root to sys.path for absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command

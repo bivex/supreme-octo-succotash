@@ -8,7 +8,11 @@ import asyncio
 import signal
 import sys
 import argparse
+import os
 from typing import Optional
+
+# Add project root to sys.path for absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties

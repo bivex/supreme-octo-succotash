@@ -4,6 +4,7 @@ Test script for the local async-trace installation.
 """
 
 import asyncio
+import pytest
 import sys
 import os
 
@@ -22,6 +23,7 @@ def test_import():
         print(f"❌ Failed to import async_trace: {e}")
         return False
 
+@pytest.mark.asyncio
 async def test_basic_functionality():
     """Test basic async-trace functionality."""
     try:
