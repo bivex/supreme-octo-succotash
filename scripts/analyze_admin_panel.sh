@@ -53,7 +53,7 @@ if ./admin_panel/DPy analyze -i admin_panel/ -o "${TEMP_RESULTS_DIR}/"; then
     fi
 
     if [ -f "${TEMP_RESULTS_DIR}/admin_panel_implementation_smells.json" ]; then
-        mv "${TEMP_RESULTS_DIR}/admin_panel_implementation_smells.json" "${ANALYSIS_BASE_DIR}/implementation_smells/"
+        mv "${TEMP_RESULTS_DIR}/admin_panel_implementation_smells.json" "${ANALYSIS_DIR}/implementation_smells/"
         echo "📁 Проблемы реализации перемещены"
     fi
 
@@ -64,7 +64,7 @@ if ./admin_panel/DPy analyze -i admin_panel/ -o "${TEMP_RESULTS_DIR}/"; then
     fi
 
     if [ -f "${TEMP_RESULTS_DIR}/admin_panel_function_metrics.json" ]; then
-        mv "${TEMP_RESULTS_DIR}/admin_panel_function_metrics.json" "${ANALYSIS_BASE_DIR}/metrics/"
+        mv "${TEMP_RESULTS_DIR}/admin_panel_function_metrics.json" "${ANALYSIS_DIR}/metrics/"
         echo "📊 Метрики функций перемещены"
     fi
 

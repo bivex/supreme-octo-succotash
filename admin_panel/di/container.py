@@ -78,8 +78,10 @@ class Container:
     @property
     def campaign_repository(self) -> ApiCampaignRepository:
         logger.debug("Container: Accessing campaign_repository property.")
+        repository = self._infrastructure_factory.campaign_repository
+        logger.debug(f"Container: campaign_repository property returning: {type(repository)}")
         """Get campaign repository (singleton)."""
-        return self._infrastructure_factory.campaign_repository
+        return repository
 
     @property
     def offer_repository(self) -> ApiOfferRepository:

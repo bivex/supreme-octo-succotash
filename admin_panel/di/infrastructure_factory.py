@@ -63,9 +63,12 @@ class InfrastructureFactory:
 
     @property
     def campaign_repository(self) -> ApiCampaignRepository:
+        logger.debug("InfrastructureFactory: Accessing campaign_repository property.")
         """Get campaign repository (singleton)."""
         if self._campaign_repository is None:
+            logger.debug("InfrastructureFactory: Creating new ApiCampaignRepository instance.")
             self._campaign_repository = ApiCampaignRepository(self.api_client)
+        logger.debug(f"InfrastructureFactory: campaign_repository property returning: {type(self._campaign_repository)}")
         return self._campaign_repository
 
     @property
