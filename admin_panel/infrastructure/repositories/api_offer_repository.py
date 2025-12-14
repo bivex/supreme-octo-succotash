@@ -1,12 +1,17 @@
 """Offer Repository Implementation - Adapter."""
 
+import logging
 from typing import List, Optional
 from decimal import Decimal
 
 from ...domain.entities import Offer
 from ...domain.value_objects import Money, Url
 from ...domain.repositories import IOfferRepository
+from ...domain.exceptions import EntityNotFoundError
 from ..api.api_client import AdvertisingAPIClient
+from ..exceptions import APIException, RepositoryException
+
+logger = logging.getLogger(__name__)
 
 
 class ApiOfferRepository(IOfferRepository):
