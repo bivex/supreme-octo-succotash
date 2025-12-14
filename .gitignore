@@ -51,5 +51,17 @@ build/
 
 # Logs
 app.log
-*.logmain_clean.pid
 *.log
+main_clean.pid
+*.logmain_clean.pid
+
+# Analysis results and temporary files
+analysis_results/
+admin_panel/DPY
+*_arch_smells.json
+*_design_smells.json
+*_implementation_smells.json
+*_class_module_metrics.json
+*_function_metrics.json
+temp_results/
+*.analysis
