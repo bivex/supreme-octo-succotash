@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QTableWidget, QComboBox,
     QSpinBox, QGroupBox, QFormLayout, QStatusBar, QDoubleSpinBox,
-    QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea
+    QCheckBox, QDateEdit, QProgressBar, QFrame, QScrollArea, QTextEdit
 )
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QAction, QPalette, QColor, QFont

@@ -178,7 +178,8 @@ class Container:
 
     def close(self) -> None:
         """Close all resources."""
-        self._infrastructure_factory.close()
+        if hasattr(self, '_infrastructure_factory'):
+            self._infrastructure_factory.close()
         # Clear references to help with garbage collection
         self._usecase_factory = None
 
@@ -404,5 +405,7 @@ class Container:
 
     def close(self) -> None:
         """Close all resources."""
-        if self._api_client:
-            self._api_client.close()
+        if hasattr(self, '_infrastructure_factory'):
+            self._infrastructure_factory.close()
+        # Clear references to help with garbage collection
+        self._usecase_factory = None

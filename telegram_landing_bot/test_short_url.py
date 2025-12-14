@@ -4,23 +4,22 @@ import sys
 import os
 from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from telegram_landing_bot.tracking import init_tracking, get_tracking_manager
 
-# Mock settings for testing purposes
-class MockSettings:
-    bot_token: str = "test_bot_token"
-    tracker_domain: str = "http://test-tracker.com"
-    landing_url: str = "http://test-landing.com"
-    campaign_id: int = 12345
-
+from tracking import init_tracking, get_tracking_manager
+from config import Settings
 
 @pytest.mark.asyncio
 async def test_short_url():
     # Create a mock settings instance
-    mock_settings_instance = MockSettings()
+    mock_settings_instance = Settings(
+        bot_token="test_bot_token",
+        tracker_domain="http://test-tracker.com",
+        landing_url="http://test-landing.com",
+        campaign_id="test_campaign_123"
+    )
 
-    # Patch the global settings instance directly within telegram_landing_bot.tracking
-    with patch('telegram_landing_bot.tracking.settings', new=mock_settings_instance):
+    # Patch the global settings instance
+    with patch('tracking.settings', new=mock_settings_instance):
         print(f"Settings campaign_id: {mock_settings_instance.campaign_id}")
         await init_tracking()
         manager = get_tracking_manager()
