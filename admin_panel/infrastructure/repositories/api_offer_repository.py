@@ -5,6 +5,9 @@ from typing import List, Optional
 from decimal import Decimal
 
 DEFAULT_PAGE_SIZE = 20
+COUNT_PAGE_SIZE = 1
+DEFAULT_COUNT_PAGE = 1
+COUNT_PAGE_SIZE = 1
 
 from ...domain.entities import Offer
 from ...domain.value_objects import Money, Url
@@ -94,8 +97,8 @@ class ApiOfferRepository(IOfferRepository):
         try:
             # TODO: Implement when API endpoint is available
             # response = self._api.get_offers(
-            #     page=1,
-            #     page_size=1,
+            #     page=DEFAULT_COUNT_PAGE,
+            #     page_size=COUNT_PAGE_SIZE,
             #     campaign_id=campaign_id,
             #     is_active=is_active
             # )

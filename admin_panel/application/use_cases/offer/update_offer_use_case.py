@@ -17,26 +17,7 @@ class UpdateOfferUseCase:
         """Initialize use case with dependencies."""
         self._offer_repository = offer_repository
 
-    def execute(self, offer_id: str, dto: UpdateOfferDTO) -> OfferDTO:
-        """
-        Execute the update offer use case.
-
-        Args:
-            offer_id: The ID of the offer to be updated.
-            dto: Data Transfer Object containing the updated offer information.
-
-        Returns:
-            The updated offer as a Data Transfer Object (DTO).
-
-        Raises:
-            ValidationError: If the offer is not found or the provided data is invalid.
-        """
-        # Get existing offer
-        offer = self._offer_repository.find_by_id(offer_id)
-        if not offer:
-            raise ValidationError(f"Offer with ID {offer_id} not found")
-
-        # Update fields if provided
+    def _update_offer_fields(self, offer: Offer, dto: UpdateOfferDTO) -> None:
         if dto.name is not None:
             offer.name = dto.name
 
@@ -70,6 +51,28 @@ class UpdateOfferUseCase:
 
         if dto.is_control is not None:
             offer.is_control = dto.is_control
+
+    def execute(self, offer_id: str, dto: UpdateOfferDTO) -> OfferDTO:
+        """
+        Execute the update offer use case.
+
+        Args:
+            offer_id: The ID of the offer to be updated.
+            dto: Data Transfer Object containing the updated offer information.
+
+        Returns:
+            The updated offer as a Data Transfer Object (DTO).
+
+        Raises:
+            ValidationError: If the offer is not found or the provided data is invalid.
+        """
+        # Get existing offer
+        offer = self._offer_repository.find_by_id(offer_id)
+        if not offer:
+            raise ValidationError(f"Offer with ID {offer_id} not found")
+
+        # Update fields if provided
+        self._update_offer_fields(offer, dto)
 
         # Save updated offer
         saved_offer = self._offer_repository.save(offer)

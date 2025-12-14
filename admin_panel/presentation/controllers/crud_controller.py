@@ -279,7 +279,7 @@ class CRUDController(BaseController):
         worker.error.connect(on_error)
 
     # Landing Page CRUD operations
-    def show_create_landing_page_dialog(self) -> None:
+    def show_new_landing_page_dialog(self) -> None:
         """Show dialog for creating a new landing page."""
         dialog = self.main_window.landing_page_dialog
         if dialog.exec() == QDialog.DialogCode.Accepted:

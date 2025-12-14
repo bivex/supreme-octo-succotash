@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID, uuid4
 
+MAX_CAMPAIGN_NAME_LENGTH = 255
+
 from ..value_objects import Budget, DateRange
 from ..exceptions import ValidationError, CampaignNotActiveError
 
@@ -51,8 +53,8 @@ class Campaign:
         if not self.name or not self.name.strip():
             raise ValidationError("Campaign name cannot be empty")
 
-        if len(self.name) > 255:
-            raise ValidationError("Campaign name cannot exceed 255 characters")
+        if len(self.name) > MAX_CAMPAIGN_NAME_LENGTH:
+            raise ValidationError(f"Campaign name cannot exceed {MAX_CAMPAIGN_NAME_LENGTH} characters")
 
     def _validate_target_url(self):
         """Ensure target URL is valid."""

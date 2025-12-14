@@ -12,6 +12,13 @@ from .base_controller import BaseController
 
 import logging
 
+MS_MULTIPLIER = 1000
+
+STATUS_BAR_MESSAGE_DURATION_MS = 5000
+MIN_URL_LENGTH = 10
+MIN_TOKEN_LENGTH = 10
+MIN_API_KEY_LENGTH = 8
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +28,22 @@ class SettingsController(BaseController):
     def initialize(self) -> None:
         """Initialize the settings controller."""
         pass
+
+    def _validate_settings_inputs(self, api_url: str, bearer_token: str, api_key: str) -> list[str]:
+        validation_errors = []
+
+        if not api_url:
+            validation_errors.append("API URL is required")
+        elif not self._validate_url(api_url):
+            validation_errors.append("Invalid API URL format")
+
+        if bearer_token and not self._validate_token(bearer_token):
+            validation_errors.append("Bearer token must be at least 10 characters")
+
+        if api_key and not self._validate_api_key(api_key):
+            validation_errors.append("API key must be at least 8 characters")
+        
+        return validation_errors
 
     def save_settings(self) -> None:
         """Save settings from UI to configuration."""
@@ -34,18 +57,7 @@ class SettingsController(BaseController):
             log_level = self.main_window.settings_log_level.currentText()
 
             # Validate inputs
-            validation_errors = []
-
-            if not api_url:
-                validation_errors.append("API URL is required")
-            elif not self._validate_url(api_url):
-                validation_errors.append("Invalid API URL format")
-
-            if bearer_token and not self._validate_token(bearer_token):
-                validation_errors.append("Bearer token must be at least 10 characters")
-
-            if api_key and not self._validate_api_key(api_key):
-                validation_errors.append("API key must be at least 8 characters")
+            validation_errors = self._validate_settings_inputs(api_url, bearer_token, api_key)
 
             if validation_errors:
                 error_msg = "Please fix the following errors:\n\n" + "\n".join(f"• {error}" for error in validation_errors)
@@ -58,7 +70,7 @@ class SettingsController(BaseController):
                 self.main_window.app_settings.bearer_token = bearer_token if bearer_token else None
                 self.main_window.app_settings.api_key = api_key if api_key else None
                 self.main_window.app_settings.auto_refresh_enabled = auto_refresh
-                self.main_window.app_settings.auto_refresh_interval = refresh_interval * 1000  # Convert to milliseconds
+                self.main_window.app_settings.auto_refresh_interval = refresh_interval * MS_MULTIPLIER  # Convert to milliseconds
                 self.main_window.app_settings.log_level = log_level
 
                 # Save to INI file
@@ -81,12 +93,6 @@ class SettingsController(BaseController):
                     self.main_window, "Warning",
                     "Settings object not available. Please restart the application."
                 )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self.main_window, "Error",
-                f"Failed to save settings:\n{str(e)}"
-            )
 
     def load_config(self) -> None:
         """Load configuration and populate UI fields."""
@@ -151,17 +157,17 @@ class SettingsController(BaseController):
         url_lower = url.lower()
         return (
             url_lower.startswith(('http://', 'https://')) and
-            len(url) > 10 and  # Reasonable minimum length
+            len(url) > MIN_URL_LENGTH and  # Reasonable minimum length
             '.' in url  # Must contain a dot
         )
 
     def _validate_token(self, token: str) -> bool:
         """Validate bearer token format."""
-        return len(token) >= 10 and token.strip() == token
+        return len(token) >= MIN_TOKEN_LENGTH and token.strip() == token
 
     def _validate_api_key(self, api_key: str) -> bool:
         """Validate API key format."""
-        return len(api_key) >= 8 and api_key.strip() == api_key
+        return len(api_key) >= MIN_API_KEY_LENGTH and api_key.strip() == api_key
 
     def update_connection_fields(self, api_url: str, bearer_token: str, api_key: str) -> None:
         """Update connection fields in UI."""
@@ -202,7 +208,7 @@ class SettingsController(BaseController):
         """Log activity message."""
         # Log to status bar or activity log
         if hasattr(self.main_window, 'statusBar'):
-            self.main_window.statusBar().showMessage(message, 5000)  # Show for 5 seconds
+            self.main_window.statusBar().showMessage(message, STATUS_BAR_MESSAGE_DURATION_MS)  # Show for 5 seconds
 
     def toggle_auto_refresh(self, enabled: bool) -> None:
         """Toggle auto-refresh functionality."""

@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 
+DEFAULT_PAGE_SIZE = 20
+
 from ..entities import Click
 
 
@@ -14,7 +16,7 @@ class IClickRepository(ABC):
         self,
         campaign_id: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = DEFAULT_PAGE_SIZE
     ) -> List[Click]:
         """Find clicks with optional campaign filter."""
         pass

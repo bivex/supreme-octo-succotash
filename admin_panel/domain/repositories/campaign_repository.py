@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+DEFAULT_PAGE_SIZE = 20
+
 from ..entities import Campaign, CampaignStatus
 
 
@@ -23,7 +25,7 @@ class ICampaignRepository(ABC):
     def find_all(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         status: Optional[CampaignStatus] = None
     ) -> List[Campaign]:
         """Find all campaigns with optional filtering and pagination."""

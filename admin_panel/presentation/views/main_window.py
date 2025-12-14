@@ -172,9 +172,9 @@ class MainWindow(QMainWindow):
         """Show create offer dialog."""
         self.crud_controller.show_create_offer_dialog()
 
-    def show_create_landing_page_dialog(self) -> None:
+    def show_new_landing_page_dialog(self) -> None:
         """Show create landing page dialog."""
-        self.crud_controller.show_create_landing_page_dialog()
+        self.crud_controller.show_new_landing_page_dialog()
 
     def show_create_goal_dialog(self) -> None:
         """Show create goal dialog."""

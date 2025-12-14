@@ -8,6 +8,9 @@ from decimal import Decimal
 from ..value_objects import Money, Url
 from ..exceptions import ValidationError
 
+MIN_WEIGHT_VALUE = 0
+MAX_WEIGHT_VALUE = 100
+
 
 @dataclass
 class Offer:
@@ -73,7 +76,7 @@ class Offer:
 
     def _validate_weight(self) -> None:
         """Validate weight range."""
-        if not (0 <= self.weight <= 100):
+        if not (MIN_WEIGHT_VALUE <= self.weight <= MAX_WEIGHT_VALUE):
             raise ValidationError("Weight must be between 0 and 100")
 
     def _validate_currency_consistency(self) -> None:

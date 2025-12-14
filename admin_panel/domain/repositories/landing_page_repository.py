@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+DEFAULT_PAGE_SIZE = 20
+
 from ..entities import LandingPage
 
 
@@ -28,7 +30,7 @@ class ILandingPageRepository(ABC):
     def find_all(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         campaign_id: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> List[LandingPage]:

@@ -5,8 +5,8 @@ from typing import List, Optional
 from decimal import Decimal
 
 DEFAULT_PAGE_SIZE = 20
-DEFAULT_CAMPAIGN_BUDGET_AMOUNT_1 = 500.0
-DEFAULT_CAMPAIGN_BUDGET_AMOUNT_2 = 1000.0
+CAMPAIGN_BUDGET_AMOUNT_1 = 500.0
+CAMPAIGN_BUDGET_AMOUNT_2 = 1000.0
 
 from ...domain.entities import Campaign, CampaignStatus
 from ...domain.value_objects import Money, Budget, DateRange, BudgetType
@@ -67,7 +67,7 @@ class ApiCampaignRepository(ICampaignRepository):
                         'id': 'campaign-1',
                         'name': 'Summer Sale',
                         'status': 'active',
-                        'budget': {'amount': DEFAULT_CAMPAIGN_BUDGET_AMOUNT_1, 'currency': 'USD', 'type': 'daily'},
+                        'budget': {'amount': CAMPAIGN_BUDGET_AMOUNT_1, 'currency': 'USD', 'type': 'daily'},
                         'target_url': 'http://example.com/summer',
                         'start_date': '2025-06-01T00:00:00Z',
                         'end_date': '2025-08-31T23:59:59Z',
@@ -78,7 +78,7 @@ class ApiCampaignRepository(ICampaignRepository):
                         'id': 'campaign-2',
                         'name': 'Winter Collection',
                         'status': 'paused',
-                        'budget': {'amount': 1000.0, 'currency': 'EUR', 'type': 'monthly'},
+                        'budget': {'amount': CAMPAIGN_BUDGET_AMOUNT_2, 'currency': 'EUR', 'type': 'monthly'},
                         'target_url': 'http://example.com/winter',
                         'start_date': '2025-11-01T00:00:00Z',
                         'end_date': None,

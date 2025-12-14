@@ -6,7 +6,10 @@ import logging
 from typing import Optional, Dict, Any, Callable
 from PyQt6.QtWidgets import QMessageBox
 
-from .base_controller import BaseController, WorkerManager
+from .base_controller import BaseController
+
+MAX_API_RETRIES = 3
+DEFAULT_API_CONNECTION_TIMEOUT = 30.0, WorkerManager
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +60,8 @@ class ConnectionController(BaseController):
                 # Create client with credentials
                 client_config = {
                     'base_url': api_url,
-                    'timeout': getattr(self.main_window.app_settings, 'api_timeout', 30.0) if self.main_window.app_settings else 30.0,
-                    'max_retries': getattr(self.main_window.app_settings, 'api_max_retries', 3) if self.main_window.app_settings else 3,
+                    'timeout': getattr(self.main_window.app_settings, 'api_timeout', DEFAULT_API_CONNECTION_TIMEOUT) if self.main_window.app_settings else DEFAULT_API_CONNECTION_TIMEOUT,
+                    'max_retries': getattr(self.main_window.app_settings, 'api_max_retries', MAX_API_RETRIES) if self.main_window.app_settings else MAX_API_RETRIES,
                 }
 
                 if bearer_token:

@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+DEFAULT_PAGE_SIZE = 20
+
 from ..entities import Goal
 
 
@@ -20,7 +22,7 @@ class IGoalRepository(ABC):
         pass
 
     @abstractmethod
-    def find_all(self, page: int = 1, page_size: int = 20) -> List[Goal]:
+    def find_all(self, page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> List[Goal]:
         """Find all goals with pagination."""
         pass
 

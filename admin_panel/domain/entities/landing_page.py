@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 from ..value_objects import Url
 from ..exceptions import ValidationError
 
+MIN_WEIGHT_VALUE = 0
+MAX_WEIGHT_VALUE = 100
+
 
 @dataclass
 class LandingPage:
@@ -58,7 +61,7 @@ class LandingPage:
 
     def _validate_weight(self) -> None:
         """Validate weight range."""
-        if not (0 <= self.weight <= 100):
+        if not (MIN_WEIGHT_VALUE <= self.weight <= MAX_WEIGHT_VALUE):
             raise ValidationError("Weight must be between 0 and 100")
 
     def activate(self) -> None:
