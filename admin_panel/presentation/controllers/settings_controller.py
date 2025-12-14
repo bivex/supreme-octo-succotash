@@ -10,6 +10,10 @@ from admin_panel.infrastructure.config.settings import Settings
 
 from .base_controller import BaseController
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class SettingsController(BaseController):
     """Handles settings management and validation."""
@@ -94,10 +98,12 @@ class SettingsController(BaseController):
 
                 # Populate UI with current settings
                 self.main_window.settings_api_url.setText(self.main_window.app_settings.api_base_url)
-                self.main_window.settings_bearer_token.setText(
+                logger.debug(f"SettingsController: Loading Bearer Token: {self.main_window.app_settings.bearer_token}")
+                self.main_window.bearer_token_edit.setText(
                     self.main_window.app_settings.bearer_token or ""
                 )
-                self.main_window.settings_api_key.setText(
+                logger.debug(f"SettingsController: Loading API Key: {self.main_window.app_settings.api_key}")
+                self.main_window.api_key_edit.setText(
                     self.main_window.app_settings.api_key or ""
                 )
                 self.main_window.settings_auto_refresh.setChecked(

@@ -6,6 +6,10 @@ from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import Optional
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class Settings:
@@ -20,8 +24,8 @@ class Settings:
     api_max_retries: int = 3
 
     # Authentication
-    bearer_token: Optional[str] = None
-    api_key: Optional[str] = None
+    _bearer_token_val: Optional[str] = None
+    _api_key_val: Optional[str] = None
 
     # UI Configuration
     auto_refresh_enabled: bool = True
@@ -40,7 +44,7 @@ class Settings:
             else:
                 settings = cls()
         except Exception as e:
-            print(f"⚠️  Warning: Failed to load INI file, using defaults: {e}")
+            logger.warning(f"⚠️  Warning: Failed to load INI file, using defaults: {e}")
             settings = cls()
 
         # Override with environment variables if present
@@ -60,7 +64,7 @@ class Settings:
             if os.getenv('LOG_LEVEL'):
                 settings.log_level = os.getenv('LOG_LEVEL')
         except Exception as e:
-            print(f"⚠️  Warning: Failed to parse environment variables: {e}")
+            logger.warning(f"⚠️  Warning: Failed to parse environment variables: {e}")
 
         return settings
 
@@ -73,14 +77,14 @@ class Settings:
         try:
             config.read(ini_path)
         except Exception as e:
-            print(f"⚠️  Warning: Failed to read INI file {ini_path}: {e}")
+            logger.warning(f"⚠️  Warning: Failed to read INI file {ini_path}: {e}")
             return cls()
 
         # Helper to safely get values
         def get_str(section: str, key: str, default: str = None) -> Optional[str]:
             try:
                 value = config.get(section, key)
-                return value if value else default
+                return value
             except (configparser.NoSectionError, configparser.NoOptionError):
                 return default
 
@@ -106,12 +110,36 @@ class Settings:
             api_base_url=get_str('API', 'base_url', cls.api_base_url),
             api_timeout=get_float('API', 'timeout', cls.api_timeout),
             api_max_retries=get_int('API', 'max_retries', cls.api_max_retries),
-            bearer_token=get_str('API', 'bearer_token'),
-            api_key=get_str('API', 'api_key'),
+            _bearer_token_val=get_str('API', 'bearer_token'),
+            _api_key_val=get_str('API', 'api_key'),
             auto_refresh_enabled=get_bool('UI', 'auto_refresh_enabled', cls.auto_refresh_enabled),
             auto_refresh_interval=get_int('UI', 'auto_refresh_interval', cls.auto_refresh_interval),
             log_level=get_str('Logging', 'log_level', cls.log_level),
         )
+
+
+    # Temporary variables to store token values read from INI
+    _bearer_token_val: Optional[str] = None
+    _api_key_val: Optional[str] = None
+
+    # Properties to handle the temporary variables
+    @property
+    def bearer_token(self) -> Optional[str]:
+        return self._bearer_token_val
+
+    @bearer_token.setter
+    def bearer_token(self, value: Optional[str]):
+        self._bearer_token_val = value
+        logger.debug(f"Settings: Bearer token set to {self._bearer_token_val}")
+
+    @property
+    def api_key(self) -> Optional[str]:
+        return self._api_key_val
+
+    @api_key.setter
+    def api_key(self, value: Optional[str]):
+        self._api_key_val = value
+        logger.debug(f"Settings: API key set to {self._api_key_val}")
 
     def save_to_ini(self, file_path: Optional[Path] = None) -> None:
         """Save settings to INI file."""
@@ -128,10 +156,8 @@ class Settings:
             }
 
             # Add optional authentication values only if they exist
-            if self.bearer_token:
-                config['API']['bearer_token'] = self.bearer_token
-            if self.api_key:
-                config['API']['api_key'] = self.api_key
+            config['API']['bearer_token'] = self.bearer_token if self.bearer_token is not None else ''
+            config['API']['api_key'] = self.api_key if self.api_key is not None else ''
 
             # UI section
             config['UI'] = {
@@ -149,7 +175,7 @@ class Settings:
                 config.write(configfile)
 
         except Exception as e:
-            print(f"⚠️  Warning: Failed to save settings to {ini_path}: {e}")
+            logger.warning(f"⚠️  Warning: Failed to save settings to {ini_path}: {e}")
             raise
 
     def update_from_ui(
