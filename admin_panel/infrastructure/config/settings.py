@@ -48,6 +48,11 @@ class Settings:
             settings = cls()
 
         # Override with environment variables if present
+        settings._override_from_env(settings)
+
+        return settings
+
+    def _override_from_env(self, settings: 'Settings') -> None:
         try:
             if os.getenv('API_BASE_URL'):
                 settings.api_base_url = os.getenv('API_BASE_URL')
@@ -65,8 +70,6 @@ class Settings:
                 settings.log_level = os.getenv('LOG_LEVEL')
         except Exception as e:
             logger.warning(f"⚠️  Warning: Failed to parse environment variables: {e}")
-
-        return settings
 
     @classmethod
     def load_from_ini(cls, file_path: Optional[Path] = None) -> 'Settings':
