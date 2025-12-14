@@ -2,6 +2,8 @@
 
 from typing import List, Optional
 
+DEFAULT_PAGE_SIZE = 20
+
 from ...dtos import OfferDTO
 from ....domain.repositories import IOfferRepository
 
@@ -16,7 +18,7 @@ class ListOffersUseCase:
     def execute(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         campaign_id: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> List[OfferDTO]:
@@ -24,13 +26,13 @@ class ListOffersUseCase:
         Execute the list offers use case.
 
         Args:
-            page: Page number (1-based)
-            page_size: Number of items per page
-            campaign_id: Optional filter by campaign ID
-            is_active: Optional filter by active status
+            page: The page number (1-based) for pagination.
+            page_size: The number of items to return per page.
+            campaign_id: Optional filter to retrieve offers by campaign ID.
+            is_active: Optional filter to retrieve offers by their active status.
 
         Returns:
-            List of offers as DTOs
+            A list of offers as Data Transfer Objects (DTOs).
         """
         offers = self._offer_repository.find_all(
             page=page,

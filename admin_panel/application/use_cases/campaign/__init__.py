@@ -3,6 +3,8 @@
 from typing import List, Optional
 from decimal import Decimal
 
+DEFAULT_PAGE_SIZE = 20
+
 from ....domain.entities import Campaign, CampaignStatus
 from ....domain.value_objects import Money, Budget, DateRange, BudgetType
 from ....domain.repositories import ICampaignRepository
@@ -18,7 +20,7 @@ class ListCampaignsUseCase:
     def execute(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         status: Optional[str] = None
     ) -> tuple[List[CampaignDTO], int]:
         """Execute the use case."""
@@ -32,6 +34,10 @@ class ListCampaignsUseCase:
     @staticmethod
     def _to_dto(campaign: Campaign) -> CampaignDTO:
         """Convert entity to DTO."""
+        end_date_iso = (
+            campaign.date_range.end_date.isoformat()
+            if campaign.date_range.end_date else None
+        )
         return CampaignDTO(
             id=campaign.id,
             name=campaign.name,
@@ -41,10 +47,7 @@ class ListCampaignsUseCase:
             budget_type=campaign.budget.budget_type.value,
             target_url=campaign.target_url,
             start_date=campaign.date_range.start_date.isoformat(),
-            end_date=(
-                campaign.date_range.end_date.isoformat()
-                if campaign.date_range.end_date else None
-            ),
+            end_date=end_date_iso,
             created_at=campaign.created_at
         )
 

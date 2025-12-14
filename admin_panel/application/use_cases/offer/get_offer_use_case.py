@@ -19,13 +19,13 @@ class GetOfferUseCase:
         Execute the get offer use case.
 
         Args:
-            offer_id: ID of the offer to retrieve
+            offer_id: The ID of the offer to retrieve.
 
         Returns:
-            Offer as DTO
+            The offer as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If offer not found
+            ValidationError: If the offer is not found.
         """
         offer = self._offer_repository.find_by_id(offer_id)
 

@@ -19,13 +19,13 @@ class GetLandingPageUseCase:
         Execute the get landing page use case.
 
         Args:
-            landing_page_id: ID of the landing page to retrieve
+            landing_page_id: The ID of the landing page to retrieve.
 
         Returns:
-            Landing page as DTO
+            The landing page as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If landing page not found
+            ValidationError: If the landing page is not found.
         """
         landing_page = self._landing_page_repository.find_by_id(landing_page_id)
 

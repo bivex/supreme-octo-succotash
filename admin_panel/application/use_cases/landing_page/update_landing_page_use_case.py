@@ -21,14 +21,14 @@ class UpdateLandingPageUseCase:
         Execute the update landing page use case.
 
         Args:
-            landing_page_id: ID of the landing page to update
-            dto: Data for updating the landing page
+            landing_page_id: The ID of the landing page to update.
+            dto: Data for updating the landing page.
 
         Returns:
-            Updated landing page as DTO
+            The updated landing page as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If landing page not found or data is invalid
+            ValidationError: If the landing page is not found or data is invalid.
         """
         # Get existing landing page
         landing_page = self._landing_page_repository.find_by_id(landing_page_id)

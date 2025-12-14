@@ -2,6 +2,8 @@
 
 from typing import List, Optional
 
+DEFAULT_PAGE_SIZE = 20
+
 from ...dtos import LandingPageDTO
 from ....domain.repositories import ILandingPageRepository
 
@@ -16,7 +18,7 @@ class ListLandingPagesUseCase:
     def execute(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         campaign_id: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> List[LandingPageDTO]:
@@ -24,13 +26,13 @@ class ListLandingPagesUseCase:
         Execute the list landing pages use case.
 
         Args:
-            page: Page number (1-based)
-            page_size: Number of items per page
-            campaign_id: Optional filter by campaign ID
-            is_active: Optional filter by active status
+            page: The page number (1-based) for pagination.
+            page_size: The number of items to return per page.
+            campaign_id: Optional filter to retrieve landing pages by campaign ID.
+            is_active: Optional filter to retrieve landing pages by their active status.
 
         Returns:
-            List of landing pages as DTOs
+            A list of landing pages as Data Transfer Objects (DTOs).
         """
         landing_pages = self._landing_page_repository.find_all(
             page=page,
@@ -39,4 +41,7 @@ class ListLandingPagesUseCase:
             is_active=is_active
         )
 
-        return [LandingPageDTO.from_entity(lp) for lp in landing_pages]
+        landing_page_dtos = [
+            LandingPageDTO.from_entity(lp) for lp in landing_pages
+        ]
+        return landing_page_dtos

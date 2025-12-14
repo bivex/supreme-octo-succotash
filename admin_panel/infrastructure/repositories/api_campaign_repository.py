@@ -4,6 +4,10 @@ import logging
 from typing import List, Optional
 from decimal import Decimal
 
+DEFAULT_PAGE_SIZE = 20
+DEFAULT_CAMPAIGN_BUDGET_AMOUNT_1 = 500.0
+DEFAULT_CAMPAIGN_BUDGET_AMOUNT_2 = 1000.0
+
 from ...domain.entities import Campaign, CampaignStatus
 from ...domain.value_objects import Money, Budget, DateRange, BudgetType
 from ...domain.repositories import ICampaignRepository
@@ -39,7 +43,7 @@ class ApiCampaignRepository(ICampaignRepository):
     def find_all(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         status: Optional[CampaignStatus] = None
     ) -> List[Campaign]:
         logger.debug(f"ApiCampaignRepository.find_all called with page={page}, page_size={page_size}, status={status}")
@@ -63,7 +67,7 @@ class ApiCampaignRepository(ICampaignRepository):
                         'id': 'campaign-1',
                         'name': 'Summer Sale',
                         'status': 'active',
-                        'budget': {'amount': 500.0, 'currency': 'USD', 'type': 'daily'},
+                        'budget': {'amount': DEFAULT_CAMPAIGN_BUDGET_AMOUNT_1, 'currency': 'USD', 'type': 'daily'},
                         'target_url': 'http://example.com/summer',
                         'start_date': '2025-06-01T00:00:00Z',
                         'end_date': '2025-08-31T23:59:59Z',

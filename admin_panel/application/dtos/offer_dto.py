@@ -42,7 +42,14 @@ class OfferDTO:
     @classmethod
     def from_entity(cls, offer) -> 'OfferDTO':
         """Create DTO from domain entity."""
-        epc = offer.epc
+        epc_amount_val = float(epc.amount) if epc else None
+        epc_currency_val = epc.currency if epc else None
+        cost_per_click_amount_val = (
+            float(offer.cost_per_click.amount) if offer.cost_per_click else None
+        )
+        cost_per_click_currency_val = (
+            offer.cost_per_click.currency if offer.cost_per_click else None
+        )
         return cls(
             id=offer.id,
             campaign_id=offer.campaign_id,
@@ -52,12 +59,8 @@ class OfferDTO:
             payout_amount=float(offer.payout.amount),
             payout_currency=offer.payout.currency,
             revenue_share=float(offer.revenue_share),
-            cost_per_click_amount=(
-                float(offer.cost_per_click.amount) if offer.cost_per_click else None
-            ),
-            cost_per_click_currency=(
-                offer.cost_per_click.currency if offer.cost_per_click else None
-            ),
+            cost_per_click_amount=cost_per_click_amount_val,
+            cost_per_click_currency=cost_per_click_currency_val,
             weight=offer.weight,
             is_active=offer.is_active,
             is_control=offer.is_control,
@@ -70,8 +73,8 @@ class OfferDTO:
             created_at=offer.created_at.isoformat(),
             updated_at=offer.updated_at.isoformat(),
             cr=offer.cr,
-            epc_amount=float(epc.amount) if epc else None,
-            epc_currency=epc.currency if epc else None,
+            epc_amount=epc_amount_val,
+            epc_currency=epc_currency_val,
             roi=offer.roi,
             profit_amount=float(offer.profit.amount),
             profit_currency=offer.profit.currency
@@ -79,6 +82,19 @@ class OfferDTO:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for UI consumption."""
+        cost_per_click_dict = (
+            {
+                'amount': self.cost_per_click_amount,
+                'currency': self.cost_per_click_currency
+            } if self.cost_per_click_amount is not None else None
+        )
+        epc_dict = (
+            {
+                'amount': self.epc_amount,
+                'currency': self.epc_currency
+            } if self.epc_amount is not None else None
+        )
+
         return {
             'id': self.id,
             'campaign_id': self.campaign_id,
@@ -90,10 +106,7 @@ class OfferDTO:
                 'currency': self.payout_currency
             },
             'revenue_share': self.revenue_share,
-            'cost_per_click': {
-                'amount': self.cost_per_click_amount,
-                'currency': self.cost_per_click_currency
-            } if self.cost_per_click_amount is not None else None,
+            'cost_per_click': cost_per_click_dict,
             'weight': self.weight,
             'is_active': self.is_active,
             'is_control': self.is_control,
@@ -110,10 +123,7 @@ class OfferDTO:
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'cr': self.cr,
-            'epc': {
-                'amount': self.epc_amount,
-                'currency': self.epc_currency
-            } if self.epc_amount is not None else None,
+            'epc': epc_dict,
             'roi': self.roi,
             'profit': {
                 'amount': self.profit_amount,

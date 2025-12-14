@@ -22,14 +22,14 @@ class UpdateOfferUseCase:
         Execute the update offer use case.
 
         Args:
-            offer_id: ID of the offer to update
-            dto: Data for updating the offer
+            offer_id: The ID of the offer to be updated.
+            dto: Data Transfer Object containing the updated offer information.
 
         Returns:
-            Updated offer as DTO
+            The updated offer as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If offer not found or data is invalid
+            ValidationError: If the offer is not found or the provided data is invalid.
         """
         # Get existing offer
         offer = self._offer_repository.find_by_id(offer_id)
@@ -54,7 +54,10 @@ class UpdateOfferUseCase:
             offer.revenue_share = Decimal(str(dto.revenue_share))
 
         if dto.cost_per_click_amount is not None:
-            currency = dto.cost_per_click_currency or (offer.cost_per_click.currency if offer.cost_per_click else offer.payout.currency)
+            cost_per_click_currency = offer.payout.currency
+            if offer.cost_per_click:
+                cost_per_click_currency = offer.cost_per_click.currency
+            currency = dto.cost_per_click_currency or cost_per_click_currency
             offer.cost_per_click = Money.from_float(dto.cost_per_click_amount, currency)
         elif dto.cost_per_click_amount == 0:  # Explicitly set to None
             offer.cost_per_click = None

@@ -18,26 +18,34 @@ class CreateLandingPageUseCase:
         Execute the create landing page use case.
 
         Args:
-            dto: Data for creating the landing page
+            dto: Data for creating the landing page.
 
         Returns:
-            Created landing page as DTO
+            The created landing page as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If landing page data is invalid
+            ValidationError: If the landing page data is invalid.
         """
         # Create value objects
         url = Url(dto.url)
 
         # Create landing page entity
+        lp_id = self._generate_landing_page_id()
+        lp_campaign_id = dto.campaign_id
+        lp_name = dto.name
+        lp_url = url
+        lp_page_type = dto.page_type
+        lp_weight = dto.weight
+        lp_is_control = dto.is_control
+
         landing_page = LandingPage(
-            id=self._generate_landing_page_id(),
-            campaign_id=dto.campaign_id,
-            name=dto.name,
-            url=url,
-            page_type=dto.page_type,
-            weight=dto.weight,
-            is_control=dto.is_control
+            id=lp_id,
+            campaign_id=lp_campaign_id,
+            name=lp_name,
+            url=lp_url,
+            page_type=lp_page_type,
+            weight=lp_weight,
+            is_control=lp_is_control
         )
 
         # Save to repository

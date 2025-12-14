@@ -6,6 +6,9 @@ Validation script for Advertising Platform Admin Panel setup
 import sys
 import importlib
 
+MIN_PYTHON_MAJOR_VERSION = 3
+MIN_PYTHON_MINOR_VERSION = 8
+
 def check_dependency(module_name, package_name=None):
     """Check if a dependency is available."""
     if package_name is None:
@@ -26,7 +29,7 @@ def validate_setup():
 
     # Check Python version
     python_version = sys.version_info
-    if python_version >= (3, 8):
+    if python_version >= (MIN_PYTHON_MAJOR_VERSION, MIN_PYTHON_MINOR_VERSION):
         print(f"✓ Python {python_version.major}.{python_version.minor} is supported")
     else:
         print(f"✗ Python {python_version.major}.{python_version.minor} is not supported (requires 3.8+)")

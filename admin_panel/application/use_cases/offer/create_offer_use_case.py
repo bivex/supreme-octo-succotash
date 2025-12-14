@@ -21,13 +21,13 @@ class CreateOfferUseCase:
         Execute the create offer use case.
 
         Args:
-            dto: Data for creating the offer
+            dto: Data for creating the offer.
 
         Returns:
-            Created offer as DTO
+            The created offer as a Data Transfer Object (DTO).
 
         Raises:
-            ValidationError: If offer data is invalid
+            ValidationError: If the provided offer data is invalid.
         """
         # Create value objects
         url = Url(dto.url)
@@ -40,6 +40,7 @@ class CreateOfferUseCase:
             )
 
         # Create offer entity
+        revenue_share_decimal = Decimal(str(dto.revenue_share))
         offer = Offer(
             id=self._generate_offer_id(),
             campaign_id=dto.campaign_id,
@@ -47,7 +48,7 @@ class CreateOfferUseCase:
             url=url,
             offer_type=dto.offer_type,
             payout=payout,
-            revenue_share=Decimal(str(dto.revenue_share)),
+            revenue_share=revenue_share_decimal,
             cost_per_click=cost_per_click,
             weight=dto.weight,
             is_control=dto.is_control

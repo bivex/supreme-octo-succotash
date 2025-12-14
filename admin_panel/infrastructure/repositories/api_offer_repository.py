@@ -4,6 +4,8 @@ import logging
 from typing import List, Optional
 from decimal import Decimal
 
+DEFAULT_PAGE_SIZE = 20
+
 from ...domain.entities import Offer
 from ...domain.value_objects import Money, Url
 from ...domain.repositories import IOfferRepository
@@ -59,7 +61,7 @@ class ApiOfferRepository(IOfferRepository):
     def find_all(
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = DEFAULT_PAGE_SIZE,
         campaign_id: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> List[Offer]:

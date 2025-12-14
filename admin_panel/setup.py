@@ -11,7 +11,9 @@ with open("requirements.txt") as f:
 setup(
     name="advertising-platform-admin",
     version="1.0.0",
-    description="PyQt6 Admin Panel for Advertising Platform",
+    description=(
+        "PyQt6 Admin Panel for Advertising Platform"
+    ),
     packages=find_packages(),
     install_requires=requirements,
     entry_points={

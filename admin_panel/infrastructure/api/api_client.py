@@ -3,6 +3,8 @@
 from typing import Dict, Any, Optional, List
 from advertising_platform_sdk import AdvertisingPlatformClient
 
+DEFAULT_API_TIMEOUT_SECONDS = 30.0
+
 
 class AdvertisingAPIClient:
     """
@@ -16,7 +18,7 @@ class AdvertisingAPIClient:
         base_url: str,
         bearer_token: Optional[str] = None,
         api_key: Optional[str] = None,
-        timeout: float = 30.0
+        timeout: float = DEFAULT_API_TIMEOUT_SECONDS
     ):
         """Initialize API client."""
         self._client = AdvertisingPlatformClient(
