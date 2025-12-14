@@ -113,7 +113,7 @@ class ConnectionController(BaseController):
                 f"Failed to connect to API:\n{error_msg}"
             )
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def test_connection(self) -> None:
@@ -162,7 +162,7 @@ class ConnectionController(BaseController):
                 f"Connection test failed:\n{error_msg}"
             )
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def _enable_data_operations(self) -> None:

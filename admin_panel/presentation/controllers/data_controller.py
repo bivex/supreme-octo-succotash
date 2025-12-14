@@ -48,7 +48,7 @@ class DataController(BaseController):
             self.main_window.health_progress.setVisible(False)
             self.main_window.health_status_label.setText(f"Status: Error - {error_msg}")
 
-        worker.result.connect(on_health_success)
+        worker.finished.connect(on_health_success)
         worker.error.connect(on_health_error)
 
     def refresh_campaigns(self) -> None:
@@ -73,7 +73,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load campaigns:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def refresh_offers(self) -> None:
@@ -98,7 +98,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load offers:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def refresh_landing_pages(self) -> None:
@@ -123,7 +123,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load landing pages:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def refresh_goals(self) -> None:
@@ -148,7 +148,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load goals:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def refresh_clicks(self) -> None:
@@ -173,7 +173,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load clicks:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def load_analytics(self) -> None:
@@ -199,7 +199,7 @@ class DataController(BaseController):
         def on_error(error_msg):
             QMessageBox.critical(self.main_window, "Error", f"Failed to load analytics:\n{error_msg}")
 
-        worker.result.connect(on_success)
+        worker.finished.connect(on_success)
         worker.error.connect(on_error)
 
     def refresh_conversions(self) -> None:
