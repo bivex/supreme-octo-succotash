@@ -31,9 +31,14 @@ class ApiOfferRepository(IOfferRepository):
             # TODO: Implement when API endpoint is available
             # data = self._api.get_offer(offer_id)
             # return self._map_to_entity(data)
+            logger.debug(f"Offer {offer_id} not found (API not implemented)")
             return None
-        except Exception:
-            return None
+        except APIException as e:
+            logger.error(f"API error finding offer {offer_id}: {e}")
+            raise RepositoryException(f"Failed to find offer {offer_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding offer {offer_id}: {e}")
+            raise RepositoryException(f"Unexpected error finding offer {offer_id}") from e
 
     def find_by_campaign_id(self, campaign_id: str) -> List[Offer]:
         """Find all offers for a specific campaign."""
@@ -42,9 +47,14 @@ class ApiOfferRepository(IOfferRepository):
             # response = self._api.get_offers(campaign_id=campaign_id)
             # offers_data = response.get('data', [])
             # return [self._map_to_entity(o) for o in offers_data]
+            logger.debug(f"No offers found for campaign {campaign_id} (API not implemented)")
             return []
-        except Exception:
-            return []
+        except APIException as e:
+            logger.error(f"API error finding offers for campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Failed to find offers for campaign {campaign_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding offers for campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Unexpected error finding offers for campaign {campaign_id}") from e
 
     def find_all(
         self,
@@ -64,9 +74,14 @@ class ApiOfferRepository(IOfferRepository):
             # )
             # offers_data = response.get('data', [])
             # return [self._map_to_entity(o) for o in offers_data]
+            logger.debug("No offers found (API not implemented)")
             return []
-        except Exception:
-            return []
+        except APIException as e:
+            logger.error(f"API error finding offers: {e}")
+            raise RepositoryException("Failed to find offers") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding offers: {e}")
+            raise RepositoryException("Unexpected error finding offers") from e
 
     def count_all(
         self,
@@ -84,9 +99,14 @@ class ApiOfferRepository(IOfferRepository):
             # )
             # pagination = response.get('pagination', {})
             # return pagination.get('totalItems', 0)
+            logger.debug("Count offers not implemented (API not available)")
             return 0
-        except Exception:
-            return 0
+        except APIException as e:
+            logger.error(f"API error counting offers: {e}")
+            raise RepositoryException("Failed to count offers") from e
+        except Exception as e:
+            logger.error(f"Unexpected error counting offers: {e}")
+            raise RepositoryException("Unexpected error counting offers") from e
 
     def save(self, offer: Offer) -> Offer:
         """Save (create or update) an offer."""
@@ -98,25 +118,34 @@ class ApiOfferRepository(IOfferRepository):
                 # TODO: Implement when API endpoint is available
                 # response = self._api.update_offer(offer.id, data)
                 response = data  # Placeholder
+                logger.debug(f"Offer {offer.id} updated (placeholder)")
             else:
                 # Create
                 # TODO: Implement when API endpoint is available
                 # response = self._api.create_offer(data)
                 response = data  # Placeholder
+                logger.debug(f"Offer {offer.id} created (placeholder)")
 
             return self._map_to_entity(response)
-        except Exception:
-            # For now, return the offer as-is (in-memory operation)
-            return offer
+        except APIException as e:
+            logger.error(f"API error saving offer {offer.id}: {e}")
+            raise RepositoryException(f"Failed to save offer {offer.id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error saving offer {offer.id}: {e}")
+            raise RepositoryException(f"Unexpected error saving offer {offer.id}") from e
 
     def delete(self, offer_id: str) -> None:
         """Delete an offer."""
         try:
             # TODO: Implement when API endpoint is available
             # self._api.delete_offer(offer_id)
-            pass
-        except Exception:
-            pass
+            logger.debug(f"Offer {offer_id} deletion not implemented (API not available)")
+        except APIException as e:
+            logger.error(f"API error deleting offer {offer_id}: {e}")
+            raise RepositoryException(f"Failed to delete offer {offer_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error deleting offer {offer_id}: {e}")
+            raise RepositoryException(f"Unexpected error deleting offer {offer_id}") from e
 
     def exists(self, offer_id: str) -> bool:
         """Check if an offer exists."""
@@ -158,10 +187,14 @@ class ApiOfferRepository(IOfferRepository):
             is_control=data.get('is_control', False),
             clicks=data.get('clicks', 0),
             conversions=data.get('conversions', 0),
-            revenue=Money.from_float(data.get('revenue', {}).get('amount', 0),
-                                   data.get('revenue', {}).get('currency', 'USD')),
-            cost=Money.from_float(data.get('cost', {}).get('amount', 0),
-                                data.get('cost', {}).get('currency', 'USD')),
+            revenue=Money.from_float(
+                data.get('revenue', {}).get('amount', 0),
+                data.get('revenue', {}).get('currency', 'USD')
+            ),
+            cost=Money.from_float(
+                data.get('cost', {}).get('amount', 0),
+                data.get('cost', {}).get('currency', 'USD')
+            ),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at')
         )

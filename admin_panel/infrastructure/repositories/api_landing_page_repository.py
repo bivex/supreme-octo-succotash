@@ -1,11 +1,15 @@
 """Landing Page Repository Implementation - Adapter."""
 
+import logging
 from typing import List, Optional
 
 from ...domain.entities import LandingPage
 from ...domain.value_objects import Url
 from ...domain.repositories import ILandingPageRepository
 from ..api.api_client import AdvertisingAPIClient
+from ..exceptions import APIException, RepositoryException
+
+logger = logging.getLogger(__name__)
 
 
 class ApiLandingPageRepository(ILandingPageRepository):
@@ -25,9 +29,14 @@ class ApiLandingPageRepository(ILandingPageRepository):
             # TODO: Implement when API endpoint is available
             # data = self._api.get_landing_page(landing_page_id)
             # return self._map_to_entity(data)
+            logger.debug(f"Landing page {landing_page_id} not found (API not implemented)")
             return None
-        except Exception:
-            return None
+        except APIException as e:
+            logger.error(f"API error finding landing page {landing_page_id}: {e}")
+            raise RepositoryException(f"Failed to find landing page {landing_page_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding landing page {landing_page_id}: {e}")
+            raise RepositoryException(f"Unexpected error finding landing page {landing_page_id}") from e
 
     def find_by_campaign_id(self, campaign_id: str) -> List[LandingPage]:
         """Find all landing pages for a specific campaign."""
@@ -36,9 +45,14 @@ class ApiLandingPageRepository(ILandingPageRepository):
             # response = self._api.get_landing_pages(campaign_id=campaign_id)
             # landing_pages_data = response.get('data', [])
             # return [self._map_to_entity(lp) for lp in landing_pages_data]
+            logger.debug(f"No landing pages found for campaign {campaign_id} (API not implemented)")
             return []
-        except Exception:
-            return []
+        except APIException as e:
+            logger.error(f"API error finding landing pages for campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Failed to find landing pages for campaign {campaign_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding landing pages for campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Unexpected error finding landing pages for campaign {campaign_id}") from e
 
     def find_all(
         self,
@@ -58,9 +72,14 @@ class ApiLandingPageRepository(ILandingPageRepository):
             # )
             # landing_pages_data = response.get('data', [])
             # return [self._map_to_entity(lp) for lp in landing_pages_data]
+            logger.debug("No landing pages found (API not implemented)")
             return []
-        except Exception:
-            return []
+        except APIException as e:
+            logger.error(f"API error finding landing pages: {e}")
+            raise RepositoryException("Failed to find landing pages") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding landing pages: {e}")
+            raise RepositoryException("Unexpected error finding landing pages") from e
 
     def count_all(
         self,
@@ -78,9 +97,14 @@ class ApiLandingPageRepository(ILandingPageRepository):
             # )
             # pagination = response.get('pagination', {})
             # return pagination.get('totalItems', 0)
+            logger.debug("Count landing pages not implemented (API not available)")
             return 0
-        except Exception:
-            return 0
+        except APIException as e:
+            logger.error(f"API error counting landing pages: {e}")
+            raise RepositoryException("Failed to count landing pages") from e
+        except Exception as e:
+            logger.error(f"Unexpected error counting landing pages: {e}")
+            raise RepositoryException("Unexpected error counting landing pages") from e
 
     def save(self, landing_page: LandingPage) -> LandingPage:
         """Save (create or update) a landing page."""
@@ -92,25 +116,34 @@ class ApiLandingPageRepository(ILandingPageRepository):
                 # TODO: Implement when API endpoint is available
                 # response = self._api.update_landing_page(landing_page.id, data)
                 response = data  # Placeholder
+                logger.debug(f"Landing page {landing_page.id} updated (placeholder)")
             else:
                 # Create
                 # TODO: Implement when API endpoint is available
                 # response = self._api.create_landing_page(data)
                 response = data  # Placeholder
+                logger.debug(f"Landing page {landing_page.id} created (placeholder)")
 
             return self._map_to_entity(response)
-        except Exception:
-            # For now, return the landing page as-is (in-memory operation)
-            return landing_page
+        except APIException as e:
+            logger.error(f"API error saving landing page {landing_page.id}: {e}")
+            raise RepositoryException(f"Failed to save landing page {landing_page.id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error saving landing page {landing_page.id}: {e}")
+            raise RepositoryException(f"Unexpected error saving landing page {landing_page.id}") from e
 
     def delete(self, landing_page_id: str) -> None:
         """Delete a landing page."""
         try:
             # TODO: Implement when API endpoint is available
             # self._api.delete_landing_page(landing_page_id)
-            pass
-        except Exception:
-            pass
+            logger.debug(f"Landing page {landing_page_id} deletion not implemented (API not available)")
+        except APIException as e:
+            logger.error(f"API error deleting landing page {landing_page_id}: {e}")
+            raise RepositoryException(f"Failed to delete landing page {landing_page_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error deleting landing page {landing_page_id}: {e}")
+            raise RepositoryException(f"Unexpected error deleting landing page {landing_page_id}") from e
 
     def exists(self, landing_page_id: str) -> bool:
         """Check if a landing page exists."""

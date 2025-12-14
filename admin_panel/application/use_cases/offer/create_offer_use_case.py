@@ -34,7 +34,10 @@ class CreateOfferUseCase:
         payout = Money.from_float(dto.payout_amount, dto.payout_currency)
         cost_per_click = None
         if dto.cost_per_click_amount is not None:
-            cost_per_click = Money.from_float(dto.cost_per_click_amount, dto.cost_per_click_currency)
+            cost_per_click = Money.from_float(
+                dto.cost_per_click_amount,
+                dto.cost_per_click_currency
+            )
 
         # Create offer entity
         offer = Offer(

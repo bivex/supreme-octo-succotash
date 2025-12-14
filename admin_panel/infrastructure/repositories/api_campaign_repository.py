@@ -1,5 +1,6 @@
 """Campaign Repository Implementation - Adapter."""
 
+import logging
 from typing import List, Optional
 from decimal import Decimal
 
@@ -7,6 +8,9 @@ from ...domain.entities import Campaign, CampaignStatus
 from ...domain.value_objects import Money, Budget, DateRange, BudgetType
 from ...domain.repositories import ICampaignRepository
 from ..api.api_client import AdvertisingAPIClient
+from ..exceptions import APIException, RepositoryException
+
+logger = logging.getLogger(__name__)
 
 
 class ApiCampaignRepository(ICampaignRepository):
@@ -25,8 +29,12 @@ class ApiCampaignRepository(ICampaignRepository):
         try:
             data = self._api.get_campaign(campaign_id)
             return self._map_to_entity(data)
-        except Exception:
-            return None
+        except APIException as e:
+            logger.error(f"API error finding campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Failed to find campaign {campaign_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Unexpected error finding campaign {campaign_id}") from e
 
     def find_all(
         self,
@@ -35,40 +43,68 @@ class ApiCampaignRepository(ICampaignRepository):
         status: Optional[CampaignStatus] = None
     ) -> List[Campaign]:
         """Find all campaigns."""
-        status_str = status.value if status else None
-        response = self._api.get_campaigns(
-            page=page,
-            page_size=page_size,
-            status=status_str
-        )
+        try:
+            status_str = status.value if status else None
+            response = self._api.get_campaigns(
+                page=page,
+                page_size=page_size,
+                status=status_str
+            )
 
-        campaigns_data = response.get('data', [])
-        return [self._map_to_entity(c) for c in campaigns_data]
+            campaigns_data = response.get('data', [])
+            return [self._map_to_entity(c) for c in campaigns_data]
+        except APIException as e:
+            logger.error(f"API error finding campaigns: {e}")
+            raise RepositoryException("Failed to find campaigns") from e
+        except Exception as e:
+            logger.error(f"Unexpected error finding campaigns: {e}")
+            raise RepositoryException("Unexpected error finding campaigns") from e
 
     def count_all(self, status: Optional[CampaignStatus] = None) -> int:
         """Count all campaigns."""
-        status_str = status.value if status else None
-        response = self._api.get_campaigns(page=1, page_size=1, status=status_str)
+        try:
+            status_str = status.value if status else None
+            response = self._api.get_campaigns(page=1, page_size=1, status=status_str)
 
-        pagination = response.get('pagination', {})
-        return pagination.get('totalItems', 0)
+            pagination = response.get('pagination', {})
+            return pagination.get('totalItems', 0)
+        except APIException as e:
+            logger.error(f"API error counting campaigns: {e}")
+            raise RepositoryException("Failed to count campaigns") from e
+        except Exception as e:
+            logger.error(f"Unexpected error counting campaigns: {e}")
+            raise RepositoryException("Unexpected error counting campaigns") from e
 
     def save(self, campaign: Campaign) -> Campaign:
         """Save (create or update) campaign."""
-        data = self._map_to_api(campaign)
+        try:
+            data = self._map_to_api(campaign)
 
-        if self.exists(campaign.id):
-            # Update
-            response = self._api.update_campaign(campaign.id, data)
-        else:
-            # Create
-            response = self._api.create_campaign(data)
+            if self.exists(campaign.id):
+                # Update
+                response = self._api.update_campaign(campaign.id, data)
+            else:
+                # Create
+                response = self._api.create_campaign(data)
 
-        return self._map_to_entity(response)
+            return self._map_to_entity(response)
+        except APIException as e:
+            logger.error(f"API error saving campaign {campaign.id}: {e}")
+            raise RepositoryException(f"Failed to save campaign {campaign.id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error saving campaign {campaign.id}: {e}")
+            raise RepositoryException(f"Unexpected error saving campaign {campaign.id}") from e
 
     def delete(self, campaign_id: str) -> None:
         """Delete campaign."""
-        self._api.delete_campaign(campaign_id)
+        try:
+            self._api.delete_campaign(campaign_id)
+        except APIException as e:
+            logger.error(f"API error deleting campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Failed to delete campaign {campaign_id}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error deleting campaign {campaign_id}: {e}")
+            raise RepositoryException(f"Unexpected error deleting campaign {campaign_id}") from e
 
     def exists(self, campaign_id: str) -> bool:
         """Check if campaign exists."""

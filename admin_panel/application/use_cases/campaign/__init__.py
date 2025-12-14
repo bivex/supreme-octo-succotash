@@ -41,7 +41,10 @@ class ListCampaignsUseCase:
             budget_type=campaign.budget.budget_type.value,
             target_url=campaign.target_url,
             start_date=campaign.date_range.start_date.isoformat(),
-            end_date=campaign.date_range.end_date.isoformat() if campaign.date_range.end_date else None,
+            end_date=(
+                campaign.date_range.end_date.isoformat()
+                if campaign.date_range.end_date else None
+            ),
             created_at=campaign.created_at
         )
 

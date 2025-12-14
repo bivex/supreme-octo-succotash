@@ -52,8 +52,12 @@ class OfferDTO:
             payout_amount=float(offer.payout.amount),
             payout_currency=offer.payout.currency,
             revenue_share=float(offer.revenue_share),
-            cost_per_click_amount=float(offer.cost_per_click.amount) if offer.cost_per_click else None,
-            cost_per_click_currency=offer.cost_per_click.currency if offer.cost_per_click else None,
+            cost_per_click_amount=(
+                float(offer.cost_per_click.amount) if offer.cost_per_click else None
+            ),
+            cost_per_click_currency=(
+                offer.cost_per_click.currency if offer.cost_per_click else None
+            ),
             weight=offer.weight,
             is_active=offer.is_active,
             is_control=offer.is_control,
