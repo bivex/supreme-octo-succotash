@@ -46,10 +46,22 @@ class Application:
     def __init__(self):
         """Initialize application."""
         # Load configuration
-        self.settings = Settings.from_env()
+        try:
+            self.settings = Settings.from_env()
+            if self.settings is None:
+                raise ValueError("Failed to load settings - settings object is None")
+        except Exception as e:
+            print(f"❌ Error loading settings: {e}")
+            print("🔧 Creating default settings...")
+            # Create default settings if loading fails
+            self.settings = Settings()
 
         # Initialize DI container
-        self.container = Container(self.settings)
+        try:
+            self.container = Container(self.settings)
+        except Exception as e:
+            print(f"❌ Error initializing container: {e}")
+            raise
 
         # Initialize Qt Application
         self.qt_app = QApplication(sys.argv)
@@ -68,23 +80,31 @@ class Application:
             self.qt_app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar, False)
 
         # Apply dark theme
-        self.qt_app.setStyleSheet(get_stylesheet())
-        print("🌙 Professional dark theme applied!")
+        try:
+            self.qt_app.setStyleSheet(get_stylesheet())
+            print("🌙 Professional dark theme applied!")
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to apply dark theme: {e}")
+            print("🔧 Using default theme")
 
     def run(self) -> int:
         """Run the application."""
         # Create main window with Clean Architecture
-        main_window = MainWindow()
+        try:
+            main_window = MainWindow()
 
-        # Inject dependencies into window
-        # This allows gradual migration to use cases in the future
-        main_window.container = self.container
-        main_window.app_settings = self.settings
+            # Inject dependencies into window
+            # This allows gradual migration to use cases in the future
+            main_window.container = self.container
+            main_window.app_settings = self.settings
 
-        # Reload config now that settings are injected
-        main_window.load_config()
+            # Reload config now that settings are injected
+            main_window.load_config()
 
-        main_window.show()
+            main_window.show()
+        except Exception as e:
+            print(f"❌ Error creating main window: {e}")
+            raise
 
         print("🚀 Application started with Clean Architecture!")
         print(f"📊 API URL: {self.settings.api_base_url}")

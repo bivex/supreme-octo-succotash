@@ -34,26 +34,33 @@ class Settings:
     def from_env(cls) -> 'Settings':
         """Load settings from INI file, then override with environment variables."""
         # Try to load from INI file first
-        if cls.INI_FILE_PATH.exists():
-            settings = cls.load_from_ini()
-        else:
+        try:
+            if cls.INI_FILE_PATH.exists():
+                settings = cls.load_from_ini()
+            else:
+                settings = cls()
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to load INI file, using defaults: {e}")
             settings = cls()
 
         # Override with environment variables if present
-        if os.getenv('API_BASE_URL'):
-            settings.api_base_url = os.getenv('API_BASE_URL')
-        if os.getenv('API_TIMEOUT'):
-            settings.api_timeout = float(os.getenv('API_TIMEOUT'))
-        if os.getenv('API_MAX_RETRIES'):
-            settings.api_max_retries = int(os.getenv('API_MAX_RETRIES'))
-        if os.getenv('API_BEARER_TOKEN'):
-            settings.bearer_token = os.getenv('API_BEARER_TOKEN')
-        if os.getenv('API_KEY'):
-            settings.api_key = os.getenv('API_KEY')
-        if os.getenv('AUTO_REFRESH'):
-            settings.auto_refresh_enabled = os.getenv('AUTO_REFRESH', 'true').lower() == 'true'
-        if os.getenv('LOG_LEVEL'):
-            settings.log_level = os.getenv('LOG_LEVEL')
+        try:
+            if os.getenv('API_BASE_URL'):
+                settings.api_base_url = os.getenv('API_BASE_URL')
+            if os.getenv('API_TIMEOUT'):
+                settings.api_timeout = float(os.getenv('API_TIMEOUT'))
+            if os.getenv('API_MAX_RETRIES'):
+                settings.api_max_retries = int(os.getenv('API_MAX_RETRIES'))
+            if os.getenv('API_BEARER_TOKEN'):
+                settings.bearer_token = os.getenv('API_BEARER_TOKEN')
+            if os.getenv('API_KEY'):
+                settings.api_key = os.getenv('API_KEY')
+            if os.getenv('AUTO_REFRESH'):
+                settings.auto_refresh_enabled = os.getenv('AUTO_REFRESH', 'true').lower() == 'true'
+            if os.getenv('LOG_LEVEL'):
+                settings.log_level = os.getenv('LOG_LEVEL')
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to parse environment variables: {e}")
 
         return settings
 
@@ -63,7 +70,11 @@ class Settings:
         ini_path = file_path or cls.INI_FILE_PATH
 
         config = configparser.ConfigParser()
-        config.read(ini_path)
+        try:
+            config.read(ini_path)
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to read INI file {ini_path}: {e}")
+            return cls()
 
         # Helper to safely get values
         def get_str(section: str, key: str, default: str = None) -> Optional[str]:
@@ -106,35 +117,40 @@ class Settings:
         """Save settings to INI file."""
         ini_path = file_path or self.INI_FILE_PATH
 
-        config = configparser.ConfigParser()
+        try:
+            config = configparser.ConfigParser()
 
-        # API section
-        config['API'] = {
-            'base_url': self.api_base_url,
-            'timeout': str(self.api_timeout),
-            'max_retries': str(self.api_max_retries),
-        }
+            # API section
+            config['API'] = {
+                'base_url': self.api_base_url,
+                'timeout': str(self.api_timeout),
+                'max_retries': str(self.api_max_retries),
+            }
 
-        # Add optional authentication values only if they exist
-        if self.bearer_token:
-            config['API']['bearer_token'] = self.bearer_token
-        if self.api_key:
-            config['API']['api_key'] = self.api_key
+            # Add optional authentication values only if they exist
+            if self.bearer_token:
+                config['API']['bearer_token'] = self.bearer_token
+            if self.api_key:
+                config['API']['api_key'] = self.api_key
 
-        # UI section
-        config['UI'] = {
-            'auto_refresh_enabled': str(self.auto_refresh_enabled),
-            'auto_refresh_interval': str(self.auto_refresh_interval),
-        }
+            # UI section
+            config['UI'] = {
+                'auto_refresh_enabled': str(self.auto_refresh_enabled),
+                'auto_refresh_interval': str(self.auto_refresh_interval),
+            }
 
-        # Logging section
-        config['Logging'] = {
-            'log_level': self.log_level,
-        }
+            # Logging section
+            config['Logging'] = {
+                'log_level': self.log_level,
+            }
 
-        # Write to file
-        with open(ini_path, 'w') as configfile:
-            config.write(configfile)
+            # Write to file
+            with open(ini_path, 'w') as configfile:
+                config.write(configfile)
+
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to save settings to {ini_path}: {e}")
+            raise
 
     def update_from_ui(
         self,

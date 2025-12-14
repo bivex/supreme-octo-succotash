@@ -44,15 +44,15 @@ class ApiCampaignRepository(ICampaignRepository):
     ) -> List[Campaign]:
         """Find all campaigns."""
         try:
-            status_str = status.value if status else None
-            response = self._api.get_campaigns(
-                page=page,
-                page_size=page_size,
-                status=status_str
-            )
+        status_str = status.value if status else None
+        response = self._api.get_campaigns(
+            page=page,
+            page_size=page_size,
+            status=status_str
+        )
 
-            campaigns_data = response.get('data', [])
-            return [self._map_to_entity(c) for c in campaigns_data]
+        campaigns_data = response.get('data', [])
+        return [self._map_to_entity(c) for c in campaigns_data]
         except APIException as e:
             logger.error(f"API error finding campaigns: {e}")
             raise RepositoryException("Failed to find campaigns") from e
@@ -63,11 +63,11 @@ class ApiCampaignRepository(ICampaignRepository):
     def count_all(self, status: Optional[CampaignStatus] = None) -> int:
         """Count all campaigns."""
         try:
-            status_str = status.value if status else None
-            response = self._api.get_campaigns(page=1, page_size=1, status=status_str)
+        status_str = status.value if status else None
+        response = self._api.get_campaigns(page=1, page_size=1, status=status_str)
 
-            pagination = response.get('pagination', {})
-            return pagination.get('totalItems', 0)
+        pagination = response.get('pagination', {})
+        return pagination.get('totalItems', 0)
         except APIException as e:
             logger.error(f"API error counting campaigns: {e}")
             raise RepositoryException("Failed to count campaigns") from e
@@ -78,16 +78,16 @@ class ApiCampaignRepository(ICampaignRepository):
     def save(self, campaign: Campaign) -> Campaign:
         """Save (create or update) campaign."""
         try:
-            data = self._map_to_api(campaign)
+        data = self._map_to_api(campaign)
 
-            if self.exists(campaign.id):
-                # Update
-                response = self._api.update_campaign(campaign.id, data)
-            else:
-                # Create
-                response = self._api.create_campaign(data)
+        if self.exists(campaign.id):
+            # Update
+            response = self._api.update_campaign(campaign.id, data)
+        else:
+            # Create
+            response = self._api.create_campaign(data)
 
-            return self._map_to_entity(response)
+        return self._map_to_entity(response)
         except APIException as e:
             logger.error(f"API error saving campaign {campaign.id}: {e}")
             raise RepositoryException(f"Failed to save campaign {campaign.id}") from e
@@ -98,7 +98,7 @@ class ApiCampaignRepository(ICampaignRepository):
     def delete(self, campaign_id: str) -> None:
         """Delete campaign."""
         try:
-            self._api.delete_campaign(campaign_id)
+        self._api.delete_campaign(campaign_id)
         except APIException as e:
             logger.error(f"API error deleting campaign {campaign_id}: {e}")
             raise RepositoryException(f"Failed to delete campaign {campaign_id}") from e

@@ -57,8 +57,8 @@ class ConnectionController(BaseController):
                 # Create client with credentials
                 client_config = {
                     'base_url': api_url,
-                    'timeout': getattr(self.app_settings, 'api_timeout', 30.0) if self.app_settings else 30.0,
-                    'max_retries': getattr(self.app_settings, 'api_max_retries', 3) if self.app_settings else 3,
+                    'timeout': getattr(self.main_window.app_settings, 'api_timeout', 30.0) if self.main_window.app_settings else 30.0,
+                    'max_retries': getattr(self.main_window.app_settings, 'api_max_retries', 3) if self.main_window.app_settings else 3,
                 }
 
                 if bearer_token:

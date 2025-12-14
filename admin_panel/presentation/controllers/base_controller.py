@@ -12,7 +12,6 @@ class BaseController(ABC):
     def __init__(self, main_window):
         self.main_window = main_window
         self.container = main_window.container
-        self.app_settings = main_window.app_settings
 
     @abstractmethod
     def initialize(self) -> None:

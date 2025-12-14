@@ -300,10 +300,10 @@ def main():
     try:
         from ..presentation.styles import get_stylesheet
         DARK_THEME_AVAILABLE = True
-        if DARK_THEME_AVAILABLE:
-            app.setStyleSheet(get_stylesheet())
-            print("🌙 Dark theme applied successfully!")
-        else:
+    if DARK_THEME_AVAILABLE:
+        app.setStyleSheet(get_stylesheet())
+        print("🌙 Dark theme applied successfully!")
+    else:
             app.setStyle('Fusion')
             print("⚠️  Dark theme not available, using Fusion style")
     except ImportError:

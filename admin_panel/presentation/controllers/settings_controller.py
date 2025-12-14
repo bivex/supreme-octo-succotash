@@ -47,16 +47,16 @@ class SettingsController(BaseController):
                 return
 
             # Update app settings
-            if self.app_settings:
-                self.app_settings.api_base_url = api_url
-                self.app_settings.bearer_token = bearer_token if bearer_token else None
-                self.app_settings.api_key = api_key if api_key else None
-                self.app_settings.auto_refresh_enabled = auto_refresh
-                self.app_settings.auto_refresh_interval = refresh_interval * 1000  # Convert to milliseconds
-                self.app_settings.log_level = log_level
+            if self.main_window.app_settings:
+                self.main_window.app_settings.api_base_url = api_url
+                self.main_window.app_settings.bearer_token = bearer_token if bearer_token else None
+                self.main_window.app_settings.api_key = api_key if api_key else None
+                self.main_window.app_settings.auto_refresh_enabled = auto_refresh
+                self.main_window.app_settings.auto_refresh_interval = refresh_interval * 1000  # Convert to milliseconds
+                self.main_window.app_settings.log_level = log_level
 
                 # Save to INI file
-                self.app_settings.save_to_ini()
+                self.main_window.app_settings.save_to_ini()
 
                 # Update main window settings
                 self.main_window.api_url_edit.setText(api_url)
@@ -85,23 +85,23 @@ class SettingsController(BaseController):
     def load_config(self) -> None:
         """Load configuration and populate UI fields."""
         try:
-            if self.app_settings:
+            if self.main_window.app_settings:
                 # Populate UI with current settings
-                self.main_window.settings_api_url.setText(self.app_settings.api_base_url)
+                self.main_window.settings_api_url.setText(self.main_window.app_settings.api_base_url)
                 self.main_window.settings_bearer_token.setText(
-                    self.app_settings.bearer_token or ""
+                    self.main_window.app_settings.bearer_token or ""
                 )
                 self.main_window.settings_api_key.setText(
-                    self.app_settings.api_key or ""
+                    self.main_window.app_settings.api_key or ""
                 )
                 self.main_window.settings_auto_refresh.setChecked(
-                    self.app_settings.auto_refresh_enabled
+                    self.main_window.app_settings.auto_refresh_enabled
                 )
                 self.main_window.settings_refresh_interval.setValue(
-                    self.app_settings.auto_refresh_interval // 1000  # Convert from milliseconds
+                    self.main_window.app_settings.auto_refresh_interval // 1000  # Convert from milliseconds
                 )
                 self.main_window.settings_log_level.setCurrentText(
-                    self.app_settings.log_level
+                    self.main_window.app_settings.log_level
                 )
 
                 QMessageBox.information(
@@ -122,8 +122,8 @@ class SettingsController(BaseController):
 
     def _update_auto_refresh_timer(self) -> None:
         """Update the auto-refresh timer based on settings."""
-        if self.app_settings and self.app_settings.auto_refresh_enabled:
-            interval_ms = self.app_settings.auto_refresh_interval
+        if self.main_window.app_settings and self.main_window.app_settings.auto_refresh_enabled:
+            interval_ms = self.main_window.app_settings.auto_refresh_interval
             self.main_window.refresh_timer.setInterval(interval_ms)
             if not self.main_window.refresh_timer.isActive():
                 self.main_window.refresh_timer.start()
@@ -194,8 +194,8 @@ class SettingsController(BaseController):
 
     def toggle_auto_refresh(self, enabled: bool) -> None:
         """Toggle auto-refresh functionality."""
-        if self.app_settings:
-            self.app_settings.auto_refresh_enabled = enabled
+        if self.main_window.app_settings:
+            self.main_window.app_settings.auto_refresh_enabled = enabled
             self._update_auto_refresh_timer()
 
             status = "enabled" if enabled else "disabled"
