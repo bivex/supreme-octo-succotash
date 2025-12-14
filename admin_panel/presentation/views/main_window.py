@@ -70,7 +70,6 @@ class MainWindow(QMainWindow):
         self.init_ui()
         # Modern stylesheet now applied globally via dark theme
         # self.apply_modern_stylesheet()  # Commented out - using global dark theme
-        self.load_config()
 
     def _init_controllers(self) -> None:
         """Initialize all controllers."""
@@ -300,10 +299,10 @@ def main():
     try:
         from ..presentation.styles import get_stylesheet
         DARK_THEME_AVAILABLE = True
-    if DARK_THEME_AVAILABLE:
-        app.setStyleSheet(get_stylesheet())
-        print("🌙 Dark theme applied successfully!")
-    else:
+        if DARK_THEME_AVAILABLE:
+            app.setStyleSheet(get_stylesheet())
+            print("🌙 Dark theme applied successfully!")
+        else:
             app.setStyle('Fusion')
             print("⚠️  Dark theme not available, using Fusion style")
     except ImportError:

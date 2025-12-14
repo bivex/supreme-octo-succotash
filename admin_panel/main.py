@@ -13,6 +13,8 @@ This application follows:
 import sys
 from pathlib import Path
 
+import logging
+
 # Add parent directory to path for imports
 parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
@@ -51,16 +53,21 @@ class Application:
             if self.settings is None:
                 raise ValueError("Failed to load settings - settings object is None")
         except Exception as e:
-            print(f"❌ Error loading settings: {e}")
-            print("🔧 Creating default settings...")
+            self.logger.error(f"❌ Error loading settings: {e}")
+            self.logger.warning("🔧 Creating default settings...")
             # Create default settings if loading fails
             self.settings = Settings()
+
+        # Setup logging
+        self._setup_logging()
+
+        self.logger.info(f"Loaded Settings: {self.settings}")
 
         # Initialize DI container
         try:
             self.container = Container(self.settings)
         except Exception as e:
-            print(f"❌ Error initializing container: {e}")
+            self.logger.error(f"❌ Error initializing container: {e}")
             raise
 
         # Initialize Qt Application
@@ -82,10 +89,30 @@ class Application:
         # Apply dark theme
         try:
             self.qt_app.setStyleSheet(get_stylesheet())
-            print("🌙 Professional dark theme applied!")
+            self.logger.info("🌙 Professional dark theme applied!")
         except Exception as e:
-            print(f"⚠️  Warning: Failed to apply dark theme: {e}")
-            print("🔧 Using default theme")
+            self.logger.warning(f"⚠️  Warning: Failed to apply dark theme: {e}")
+            self.logger.warning("🔧 Using default theme")
+
+    def _setup_logging(self):
+        log_level_str = self.settings.log_level.upper()
+        log_level = getattr(logging, log_level_str, logging.INFO)
+
+        # Ensure log directory exists
+        log_dir = Path(__file__).parent.parent / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "app.log"
+
+        logging.basicConfig(
+            level=log_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
 
     def run(self) -> int:
         """Run the application."""
@@ -103,12 +130,12 @@ class Application:
 
             main_window.show()
         except Exception as e:
-            print(f"❌ Error creating main window: {e}")
+            self.logger.error(f"❌ Error creating main window: {e}")
             raise
 
-        print("🚀 Application started with Clean Architecture!")
-        print(f"📊 API URL: {self.settings.api_base_url}")
-        print(f"🔄 Auto-refresh: {'enabled' if self.settings.auto_refresh_enabled else 'disabled'}")
+        self.logger.info("🚀 Application started with Clean Architecture!")
+        self.logger.info(f"📊 API URL: {self.settings.api_base_url}")
+        self.logger.info(f"🔄 Auto-refresh: {'enabled' if self.settings.auto_refresh_enabled else 'disabled'}")
 
         # Run Qt event loop
         return self.qt_app.exec()
@@ -120,10 +147,11 @@ class Application:
 
 def main():
     """Application entry point."""
-    print("=" * 70)
-    print("  Advertising Platform Admin Panel")
-    print("  Clean Architecture | DDD | SOLID | Hexagonal Pattern")
-    print("=" * 70)
+    logger = logging.getLogger(__name__)
+    logger.info("=" * 70)
+    logger.info("  Advertising Platform Admin Panel")
+    logger.info("  Clean Architecture | DDD | SOLID | Hexagonal Pattern")
+    logger.info("=" * 70)
 
     app = Application()
 

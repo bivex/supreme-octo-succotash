@@ -6,6 +6,8 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 from PyQt6.QtWidgets import QMessageBox
 
+from admin_panel.infrastructure.config.settings import Settings
+
 from .base_controller import BaseController
 
 
@@ -86,6 +88,10 @@ class SettingsController(BaseController):
         """Load configuration and populate UI fields."""
         try:
             if self.main_window.app_settings:
+                # Reload settings from INI file
+                new_settings = Settings.load_from_ini()
+                self.main_window.app_settings = new_settings  # Update the main_window's settings instance
+
                 # Populate UI with current settings
                 self.main_window.settings_api_url.setText(self.main_window.app_settings.api_base_url)
                 self.main_window.settings_bearer_token.setText(
