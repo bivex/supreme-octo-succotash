@@ -16,7 +16,8 @@ traces/
 
 # Virtual environment
 /venv/
-
+admin_panel/DPY
+analysis_results/
 # Build and distribution
 /dist/
 /build/

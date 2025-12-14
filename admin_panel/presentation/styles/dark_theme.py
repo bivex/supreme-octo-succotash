@@ -88,7 +88,7 @@ def get_stylesheet() -> str:
     QMainWindow, QWidget, QDialog {{
         background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
-        font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
         selection-background-color: {COLORS['primary_muted']};
         selection-color: {COLORS['text_primary']};
