@@ -93,6 +93,8 @@ class SettingsController(BaseController):
                     self.main_window, "Warning",
                     "Settings object not available. Please restart the application."
                 )
+        except Exception as e:
+            QMessageBox.critical(self.main_window, "Error", f"An unexpected error occurred: {e}")
 
     def load_config(self) -> None:
         """Load configuration and populate UI fields."""

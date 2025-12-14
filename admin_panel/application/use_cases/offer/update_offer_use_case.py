@@ -17,6 +17,21 @@ class UpdateOfferUseCase:
         """Initialize use case with dependencies."""
         self._offer_repository = offer_repository
 
+    def _update_payout_field(self, offer: Offer, dto: UpdateOfferDTO) -> None:
+        if dto.payout_amount is not None:
+            currency = dto.payout_currency or offer.payout.currency
+            offer.payout = Money.from_float(dto.payout_amount, currency)
+
+    def _update_cost_per_click_field(self, offer: Offer, dto: UpdateOfferDTO) -> None:
+        if dto.cost_per_click_amount is not None:
+            cost_per_click_currency = offer.payout.currency
+            if offer.cost_per_click:
+                cost_per_click_currency = offer.cost_per_click.currency
+            currency = dto.cost_per_click_currency or cost_per_click_currency
+            offer.cost_per_click = Money.from_float(dto.cost_per_click_amount, currency)
+        elif dto.cost_per_click_amount == 0:  # Explicitly set to None
+            offer.cost_per_click = None
+
     def _update_offer_fields(self, offer: Offer, dto: UpdateOfferDTO) -> None:
         if dto.name is not None:
             offer.name = dto.name
@@ -27,21 +42,12 @@ class UpdateOfferUseCase:
         if dto.offer_type is not None:
             offer.offer_type = dto.offer_type
 
-        if dto.payout_amount is not None:
-            currency = dto.payout_currency or offer.payout.currency
-            offer.payout = Money.from_float(dto.payout_amount, currency)
+        self._update_payout_field(offer, dto)
 
         if dto.revenue_share is not None:
             offer.revenue_share = Decimal(str(dto.revenue_share))
 
-        if dto.cost_per_click_amount is not None:
-            cost_per_click_currency = offer.payout.currency
-            if offer.cost_per_click:
-                cost_per_click_currency = offer.cost_per_click.currency
-            currency = dto.cost_per_click_currency or cost_per_click_currency
-            offer.cost_per_click = Money.from_float(dto.cost_per_click_amount, currency)
-        elif dto.cost_per_click_amount == 0:  # Explicitly set to None
-            offer.cost_per_click = None
+        self._update_cost_per_click_field(offer, dto)
 
         if dto.weight is not None:
             offer.weight = dto.weight

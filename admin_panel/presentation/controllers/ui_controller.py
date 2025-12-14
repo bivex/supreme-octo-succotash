@@ -229,7 +229,7 @@ class UIController(BaseController):
         controls_layout.addStretch()
 
         create_btn = QPushButton("Create Landing Page")
-        create_btn.clicked.connect(self.main_window.show_create_landing_page_dialog)
+        create_btn.clicked.connect(self.main_window.show_new_landing_page_dialog)
         controls_layout.addWidget(create_btn)
 
         layout.addLayout(controls_layout)

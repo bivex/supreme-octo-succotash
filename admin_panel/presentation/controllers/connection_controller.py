@@ -9,7 +9,8 @@ from PyQt6.QtWidgets import QMessageBox
 from .base_controller import BaseController
 
 MAX_API_RETRIES = 3
-DEFAULT_API_CONNECTION_TIMEOUT = 30.0, WorkerManager
+DEFAULT_API_CONNECTION_TIMEOUT = 30.0
+from ..workers import WorkerManager
 
 logger = logging.getLogger(__name__)
 
