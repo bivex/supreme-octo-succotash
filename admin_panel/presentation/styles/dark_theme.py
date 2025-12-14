@@ -1,101 +1,84 @@
 """
-Neo-Professional Dark Theme for Admin Panel (Refined Tones)
+Professional Muted Dark Theme for Admin Panel (Designer-grade / Sophisticated)
 
-A distinctive dark interface designed for data-driven professionals.
-Refined to keep background layers in one cohesive navy-slate ramp,
-with smoother midtones and less “jump” between elevations.
-
-Design Philosophy:
-- Deep, rich backgrounds (not flat gray)
-- Vibrant but professional accents
-- Excellent readability for long sessions
-- Color-coded for data visualization
-- Refined details in every component
+Что улучшено:
+- Фоны: ровнее и чуть “подняты” (не проваливаются в чёрный на macOS)
+- Акцент: менее неоновый, но всё ещё заметный
+- Семантика: цвета спокойнее и гармоничнее на navy фоне
+- Границы: читаются лучше, но без “рамок как в Excel”
 """
 
-# Neo-Professional Color Palette (refined tones)
+# Professional Muted Color Palette (Designer-grade sophistication)
 COLORS = {
-    # Background layers — cohesive navy-slate ramp
-    'bg_deepest':   '#070B18',  # deepest base (dialogs/overlays/backdrop)
-    'bg_primary':   '#0C111E',  # app base
-    'bg_secondary': '#121A2B',  # panels/cards
-    'bg_tertiary':  '#19233A',  # hovers/interactive surfaces
-    'bg_elevated':  '#1F2B45',  # highest elevation (headers/menus)
-    'bg_input':     '#0F1727',  # inputs (slightly “inkier” than panels)
+    # Background layers — cohesive navy-slate ramp (subtle, macOS-friendly)
+    'bg_deepest':   '#0A0F1C',  # dialogs/overlays/backdrop - deeper, more muted
+    'bg_primary':   '#0E141F',  # app base - softer navy
+    'bg_secondary': '#161D2A',  # panels/cards - balanced elevation
+    'bg_tertiary':  '#1D2533',  # hovers/interactive surfaces - subtle lift
+    'bg_elevated':  '#242F3D',  # highest elevation (headers/menus) - refined
+    'bg_input':     '#131A25',  # inputs (slightly “inkier” than panels)
 
-    # Text hierarchy — clean contrast
-    'text_primary':     '#D7DEE9',
-    'text_secondary':   '#A8B3C6',
-    'text_tertiary':    '#7F8AA3',
-    'text_disabled':    '#485263',
-    'text_placeholder': '#5D6A7F',
+    # Text hierarchy — sophisticated contrast, less harsh
+    'text_primary':     '#F1F3F5',  # slightly warmer white
+    'text_secondary':   '#B8C2CC',  # muted gray-blue
+    'text_tertiary':    '#8894A3',  # deeper tertiary
+    'text_disabled':    '#5F6B7A',  # professional disabled state
+    'text_placeholder': '#6B7888',  # balanced placeholder
 
-    # Brand & Primary Actions — distinctive but less neon
-    'primary':         '#00D1F2',
-    'primary_hover':   '#00BBDD',
-    'primary_pressed': '#00A5C6',
-    'primary_muted':   '#103A46',
+    # Brand & Primary Actions — sophisticated teal (muted, professional)
+    'primary':         '#4A9EFF',  # softer, more professional blue
+    'primary_hover':   '#3D87E6',  # refined hover state
+    'primary_pressed': '#3171CC',  # deeper pressed state
+    'primary_muted':   '#1A2B3D',  # very muted background accent
 
-    # Semantic colors — tuned for navy background
-    'success':       '#22E3A1',
-    'success_muted': '#123A31',
-    'warning':       '#FFB020',
-    'warning_muted': '#3A2F16',
-    'danger':        '#FF3B6E',
-    'danger_muted':  '#3A1624',
-    'info':          '#6D8CFF',
-    'info_muted':    '#17254A',
+    # Semantic colors — enterprise-grade, muted and professional
+    'success':       '#5CB85C',  # softer green, less aggressive
+    'success_muted': '#1A2A1F',  # deep muted green background
+    'warning':       '#F0AD4E',  # refined amber, less yellow
+    'warning_muted': '#2A2318',  # sophisticated muted background
+    'danger':        '#D9534F',  # professional red, not alarmist
+    'danger_muted':  '#2A1F1E',  # deep muted red background
+    'info':          '#5BC0DE',  # calm blue, informational
+    'info_muted':    '#1A242A',  # muted blue background
 
-    # Status indicators
-    'status_active':    '#22E3A1',
-    'status_paused':    '#FFB020',
-    'status_draft':     '#8D97AC',
-    'status_error':     '#FF3B6E',
-    'status_completed': '#6D8CFF',
+    # Status indicators — refined and professional
+    'status_active':    '#5CB85C',  # consistent with success
+    'status_paused':    '#F0AD4E',  # consistent with warning
+    'status_draft':     '#8E99A8',  # neutral, professional gray
+    'status_error':     '#D9534F',  # consistent with danger
+    'status_completed': '#5BC0DE',  # consistent with info
 
-    # Borders & Dividers — smoother progression
-    'border_subtle':  '#24314B',
-    'border_default': '#2B3A57',
-    'border_strong':  '#334565',
-    'border_focus':   '#00D1F2',
-    'border_hover':   '#3C5175',
+    # Borders & Dividers — sophisticated and subtle
+    'border_subtle':  '#2A3441',  # very subtle divider
+    'border_default': '#374151',  # professional border
+    'border_strong':  '#4B5563',  # stronger but still muted
+    'border_focus':   '#4A9EFF',  # matches primary
+    'border_hover':   '#556068',  # sophisticated hover
 
-    # Data visualization
-    'chart_1': '#00D1F2',
-    'chart_2': '#FF3B6E',
-    'chart_3': '#22E3A1',
-    'chart_4': '#FFB020',
-    'chart_5': '#6D8CFF',
-    'chart_6': '#FF6FA3',
+    # Data visualization — muted, professional palette
+    'chart_1': '#4A9EFF',  # primary blue
+    'chart_2': '#D9534F',  # professional red
+    'chart_3': '#5CB85C',  # success green
+    'chart_4': '#F0AD4E',  # warning amber
+    'chart_5': '#5BC0DE',  # info blue
+    'chart_6': '#9B59B6',  # sophisticated purple
 
-    # Special effects
-    'shadow_default': 'rgba(0, 0, 0, 0.32)',
-    'shadow_strong':  'rgba(0, 0, 0, 0.55)',
-    'overlay_dark':   'rgba(7, 11, 24, 0.82)',
-    'shimmer':        'rgba(0, 209, 242, 0.08)',
+    # Special effects — refined and subtle
+    'shadow_default': 'rgba(0, 0, 0, 0.25)',  # softer shadow
+    'shadow_strong':  'rgba(0, 0, 0, 0.45)',  # professional depth
+    'overlay_dark':   'rgba(10, 15, 28, 0.85)',  # sophisticated overlay
+    'shimmer':        'rgba(74, 158, 255, 0.04)',  # subtle shimmer
 }
 
 
 def get_colors() -> dict:
-    """
-    Get the complete color palette dictionary.
-
-    Returns the full COLORS dictionary for programmatic access
-    to theme colors.
-    """
     return COLORS
 
 
 def get_stylesheet() -> str:
     """
-    Get the complete Neo-Professional dark theme stylesheet.
-
-    Returns CSS-like stylesheet for PyQt6 application with distinctive,
-    professional aesthetics designed for data-driven work.
-
-    Notes:
-    - Focus styles are implemented with constant 2px borders to avoid
-      layout “jumping” (no padding compensation needed).
+    Complete Neo-Professional dark theme stylesheet (PyQt6), macOS refined.
+    Focus styles: constant 2px borders to avoid layout jumping.
     """
     return f"""
     /* ========================================
@@ -105,10 +88,10 @@ def get_stylesheet() -> str:
     QMainWindow, QWidget, QDialog {{
         background-color: {COLORS['bg_primary']};
         color: {COLORS['text_primary']};
-        font-family: 'Helvetica Neue', Arial;
+        font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
-        selection-background-color: {COLORS['primary']};
-        selection-color: {COLORS['bg_deepest']};
+        selection-background-color: {COLORS['primary_muted']};
+        selection-color: {COLORS['text_primary']};
     }}
 
     /* Tooltips */
@@ -184,7 +167,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#deleteButton:hover {{
-        background-color: #ff527f;
+        background-color: #ff6a93;
     }}
 
     QPushButton#successButton {{
@@ -193,7 +176,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#successButton:hover {{
-        background-color: #3af0b3;
+        background-color: #55e1b6;
     }}
 
     QPushButton#warningButton {{
@@ -202,7 +185,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton#warningButton:hover {{
-        background-color: #ffc24d;
+        background-color: #f7c36b;
     }}
 
     QPushButton#secondaryButton {{
@@ -227,8 +210,8 @@ def get_stylesheet() -> str:
         border: 2px solid {COLORS['border_default']};
         border-radius: 7px;
         padding: 9px 13px;
-        selection-background-color: {COLORS['primary']};
-        selection-color: {COLORS['bg_deepest']};
+        selection-background-color: {COLORS['primary_muted']};
+        selection-color: {COLORS['text_primary']};
         font-size: 13px;
     }}
 
@@ -258,7 +241,7 @@ def get_stylesheet() -> str:
         border: 2px solid {COLORS['border_default']};
         border-radius: 7px;
         padding: 9px 13px;
-        selection-background-color: {COLORS['primary']};
+        selection-background-color: {COLORS['primary_muted']};
         font-size: 13px;
     }}
 
@@ -571,7 +554,3 @@ def get_stylesheet() -> str:
         font-size: 13px;
     }}
     """
-
-
-# Example usage:
-# app.setStyleSheet(get_stylesheet())

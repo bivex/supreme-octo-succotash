@@ -18,18 +18,19 @@ parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
 
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import Qt
 
 # Configuration
-from .infrastructure.config.settings import Settings
+from admin_panel.infrastructure.config.settings import Settings
 
 # Dependency Injection
-from .di.container import Container
+from admin_panel.di.container import Container
 
 # Presentation - Dark Theme
-from .presentation.styles import get_stylesheet
+from admin_panel.presentation.styles import get_stylesheet
 
 # Presentation - Views
-from .presentation import MainWindow
+from admin_panel.presentation import MainWindow
 
 
 class Application:
@@ -54,6 +55,17 @@ class Application:
         self.qt_app = QApplication(sys.argv)
         self.qt_app.setApplicationName("Advertising Platform Admin Panel")
         self.qt_app.setApplicationVersion("2.0.0")
+
+        # macOS-specific attributes to fix TSM (Text Input Services Manager) errors
+        if sys.platform == "darwin":
+            # Fix for TSM communication issues - disable foreground application transform
+            import os
+            os.environ['QT_MAC_DISABLE_FOREGROUND_APPLICATION_TRANSFORM'] = '1'
+            # Additional macOS compatibility settings
+            os.environ['QT_QPA_PLATFORM'] = 'cocoa'  # Force Cocoa platform
+            os.environ['QT_MAC_WANTS_LAYER'] = '1'    # Enable layer-backed views
+            # Ensure proper macOS integration
+            self.qt_app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar, False)
 
         # Apply dark theme
         self.qt_app.setStyleSheet(get_stylesheet())
