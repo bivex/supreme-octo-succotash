@@ -1,6 +1,33 @@
 """Dependency Injection Container."""
 
+from typing import Optional
+
 from ..infrastructure.config.settings import Settings
+from ..infrastructure.api.api_client import AdvertisingAPIClient
+from ..infrastructure.repositories.api_campaign_repository import ApiCampaignRepository
+from ..infrastructure.repositories.api_offer_repository import ApiOfferRepository
+from ..infrastructure.repositories.api_landing_page_repository import ApiLandingPageRepository
+from ..application.use_cases.campaign import (
+    ListCampaignsUseCase,
+    CreateCampaignUseCase,
+    DeleteCampaignUseCase,
+    PauseCampaignUseCase,
+    ResumeCampaignUseCase
+)
+from ..application.use_cases.offer import (
+    ListOffersUseCase,
+    CreateOfferUseCase,
+    GetOfferUseCase,
+    UpdateOfferUseCase,
+    DeleteOfferUseCase
+)
+from ..application.use_cases.landing_page import (
+    ListLandingPagesUseCase,
+    CreateLandingPageUseCase,
+    GetLandingPageUseCase,
+    UpdateLandingPageUseCase,
+    DeleteLandingPageUseCase
+)
 from .infrastructure_factory import InfrastructureFactory
 from .usecase_factory import UseCaseFactory
 
@@ -29,7 +56,7 @@ class Container:
 
     # Infrastructure - Delegated to InfrastructureFactory
     @property
-    def api_client(self):
+    def api_client(self) -> AdvertisingAPIClient:
         """Get API client (singleton)."""
         return self._infrastructure_factory.api_client
 
@@ -38,24 +65,24 @@ class Container:
         base_url=None,
         bearer_token=None,
         api_key=None
-    ):
+    ) -> AdvertisingAPIClient:
         """Recreate API client with new credentials."""
         return self._infrastructure_factory.recreate_api_client(
             base_url, bearer_token, api_key
         )
 
     @property
-    def campaign_repository(self):
+    def campaign_repository(self) -> ApiCampaignRepository:
         """Get campaign repository (singleton)."""
         return self._infrastructure_factory.campaign_repository
 
     @property
-    def offer_repository(self):
+    def offer_repository(self) -> ApiOfferRepository:
         """Get offer repository (singleton)."""
         return self._infrastructure_factory.offer_repository
 
     @property
-    def landing_page_repository(self):
+    def landing_page_repository(self) -> ApiLandingPageRepository:
         """Get landing page repository (singleton)."""
         return self._infrastructure_factory.landing_page_repository
 
@@ -73,85 +100,87 @@ class Container:
 
     # Campaign Use Cases
     @property
-    def list_campaigns_use_case(self):
+    def list_campaigns_use_case(self) -> ListCampaignsUseCase:
         """Get list campaigns use case."""
         return self._usecase_factory_instance.list_campaigns_use_case
 
     @property
-    def create_campaign_use_case(self):
+    def create_campaign_use_case(self) -> CreateCampaignUseCase:
         """Get create campaign use case."""
         return self._usecase_factory_instance.create_campaign_use_case
 
     @property
-    def delete_campaign_use_case(self):
+    def delete_campaign_use_case(self) -> DeleteCampaignUseCase:
         """Get delete campaign use case."""
         return self._usecase_factory_instance.delete_campaign_use_case
 
     @property
-    def pause_campaign_use_case(self):
+    def pause_campaign_use_case(self) -> PauseCampaignUseCase:
         """Get pause campaign use case."""
         return self._usecase_factory_instance.pause_campaign_use_case
 
     @property
-    def resume_campaign_use_case(self):
+    def resume_campaign_use_case(self) -> ResumeCampaignUseCase:
         """Get resume campaign use case."""
         return self._usecase_factory_instance.resume_campaign_use_case
 
     # Offer Use Cases
     @property
-    def list_offers_use_case(self):
+    def list_offers_use_case(self) -> ListOffersUseCase:
         """Get list offers use case."""
         return self._usecase_factory_instance.list_offers_use_case
 
     @property
-    def create_offer_use_case(self):
+    def create_offer_use_case(self) -> CreateOfferUseCase:
         """Get create offer use case."""
         return self._usecase_factory_instance.create_offer_use_case
 
     @property
-    def get_offer_use_case(self):
+    def get_offer_use_case(self) -> GetOfferUseCase:
         """Get offer use case."""
         return self._usecase_factory_instance.get_offer_use_case
 
     @property
-    def update_offer_use_case(self):
+    def update_offer_use_case(self) -> UpdateOfferUseCase:
         """Get update offer use case."""
         return self._usecase_factory_instance.update_offer_use_case
 
     @property
-    def delete_offer_use_case(self):
+    def delete_offer_use_case(self) -> DeleteOfferUseCase:
         """Get delete offer use case."""
         return self._usecase_factory_instance.delete_offer_use_case
 
     # Landing Page Use Cases
     @property
-    def list_landing_pages_use_case(self):
+    def list_landing_pages_use_case(self) -> ListLandingPagesUseCase:
         """Get list landing pages use case."""
         return self._usecase_factory_instance.list_landing_pages_use_case
 
     @property
-    def create_landing_page_use_case(self):
+    def create_landing_page_use_case(self) -> CreateLandingPageUseCase:
         """Get create landing page use case."""
         return self._usecase_factory_instance.create_landing_page_use_case
 
     @property
-    def get_landing_page_use_case(self):
+    def get_landing_page_use_case(self) -> GetLandingPageUseCase:
         """Get landing page use case."""
         return self._usecase_factory_instance.get_landing_page_use_case
 
     @property
-    def update_landing_page_use_case(self):
+    def update_landing_page_use_case(self) -> UpdateLandingPageUseCase:
         """Get update landing page use case."""
         return self._usecase_factory_instance.update_landing_page_use_case
 
     @property
-    def delete_landing_page_use_case(self):
+    def delete_landing_page_use_case(self) -> DeleteLandingPageUseCase:
         """Get delete landing page use case."""
         return self._usecase_factory_instance.delete_landing_page_use_case
 
     def close(self) -> None:
         """Close all resources."""
         self._infrastructure_factory.close()
+        # Clear references to help with garbage collection
+        self._usecase_factory = None
 
         # Use cases (lazy initialization)
         self._list_campaigns_use_case: Optional[ListCampaignsUseCase] = None

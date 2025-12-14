@@ -2,7 +2,7 @@
 Table Controller - Handles table population and filtering.
 """
 
-from typing import List, Any
+from typing import List, Any, Dict
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QMessageBox
 from PyQt6.QtCore import Qt
 
@@ -47,7 +47,7 @@ class TableController(BaseController):
 
         table.resizeColumnsToContents()
 
-    def _create_campaign_actions(self, campaign) -> QWidget:
+    def _create_campaign_actions(self, campaign):
         """Create action buttons for campaign row."""
         from PyQt6.QtWidgets import QWidget, QHBoxLayout
 
@@ -107,7 +107,7 @@ class TableController(BaseController):
 
         table.resizeColumnsToContents()
 
-    def _create_offer_actions(self, offer) -> QWidget:
+    def _create_offer_actions(self, offer):
         """Create action buttons for offer row."""
         from PyQt6.QtWidgets import QWidget, QHBoxLayout
 
@@ -157,7 +157,7 @@ class TableController(BaseController):
 
         table.resizeColumnsToContents()
 
-    def _create_landing_page_actions(self, landing_page) -> QWidget:
+    def _create_landing_page_actions(self, landing_page):
         """Create action buttons for landing page row."""
         from PyQt6.QtWidgets import QWidget, QHBoxLayout
 
@@ -203,7 +203,7 @@ class TableController(BaseController):
 
         table.resizeColumnsToContents()
 
-    def _create_goal_actions(self, goal) -> QWidget:
+    def _create_goal_actions(self, goal):
         """Create action buttons for goal row."""
         from PyQt6.QtWidgets import QWidget, QHBoxLayout
 
@@ -292,7 +292,7 @@ class TableController(BaseController):
 
         table.resizeColumnsToContents()
 
-    def display_analytics(self, data: Dict[str, Any]) -> None:
+    def display_analytics(self, data) -> None:
         """Display analytics data."""
         if isinstance(data, dict) and "message" in data:
             self.main_window.analytics_text.setPlainText(data["message"])
