@@ -65,3 +65,44 @@ admin_panel/DPY
 *_function_metrics.json
 temp_results/
 *.analysis
+
+# Database backups and dumps
+database_backups/
+*.sql.gz
+*.sql
+cleanup_unused_indexes.sql
+optimize_bulk_insert.sql
+
+# Profiling and performance files
+*.pstat
+*.prof
+traces/
+examples/traces/
+
+# Database files
+*.db
+*.sqlite*
+*.db-journal
+*.db-wal
+*.db-shm
+stress_test.db
+
+# Process IDs
+*.pid
+main_clean.pid
+
+# Server output and logs
+server_output*.log
+server_restart.log
+app.log*
+*.log*
+
+# Telegram bot environment
+telegram_landing_bot/.env*
+
+# Temporary and output files
+*.tmp
+*.out
+*.err
+*.swp
+*.swo
