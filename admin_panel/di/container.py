@@ -2,6 +2,10 @@
 
 from typing import Optional
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from ..infrastructure.config.settings import Settings
 from ..infrastructure.api.api_client import AdvertisingAPIClient
 from ..infrastructure.repositories.api_campaign_repository import ApiCampaignRepository
@@ -73,6 +77,7 @@ class Container:
 
     @property
     def campaign_repository(self) -> ApiCampaignRepository:
+        logger.debug("Container: Accessing campaign_repository property.")
         """Get campaign repository (singleton)."""
         return self._infrastructure_factory.campaign_repository
 

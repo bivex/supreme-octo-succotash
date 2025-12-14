@@ -6,6 +6,10 @@ from typing import List, Any, Dict
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QMessageBox
 from PyQt6.QtCore import Qt
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from .base_controller import BaseController
 
 
@@ -20,6 +24,7 @@ class TableController(BaseController):
         """Populate campaigns table."""
         table = self.main_window.campaigns_table
         campaigns = self.main_window.current_campaigns
+        logger.debug(f"TableController: Populating campaigns table with {len(campaigns)} campaigns.")
 
         table.setRowCount(len(campaigns))
 
@@ -264,12 +269,14 @@ class TableController(BaseController):
         if status_filter is None:
             # Show all campaigns
             filtered_campaigns = self.main_window.current_campaigns
+            logger.debug(f"TableController: Filtering campaigns - showing all {len(filtered_campaigns)} campaigns.")
         else:
             # Filter by status
             filtered_campaigns = [
                 c for c in self.main_window.current_campaigns
                 if c.status.value == status_filter
             ]
+            logger.debug(f"TableController: Filtering campaigns by status '{status_filter}' - found {len(filtered_campaigns)} campaigns.")
 
         # Update table with filtered data
         table = self.main_window.campaigns_table

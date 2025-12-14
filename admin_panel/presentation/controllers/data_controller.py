@@ -5,6 +5,10 @@ Data Controller - Handles data refresh and loading operations.
 from typing import Dict, Any, Optional
 from PyQt6.QtWidgets import QMessageBox
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from .base_controller import BaseController, WorkerManager
 
 
@@ -59,14 +63,19 @@ class DataController(BaseController):
 
         def load_campaigns():
             try:
+                logger.debug("DataController: Attempting to load campaigns from API...")
+                logger.debug(f"DataController: Type of self.main_window.container: {type(self.main_window.container)}")
                 # Load campaigns logic would go here
-                return []
+                campaigns = self.main_window.container.campaign_repository.find_all()
+                logger.debug(f"DataController: Loaded {len(campaigns)} campaigns: {campaigns}")
+                return campaigns
             except Exception as e:
                 raise Exception(f"Failed to load campaigns: {str(e)}")
 
         worker = self.worker_manager.create_worker(load_campaigns)
 
         def on_success(result):
+            logger.debug(f"DataController: Campaigns loaded successfully in on_success: {len(result)} items")
             self.main_window.current_campaigns = result
             self.main_window.populate_campaigns_table()
 

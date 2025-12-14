@@ -13,6 +13,11 @@ from urllib.parse import urljoin, urlencode
 import httpx
 from pydantic import BaseModel
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 from .models import *
 from .exceptions import *
 
@@ -94,6 +99,7 @@ class AdvertisingPlatformClient:
     ) -> Union[httpx.Response, Any]:
         """Make HTTP request with retry logic."""
         url = urljoin(self.base_url + "/", endpoint.lstrip("/"))
+        logger.debug(f"Making request: {method} {url} with params={params}, data={data}")
 
         if params:
             url += "?" + urlencode(params)
@@ -103,15 +109,18 @@ class AdvertisingPlatformClient:
         for attempt in range(self.max_retries):
             try:
                 if async_mode:
-                    return asyncio.run(client.request(method, url, json=data))
+                    response = asyncio.run(client.request(method, url, json=data))
                 else:
-                    return client.request(method, url, json=data)
+                    response = client.request(method, url, json=data)
+                logger.debug(f"Received response (status {response.status_code}): {response.text}")
+                return response
             except httpx.RequestError as e:
                 if attempt == self.max_retries - 1:
                     raise APIConnectionError(f"Request failed after {self.max_retries} attempts: {e}")
                 continue
 
     def _handle_response(self, response: httpx.Response) -> Dict[str, Any]:
+        logger.debug(f"Handling response with status code: {response.status_code}")
         """Handle API response and raise appropriate exceptions."""
         if response.status_code == 200:
             return response.json()

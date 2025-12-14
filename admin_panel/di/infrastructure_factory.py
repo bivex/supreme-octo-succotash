@@ -4,6 +4,10 @@ Infrastructure Factory - Creates infrastructure components.
 
 from typing import Optional
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from ..infrastructure.config.settings import Settings
 from ..infrastructure.api.api_client import AdvertisingAPIClient
 from ..infrastructure.repositories.api_campaign_repository import ApiCampaignRepository
@@ -28,6 +32,7 @@ class InfrastructureFactory:
     def api_client(self) -> AdvertisingAPIClient:
         """Get API client (singleton)."""
         if self._api_client is None:
+            logger.debug(f"InfrastructureFactory: Creating new API client with base_url={self._settings.api_base_url}, bearer_token={'<set>' if self._settings.bearer_token else '<not set>'}, api_key={'<set>' if self._settings.api_key else '<not set>'}, timeout={self._settings.api_timeout}")
             self._api_client = AdvertisingAPIClient(
                 base_url=self._settings.api_base_url,
                 bearer_token=self._settings.bearer_token,
@@ -43,6 +48,7 @@ class InfrastructureFactory:
         api_key: Optional[str] = None
     ) -> AdvertisingAPIClient:
         """Recreate API client with new credentials."""
+        logger.debug(f"InfrastructureFactory: Recreating API client with base_url={base_url or self._settings.api_base_url}, bearer_token={'<set>' if (bearer_token or self._settings.bearer_token) else '<not set>'}, api_key={'<set>' if (api_key or self._settings.api_key) else '<not set>'}")
         self._api_client = AdvertisingAPIClient(
             base_url=base_url or self._settings.api_base_url,
             bearer_token=bearer_token or self._settings.bearer_token,
