@@ -201,3 +201,4 @@ class OfferDialog(QDialog):
             'is_control': self.is_control_check.isChecked()
         }
 
+

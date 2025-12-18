@@ -28,3 +28,4 @@ class DeleteLandingPageUseCase:
         # Delete the landing page
         self._landing_page_repository.delete(landing_page_id)
 
+

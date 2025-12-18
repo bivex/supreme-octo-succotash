@@ -1,0 +1,166 @@
+@startuml
+!pragma charset UTF-8
+!include <archimate/Archimate>
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam defaultFontColor #212529
+skinparam component {
+  borderThickness 2
+  borderColor #333333
+  backgroundColor #FEFEFE
+  fontSize 12
+  fontStyle normal
+  roundCorner 10
+  shadowing true
+}
+skinparam component<<Business>> {
+  backgroundColor #FF6B6B
+  borderColor #FF6B6BDD
+}
+skinparam component<<Application>> {
+  backgroundColor #4ECDC4
+  borderColor #4ECDC4DD
+}
+skinparam component<<Technology>> {
+  backgroundColor #45B7D1
+  borderColor #45B7D1DD
+}
+skinparam component<<Physical>> {
+  backgroundColor #FFA07A
+  borderColor #FFA07ADD
+}
+skinparam component<<Motivation>> {
+  backgroundColor #98D8C8
+  borderColor #98D8C8DD
+}
+skinparam component<<Strategy>> {
+  backgroundColor #F7DC6F
+  borderColor #F7DC6FDD
+}
+skinparam component<<Implementation>> {
+  backgroundColor #BB8FCE
+  borderColor #BB8FCEDD
+}
+skinparam componentBorderThickness 2
+skinparam note {
+  backgroundColor #6C757D10
+  borderColor #6C757D
+  fontColor #212529
+}
+skinparam legend {
+  backgroundColor #FFFFFF
+  borderColor #DEE2E6
+  fontColor #212529
+}
+skinparam interface {
+  backgroundColor #28A745
+  borderColor #007ACC
+}
+skinparam package {
+  backgroundColor #6C757D20
+  borderColor #6C757D
+}
+skinparam node {
+  backgroundColor #007ACC15
+  borderColor #007ACC
+}
+skinparam arrow {
+  thickness 2
+  color #007ACC
+}
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam businessBackgroundColor #FF6B6B
+skinparam businessBorderColor #FF6B6BDD
+skinparam applicationBackgroundColor #4ECDC4
+skinparam applicationBorderColor #4ECDC4DD
+skinparam technologyBackgroundColor #45B7D1
+skinparam technologyBorderColor #45B7D1DD
+skinparam physicalBackgroundColor #FFA07A
+skinparam physicalBorderColor #FFA07ADD
+skinparam motivationBackgroundColor #98D8C8
+skinparam motivationBorderColor #98D8C8DD
+skinparam strategyBackgroundColor #F7DC6F
+skinparam strategyBorderColor #F7DC6FDD
+skinparam implementationBackgroundColor #BB8FCE
+skinparam implementationBorderColor #BB8FCEDD
+
+skinparam componentStyle uml2
+
+
+' Elements
+Business_Actor(affiliate_manager, "Affiliate Manager")
+Business_Actor(business_analyst, "Business Analyst")
+Business_Actor(marketing_manager, "Marketing Manager")
+Business_Actor(system_admin, "System Administrator")
+Business_Actor(customer, "Customer/Lead")
+Business_Process(campaign_management, "Campaign Management Process")
+Business_Function(create_campaign, "Create Affiliate Campaign")
+Business_Function(track_clicks, "Track Affiliate Clicks")
+Business_Function(analyze_performance, "Analyze Campaign Performance")
+Business_Process(ltv_analytics, "LTV Analytics Process")
+Business_Function(calculate_ltv, "Calculate Customer LTV")
+Business_Function(cohort_analysis, "Perform Cohort Analysis")
+Business_Function(segment_customers, "Segment Customers")
+Business_Process(retention_management, "Retention Management Process")
+Business_Function(predict_churn, "Predict Customer Churn")
+Business_Function(create_retention_campaign, "Create Retention Campaign")
+Business_Function(measure_engagement, "Measure User Engagement")
+Business_Process(lead_processing, "Lead Processing Process")
+Business_Function(validate_form, "Validate Form Submission")
+Business_Function(score_lead, "Score Lead Quality")
+Business_Function(qualify_lead, "Qualify Lead")
+Business_Process(system_monitoring, "System Monitoring Process")
+Business_Function(monitor_health, "Monitor System Health")
+Business_Function(security_audit, "Perform Security Audit")
+Business_Function(data_backup, "Data Backup & Recovery")
+Business_Service(reporting_dashboard, "Analytics Dashboard")
+Business_Function(real_time_metrics, "Real-Time Performance Metrics")
+Business_Function(automated_reports, "Automated Business Reports")
+Business_Service(api_integration, "External API Integration")
+
+' Relationships
+Rel_Serving(affiliate_manager, create_campaign, "initiates")
+Rel_Serving(affiliate_manager, track_clicks, "monitors")
+Rel_Serving(affiliate_manager, analyze_performance, "reviews")
+Rel_Serving(business_analyst, calculate_ltv, "performs")
+Rel_Serving(business_analyst, cohort_analysis, "conducts")
+Rel_Serving(business_analyst, segment_customers, "defines")
+Rel_Serving(marketing_manager, predict_churn, "analyzes")
+Rel_Serving(marketing_manager, create_retention_campaign, "designs")
+Rel_Serving(marketing_manager, measure_engagement, "tracks")
+Rel_Serving(customer, validate_form, "submits to")
+Rel_Serving(customer, track_clicks, "generates")
+Rel_Serving(system_admin, monitor_health, "performs")
+Rel_Serving(system_admin, security_audit, "conducts")
+Rel_Serving(system_admin, data_backup, "manages")
+Rel_Serving(create_campaign, campaign_management, "part of")
+Rel_Serving(track_clicks, campaign_management, "part of")
+Rel_Serving(analyze_performance, campaign_management, "part of")
+Rel_Serving(calculate_ltv, ltv_analytics, "part of")
+Rel_Serving(cohort_analysis, ltv_analytics, "part of")
+Rel_Serving(segment_customers, ltv_analytics, "part of")
+Rel_Serving(predict_churn, retention_management, "part of")
+Rel_Serving(create_retention_campaign, retention_management, "part of")
+Rel_Serving(measure_engagement, retention_management, "part of")
+Rel_Serving(validate_form, lead_processing, "part of")
+Rel_Serving(score_lead, lead_processing, "part of")
+Rel_Serving(qualify_lead, lead_processing, "part of")
+Rel_Serving(monitor_health, system_monitoring, "part of")
+Rel_Serving(security_audit, system_monitoring, "part of")
+Rel_Serving(data_backup, system_monitoring, "part of")
+Rel_Serving(real_time_metrics, reporting_dashboard, "provides")
+Rel_Serving(automated_reports, reporting_dashboard, "generates")
+Rel_Serving(campaign_management, reporting_dashboard, "feeds")
+Rel_Serving(ltv_analytics, reporting_dashboard, "feeds")
+Rel_Serving(retention_management, reporting_dashboard, "feeds")
+Rel_Serving(lead_processing, reporting_dashboard, "feeds")
+Rel_Serving(system_monitoring, reporting_dashboard, "feeds")
+Rel_Serving(reporting_dashboard, api_integration, "connects to")
+Rel_Serving(campaign_management, api_integration, "uses")
+Rel_Serving(ltv_analytics, api_integration, "uses")
+Rel_Serving(retention_management, api_integration, "uses")
+
+@enduml

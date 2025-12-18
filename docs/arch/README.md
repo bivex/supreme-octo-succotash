@@ -28,6 +28,12 @@ This directory contains ArchiMate architecture diagrams for the Supreme Octo Suc
 - **Content**: Phase 1 (current), Phase 2 (near-term enhancements), Phase 3 (microservices vision)
 - **Purpose**: Understanding development trajectory and strategic goals
 
+### 5. Use Cases & Process Diagram
+**Files**: `use-cases-process-diagram.{png,svg,puml}`
+- **Overview**: Business processes and user interactions across all domains
+- **Content**: Actors, processes, functions, and their relationships
+- **Purpose**: Understanding business workflows and user journeys
+
 ## File Formats
 
 - **`.png`**: High-resolution raster images for documentation and presentations
@@ -72,6 +78,28 @@ The Supreme Octo Succotash platform implements:
 - Global scalability for millions of users
 - Market leadership position
 - Innovation ecosystem for partners
+
+## Use Cases & Business Processes
+
+The use cases diagram shows the key business processes and user interactions:
+
+### Actors (Users)
+- **Affiliate Manager**: Campaign creation, performance tracking, ROI analysis
+- **Business Analyst**: LTV calculations, cohort analysis, customer segmentation
+- **Marketing Manager**: Retention campaigns, churn prediction, engagement measurement
+- **System Administrator**: System monitoring, security audits, data backup
+- **Customer/Lead**: Revenue generation, engagement data provision
+
+### Core Business Processes
+1. **Campaign Management**: Create, track, and optimize affiliate campaigns
+2. **LTV Analytics**: Customer lifetime value calculation and segmentation
+3. **Retention Management**: Automated retention campaigns and churn prevention
+4. **Lead Processing**: Form validation, lead scoring, and qualification
+5. **System Monitoring**: Health checks, security, and maintenance
+
+### Supporting Services
+- **Analytics Dashboard**: Real-time metrics and automated reporting
+- **API Integration**: External service connections and data synchronization
 
 ## Generation
 
