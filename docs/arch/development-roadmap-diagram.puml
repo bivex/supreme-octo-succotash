@@ -1,0 +1,150 @@
+@startuml
+!pragma charset UTF-8
+!include <archimate/Archimate>
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam defaultFontColor #212529
+skinparam component {
+  borderThickness 2
+  borderColor #333333
+  backgroundColor #FEFEFE
+  fontSize 12
+  fontStyle normal
+  roundCorner 10
+  shadowing true
+}
+skinparam component<<Business>> {
+  backgroundColor #FF6B6B
+  borderColor #FF6B6BDD
+}
+skinparam component<<Application>> {
+  backgroundColor #4ECDC4
+  borderColor #4ECDC4DD
+}
+skinparam component<<Technology>> {
+  backgroundColor #45B7D1
+  borderColor #45B7D1DD
+}
+skinparam component<<Physical>> {
+  backgroundColor #FFA07A
+  borderColor #FFA07ADD
+}
+skinparam component<<Motivation>> {
+  backgroundColor #98D8C8
+  borderColor #98D8C8DD
+}
+skinparam component<<Strategy>> {
+  backgroundColor #F7DC6F
+  borderColor #F7DC6FDD
+}
+skinparam component<<Implementation>> {
+  backgroundColor #BB8FCE
+  borderColor #BB8FCEDD
+}
+skinparam componentBorderThickness 2
+skinparam note {
+  backgroundColor #6C757D10
+  borderColor #6C757D
+  fontColor #212529
+}
+skinparam legend {
+  backgroundColor #FFFFFF
+  borderColor #DEE2E6
+  fontColor #212529
+}
+skinparam interface {
+  backgroundColor #28A745
+  borderColor #007ACC
+}
+skinparam package {
+  backgroundColor #6C757D20
+  borderColor #6C757D
+}
+skinparam node {
+  backgroundColor #007ACC15
+  borderColor #007ACC
+}
+skinparam arrow {
+  thickness 2
+  color #007ACC
+}
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam businessBackgroundColor #FF6B6B
+skinparam businessBorderColor #FF6B6BDD
+skinparam applicationBackgroundColor #4ECDC4
+skinparam applicationBorderColor #4ECDC4DD
+skinparam technologyBackgroundColor #45B7D1
+skinparam technologyBorderColor #45B7D1DD
+skinparam physicalBackgroundColor #FFA07A
+skinparam physicalBorderColor #FFA07ADD
+skinparam motivationBackgroundColor #98D8C8
+skinparam motivationBorderColor #98D8C8DD
+skinparam strategyBackgroundColor #F7DC6F
+skinparam strategyBorderColor #F7DC6FDD
+skinparam implementationBackgroundColor #BB8FCE
+skinparam implementationBorderColor #BB8FCEDD
+
+skinparam componentStyle uml2
+
+
+' Elements
+Implementation_Plateau(current_state, "Phase 1: Current State")
+Motivation_Principle(ddd_implementation, "DDD Architecture")
+Business_Process(business_domains, "Business Domains")
+Motivation_Principle(clean_architecture, "Clean Architecture")
+Technology_Node(multi_database, "Multi-Database")
+Motivation_Goal(production_ready, "Production Ready")
+Implementation_Plateau(phase2_short_term, "Phase 2: Near-Term (3-6 months)")
+Application_Function(jwt_auth, "JWT Authentication")
+Technology_Node(redis_caching, "Redis Caching")
+Application_Function(async_processing, "Async Processing")
+Application_Interface(api_versioning, "API Versioning")
+Application_Function(monitoring, "Monitoring & Observability")
+Implementation_Plateau(phase3_long_term, "Phase 3: Long-Term Vision (6-12 months)")
+Technology_Node(microservices_architecture, "Microservices Architecture")
+Application_Component(campaign_service, "Campaign Service")
+Application_Component(ltv_service, "LTV Service")
+Application_Component(retention_service, "Retention Service")
+Application_Component(lead_service, "Lead Service")
+Application_Component(auth_service, "Auth Service")
+Business_Function(advanced_analytics, "Advanced Analytics")
+Technology_Node(scalable_infrastructure, "Scalable Infrastructure")
+Motivation_Goal(strategic_goals, "Strategic Goals & Vision")
+Motivation_Goal(enterprise_platform, "Enterprise Affiliate Platform")
+Motivation_Goal(ai_driven_insights, "AI-Driven Insights")
+Motivation_Goal(global_scalability, "Global Scalability")
+Motivation_Goal(market_leadership, "Market Leadership")
+Motivation_Goal(innovation_ecosystem, "Innovation Ecosystem")
+
+' Relationships
+Rel_Realization(current_state, phase2_short_term, "leads to")
+Rel_Realization(phase2_short_term, phase3_long_term, "leads to")
+Rel_Serving(ddd_implementation, current_state, "foundation")
+Rel_Serving(business_domains, current_state, "core")
+Rel_Serving(clean_architecture, current_state, "structure")
+Rel_Serving(multi_database, current_state, "supports")
+Rel_Serving(production_ready, current_state, "status")
+Rel_Serving(jwt_auth, phase2_short_term, "enhances")
+Rel_Serving(redis_caching, phase2_short_term, "improves")
+Rel_Serving(async_processing, phase2_short_term, "enables")
+Rel_Serving(api_versioning, phase2_short_term, "organizes")
+Rel_Serving(monitoring, phase2_short_term, "monitors")
+Rel_Serving(microservices_architecture, phase3_long_term, "enables")
+Rel_Serving(campaign_service, microservices_architecture, "specializes")
+Rel_Serving(ltv_service, microservices_architecture, "specializes")
+Rel_Serving(retention_service, microservices_architecture, "specializes")
+Rel_Serving(lead_service, microservices_architecture, "specializes")
+Rel_Serving(auth_service, microservices_architecture, "specializes")
+Rel_Serving(advanced_analytics, phase3_long_term, "enhances")
+Rel_Serving(scalable_infrastructure, phase3_long_term, "supports")
+Rel_Serving(strategic_goals, phase3_long_term, "guides")
+Rel_Serving(enterprise_platform, strategic_goals, "vision")
+Rel_Serving(ai_driven_insights, strategic_goals, "goal")
+Rel_Serving(global_scalability, strategic_goals, "target")
+Rel_Serving(market_leadership, strategic_goals, "aspiration")
+Rel_Serving(innovation_ecosystem, strategic_goals, "platform")
+
+@enduml
