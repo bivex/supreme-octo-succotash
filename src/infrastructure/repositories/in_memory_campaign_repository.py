@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:18:17
+# Last Updated: 2025-12-18T12:28:32
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """In-memory campaign repository implementation."""
 
 from typing import Optional, List, Dict
