@@ -1,0 +1,123 @@
+@startuml
+!pragma charset UTF-8
+!include <archimate/Archimate>
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam defaultFontColor #212529
+skinparam component {
+  borderThickness 2
+  borderColor #333333
+  backgroundColor #FEFEFE
+  fontSize 12
+  fontStyle normal
+  roundCorner 10
+  shadowing true
+}
+skinparam component<<Business>> {
+  backgroundColor #FF6B6B
+  borderColor #FF6B6BDD
+}
+skinparam component<<Application>> {
+  backgroundColor #4ECDC4
+  borderColor #4ECDC4DD
+}
+skinparam component<<Technology>> {
+  backgroundColor #45B7D1
+  borderColor #45B7D1DD
+}
+skinparam component<<Physical>> {
+  backgroundColor #FFA07A
+  borderColor #FFA07ADD
+}
+skinparam component<<Motivation>> {
+  backgroundColor #98D8C8
+  borderColor #98D8C8DD
+}
+skinparam component<<Strategy>> {
+  backgroundColor #F7DC6F
+  borderColor #F7DC6FDD
+}
+skinparam component<<Implementation>> {
+  backgroundColor #BB8FCE
+  borderColor #BB8FCEDD
+}
+skinparam componentBorderThickness 2
+skinparam note {
+  backgroundColor #6C757D10
+  borderColor #6C757D
+  fontColor #212529
+}
+skinparam legend {
+  backgroundColor #FFFFFF
+  borderColor #DEE2E6
+  fontColor #212529
+}
+skinparam interface {
+  backgroundColor #28A745
+  borderColor #007ACC
+}
+skinparam package {
+  backgroundColor #6C757D20
+  borderColor #6C757D
+}
+skinparam node {
+  backgroundColor #007ACC15
+  borderColor #007ACC
+}
+skinparam arrow {
+  thickness 2
+  color #007ACC
+}
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam businessBackgroundColor #FF6B6B
+skinparam businessBorderColor #FF6B6BDD
+skinparam applicationBackgroundColor #4ECDC4
+skinparam applicationBorderColor #4ECDC4DD
+skinparam technologyBackgroundColor #45B7D1
+skinparam technologyBorderColor #45B7D1DD
+skinparam physicalBackgroundColor #FFA07A
+skinparam physicalBorderColor #FFA07ADD
+skinparam motivationBackgroundColor #98D8C8
+skinparam motivationBorderColor #98D8C8DD
+skinparam strategyBackgroundColor #F7DC6F
+skinparam strategyBorderColor #F7DC6FDD
+skinparam implementationBackgroundColor #BB8FCE
+skinparam implementationBorderColor #BB8FCEDD
+
+skinparam componentStyle uml2
+
+
+' Elements
+Business_Process(business_layer, "Business Layer")
+Business_Process(ltv_domain, "LTV Domain")
+Business_Process(retention_domain, "Retention Domain")
+Business_Process(lead_domain, "Lead Processing Domain")
+Application_Component(application_layer, "Application Layer")
+Application_Component(api_service, "REST API Service")
+Application_Component(admin_panel, "Admin Panel")
+Technology_Node(technology_layer, "Technology Layer")
+Technology_Node(postgres_db, "PostgreSQL")
+Technology_Node(sqlite_db, "SQLite")
+Technology_SystemSoftware(flask_framework, "Flask Framework")
+Physical_Equipment(physical_layer, "Physical Layer")
+Physical_Equipment(production_server, "Production Server")
+Motivation_Goal(motivation_layer, "Motivation Layer")
+Motivation_Goal(scalability, "Scalability")
+Motivation_Principle(clean_architecture, "Clean Architecture")
+
+' Relationships
+Rel_Serving(ltv_domain, api_service, "provides data")
+Rel_Serving(retention_domain, api_service, "provides data")
+Rel_Serving(lead_domain, api_service, "provides data")
+Rel_Serving(api_service, admin_panel, "manages")
+Rel_Serving(api_service, flask_framework, "uses")
+Rel_Serving(api_service, postgres_db, "persists to")
+Rel_Serving(api_service, sqlite_db, "persists to")
+Rel_Assignment(postgres_db, production_server, "deployed on")
+Rel_Serving(scalability, postgres_db, "requires")
+Rel_Serving(clean_architecture, api_service, "enables")
+
+@enduml

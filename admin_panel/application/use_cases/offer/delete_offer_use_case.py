@@ -27,3 +27,4 @@ class DeleteOfferUseCase:
 
         # Delete the offer
         self._offer_repository.delete(offer_id)
+

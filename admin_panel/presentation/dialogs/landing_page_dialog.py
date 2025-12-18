@@ -133,3 +133,4 @@ class LandingPageDialog(QDialog):
             'weight': self.weight_spin.value(),
             'is_control': self.is_control_check.isChecked()
         }
+

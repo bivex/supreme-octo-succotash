@@ -13,3 +13,4 @@ __all__ = [
     'UpdateOfferUseCase',
     'DeleteOfferUseCase'
 ]
+

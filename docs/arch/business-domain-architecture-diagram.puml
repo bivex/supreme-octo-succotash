@@ -1,0 +1,134 @@
+@startuml
+!pragma charset UTF-8
+!include <archimate/Archimate>
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam defaultFontColor #212529
+skinparam component {
+  borderThickness 2
+  borderColor #333333
+  backgroundColor #FEFEFE
+  fontSize 12
+  fontStyle normal
+  roundCorner 10
+  shadowing true
+}
+skinparam component<<Business>> {
+  backgroundColor #FF6B6B
+  borderColor #FF6B6BDD
+}
+skinparam component<<Application>> {
+  backgroundColor #4ECDC4
+  borderColor #4ECDC4DD
+}
+skinparam component<<Technology>> {
+  backgroundColor #45B7D1
+  borderColor #45B7D1DD
+}
+skinparam component<<Physical>> {
+  backgroundColor #FFA07A
+  borderColor #FFA07ADD
+}
+skinparam component<<Motivation>> {
+  backgroundColor #98D8C8
+  borderColor #98D8C8DD
+}
+skinparam component<<Strategy>> {
+  backgroundColor #F7DC6F
+  borderColor #F7DC6FDD
+}
+skinparam component<<Implementation>> {
+  backgroundColor #BB8FCE
+  borderColor #BB8FCEDD
+}
+skinparam componentBorderThickness 2
+skinparam note {
+  backgroundColor #6C757D10
+  borderColor #6C757D
+  fontColor #212529
+}
+skinparam legend {
+  backgroundColor #FFFFFF
+  borderColor #DEE2E6
+  fontColor #212529
+}
+skinparam interface {
+  backgroundColor #28A745
+  borderColor #007ACC
+}
+skinparam package {
+  backgroundColor #6C757D20
+  borderColor #6C757D
+}
+skinparam node {
+  backgroundColor #007ACC15
+  borderColor #007ACC
+}
+skinparam arrow {
+  thickness 2
+  color #007ACC
+}
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam businessBackgroundColor #FF6B6B
+skinparam businessBorderColor #FF6B6BDD
+skinparam applicationBackgroundColor #4ECDC4
+skinparam applicationBorderColor #4ECDC4DD
+skinparam technologyBackgroundColor #45B7D1
+skinparam technologyBorderColor #45B7D1DD
+skinparam physicalBackgroundColor #FFA07A
+skinparam physicalBorderColor #FFA07ADD
+skinparam motivationBackgroundColor #98D8C8
+skinparam motivationBorderColor #98D8C8DD
+skinparam strategyBackgroundColor #F7DC6F
+skinparam strategyBorderColor #F7DC6FDD
+skinparam implementationBackgroundColor #BB8FCE
+skinparam implementationBorderColor #BB8FCEDD
+
+skinparam componentStyle uml2
+
+
+' Elements
+Business_Process(customer_journey, "Customer Journey")
+Business_Process(ltv_domain_core, "LTV Analytics Domain")
+Business_Function(ltv_calculation, "LTV Calculation")
+Business_Function(cohort_analysis, "Cohort Analysis")
+Business_Function(segmentation, "Customer Segmentation")
+Business_Process(retention_domain_core, "Retention Domain")
+Business_Function(churn_prediction, "Churn Prediction")
+Business_Function(retention_campaigns, "Retention Campaigns")
+Business_Function(engagement_profiling, "User Engagement")
+Business_Process(lead_domain_core, "Lead Processing Domain")
+Business_Function(form_validation, "Form Validation")
+Business_Function(lead_scoring, "Lead Scoring")
+Business_Function(conversion_analytics, "Conversion Analytics")
+Business_Process(campaign_management, "Campaign Management")
+Business_Function(click_tracking, "Click Tracking")
+Business_Service(data_integration, "Cross-Domain Integration")
+Business_Service(real_time_analytics, "Real-Time Analytics")
+Business_Function(business_rules, "Business Rules Engine")
+
+' Relationships
+Rel_Serving(customer_journey, ltv_domain_core, "enables")
+Rel_Serving(customer_journey, retention_domain_core, "enables")
+Rel_Serving(customer_journey, lead_domain_core, "enables")
+Rel_Serving(ltv_calculation, segmentation, "feeds")
+Rel_Serving(cohort_analysis, segmentation, "feeds")
+Rel_Serving(segmentation, churn_prediction, "informs")
+Rel_Serving(churn_prediction, retention_campaigns, "triggers")
+Rel_Serving(engagement_profiling, churn_prediction, "enhances")
+Rel_Serving(engagement_profiling, retention_campaigns, "guides")
+Rel_Serving(form_validation, lead_scoring, "enables")
+Rel_Serving(lead_scoring, conversion_analytics, "feeds")
+Rel_Serving(conversion_analytics, ltv_calculation, "contributes to")
+Rel_Serving(campaign_management, click_tracking, "includes")
+Rel_Serving(click_tracking, conversion_analytics, "tracks")
+Rel_Serving(data_integration, customer_journey, "supports")
+Rel_Serving(real_time_analytics, data_integration, "provides")
+Rel_Serving(business_rules, ltv_calculation, "validates")
+Rel_Serving(business_rules, churn_prediction, "validates")
+Rel_Serving(business_rules, lead_scoring, "validates")
+
+@enduml

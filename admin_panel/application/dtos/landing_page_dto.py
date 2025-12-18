@@ -90,3 +90,4 @@ class UpdateLandingPageDTO:
     weight: Optional[int] = None
     is_active: Optional[bool] = None
     is_control: Optional[bool] = None
+

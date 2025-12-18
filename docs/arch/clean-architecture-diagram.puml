@@ -1,0 +1,135 @@
+@startuml
+!pragma charset UTF-8
+!include <archimate/Archimate>
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam defaultFontColor #212529
+skinparam component {
+  borderThickness 2
+  borderColor #333333
+  backgroundColor #FEFEFE
+  fontSize 12
+  fontStyle normal
+  roundCorner 10
+  shadowing true
+}
+skinparam component<<Business>> {
+  backgroundColor #FF6B6B
+  borderColor #FF6B6BDD
+}
+skinparam component<<Application>> {
+  backgroundColor #4ECDC4
+  borderColor #4ECDC4DD
+}
+skinparam component<<Technology>> {
+  backgroundColor #45B7D1
+  borderColor #45B7D1DD
+}
+skinparam component<<Physical>> {
+  backgroundColor #FFA07A
+  borderColor #FFA07ADD
+}
+skinparam component<<Motivation>> {
+  backgroundColor #98D8C8
+  borderColor #98D8C8DD
+}
+skinparam component<<Strategy>> {
+  backgroundColor #F7DC6F
+  borderColor #F7DC6FDD
+}
+skinparam component<<Implementation>> {
+  backgroundColor #BB8FCE
+  borderColor #BB8FCEDD
+}
+skinparam componentBorderThickness 2
+skinparam note {
+  backgroundColor #6C757D10
+  borderColor #6C757D
+  fontColor #212529
+}
+skinparam legend {
+  backgroundColor #FFFFFF
+  borderColor #DEE2E6
+  fontColor #212529
+}
+skinparam interface {
+  backgroundColor #28A745
+  borderColor #007ACC
+}
+skinparam package {
+  backgroundColor #6C757D20
+  borderColor #6C757D
+}
+skinparam node {
+  backgroundColor #007ACC15
+  borderColor #007ACC
+}
+skinparam arrow {
+  thickness 2
+  color #007ACC
+}
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam businessBackgroundColor #FF6B6B
+skinparam businessBorderColor #FF6B6BDD
+skinparam applicationBackgroundColor #4ECDC4
+skinparam applicationBorderColor #4ECDC4DD
+skinparam technologyBackgroundColor #45B7D1
+skinparam technologyBorderColor #45B7D1DD
+skinparam physicalBackgroundColor #FFA07A
+skinparam physicalBorderColor #FFA07ADD
+skinparam motivationBackgroundColor #98D8C8
+skinparam motivationBorderColor #98D8C8DD
+skinparam strategyBackgroundColor #F7DC6F
+skinparam strategyBorderColor #F7DC6FDD
+skinparam implementationBackgroundColor #BB8FCE
+skinparam implementationBorderColor #BB8FCEDD
+
+skinparam componentStyle uml2
+
+
+' Elements
+Business_Process(domain_layer, "Domain Layer")
+Business_Object(entities, "Entities")
+Business_Object(value_objects, "Value Objects")
+Business_Function(domain_services, "Domain Services")
+Business_Interface(repositories, "Repository Interfaces")
+Application_Component(application_layer, "Application Layer")
+Application_Function(commands, "Commands")
+Application_Function(queries, "Queries")
+Application_Function(handlers, "Handlers")
+Technology_Node(infrastructure_layer, "Infrastructure Layer")
+Technology_SystemSoftware(postgres_repo, "PostgreSQL Repositories")
+Technology_SystemSoftware(sqlite_repo, "SQLite Repositories")
+Technology_SystemSoftware(in_memory_repo, "In-Memory Repositories")
+Application_Interface(presentation_layer, "Presentation Layer")
+Application_Interface(rest_api, "REST API")
+Application_Function(dtos, "DTOs")
+Application_Function(middleware, "Middleware")
+Motivation_Principle(ddd_principle, "Domain-Driven Design")
+Motivation_Principle(clean_arch, "Clean Architecture")
+Motivation_Principle(cqrs, "CQRS Pattern")
+Motivation_Principle(ports_adapters, "Ports & Adapters")
+
+' Relationships
+Rel_Serving(ddd_principle, domain_layer, "guides")
+Rel_Serving(clean_arch, application_layer, "structures")
+Rel_Serving(cqrs, handlers, "implements")
+Rel_Serving(ports_adapters, repositories, "enables")
+Rel_Serving(entities, domain_services, "used by")
+Rel_Serving(value_objects, entities, "compose")
+Rel_Serving(domain_services, repositories, "uses")
+Rel_Serving(commands, handlers, "processed by")
+Rel_Serving(queries, handlers, "processed by")
+Rel_Serving(handlers, domain_services, "orchestrates")
+Rel_Serving(handlers, repositories, "uses")
+Rel_Serving(repositories, postgres_repo, "implemented by")
+Rel_Serving(repositories, sqlite_repo, "implemented by")
+Rel_Serving(repositories, in_memory_repo, "implemented by")
+Rel_Serving(rest_api, handlers, "calls")
+Rel_Serving(dtos, rest_api, "used by")
+Rel_Serving(middleware, rest_api, "supports")
+
+@enduml
