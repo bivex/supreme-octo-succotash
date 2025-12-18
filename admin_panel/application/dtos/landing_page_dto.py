@@ -92,3 +92,4 @@ class UpdateLandingPageDTO:
     is_control: Optional[bool] = None
 
 
+

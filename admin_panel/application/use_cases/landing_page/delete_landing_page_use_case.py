@@ -29,3 +29,4 @@ class DeleteLandingPageUseCase:
         self._landing_page_repository.delete(landing_page_id)
 
 
+

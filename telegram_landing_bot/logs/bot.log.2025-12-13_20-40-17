@@ -46,3 +46,5 @@
 2025-12-13 20:23:40.810 | INFO     | __main__:setup_webhook_app:126 - Webhook app setup completed with path: /webhook
 2025-12-13 20:23:41.029 | INFO     | __main__:set_webhook:134 - Webhook set to: https://f96ae014900186.lhr.life/webhook
 2025-12-13 20:23:41.029 | INFO     | __main__:main:203 - Starting webhook server on port 3000
+2025-12-13 22:37:59.117 | INFO     | __main__:handle_shutdown:239 - Received signal 15. Shutting down...
+2025-12-13 22:37:59.128 | ERROR    | __main__:<module>:279 - Unhandled error: HTTP Client says - ClientConnectorDNSError: Cannot connect to host api.telegram.org:443 ssl:default [nodename nor servname provided, or not known]
