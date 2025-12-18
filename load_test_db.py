@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:12:11
+# Last Updated: 2025-12-18T12:12:13
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
 """
 Comprehensive PostgreSQL load testing and performance analysis script.
 Tests database performance under various loads and provides optimization recommendations.

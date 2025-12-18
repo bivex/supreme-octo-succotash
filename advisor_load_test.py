@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:12:34
+# Last Updated: 2025-12-18T12:12:34
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
 """Load test script for Intel Advisor threading analysis."""
 
 import requests

@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:12:54
+# Last Updated: 2025-12-18T12:12:54
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
 """
 Main file for Telegram bot tracking clicks to landing pages
 Uses aiogram 3.x and integrates with Supreme Tracker

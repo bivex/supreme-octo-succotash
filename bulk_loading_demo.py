@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:12:29
+# Last Updated: 2025-12-18T12:12:29
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
 """
 PostgreSQL Bulk Loading and Prepared Statements Demo
 Shows efficient data loading techniques and query optimization

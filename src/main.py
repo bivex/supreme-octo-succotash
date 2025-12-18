@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T12:12:57
+# Last Updated: 2025-12-18T12:12:57
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Main application entry point."""
 
 # uvloop not available on Windows, skipping (would give +20-40% HTTP performance boost on Linux/macOS)
