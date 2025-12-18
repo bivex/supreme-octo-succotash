@@ -935,6 +935,13 @@ class Container:
             self._singletons['system_handler'] = SystemHandler()
         return self._singletons['system_handler']
 
+    async def get_auth_routes(self):
+        """Get authentication routes."""
+        if 'auth_routes' not in self._singletons:
+            from ..presentation.routes.auth_routes import AuthRoutes
+            self._singletons['auth_routes'] = AuthRoutes()
+        return self._singletons['auth_routes']
+
     async def get_system_routes(self):
         """Get system routes."""
         if 'system_routes' not in self._singletons:

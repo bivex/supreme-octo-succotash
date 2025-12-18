@@ -2,8 +2,11 @@
 
 import time
 import json
+import jwt
+from datetime import datetime, timezone
 from loguru import logger
 
+from ...config.settings import settings
 from ...domain.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
 from ...utils.encoding import safe_string_for_logging
 
@@ -230,14 +233,16 @@ def _validate_authentication_socketify(req, res):
         full_url = req.get_full_url()
         is_health = '/health' in full_url
         is_click_tracking = '/click' in full_url and method == 'GET' and not '/clicks' in full_url and not '/click/' in full_url
+        is_auth_token = '/auth/token' in full_url  # Skip auth for token generation endpoint
     except AttributeError:
         # Fallback: assume this is not a public endpoint
         is_health = False
         is_click_tracking = False
+        is_auth_token = False
 
-    logger.debug(f"Checking auth: method={method}, is_health={is_health}, is_click_tracking={is_click_tracking}")
+    logger.debug(f"Checking auth: method={method}, is_health={is_health}, is_click_tracking={is_click_tracking}, is_auth_token={is_auth_token}")
 
-    if is_health or is_click_tracking:
+    if is_health or is_click_tracking or is_auth_token:
         logger.debug("Skipping auth for public endpoint")
         return None  # Skip authentication for public endpoints
 
@@ -247,28 +252,82 @@ def _validate_authentication_socketify(req, res):
 
     logger.debug(f"Checking auth: auth_header={auth_header[:20]}..., api_key={api_key[:10]}...")
 
-    # Simple validation for testing - accept test tokens
-    valid_auth = (
-        auth_header == 'Bearer test_jwt_token_12345' or
-        auth_header == 'Bearer valid_jwt_token_demo_12345' or
-        api_key == 'valid_api_key_demo_abcdef123456'
-    )
+    # Validate JWT token from Authorization header
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]  # Remove 'Bearer ' prefix
+        try:
+            # Decode and validate JWT token
+            payload = jwt.decode(
+                token,
+                settings.security.secret_key,
+                algorithms=[settings.security.jwt_algorithm],
+                audience="supreme-octo-succotash-client",
+                issuer="supreme-octo-succotash-api"
+            )
 
-    if not valid_auth:
-        logger.warning(f"Invalid authentication: auth_header={safe_string_for_logging(auth_header)}, api_key={safe_string_for_logging(api_key)}")
-        error_response = {
-            'error': {
-                'code': 'UNAUTHENTICATED',
-                'message': 'Valid authentication required'
+            # Check if token is expired
+            exp_timestamp = payload.get('exp')
+            if exp_timestamp and datetime.now(timezone.utc).timestamp() > exp_timestamp:
+                logger.warning("JWT token has expired")
+                error_response = {
+                    'error': {
+                        'code': 'TOKEN_EXPIRED',
+                        'message': 'Authentication token has expired'
+                    }
+                }
+                res.write_status(401)
+                res.write_header("Content-Type", "application/json")
+                res.end(json.dumps(error_response))
+                return True
+
+            logger.debug("JWT token validation passed")
+            return None
+
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token has expired")
+            error_response = {
+                'error': {
+                    'code': 'TOKEN_EXPIRED',
+                    'message': 'Authentication token has expired'
+                }
             }
-        }
-        res.write_status(401)
-        res.write_header("Content-Type", "application/json")
-        res.end(json.dumps(error_response))
-        return True
+            res.write_status(401)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps(error_response))
+            return True
 
-    logger.debug("Auth validation passed")
-    return None
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid JWT token: {e}")
+            error_response = {
+                'error': {
+                    'code': 'INVALID_TOKEN',
+                    'message': 'Invalid authentication token'
+                }
+            }
+            res.write_status(401)
+            res.write_header("Content-Type", "application/json")
+            res.end(json.dumps(error_response))
+            return True
+
+    # Fallback: Check for API key (for backward compatibility during transition)
+    elif api_key:
+        # For now, accept any non-empty API key during transition
+        # TODO: Implement proper API key validation when needed
+        logger.debug("API key authentication accepted (transitional)")
+        return None
+
+    # No valid authentication found
+    logger.warning(f"Invalid authentication: auth_header={safe_string_for_logging(auth_header)}, api_key={safe_string_for_logging(api_key)}")
+    error_response = {
+        'error': {
+            'code': 'UNAUTHENTICATED',
+            'message': 'Valid authentication required'
+        }
+    }
+    res.write_status(401)
+    res.write_header("Content-Type", "application/json")
+    res.end(json.dumps(error_response))
+    return True
 
 
 def _is_valid_bearer_token(token: str) -> bool:

@@ -27,6 +27,99 @@ class ConnectionController(BaseController):
         """Initialize the connection controller."""
         pass
 
+    def authenticate_and_connect(self) -> None:
+        """Authenticate with username/password and connect to the API."""
+        from ..workers import APIWorker
+
+        # Get connection settings
+        api_url = self.main_window.api_url_edit.text().strip()
+        username = getattr(self.main_window, 'username_edit', None)
+        password = getattr(self.main_window, 'password_edit', None)
+
+        if username and password:
+            username = username.text().strip()
+            password = password.text().strip()
+
+        # Validate inputs
+        if not api_url:
+            QMessageBox.warning(self.main_window, "Validation Error", "API URL is required")
+            return
+
+        if not username or not password:
+            QMessageBox.warning(
+                self.main_window, "Validation Error",
+                "Username and password are required for authentication"
+            )
+            return
+
+        # Disable authenticate button
+        if hasattr(self.main_window, 'auth_btn'):
+            self.main_window.auth_btn.setEnabled(False)
+            self.main_window.auth_btn.setText("Authenticating...")
+
+        def authenticate():
+            try:
+                # Import SDK client
+                from advertising_platform_sdk import AdvertisingPlatformClient
+
+                # Create client
+                client = AdvertisingPlatformClient(
+                    base_url=api_url,
+                    timeout=getattr(self.main_window.app_settings, 'api_timeout', DEFAULT_API_CONNECTION_TIMEOUT) if self.main_window.app_settings else DEFAULT_API_CONNECTION_TIMEOUT,
+                    max_retries=getattr(self.main_window.app_settings, 'api_max_retries', MAX_API_RETRIES) if self.main_window.app_settings else MAX_API_RETRIES,
+                )
+
+                # Authenticate and get JWT token
+                auth_result = client.authenticate(username, password)
+
+                return {
+                    'client': client,
+                    'auth_result': auth_result,
+                    'status': 'authenticated',
+                    'message': 'Successfully authenticated and connected to API'
+                }
+
+            except Exception as e:
+                logger.error(f"Failed to authenticate with API: {e}")
+                raise Exception(f"Authentication failed: {str(e)}")
+
+        worker = self.worker_manager.create_worker(authenticate)
+
+        def on_success(result):
+            self.client = result['client']
+            self.main_window.client = self.client
+
+            # Update UI with the obtained token
+            if hasattr(self.main_window, 'bearer_token_edit'):
+                self.main_window.bearer_token_edit.setText(result['auth_result'].get('access_token', ''))
+
+            # Reset auth button
+            if hasattr(self.main_window, 'auth_btn'):
+                self.main_window.auth_btn.setEnabled(True)
+                self.main_window.auth_btn.setText("Authenticate & Connect")
+
+            QMessageBox.information(
+                self.main_window, "Success",
+                result['message']
+            )
+
+            # Auto-refresh data
+            self.main_window.refresh_all_data()
+
+        def on_error(error_msg):
+            # Reset auth button
+            if hasattr(self.main_window, 'auth_btn'):
+                self.main_window.auth_btn.setEnabled(True)
+                self.main_window.auth_btn.setText("Authenticate & Connect")
+
+            QMessageBox.critical(
+                self.main_window, "Authentication Error",
+                f"Failed to authenticate with API:\n{error_msg}"
+            )
+
+        worker.finished.connect(on_success)
+        worker.error.connect(on_error)
+
     def connect_to_api(self) -> None:
         """Connect to the API using provided credentials."""
         from ..workers import APIWorker

@@ -17,6 +17,9 @@ uvicorn[standard]>=0.32.0
 pydantic>=2.10.0
 pydantic-settings>=2.6.0
 
+# JWT authentication
+PyJWT>=2.8.0
+
 # HTTP client
 requests>=2.32.0
 

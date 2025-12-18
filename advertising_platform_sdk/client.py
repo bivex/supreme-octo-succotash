@@ -36,6 +36,8 @@ class AdvertisingPlatformClient:
         api_key: Optional[str] = None,
         timeout: float = 30.0,
         max_retries: int = 3,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
     ):
         """
         Initialize the API client.
@@ -43,19 +45,60 @@ class AdvertisingPlatformClient:
         Args:
             base_url: Base URL for the API
             bearer_token: JWT bearer token for authentication
-            api_key: API key for authentication
+            api_key: API key for authentication (deprecated, use JWT)
             timeout: Request timeout in seconds
             max_retries: Maximum number of retries for failed requests
+            username: Username for JWT authentication
+            password: Password for JWT authentication
         """
         self.base_url = base_url.rstrip("/")
         self.bearer_token = bearer_token
-        self.api_key = api_key
+        self.api_key = api_key  # Kept for backward compatibility
         self.timeout = timeout
         self.max_retries = max_retries
+        self.username = username
+        self.password = password
 
         # Create HTTP clients
         self._sync_client = None
         self._async_client = None
+
+    def authenticate(self, username: str, password: str) -> Dict[str, Any]:
+        """
+        Authenticate with username/password and obtain JWT token.
+
+        Args:
+            username: Username for authentication
+            password: Password for authentication
+
+        Returns:
+            Authentication response with JWT token
+        """
+        auth_data = {"username": username, "password": password}
+
+        # Make direct request to auth endpoint (without authentication headers)
+        url = urljoin(self.base_url + "/", "auth/token")
+
+        for attempt in range(self.max_retries):
+            try:
+                if self._sync_client is None:
+                    self._sync_client = httpx.Client(timeout=self.timeout)
+
+                response = self._sync_client.post(url, json=auth_data)
+
+                if response.status_code == 200:
+                    token_data = response.json()
+                    self.bearer_token = token_data.get("access_token")
+                    logger.info("Successfully authenticated and obtained JWT token")
+                    return token_data
+                else:
+                    error_data = response.json()
+                    raise AuthenticationError(f"Authentication failed: {error_data.get('error', {}).get('message', 'Unknown error')}")
+
+            except httpx.RequestError as e:
+                if attempt == self.max_retries - 1:
+                    raise APIConnectionError(f"Authentication request failed after {self.max_retries} attempts: {e}")
+                continue
 
     def _get_headers(self) -> Dict[str, str]:
         """Get authentication headers."""
@@ -64,9 +107,11 @@ class AdvertisingPlatformClient:
             "Accept": "application/json",
         }
 
+        # Prioritize JWT token over API key for authentication
         if self.bearer_token:
             headers["Authorization"] = f"Bearer {self.bearer_token}"
         elif self.api_key:
+            # Fallback to API key for backward compatibility
             headers["X-API-Key"] = self.api_key
 
         return headers

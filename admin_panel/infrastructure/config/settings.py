@@ -25,7 +25,7 @@ class Settings:
 
     # Authentication
     _bearer_token_val: Optional[str] = None
-    _api_key_val: Optional[str] = None
+    _api_key_val: Optional[str] = None  # Deprecated: Use JWT tokens instead
 
     # UI Configuration
     auto_refresh_enabled: bool = True

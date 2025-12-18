@@ -224,6 +224,7 @@ async def _register_routes(app: socketify.App) -> None:
             return None
 
     steps = [
+        ("auth", container.get_auth_routes),
         ("campaign", container.get_campaign_routes),
         ("click", container.get_click_routes),
         ("webhook", container.get_webhook_routes),
