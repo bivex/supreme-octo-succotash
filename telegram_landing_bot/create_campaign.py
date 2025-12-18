@@ -14,8 +14,9 @@
 Script to create campaign in local API for Supreme Company bot
 """
 
-import requests
 import json
+
+import requests
 
 
 def create_campaign():

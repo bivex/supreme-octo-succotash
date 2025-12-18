@@ -27,8 +27,8 @@ Features:
 """
 
 from .client import AdvertisingPlatformClient
-from .models import *
 from .exceptions import *
+from .models import *
 
 __version__ = "1.0.0"
 __all__ = [

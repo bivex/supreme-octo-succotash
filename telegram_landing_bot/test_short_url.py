@@ -1,6 +1,7 @@
 import asyncio
-from tracking import init_tracking, get_tracking_manager
+
 from config import settings
+from tracking import init_tracking, get_tracking_manager
 
 
 async def test_short_url():

@@ -24,7 +24,6 @@ DEFAULT_TRACKING_PARAMS = {
     "sub5": "premium_offer"
 }
 
-import os
 from typing import Optional
 
 try:

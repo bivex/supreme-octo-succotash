@@ -13,10 +13,11 @@
 """Test script to verify API connectivity for tracking system."""
 
 import asyncio
-import pytest
-import os
-import sys
 import json
+import sys
+
+import pytest
+
 from tracking import TrackingManager
 
 

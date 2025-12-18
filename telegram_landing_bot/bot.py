@@ -15,11 +15,11 @@ Main file for Telegram bot tracking clicks to landing pages
 Uses aiogram 3.x and integrates with Supreme Tracker
 """
 
+import argparse
 import asyncio
+import os
 import signal
 import sys
-import argparse
-import os
 from typing import Optional
 
 # Add project root to sys.path for absolute imports

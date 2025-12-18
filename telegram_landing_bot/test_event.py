@@ -3,8 +3,9 @@
 Test event tracking to Supreme server
 """
 
-import requests
 import json
+
+import requests
 
 
 def test_event_tracking():

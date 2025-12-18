@@ -19,14 +19,11 @@ Supports both sync and async operations with full type safety.
 """
 
 import asyncio
-import json
-from typing import Any, Dict, List, Optional, Union
+import logging
+from typing import Union
 from urllib.parse import urljoin, urlencode
 
 import httpx
-from pydantic import BaseModel
-
-import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -43,14 +40,14 @@ class AdvertisingPlatformClient:
     """
 
     def __init__(
-        self,
-        base_url: str = "http://127.0.0.1:5000/v1",
-        bearer_token: Optional[str] = None,
-        api_key: Optional[str] = None,
-        timeout: float = 30.0,
-        max_retries: int = 3,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+            self,
+            base_url: str = "http://127.0.0.1:5000/v1",
+            bearer_token: Optional[str] = None,
+            api_key: Optional[str] = None,
+            timeout: float = 30.0,
+            max_retries: int = 3,
+            username: Optional[str] = None,
+            password: Optional[str] = None,
     ):
         """
         Initialize the API client.
@@ -106,7 +103,8 @@ class AdvertisingPlatformClient:
                     return token_data
                 else:
                     error_data = response.json()
-                    raise AuthenticationError(f"Authentication failed: {error_data.get('error', {}).get('message', 'Unknown error')}")
+                    raise AuthenticationError(
+                        f"Authentication failed: {error_data.get('error', {}).get('message', 'Unknown error')}")
 
             except httpx.RequestError as e:
                 if attempt == self.max_retries - 1:
@@ -148,12 +146,12 @@ class AdvertisingPlatformClient:
         return self._async_client
 
     def _make_request(
-        self,
-        method: str,
-        endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-        async_mode: bool = False,
+            self,
+            method: str,
+            endpoint: str,
+            params: Optional[Dict[str, Any]] = None,
+            data: Optional[Dict[str, Any]] = None,
+            async_mode: bool = False,
     ) -> Union[httpx.Response, Any]:
         """Make HTTP request with retry logic."""
         url = urljoin(self.base_url + "/", endpoint.lstrip("/"))
@@ -233,11 +231,11 @@ class AdvertisingPlatformClient:
     # ============================================================================
 
     def get_campaigns(
-        self,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None,
-        status: Optional[str] = None,
-        search: Optional[str] = None,
+            self,
+            page: Optional[int] = None,
+            page_size: Optional[int] = None,
+            status: Optional[str] = None,
+            search: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get list of campaigns.
@@ -345,11 +343,11 @@ class AdvertisingPlatformClient:
     # ============================================================================
 
     def get_campaign_analytics(
-        self,
-        campaign_id: str,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        breakdown: Optional[str] = None,
+            self,
+            campaign_id: str,
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None,
+            breakdown: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get campaign analytics.
@@ -375,9 +373,9 @@ class AdvertisingPlatformClient:
         return self._handle_response(response)
 
     def get_real_time_analytics(
-        self,
-        campaign_id: Optional[str] = None,
-        metric: Optional[str] = None,
+            self,
+            campaign_id: Optional[str] = None,
+            metric: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get real-time analytics.
@@ -429,10 +427,10 @@ class AdvertisingPlatformClient:
         return self._handle_response(response)
 
     def get_clicks(
-        self,
-        campaign_id: Optional[str] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None,
+            self,
+            campaign_id: Optional[str] = None,
+            page: Optional[int] = None,
+            page_size: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get clicks list.
@@ -504,10 +502,10 @@ class AdvertisingPlatformClient:
     # ============================================================================
 
     def get_goals(
-        self,
-        campaign_id: Optional[str] = None,
-        page: Optional[int] = None,
-        page_size: Optional[int] = None,
+            self,
+            campaign_id: Optional[str] = None,
+            page: Optional[int] = None,
+            page_size: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get goals list.

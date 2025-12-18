@@ -16,20 +16,18 @@ Module for tracking clicks and conversions
 Integrates with Advertising Platform API for comprehensive tracking
 """
 
-import asyncio
-import base64
 import hashlib
 import json
 import os
-import sys
 import time
 import uuid
-from config import settings
-from typing import Dict, Any, Optional, List, Tuple
-from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+from typing import Dict, Any, Optional
+from urllib.parse import urlparse, parse_qs
 
 import aiohttp
 from loguru import logger
+
+from config import settings
 
 # Cache functions removed - now using Supreme API for URL generation
 # Import config directly

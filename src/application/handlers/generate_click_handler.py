@@ -6,7 +6,7 @@
 # https://github.com/bivex
 #
 # Created: 2025-12-18T12:28:32
-# Last Updated: 2025-12-18T12:47:34
+# Last Updated: 2025-12-18T12:53:56
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
@@ -14,8 +14,10 @@
 """Generate click handler."""
 
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any
+
 from loguru import logger
+
 from ...domain.services.click.click_generation_service import ClickGenerationService
 
 
@@ -69,7 +71,7 @@ class GenerateClickHandler:
             # Extract parameters
             campaign_id = request_data['campaign_id']
             base_url = request_data['base_url']
-            tracking_params = {**request_data.get('params', {}), **request_data} # Merge all request_data params
+            tracking_params = {**request_data.get('params', {}), **request_data}  # Merge all request_data params
             landing_page_id = request_data.get('lp_id') or request_data.get('landing_page_id')
             offer_id = request_data.get('offer_id')
             traffic_source_id = request_data.get('ts_id')
