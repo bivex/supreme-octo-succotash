@@ -14,9 +14,9 @@
 """Goal management entity."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
+from typing import Optional, Dict, Any, List
 
 
 class GoalType(Enum):
@@ -34,9 +34,9 @@ class GoalType(Enum):
 class GoalTrigger(Enum):
     """How goals are triggered."""
     EVENT = "event"  # Triggered by events (form_submit, purchase, etc.)
-    URL = "url"      # Triggered by URL visit
-    TIME = "time"    # Triggered by time spent
-    MANUAL = "manual" # Manually triggered via API
+    URL = "url"  # Triggered by URL visit
+    TIME = "time"  # Triggered by time spent
+    MANUAL = "manual"  # Manually triggered via API
 
 
 @dataclass

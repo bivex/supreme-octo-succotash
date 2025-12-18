@@ -14,12 +14,13 @@
 """Track click command handler."""
 
 from typing import Tuple
+
 from loguru import logger
 
 from ..commands.track_click_command import TrackClickCommand
 from ...domain.entities.click import Click
-from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.landing_page_repository import LandingPageRepository
 from ...domain.repositories.offer_repository import OfferRepository
 from ...domain.repositories.pre_click_data_repository import PreClickDataRepository
@@ -56,7 +57,7 @@ class TrackClickHandler:
         if not campaign:
             return await self._handle_unknown_campaign(command)
 
-        click = await self._create_click_from_command(command) # Await the async call
+        click = await self._create_click_from_command(command)  # Await the async call
         is_valid = self._validate_click_and_mark_fraud(click)
 
         redirect_url = self._determine_redirect_url(campaign, is_valid, command.test_mode, click.id.value, command)
@@ -92,7 +93,8 @@ class TrackClickHandler:
 
         return is_valid
 
-    def _determine_redirect_url(self, campaign, is_valid: bool, test_mode: bool, click_id: str, command: TrackClickCommand) -> Url:
+    def _determine_redirect_url(self, campaign, is_valid: bool, test_mode: bool, click_id: str,
+                                command: TrackClickCommand) -> Url:
         """Determine redirect URL based on validation, campaign settings, and specific parameters."""
         redirect_url = None
 
@@ -102,7 +104,8 @@ class TrackClickHandler:
                 landing_page = self._landing_page_repository.find_by_id(str(command.landing_page_id))
                 if landing_page and landing_page.is_active:
                     redirect_url = landing_page.url
-                    logger.info(f"Using specific landing page URL for lp_id {command.landing_page_id}: {landing_page.url.value}")
+                    logger.info(
+                        f"Using specific landing page URL for lp_id {command.landing_page_id}: {landing_page.url.value}")
                     # For direct landing page links, skip fraud checks
                     is_valid = True
                 else:
@@ -193,7 +196,8 @@ class TrackClickHandler:
                 'fraud_reason': None,
             }
         else:
-            logger.info(f"DEBUG: PreClickData found for click_id {click_id.value}. Tracking parameters: {pre_click_data.tracking_params}")
+            logger.info(
+                f"DEBUG: PreClickData found for click_id {click_id.value}. Tracking parameters: {pre_click_data.tracking_params}")
             # Populate click_data with parameters from pre_click_data, falling back to command if not present
             tracking_params = pre_click_data.tracking_params
             click_data = {
@@ -213,9 +217,12 @@ class TrackClickHandler:
                 'affiliate_sub3': tracking_params.get('aff_sub3', command.affiliate_sub3),
                 'affiliate_sub4': tracking_params.get('aff_sub4', command.affiliate_sub4),
                 'affiliate_sub5': tracking_params.get('aff_sub5', command.affiliate_sub5),
-                'landing_page_id': int(tracking_params['lp_id']) if 'lp_id' in tracking_params else command.landing_page_id,
-                'campaign_offer_id': int(tracking_params['offer_id']) if 'offer_id' in tracking_params else command.campaign_offer_id,
-                'traffic_source_id': int(tracking_params['ts_id']) if 'ts_id' in tracking_params else command.traffic_source_id,
+                'landing_page_id': int(
+                    tracking_params['lp_id']) if 'lp_id' in tracking_params else command.landing_page_id,
+                'campaign_offer_id': int(
+                    tracking_params['offer_id']) if 'offer_id' in tracking_params else command.campaign_offer_id,
+                'traffic_source_id': int(
+                    tracking_params['ts_id']) if 'ts_id' in tracking_params else command.traffic_source_id,
                 'is_valid': True,
                 'fraud_score': 0.0,
                 'fraud_reason': None,

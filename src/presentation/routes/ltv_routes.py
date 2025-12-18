@@ -14,6 +14,7 @@
 """LTV tracking routes."""
 
 import json
+
 from loguru import logger
 
 
@@ -31,9 +32,10 @@ class LtvRoutes:
 
     def _register_ltv_analysis(self, app):
         """Register LTV analysis route."""
+
         def get_ltv_analysis(res, req):
             """Get LTV analysis."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters for date range
@@ -75,9 +77,10 @@ class LtvRoutes:
 
     def _register_customer_ltv_details(self, app):
         """Register customer LTV details route."""
+
         def get_customer_ltv_details(res, req):
             """Get detailed LTV information for a specific customer."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get customer_id from URL path
@@ -112,9 +115,10 @@ class LtvRoutes:
 
     def _register_ltv_segments(self, app):
         """Register LTV segments overview route."""
+
         def get_ltv_segments(res, req):
             """Get overview of LTV segments."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get LTV segments overview from handler

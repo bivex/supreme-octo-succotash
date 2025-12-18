@@ -13,8 +13,9 @@
 
 """Cohort analysis handler."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Dict, Any, Optional
+
 from loguru import logger
 
 from ...domain.repositories.ltv_repository import LTVRepository
@@ -29,8 +30,8 @@ class CohortAnalysisHandler:
         self._ltv_service = LTVService()
 
     def get_cohort_analysis(self, period: str = "monthly",
-                           start_date: Optional[datetime] = None,
-                           end_date: Optional[datetime] = None) -> Dict[str, Any]:
+                            start_date: Optional[datetime] = None,
+                            end_date: Optional[datetime] = None) -> Dict[str, Any]:
         """
         Get comprehensive cohort analysis.
 
@@ -197,7 +198,7 @@ class CohortAnalysisHandler:
             }
 
     def get_retention_heatmap(self, period: str = "monthly",
-                             max_cohorts: int = 12) -> Dict[str, Any]:
+                              max_cohorts: int = 12) -> Dict[str, Any]:
         """
         Get retention heatmap data for visualization.
 

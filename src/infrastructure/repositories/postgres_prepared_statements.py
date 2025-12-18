@@ -13,11 +13,9 @@
 
 """PostgreSQL prepared statements manager for automatic query optimization."""
 
-import psycopg2
-from typing import Dict, List, Any, Optional
 import hashlib
 import logging
-from contextlib import contextmanager
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +142,7 @@ class QueryAnalyzer:
 
         # INSERT/UPDATE with parameters
         if (query_lower.startswith(('insert', 'update', 'delete')) and
-            ('%s' in query or '%(' in query)):
+                ('%s' in query or '%(' in query)):
             return True
 
         return False
@@ -167,7 +165,8 @@ class QueryAnalyzer:
                 lines = source.split('\n')
                 for line in lines:
                     line = line.strip()
-                    if 'cursor.execute(' in line and ('SELECT' in line.upper() or 'INSERT' in line.upper() or 'UPDATE' in line.upper() or 'DELETE' in line.upper()):
+                    if 'cursor.execute(' in line and (
+                            'SELECT' in line.upper() or 'INSERT' in line.upper() or 'UPDATE' in line.upper() or 'DELETE' in line.upper()):
                         # Extract query (simplified)
                         if '"""' in line or "'''" in line:
                             # Multi-line query, skip for now

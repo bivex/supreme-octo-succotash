@@ -13,13 +13,11 @@
 
 """LTV (Lifetime Value) domain service."""
 
-from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
-from decimal import Decimal
-import math
+from typing import List, Dict, Optional
 
-from ...entities.ltv import Cohort, CustomerLTV, LTVSegment
 from ...entities.conversion import Conversion
+from ...entities.ltv import Cohort, CustomerLTV, LTVSegment
 from ...value_objects.financial import Money
 
 
@@ -30,8 +28,8 @@ class LTVService:
         pass
 
     def calculate_customer_ltv(self, conversions: List[Conversion],
-                              first_purchase_date: datetime,
-                              last_purchase_date: datetime) -> CustomerLTV:
+                               first_purchase_date: datetime,
+                               last_purchase_date: datetime) -> CustomerLTV:
         """
         Calculate Customer Lifetime Value based on conversion history.
 
@@ -99,7 +97,7 @@ class LTVService:
         )
 
     def create_cohort_analysis(self, customers: List[CustomerLTV],
-                              cohort_period: str = "monthly") -> List[Cohort]:
+                               cohort_period: str = "monthly") -> List[Cohort]:
         """
         Create cohort analysis from customer LTV data.
 
@@ -161,7 +159,7 @@ class LTVService:
         return sorted(cohorts, key=lambda x: x.acquisition_date)
 
     def create_ltv_segments(self, customers: List[CustomerLTV],
-                           segment_config: Optional[Dict] = None) -> List[LTVSegment]:
+                            segment_config: Optional[Dict] = None) -> List[LTVSegment]:
         """
         Create LTV segments from customer data.
 
@@ -225,7 +223,7 @@ class LTVService:
         return segments
 
     def predict_customer_lifetime(self, customer: CustomerLTV,
-                                historical_data: List[CustomerLTV]) -> int:
+                                  historical_data: List[CustomerLTV]) -> int:
         """
         Predict customer lifetime in months using historical patterns.
 
@@ -265,7 +263,7 @@ class LTVService:
             return "low_value"
 
     def _calculate_retention_rates(self, customers: List[CustomerLTV],
-                                  cohort_start: datetime) -> Dict[str, float]:
+                                   cohort_start: datetime) -> Dict[str, float]:
         """Calculate retention rates for different periods."""
         retention_rates = {}
 

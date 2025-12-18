@@ -13,14 +13,16 @@
 
 """Click generation service for creating personalized tracking links."""
 
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List, Tuple
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
 from loguru import logger
-from datetime import datetime, timezone
 
 from src.domain.entities.pre_click_data import PreClickData
 from src.domain.repositories.pre_click_data_repository import PreClickDataRepository
 from src.domain.value_objects import ClickId, CampaignId
+
 
 class ClickGenerationService:
     """Service for generating personalized click tracking links."""
@@ -33,17 +35,18 @@ class ClickGenerationService:
         }
         # Public domain for tracking URLs (configurable for production)
         import os
-        self._public_domain = os.getenv("PUBLIC_TRACKING_DOMAIN", "https://gladsomely-unvitriolized-trudie.ngrok-free.dev")
+        self._public_domain = os.getenv("PUBLIC_TRACKING_DOMAIN",
+                                        "https://gladsomely-unvitriolized-trudie.ngrok-free.dev")
         logger.info(f"ClickGenerationService initialized with public domain: {self._public_domain}")
 
     async def generate_tracking_url(
-        self,
-        base_url: str,
-        campaign_id: int,
-        tracking_params: Dict[str, Any],
-        landing_page_id: Optional[int] = None,
-        offer_id: Optional[int] = None,
-        traffic_source_id: Optional[int] = None
+            self,
+            base_url: str,
+            campaign_id: int,
+            tracking_params: Dict[str, Any],
+            landing_page_id: Optional[int] = None,
+            offer_id: Optional[int] = None,
+            traffic_source_id: Optional[int] = None
     ) -> str:
         """Generate a tracking URL with all necessary parameters."""
         try:
@@ -83,13 +86,13 @@ class ClickGenerationService:
 
             # Also include any other generic tracking_params that might be passed
             for key, value in tracking_params.items():
-                if key not in all_tracking_params: # Avoid overwriting explicit params
+                if key not in all_tracking_params:  # Avoid overwriting explicit params
                     all_tracking_params[key] = str(value)
 
             # Create PreClickData entity
             pre_click_data = PreClickData(
                 click_id=generated_click_id,
-                campaign_id=CampaignId(f"camp_{campaign_id}"), # CampaignId constructor takes 'camp_9061' format
+                campaign_id=CampaignId(f"camp_{campaign_id}"),  # CampaignId constructor takes 'camp_9061' format
                 timestamp=datetime.now(timezone.utc),
                 tracking_params=all_tracking_params,
                 metadata={'generated_from': 'ClickGenerationService'}
@@ -119,7 +122,8 @@ class ClickGenerationService:
             ))
 
             logger.info(f"Generated short tracking URL for campaign {campaign_id}: {final_short_url}")
-            logger.info(f"Using public domain: {self._public_domain} (parsed: {parsed_base.scheme}://{parsed_base.netloc})")
+            logger.info(
+                f"Using public domain: {self._public_domain} (parsed: {parsed_base.scheme}://{parsed_base.netloc})")
             print(f"DEBUG: Final URL: {final_short_url}")
             print(f"DEBUG: Public domain: {self._public_domain}")
             logger.info("=== END CLICK GENERATION SERVICE DEBUG ===")
@@ -171,10 +175,10 @@ class ClickGenerationService:
             return False, f"Parameter validation error: {str(e)}"
 
     def generate_bulk_tracking_urls(
-        self,
-        base_url: str,
-        campaign_id: int,
-        variations: List[Dict[str, Any]]
+            self,
+            base_url: str,
+            campaign_id: int,
+            variations: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Generate multiple tracking URLs with different parameter variations."""
         results = []
@@ -190,8 +194,8 @@ class ClickGenerationService:
                 )
 
                 results.append({
-                    'id': variation.get('id', f'variation_{i+1}'),
-                    'name': variation.get('name', f'Variation {i+1}'),
+                    'id': variation.get('id', f'variation_{i + 1}'),
+                    'name': variation.get('name', f'Variation {i + 1}'),
                     'url': tracking_url,
                     'params': variation.get('params', {}),
                     'status': 'success'
@@ -199,8 +203,8 @@ class ClickGenerationService:
 
             except Exception as e:
                 results.append({
-                    'id': variation.get('id', f'variation_{i+1}'),
-                    'name': variation.get('name', f'Variation {i+1}'),
+                    'id': variation.get('id', f'variation_{i + 1}'),
+                    'name': variation.get('name', f'Variation {i + 1}'),
                     'url': None,
                     'params': variation.get('params', {}),
                     'status': 'error',

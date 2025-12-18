@@ -37,8 +37,8 @@ x-rate-limits:
     burst_limit: 50
 # Global security requirements (applied to all endpoints)
 security:
-  - bearerAuth: []
-  - apiKey: []
+  - bearerAuth: [ ]
+  - apiKey: [ ]
 # ============================================================================
 # SECURITY SCHEMES
 # ============================================================================
@@ -78,9 +78,9 @@ components:
             traffic:read: Read traffic and click data
             # Admin
             admin: Full administrative access
-# ============================================================================
-# COMMON SCHEMAS
-# ============================================================================
+  # ============================================================================
+  # COMMON SCHEMAS
+  # ============================================================================
   schemas:
     # Common Types
     Money:
@@ -243,7 +243,7 @@ components:
           example: "https://facebook.com/ad/123"
         isValid:
           type: integer
-          enum: [0, 1]
+          enum: [ 0, 1 ]
           description: Click validity flag (1=valid, 0=invalid/fraudulent)
           example: 1
         ts:
@@ -328,7 +328,7 @@ components:
           type: string
           nullable: true
           description: Reason for fraud detection
-          enum: ["bot_pattern_detected", "missing_user_agent", "ip_blacklisted", "user_agent_blocked", "suspicious_referrer_length", "forced_bot_detection"]
+          enum: [ "bot_pattern_detected", "missing_user_agent", "ip_blacklisted", "user_agent_blocked", "suspicious_referrer_length", "forced_bot_detection" ]
           example: "bot_pattern_detected"
         # Additional tracking
         landingPageId:
@@ -544,9 +544,9 @@ components:
         - CPC
         - CPM
       example: "CPA"
-# ============================================================================
-# CAMPAIGN MANAGEMENT SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # CAMPAIGN MANAGEMENT SCHEMAS
+    # ============================================================================
     CampaignResource:
       description: Complete campaign configuration and status information
       type: object
@@ -598,13 +598,13 @@ components:
           successUrl: "https://example.com/success"
           failureUrl: "https://example.com/failure"
         financial:
-          payout: {"amount": 2.50, "currency": "USD"}
-          dailyBudget: {"amount": 100.00, "currency": "USD"}
-          totalBudget: {"amount": 5000.00, "currency": "USD"}
+          payout: { "amount": 2.50, "currency": "USD" }
+          dailyBudget: { "amount": 100.00, "currency": "USD" }
+          totalBudget: { "amount": 5000.00, "currency": "USD" }
         performance:
           clicks: 5000
           conversions: 150
-          revenue: {"amount": 7500.00, "currency": "USD"}
+          revenue: { "amount": 7500.00, "currency": "USD" }
         createdAt: "2024-01-01T00:00:00Z"
         updatedAt: "2024-01-01T00:00:00Z"
     CampaignSchedule:
@@ -658,10 +658,10 @@ components:
         - spent
       example:
         costModel: "CPA"
-        payout: {"amount": 2.50, "currency": "USD"}
-        dailyBudget: {"amount": 100.00, "currency": "USD"}
-        totalBudget: {"amount": 5000.00, "currency": "USD"}
-        spent: {"amount": 1250.00, "currency": "USD"}
+        payout: { "amount": 2.50, "currency": "USD" }
+        dailyBudget: { "amount": 100.00, "currency": "USD" }
+        totalBudget: { "amount": 5000.00, "currency": "USD" }
+        spent: { "amount": 1250.00, "currency": "USD" }
     CampaignPerformance:
       description: Key performance metrics and KPIs for a campaign
       type: object
@@ -700,7 +700,7 @@ components:
         conversions: 45
         ctr: 0.032
         cr: 0.036
-        epc: {"amount": 2.50, "currency": "USD"}
+        epc: { "amount": 2.50, "currency": "USD" }
         roi: 2.45
     CampaignLinks:
       description: HATEOAS links for campaign-related resources
@@ -784,11 +784,11 @@ components:
           conversions: 45
           ctr: 0.032
           cr: 0.036
-          epc: {"amount": 2.50, "currency": "USD"}
+          epc: { "amount": 2.50, "currency": "USD" }
           roi: 2.45
-# ============================================================================
-# RECOMMENDED SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # RECOMMENDED SCHEMAS
+    # ============================================================================
     PaginationMeta:
       description: Metadata for paginated responses including pagination information.
       type: object
@@ -900,9 +900,9 @@ components:
           - field: "status"
             message: "Status must be one of: active, paused, draft"
             code: "invalid_choice"
-# ============================================================================
-# NEW FEATURES SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # NEW FEATURES SCHEMAS
+    # ============================================================================
     ClickValidationResponse:
       description: Response for click validation including fraud detection results and redirect information.
       type: object
@@ -975,12 +975,12 @@ components:
           description: Human-readable rule name
         type:
           type: string
-          enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+          enum: [ ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold ]
           example: "ip_block"
           description: Type of fraud detection rule
         action:
           type: string
-          enum: [block, flag, score_increase, redirect_safe]
+          enum: [ block, flag, score_increase, redirect_safe ]
           example: "block"
           description: Action to take when rule matches
         conditions:
@@ -992,20 +992,20 @@ components:
               items:
                 type: string
                 format: ipv4
-              example: ["192.168.1.1", "10.0.0.0/8"]
+              example: [ "192.168.1.1", "10.0.0.0/8" ]
               description: IP addresses or CIDR ranges to block/flag
             user_agents:
               type: array
               items:
                 type: string
-              example: ["bot", "crawler"]
+              example: [ "bot", "crawler" ]
               description: User agent patterns to match
             countries:
               type: array
               items:
                 type: string
                 pattern: '^[A-Z]{2}$'
-              example: ["RU", "CN"]
+              example: [ "RU", "CN" ]
               description: Country codes to restrict
             rate_limit:
               type: object
@@ -1057,7 +1057,7 @@ components:
         type: "ua_block"
         action: "block"
         conditions:
-          user_agents: ["bot", "crawler", "spider"]
+          user_agents: [ "bot", "crawler", "spider" ]
         priority: 80
         isActive: true
         createdAt: "2024-01-01T00:00:00Z"
@@ -1080,7 +1080,7 @@ components:
         - rules
       example:
         status: "success"
-        rules: []
+        rules: [ ]
         pagination:
           page: 1
           limit: 20
@@ -1204,13 +1204,13 @@ components:
         revenue:
           amount: 300.00
           currency: "USD"
-        topCampaigns: []
-        topLandingPages: []
+        topCampaigns: [ ]
+        topLandingPages: [ ]
         fraudEvents: 3
         blockedClicks: 7
-# ============================================================================
-# LANDING PAGE SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # LANDING PAGE SCHEMAS
+    # ============================================================================
     LandingPageResource:
       description: Represents a landing page within a campaign, including its configuration, performance metrics, and A/B testing properties.
       type: object
@@ -1321,9 +1321,9 @@ components:
         epc:
           amount: 12.50
           currency: "USD"
-# ============================================================================
-# CAMPAIGN OFFER SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # CAMPAIGN OFFER SCHEMAS
+    # ============================================================================
     CampaignOfferResource:
       description: Represents an offer within a campaign, including payout configuration, performance tracking, and partner network integration.
       type: object
@@ -1411,9 +1411,9 @@ components:
         partnerNetwork: "MaxBounty"
         createdAt: "2024-01-01T00:00:00Z"
         updatedAt: "2024-01-15T00:00:00Z"
-# ============================================================================
-# ANALYTICS SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # ANALYTICS SCHEMAS
+    # ============================================================================
     CampaignAnalytics:
       description: Comprehensive analytics data for a campaign including time range, metrics, and breakdown data.
       type: object
@@ -1448,7 +1448,7 @@ components:
           cr: 0.05
           epc: 1.25
           roi: 2.5
-        breakdowns: {}
+        breakdowns: { }
     AnalyticsTimeRange:
       description: Defines the time period and granularity for analytics queries.
       type: object
@@ -1463,7 +1463,7 @@ components:
           example: "2024-01-31"
         granularity:
           type: string
-          enum: [hour, day, week, month]
+          enum: [ hour, day, week, month ]
           default: day
           example: "day"
       required:
@@ -1522,11 +1522,11 @@ components:
         clicks: 5000
         uniqueClicks: 4800
         conversions: 150
-        revenue: {"amount": 7500.00, "currency": "USD"}
-        cost: {"amount": 1500.00, "currency": "USD"}
+        revenue: { "amount": 7500.00, "currency": "USD" }
+        cost: { "amount": 1500.00, "currency": "USD" }
         ctr: 0.025
         cr: 0.03
-        epc: {"amount": 2.50, "currency": "USD"}
+        epc: { "amount": 2.50, "currency": "USD" }
         roi: 2.15
     AnalyticsBreakdowns:
       description: Contains various breakdown views of analytics data (by date, traffic source, landing page, geography, etc.).
@@ -1557,12 +1557,12 @@ components:
           items:
             $ref: '#/components/schemas/DeviceMetrics'
       example:
-        byDate: []
-        byTrafficSource: []
-        byLandingPage: []
-        byOffer: []
-        byGeography: []
-        byDevice: []
+        byDate: [ ]
+        byTrafficSource: [ ]
+        byLandingPage: [ ]
+        byOffer: [ ]
+        byGeography: [ ]
+        byDevice: [ ]
     DateMetrics:
       description: Time-series metrics showing performance data aggregated by date periods.
       type: object
@@ -1694,9 +1694,9 @@ components:
           revenue:
             amount: 3750.00
             currency: "USD"
-# ============================================================================
-# REQUEST SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # REQUEST SCHEMAS
+    # ============================================================================
     UpdateCampaignRequest:
       description: Request payload for updating an existing campaign
       type: object
@@ -1742,9 +1742,9 @@ components:
           currency: "USD"
         startDate: "2024-06-01T00:00:00Z"
         endDate: "2024-08-31T23:59:59Z"
-# ============================================================================
-# WEBHOOK SCHEMAS
-# ============================================================================
+    # ============================================================================
+    # WEBHOOK SCHEMAS
+    # ============================================================================
     TelegramWebhookRequest:
       type: object
       description: Telegram webhook update payload
@@ -1816,7 +1816,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, error, skipped]
+          enum: [ success, error, skipped ]
           example: "success"
         webhook_id:
           type: string
@@ -1847,7 +1847,7 @@ components:
           text: "👋 Добро пожаловать!"
           reply_markup:
             inline_keyboard:
-              - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🚀 Кампании", "callback_data": "campaigns"}]
+              - [ { "text": "📊 Статистика", "callback_data": "stats" }, { "text": "🚀 Кампании", "callback_data": "campaigns" } ]
     # Event Tracking Schemas
     EventTrackingRequest:
       type: object
@@ -1855,7 +1855,7 @@ components:
       properties:
         event_type:
           type: string
-          enum: [page_view, click, form_submit, form_start, form_complete, scroll, time_spent, conversion, purchase, signup, download, share, search, video_play, video_complete, custom]
+          enum: [ page_view, click, form_submit, form_start, form_complete, scroll, time_spent, conversion, purchase, signup, download, share, search, video_play, video_complete, custom ]
           description: Type of event being tracked
           example: "click"
         event_name:
@@ -1922,7 +1922,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, error]
+          enum: [ success, error ]
           example: "success"
         event_id:
           type: string
@@ -1933,7 +1933,7 @@ components:
           items:
             type: string
           description: Event categories for analytics
-          example: ["interaction", "cta_interaction"]
+          example: [ "interaction", "cta_interaction" ]
         fraud_detected:
           type: boolean
           description: Whether fraudulent activity was detected
@@ -1945,7 +1945,7 @@ components:
       example:
         status: "success"
         event_id: "550e8400-e29b-41d4-a716-446655440000"
-        categories: ["interaction", "cta_interaction"]
+        categories: [ "interaction", "cta_interaction" ]
         fraud_detected: false
     # Conversion Tracking Schemas
     ConversionTrackingRequest:
@@ -1959,7 +1959,7 @@ components:
           example: "123e4567-e89b-12d3-a456-426614174000"
         conversion_type:
           type: string
-          enum: [lead, sale, install, registration, signup]
+          enum: [ lead, sale, install, registration, signup ]
           description: Type of conversion
           example: "sale"
         conversion_value:
@@ -2003,7 +2003,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, error, duplicate]
+          enum: [ success, error, duplicate ]
           example: "success"
         conversion_id:
           type: string
@@ -2216,7 +2216,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, error]
+          enum: [ success, error ]
           example: "success"
         tracking_url:
           type: string
@@ -2265,7 +2265,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, error]
+          enum: [ success, error ]
           example: "success"
         total_variations:
           type: integer
@@ -2304,7 +2304,7 @@ components:
                 additionalProperties: true
               status:
                 type: string
-                enum: [success, error]
+                enum: [ success, error ]
                 example: "success"
               error:
                 type: string
@@ -2357,12 +2357,12 @@ components:
           example: "Track when visitors submit lead capture forms"
         goal_type:
           type: string
-          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          enum: [ lead, sale, signup, registration, download, view, time_spent, custom ]
           description: Type of conversion goal
           example: "lead"
         trigger_type:
           type: string
-          enum: [event, url, time, manual]
+          enum: [ event, url, time, manual ]
           description: How the goal is triggered
           example: "event"
         trigger_config:
@@ -2395,7 +2395,7 @@ components:
           items:
             type: string
           description: Tags for categorization
-          example: ["form", "lead", "conversion"]
+          example: [ "form", "lead", "conversion" ]
         created_at:
           type: string
           format: date-time
@@ -2419,7 +2419,7 @@ components:
         is_active: true
         attribution_window_days: 30
         priority: 1
-        tags: ["form", "lead", "conversion"]
+        tags: [ "form", "lead", "conversion" ]
         created_at: "2024-01-01T00:00:00Z"
         updated_at: "2024-01-01T00:00:00Z"
     CreateGoalRequest:
@@ -2442,12 +2442,12 @@ components:
           description: Goal description
         goal_type:
           type: string
-          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          enum: [ lead, sale, signup, registration, download, view, time_spent, custom ]
           description: Type of conversion goal
           example: "lead"
         trigger_type:
           type: string
-          enum: [event, url, time, manual]
+          enum: [ event, url, time, manual ]
           description: How the goal is triggered
           example: "event"
         trigger_config:
@@ -2503,7 +2503,7 @@ components:
         is_active: true
         attribution_window_days: 30
         priority: 1
-        tags: ["form", "lead", "conversion"]
+        tags: [ "form", "lead", "conversion" ]
     UpdateGoalRequest:
       type: object
       description: Request to update an existing goal
@@ -2548,7 +2548,7 @@ components:
         description: "Updated goal for tracking lead conversions"
         is_active: true
         priority: 2
-        tags: ["form", "lead", "updated"]
+        tags: [ "form", "lead", "updated" ]
     GoalCollection:
       description: Collection of conversion goals with pagination
       type: object
@@ -2593,11 +2593,11 @@ components:
           example: "Track when visitors submit lead capture forms"
         goal_type:
           type: string
-          enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+          enum: [ lead, sale, signup, registration, download, view, time_spent, custom ]
           example: "lead"
         trigger_type:
           type: string
-          enum: [event, url, time, manual]
+          enum: [ event, url, time, manual ]
           example: "event"
         trigger_config:
           type: object
@@ -2617,7 +2617,7 @@ components:
           type: array
           items:
             type: string
-          example: ["form", "lead", "conversion"]
+          example: [ "form", "lead", "conversion" ]
       example:
         name: "Lead Form Submission"
         description: "Track when visitors submit lead capture forms"
@@ -2629,7 +2629,7 @@ components:
         value_config:
           value_field: "lead_value"
         attribution_window_days: 30
-        tags: ["form", "lead", "conversion"]
+        tags: [ "form", "lead", "conversion" ]
     # Postback Schemas
     PostbackConfig:
       type: object
@@ -2642,7 +2642,7 @@ components:
           example: "https://affiliate-network.com/postback?click_id={click_id}&amount={revenue}"
         method:
           type: string
-          enum: [GET, POST, PUT]
+          enum: [ GET, POST, PUT ]
           default: GET
           description: HTTP method to use for postback
           example: "GET"
@@ -2705,7 +2705,7 @@ components:
       properties:
         status:
           type: string
-          enum: [success, failed, error]
+          enum: [ success, failed, error ]
           example: "success"
         postback_id:
           type: string
@@ -2750,8 +2750,8 @@ paths:
       summary: Health check
       description: Get the health status of the API service
       operationId: getHealth
-      tags: [Health]
-      security: []  # Public endpoint - no authentication required
+      tags: [ Health ]
+      security: [ ]  # Public endpoint - no authentication required
       responses:
         '200':
           description: Service is healthy
@@ -2795,10 +2795,10 @@ paths:
         **Supported Methods**: GET, POST
         **Rate Limit**: 60 requests/minute (authenticated)
       operationId: getCampaigns
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:read]
-        - oauth2: [campaign:read]
+        - bearerAuth: [ campaign:read ]
+        - oauth2: [ campaign:read ]
       parameters:
         - name: page
           in: query
@@ -2862,16 +2862,16 @@ paths:
         **Rate Limit**: 30 requests/minute (authenticated)
         **Content-Type**: application/json
       operationId: createCampaign
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:write]
-        - oauth2: [campaign:write]
+        - bearerAuth: [ campaign:write ]
+        - oauth2: [ campaign:write ]
       requestBody:
         required: false  # Make optional to allow testing without body
         content:
           application/json:
             schema:
-              {}  # Accept any JSON - validation done in handler
+              { }  # Accept any JSON - validation done in handler
       responses:
         '201':
           description: Campaign created successfully
@@ -2928,10 +2928,10 @@ paths:
         **Supported Methods**: GET, PUT, DELETE
         **Rate Limit**: 120 requests/minute (authenticated)
       operationId: getCampaignById
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:read]
-        - oauth2: [campaign:read]
+        - bearerAuth: [ campaign:read ]
+        - oauth2: [ campaign:read ]
       parameters:
         - name: campaignid
           in: path
@@ -2975,10 +2975,10 @@ paths:
       summary: Update campaign
       description: Update an existing campaign
       operationId: updateCampaignById
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:write]
-        - oauth2: [campaign:write]
+        - bearerAuth: [ campaign:write ]
+        - oauth2: [ campaign:write ]
       parameters:
         - name: campaignid
           in: path
@@ -3034,10 +3034,10 @@ paths:
       summary: Delete campaign
       description: Delete a campaign (admin only, typically soft delete)
       operationId: deleteCampaignById
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:delete]
-        - oauth2: [campaign:delete]
+        - bearerAuth: [ campaign:delete ]
+        - oauth2: [ campaign:delete ]
       parameters:
         - name: campaignid
           in: path
@@ -3087,10 +3087,10 @@ paths:
       summary: Pause campaign
       description: Pause an active campaign
       operationId: pauseCampaignById
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:write]
-        - oauth2: [campaign:write]
+        - bearerAuth: [ campaign:write ]
+        - oauth2: [ campaign:write ]
       parameters:
         - name: campaignid
           in: path
@@ -3146,10 +3146,10 @@ paths:
       summary: Resume campaign
       description: Resume a paused campaign
       operationId: resumeCampaignById
-      tags: [Campaigns]
+      tags: [ Campaigns ]
       security:
-        - bearerAuth: [campaign:write]
-        - oauth2: [campaign:write]
+        - bearerAuth: [ campaign:write ]
+        - oauth2: [ campaign:write ]
       parameters:
         - name: campaignid
           in: path
@@ -3208,10 +3208,10 @@ paths:
       summary: List landing pages
       description: Get landing pages for a campaign
       operationId: getCampaignLandingPagesById
-      tags: [Landing Pages]
+      tags: [ Landing Pages ]
       security:
-        - bearerAuth: [landing:read]
-        - oauth2: [landing:read]
+        - bearerAuth: [ landing:read ]
+        - oauth2: [ landing:read ]
       parameters:
         - name: campaignid
           in: path
@@ -3274,10 +3274,10 @@ paths:
       summary: Create landing page
       description: Add a landing page to a campaign
       operationId: createCampaignLandingPageById
-      tags: [Landing Pages]
+      tags: [ Landing Pages ]
       security:
-        - bearerAuth: [landing:write]
-        - oauth2: [landing:write]
+        - bearerAuth: [ landing:write ]
+        - oauth2: [ landing:write ]
       parameters:
         - name: campaignid
           in: path
@@ -3352,10 +3352,10 @@ paths:
       summary: List campaign offers
       description: Get a list of offers for a specific campaign
       operationId: getCampaignOffers
-      tags: [Offers]
+      tags: [ Offers ]
       security:
-        - bearerAuth: [offers:read]
-        - oauth2: [offers:read]
+        - bearerAuth: [ offers:read ]
+        - oauth2: [ offers:read ]
       parameters:
         - name: campaignid
           in: path
@@ -3425,10 +3425,10 @@ paths:
       summary: Create campaign offer
       description: Add a new offer to a campaign
       operationId: createCampaignOffer
-      tags: [Offers]
+      tags: [ Offers ]
       security:
-        - bearerAuth: [offers:write]
-        - oauth2: [offers:write]
+        - bearerAuth: [ offers:write ]
+        - oauth2: [ offers:write ]
       parameters:
         - name: campaignid
           in: path
@@ -3482,10 +3482,10 @@ paths:
       summary: Get campaign analytics
       description: Get detailed analytics and performance metrics for a campaign
       operationId: getCampaignAnalyticsById
-      tags: [Analytics]
+      tags: [ Analytics ]
       security:
-        - bearerAuth: [analytics:read]
-        - oauth2: [analytics:read]
+        - bearerAuth: [ analytics:read ]
+        - oauth2: [ analytics:read ]
       parameters:
         - name: campaignid
           in: path
@@ -3513,7 +3513,7 @@ paths:
           description: Time granularity for grouping analytics data
           schema:
             type: string
-            enum: [hour, day, week, month]
+            enum: [ hour, day, week, month ]
             default: day
             example: "day"
         - name: breakdown
@@ -3521,7 +3521,7 @@ paths:
           description: Dimension to break down analytics by
           schema:
             type: string
-            enum: [date, traffic_source, landing_page, offer, geography, device]
+            enum: [ date, traffic_source, landing_page, offer, geography, device ]
             example: "date"
       responses:
         '200':
@@ -3560,9 +3560,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# CLICK TRACKING ENDPOINTS (PUBLIC)
-# ============================================================================
+  # ============================================================================
+  # CLICK TRACKING ENDPOINTS (PUBLIC)
+  # ============================================================================
   /click:
     get:
       summary: Track click and redirect to offer
@@ -3588,7 +3588,7 @@ paths:
       operationId: trackClick
       tags:
         - Traffic
-      security: []
+      security: [ ]
       parameters:
         - name: cid
           in: query
@@ -3818,8 +3818,8 @@ paths:
       tags:
         - Traffic
       security:
-        - bearerAuth: [traffic:read]
-        - oauth2: [traffic:read]
+        - bearerAuth: [ traffic:read ]
+        - oauth2: [ traffic:read ]
       parameters:
         - name: clickid
           in: path
@@ -3878,8 +3878,8 @@ paths:
         **Rate Limit**: 100 requests/second (public webhook endpoint)
         **Authentication**: Webhook secret validation (recommended)
       operationId: processTelegramWebhook
-      tags: [Webhooks]
-      security: []  # Public webhook endpoint
+      tags: [ Webhooks ]
+      security: [ ]  # Public webhook endpoint
       requestBody:
         required: true
         content:
@@ -3920,8 +3920,8 @@ paths:
                       text: "👋 Добро пожаловать! Я бот для управления кампаниями."
                       reply_markup:
                         inline_keyboard:
-                          - [{"text": "📊 Статистика", "callback_data": "stats"}, {"text": "🎯 Кампании", "callback_data": "campaigns"}]
-                          - [{"text": "💰 Финансы", "callback_data": "finance"}, {"text": "⚙️ Настройки", "callback_data": "settings"}]
+                          - [ { "text": "📊 Статистика", "callback_data": "stats" }, { "text": "🎯 Кампании", "callback_data": "campaigns" } ]
+                          - [ { "text": "💰 Финансы", "callback_data": "finance" }, { "text": "⚙️ Настройки", "callback_data": "settings" } ]
                 skipped:
                   summary: Message skipped (not supported)
                   value:
@@ -3978,8 +3978,8 @@ paths:
         **Rate Limit**: 1000 requests/minute (public tracking endpoint)
         **Authentication**: Not required (public tracking endpoint)
       operationId: trackEvent
-      tags: [Events]
-      security: []  # Public endpoint
+      tags: [ Events ]
+      security: [ ]  # Public endpoint
       requestBody:
         required: true
         content:
@@ -4009,7 +4009,7 @@ paths:
                   landing_page_id: 456
                   properties:
                     form_type: "email_capture"
-                    fields_completed: ["name", "email", "phone"]
+                    fields_completed: [ "name", "email", "phone" ]
               page_view:
                 summary: Page view event
                 value:
@@ -4035,14 +4035,14 @@ paths:
                   value:
                     status: "success"
                     event_id: "550e8400-e29b-41d4-a716-446655440000"
-                    categories: ["interaction", "cta_interaction"]
+                    categories: [ "interaction", "cta_interaction" ]
                     fraud_detected: false
                 fraud_detected:
                   summary: Event tracked but fraud detected
                   value:
                     status: "success"
                     event_id: "550e8400-e29b-41d4-a716-446655440000"
-                    categories: ["interaction"]
+                    categories: [ "interaction" ]
                     fraud_detected: true
         '400':
           description: |
@@ -4091,10 +4091,10 @@ paths:
         **Fraud Detection**: Automated fraud scoring based on click validity and patterns
         **Postbacks**: Automatic notification sending to configured affiliate networks
       operationId: trackConversion
-      tags: [Conversions]
+      tags: [ Conversions ]
       security:
-        - bearerAuth: [conversions:write]
-        - apiKey: []
+        - bearerAuth: [ conversions:write ]
+        - apiKey: [ ]
       requestBody:
         required: true
         content:
@@ -4214,10 +4214,10 @@ paths:
         **Retry Logic:** Exponential backoff (1min, 2min, 4min, 8min) up to max_attempts
         **Authentication:** Supports Bearer tokens and API keys in headers
       operationId: sendPostback
-      tags: [Postbacks]
+      tags: [ Postbacks ]
       security:
-        - bearerAuth: [postbacks:write]
-        - apiKey: []
+        - bearerAuth: [ postbacks:write ]
+        - apiKey: [ ]
       requestBody:
         required: true
         content:
@@ -4348,10 +4348,10 @@ paths:
         - Bulk generation: Generate multiple variations with different parameters
         - Parameter optimization: Automatic parameter cleaning and validation
       operationId: generateClicks
-      tags: [Clicks]
+      tags: [ Clicks ]
       security:
-        - bearerAuth: [clicks:write]
-        - oauth2: [clicks:write]
+        - bearerAuth: [ clicks:write ]
+        - oauth2: [ clicks:write ]
       requestBody:
         required: true
         content:
@@ -4454,10 +4454,10 @@ paths:
         Supports filtering by campaign, goal type, tags, and active status.
         Results are paginated and include goal performance metrics.
       operationId: getGoals
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:read]
-        - oauth2: [goals:read]
+        - bearerAuth: [ goals:read ]
+        - oauth2: [ goals:read ]
       parameters:
         - name: campaign_id
           in: query
@@ -4469,7 +4469,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [lead, sale, signup, registration, download, view, time_spent, custom]
+            enum: [ lead, sale, signup, registration, download, view, time_spent, custom ]
           description: Filter goals by type
           example: "lead"
         - name: tag
@@ -4521,7 +4521,7 @@ paths:
                     is_active: true
                     attribution_window_days: 30
                     priority: 1
-                    tags: ["form", "lead", "conversion"]
+                    tags: [ "form", "lead", "conversion" ]
                     created_at: "2024-01-01T00:00:00Z"
                     updated_at: "2024-01-01T00:00:00Z"
                 total: 1
@@ -4550,10 +4550,10 @@ paths:
         Goals define what constitutes a successful conversion for your campaigns,
         including how they're triggered and how their value is calculated.
       operationId: createGoal
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:write]
-        - oauth2: [goals:write]
+        - bearerAuth: [ goals:write ]
+        - oauth2: [ goals:write ]
       requestBody:
         required: true
         content:
@@ -4575,7 +4575,7 @@ paths:
                   value_config:
                     fixed_value: 5.00
                   attribution_window_days: 30
-                  tags: ["form", "lead"]
+                  tags: [ "form", "lead" ]
               sale_goal:
                 summary: Product sale goal
                 value:
@@ -4589,7 +4589,7 @@ paths:
                   value_config:
                     revenue_field: "order_total"
                   attribution_window_days: 30
-                  tags: ["ecommerce", "revenue"]
+                  tags: [ "ecommerce", "revenue" ]
       responses:
         '201':
           description: Goal created successfully
@@ -4636,10 +4636,10 @@ paths:
         Templates provide starting configurations for typical goals like form submissions,
         purchases, signups, and engagement metrics.
       operationId: getGoalTemplates
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:read]
-        - oauth2: [goals:read]
+        - bearerAuth: [ goals:read ]
+        - oauth2: [ goals:read ]
       parameters:
         - name: page
           in: query
@@ -4704,10 +4704,10 @@ paths:
       summary: Get goal
       description: Get detailed information about a specific conversion goal
       operationId: getGoalById
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:read]
-        - oauth2: [goals:read]
+        - bearerAuth: [ goals:read ]
+        - oauth2: [ goals:read ]
       parameters:
         - name: goalid
           in: path
@@ -4745,10 +4745,10 @@ paths:
       summary: Update goal
       description: Update an existing conversion goal's configuration
       operationId: updateGoalById
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:write]
-        - oauth2: [goals:write]
+        - bearerAuth: [ goals:write ]
+        - oauth2: [ goals:write ]
       parameters:
         - name: goalid
           in: path
@@ -4792,10 +4792,10 @@ paths:
       summary: Delete goal
       description: Delete a conversion goal (soft delete - marks as inactive)
       operationId: deleteGoalById
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:delete]
-        - oauth2: [goals:delete]
+        - bearerAuth: [ goals:delete ]
+        - oauth2: [ goals:delete ]
       parameters:
         - name: goalid
           in: path
@@ -4835,10 +4835,10 @@ paths:
       summary: Duplicate goal
       description: Create a copy of an existing goal, optionally for a different campaign
       operationId: duplicateGoalById
-      tags: [Goals]
+      tags: [ Goals ]
       security:
-        - bearerAuth: [goals:write]
-        - oauth2: [goals:write]
+        - bearerAuth: [ goals:write ]
+        - oauth2: [ goals:write ]
       parameters:
         - name: goalid
           in: path
@@ -4895,8 +4895,8 @@ paths:
       tags:
         - Traffic
       security:
-        - bearerAuth: [traffic:read]
-        - oauth2: [traffic:read]
+        - bearerAuth: [ traffic:read ]
+        - oauth2: [ traffic:read ]
       parameters:
         - name: cid
           in: query
@@ -4920,7 +4920,7 @@ paths:
           in: query
           schema:
             type: integer
-            enum: [0, 1]
+            enum: [ 0, 1 ]
           description: Filter by validity (0=invalid, 1=valid)
           example: 1
         - name: limit
@@ -4986,18 +4986,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# CUSTOMER JOURNEY ANALYSIS
-# ============================================================================
+  # ============================================================================
+  # CUSTOMER JOURNEY ANALYSIS
+  # ============================================================================
   /journeys/funnel:
     get:
       summary: Get customer journey funnel
       description: Analyze customer funnel stages and conversion rates across campaigns
       operationId: getJourneyFunnel
-      tags: [Journeys]
+      tags: [ Journeys ]
       security:
-        - bearerAuth: [analytics:read]
-        - oauth2: [analytics:read]
+        - bearerAuth: [ analytics:read ]
+        - oauth2: [ analytics:read ]
       parameters:
         - name: campaign_id
           in: query
@@ -5104,10 +5104,10 @@ paths:
       summary: Analyze customer journey drop-off points
       description: Identify where customers drop off in their journey before conversion
       operationId: getJourneyDropOff
-      tags: [Journeys]
+      tags: [ Journeys ]
       security:
-        - bearerAuth: [analytics:read]
-        - oauth2: [analytics:read]
+        - bearerAuth: [ analytics:read ]
+        - oauth2: [ analytics:read ]
       parameters:
         - name: campaign_id
           in: query
@@ -5186,18 +5186,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# LTV TRACKING
-# ============================================================================
+  # ============================================================================
+  # LTV TRACKING
+  # ============================================================================
   /ltv/analysis:
     get:
       summary: Get LTV analysis
       description: Analyze customer lifetime value and profitability metrics
       operationId: getLtvAnalysis
-      tags: [LTV]
+      tags: [ LTV ]
       security:
-        - bearerAuth: [analytics:read]
-        - oauth2: [analytics:read]
+        - bearerAuth: [ analytics:read ]
+        - oauth2: [ analytics:read ]
       parameters:
         - name: campaign_id
           in: query
@@ -5208,7 +5208,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [monthly, quarterly, yearly]
+            enum: [ monthly, quarterly, yearly ]
             default: monthly
           description: Cohort analysis period
         - name: page
@@ -5282,16 +5282,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# FORM INTEGRATION
-# ============================================================================
+  # ============================================================================
+  # FORM INTEGRATION
+  # ============================================================================
   /forms/submit:
     post:
       summary: Submit form data
       description: Handle form submissions and lead capture from landing pages
       operationId: submitForm
-      tags: [Forms]
-      security: []  # Public endpoint for form submissions
+      tags: [ Forms ]
+      security: [ ]  # Public endpoint for form submissions
       requestBody:
         required: true
         content:
@@ -5347,18 +5347,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# RETENTION CAMPAIGNS
-# ============================================================================
+  # ============================================================================
+  # RETENTION CAMPAIGNS
+  # ============================================================================
   /retention/campaigns:
     get:
       summary: List retention campaigns
       description: Get active retention campaigns and their performance
       operationId: getRetentionCampaigns
-      tags: [Retention]
+      tags: [ Retention ]
       security:
-        - bearerAuth: [campaigns:read]
-        - oauth2: [campaigns:read]
+        - bearerAuth: [ campaigns:read ]
+        - oauth2: [ campaigns:read ]
       parameters:
         - name: page
           in: query
@@ -5406,7 +5406,7 @@ paths:
                           example: "inactive_users_30_days"
                         status:
                           type: string
-                          enum: [active, paused, completed]
+                          enum: [ active, paused, completed ]
                           example: "active"
                         performance:
                           type: object
@@ -5441,9 +5441,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-# ============================================================================
-# NEW FEATURES ENDPOINTS
-# ============================================================================
+  # ============================================================================
+  # NEW FEATURES ENDPOINTS
+  # ============================================================================
   /clicks/bulk-generate:
     post:
       summary: Bulk generate click tracking URLs
@@ -5452,10 +5452,10 @@ paths:
         Supports up to 1000 URLs per request for large advertising campaigns.
         Each generated click inherits campaign, landing page, and offer targeting rules.
       operationId: bulkGenerateClicks
-      tags: [Clicks]
+      tags: [ Clicks ]
       security:
-        - bearerAuth: [clicks:write]
-        - oauth2: [clicks:write]
+        - bearerAuth: [ clicks:write ]
+        - oauth2: [ clicks:write ]
       requestBody:
         required: true
         content:
@@ -5507,8 +5507,8 @@ paths:
         Performs comprehensive fraud detection, validates campaign status, and determines
         the appropriate redirect URL based on A/B testing and targeting rules.
       operationId: validateClick
-      tags: [Clicks, Fraud]
-      security: []  # Public endpoint for click validation
+      tags: [ Clicks, Fraud ]
+      security: [ ]  # Public endpoint for click validation
       parameters:
         - name: clickid
           in: path
@@ -5585,10 +5585,10 @@ paths:
         **MEDIUM PRIORITY** - Retrieve all active fraud detection rules with their
         configurations, priorities, and conditions for monitoring and auditing.
       operationId: getFraudRules
-      tags: [Fraud]
+      tags: [ Fraud ]
       security:
-        - bearerAuth: [fraud:read]
-        - oauth2: [fraud:read]
+        - bearerAuth: [ fraud:read ]
+        - oauth2: [ fraud:read ]
       parameters:
         - name: page
           in: query
@@ -5615,7 +5615,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold]
+            enum: [ ip_block, ua_block, geo_block, rate_limit, pattern_match, score_threshold ]
           example: "ip_block"
         - name: active
           in: query
@@ -5661,10 +5661,10 @@ paths:
         **MEDIUM PRIORITY** - Create a new fraud detection rule with specific conditions
         and actions for automated threat mitigation.
       operationId: createFraudRule
-      tags: [Fraud]
+      tags: [ Fraud ]
       security:
-        - bearerAuth: [fraud:write]
-        - oauth2: [fraud:write]
+        - bearerAuth: [ fraud:write ]
+        - oauth2: [ fraud:write ]
       requestBody:
         required: true
         content:
@@ -5676,7 +5676,7 @@ paths:
               type: "geo_block"
               action: "block"
               conditions:
-                countries: ["RU"]
+                countries: [ "RU" ]
               priority: 90
               isActive: true
       responses:
@@ -5723,10 +5723,10 @@ paths:
         **MEDIUM PRIORITY** - Clear cached data to ensure fresh content after
         campaign or landing page updates. Supports selective cache flushing by data type.
       operationId: flushCache
-      tags: [System]
+      tags: [ System ]
       security:
-        - bearerAuth: [admin:write]
-        - oauth2: [admin:write]
+        - bearerAuth: [ admin:write ]
+        - oauth2: [ admin:write ]
       requestBody:
         required: false
         content:
@@ -5738,8 +5738,8 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [campaigns, landing_pages, offers, analytics, all]
-                  example: ["campaigns", "landing_pages"]
+                    enum: [ campaigns, landing_pages, offers, analytics, all ]
+                  example: [ "campaigns", "landing_pages" ]
                   description: Specific cache types to flush (empty = flush all)
                 pattern:
                   type: string
@@ -5797,10 +5797,10 @@ paths:
         including active users, recent conversions, top-performing campaigns and
         landing pages, plus fraud detection metrics.
       operationId: getRealTimeAnalytics
-      tags: [Analytics]
+      tags: [ Analytics ]
       security:
-        - bearerAuth: [analytics:read]
-        - oauth2: [analytics:read]
+        - bearerAuth: [ analytics:read ]
+        - oauth2: [ analytics:read ]
       responses:
         '200':
           description: Real-time analytics data

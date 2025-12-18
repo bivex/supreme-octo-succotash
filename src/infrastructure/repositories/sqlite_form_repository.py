@@ -14,9 +14,8 @@
 """SQLite form repository implementation."""
 
 import sqlite3
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from collections import defaultdict
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatus, LeadSource
 from ...domain.repositories.form_repository import FormRepository
@@ -44,81 +43,212 @@ class SQLiteFormRepository(FormRepository):
 
         # Create form_submissions table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS form_submissions (
-                id TEXT PRIMARY KEY,
-                form_id TEXT NOT NULL,
-                campaign_id TEXT,
-                click_id TEXT,
-                ip_address TEXT NOT NULL,
-                user_agent TEXT NOT NULL,
-                referrer TEXT,
-                form_data TEXT NOT NULL,  -- JSON string
-                validation_errors TEXT NOT NULL,  -- JSON string
-                is_valid INTEGER NOT NULL,
-                is_duplicate INTEGER NOT NULL,
-                duplicate_of TEXT,
-                submitted_at TEXT NOT NULL,
-                processed_at TEXT
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS form_submissions
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           form_id
+                           TEXT
+                           NOT
+                           NULL,
+                           campaign_id
+                           TEXT,
+                           click_id
+                           TEXT,
+                           ip_address
+                           TEXT
+                           NOT
+                           NULL,
+                           user_agent
+                           TEXT
+                           NOT
+                           NULL,
+                           referrer
+                           TEXT,
+                           form_data
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           validation_errors
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           is_valid
+                           INTEGER
+                           NOT
+                           NULL,
+                           is_duplicate
+                           INTEGER
+                           NOT
+                           NULL,
+                           duplicate_of
+                           TEXT,
+                           submitted_at
+                           TEXT
+                           NOT
+                           NULL,
+                           processed_at
+                           TEXT
+                       )
+                       """)
 
         # Create leads table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS leads (
-                id TEXT PRIMARY KEY,
-                email TEXT NOT NULL UNIQUE,
-                first_name TEXT,
-                last_name TEXT,
-                phone TEXT,
-                company TEXT,
-                job_title TEXT,
-                source TEXT NOT NULL,
-                source_campaign TEXT,
-                status TEXT NOT NULL,
-                tags TEXT NOT NULL,  -- JSON string
-                custom_fields TEXT NOT NULL,  -- JSON string
-                first_submission_id TEXT NOT NULL,
-                last_submission_id TEXT NOT NULL,
-                submission_count INTEGER NOT NULL,
-                converted_at TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS leads
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           email
+                           TEXT
+                           NOT
+                           NULL
+                           UNIQUE,
+                           first_name
+                           TEXT,
+                           last_name
+                           TEXT,
+                           phone
+                           TEXT,
+                           company
+                           TEXT,
+                           job_title
+                           TEXT,
+                           source
+                           TEXT
+                           NOT
+                           NULL,
+                           source_campaign
+                           TEXT,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           tags
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           custom_fields
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           first_submission_id
+                           TEXT
+                           NOT
+                           NULL,
+                           last_submission_id
+                           TEXT
+                           NOT
+                           NULL,
+                           submission_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           converted_at
+                           TEXT,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create lead_scores table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lead_scores (
-                lead_id TEXT PRIMARY KEY,
-                total_score INTEGER NOT NULL,
-                scores TEXT NOT NULL,  -- JSON string
-                grade TEXT NOT NULL,
-                is_hot_lead INTEGER NOT NULL,
-                reasons TEXT NOT NULL,  -- JSON string
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (lead_id) REFERENCES leads (id)
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS lead_scores
+                       (
+                           lead_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           total_score
+                           INTEGER
+                           NOT
+                           NULL,
+                           scores
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           grade
+                           TEXT
+                           NOT
+                           NULL,
+                           is_hot_lead
+                           INTEGER
+                           NOT
+                           NULL,
+                           reasons
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL,
+                           FOREIGN
+                           KEY
+                       (
+                           lead_id
+                       ) REFERENCES leads
+                       (
+                           id
+                       )
+                           )
+                       """)
 
         # Create validation_rules table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS validation_rules (
-                id TEXT PRIMARY KEY,
-                form_id TEXT NOT NULL,
-                field_name TEXT NOT NULL,
-                rule_type TEXT NOT NULL,
-                rule_value TEXT,
-                error_message TEXT NOT NULL,
-                is_active INTEGER NOT NULL,
-                created_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS validation_rules
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           form_id
+                           TEXT
+                           NOT
+                           NULL,
+                           field_name
+                           TEXT
+                           NOT
+                           NULL,
+                           rule_type
+                           TEXT
+                           NOT
+                           NULL,
+                           rule_value
+                           TEXT,
+                           error_message
+                           TEXT
+                           NOT
+                           NULL,
+                           is_active
+                           INTEGER
+                           NOT
+                           NULL,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_form ON form_submissions(form_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_ip ON form_submissions(ip_address)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions(form_data)")  # JSON index workaround
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions(form_data)")  # JSON index workaround
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_date ON form_submissions(submitted_at)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
@@ -176,11 +306,11 @@ class SQLiteFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM form_submissions
-            WHERE form_id = ?
-            ORDER BY submitted_at DESC
-            LIMIT ?
-        """, (form_id, limit))
+                       SELECT *
+                       FROM form_submissions
+                       WHERE form_id = ?
+                       ORDER BY submitted_at DESC LIMIT ?
+                       """, (form_id, limit))
 
         return [self._row_to_submission(row) for row in cursor.fetchall()]
 
@@ -192,10 +322,12 @@ class SQLiteFormRepository(FormRepository):
         cutoff_time = (datetime.now() - timedelta(minutes=time_window_minutes)).isoformat()
 
         cursor.execute("""
-            SELECT * FROM form_submissions
-            WHERE ip_address = ? AND submitted_at >= ?
-            ORDER BY submitted_at DESC
-        """, (ip_address, cutoff_time))
+                       SELECT *
+                       FROM form_submissions
+                       WHERE ip_address = ?
+                         AND submitted_at >= ?
+                       ORDER BY submitted_at DESC
+                       """, (ip_address, cutoff_time))
 
         return [self._row_to_submission(row) for row in cursor.fetchall()]
 
@@ -260,11 +392,11 @@ class SQLiteFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM leads
-            WHERE status = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (status.value, limit))
+                       SELECT *
+                       FROM leads
+                       WHERE status = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (status.value, limit))
 
         return [self._row_to_lead(row) for row in cursor.fetchall()]
 
@@ -274,11 +406,11 @@ class SQLiteFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM leads
-            WHERE source = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (source.value, limit))
+                       SELECT *
+                       FROM leads
+                       WHERE source = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (source.value, limit))
 
         return [self._row_to_lead(row) for row in cursor.fetchall()]
 
@@ -288,13 +420,12 @@ class SQLiteFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT l.*, s.total_score
-            FROM leads l
-            LEFT JOIN lead_scores s ON l.id = s.lead_id
-            WHERE s.total_score >= ?
-            ORDER BY s.total_score DESC
-            LIMIT ?
-        """, (score_threshold, limit))
+                       SELECT l.*, s.total_score
+                       FROM leads l
+                                LEFT JOIN lead_scores s ON l.id = s.lead_id
+                       WHERE s.total_score >= ?
+                       ORDER BY s.total_score DESC LIMIT ?
+                       """, (score_threshold, limit))
 
         return [self._row_to_lead(row) for row in cursor.fetchall()]
 
@@ -304,10 +435,11 @@ class SQLiteFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE leads
-            SET status = ?, updated_at = ?
-            WHERE id = ?
-        """, (status.value, datetime.now().isoformat(), lead_id))
+                       UPDATE leads
+                       SET status     = ?,
+                           updated_at = ?
+                       WHERE id = ?
+                       """, (status.value, datetime.now().isoformat(), lead_id))
 
         conn.commit()
 
@@ -382,34 +514,34 @@ class SQLiteFormRepository(FormRepository):
 
         # Get submission metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_submissions,
-                SUM(CASE WHEN is_valid = 1 THEN 1 ELSE 0 END) as valid_submissions,
-                SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicate_submissions
-            FROM form_submissions
-            WHERE submitted_at >= ? AND submitted_at <= ?
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT COUNT(*)                                          as total_submissions,
+                              SUM(CASE WHEN is_valid = 1 THEN 1 ELSE 0 END)     as valid_submissions,
+                              SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicate_submissions
+                       FROM form_submissions
+                       WHERE submitted_at >= ?
+                         AND submitted_at <= ?
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         sub_row = cursor.fetchone()
 
         # Get lead conversion metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_leads,
-                SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as converted_leads
-            FROM leads
-            WHERE created_at >= ? AND created_at <= ?
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT COUNT(*)                                                  as total_leads,
+                              SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as converted_leads
+                       FROM leads
+                       WHERE created_at >= ?
+                         AND created_at <= ?
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         lead_row = cursor.fetchone()
 
         # Get source distribution
         cursor.execute("""
-            SELECT source, COUNT(*) as count
-            FROM leads
-            WHERE created_at >= ? AND created_at <= ?
-            GROUP BY source
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT source, COUNT(*) as count
+                       FROM leads
+                       WHERE created_at >= ? AND created_at <= ?
+                       GROUP BY source
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         source_distribution = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -446,11 +578,11 @@ class SQLiteFormRepository(FormRepository):
 
         # Get status counts
         cursor.execute("""
-            SELECT status, COUNT(*) as count
-            FROM leads
-            WHERE created_at >= ? AND created_at <= ?
-            GROUP BY status
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT status, COUNT(*) as count
+                       FROM leads
+                       WHERE created_at >= ? AND created_at <= ?
+                       GROUP BY status
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         status_counts = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -472,7 +604,7 @@ class SQLiteFormRepository(FormRepository):
         }
 
     def check_duplicate_submission(self, form_data: Dict[str, Any],
-                                 ip_address: str, time_window_hours: int = 24) -> bool:
+                                   ip_address: str, time_window_hours: int = 24) -> bool:
         """Check if submission is duplicate within time window."""
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -485,10 +617,12 @@ class SQLiteFormRepository(FormRepository):
 
         # Check for existing submissions with same email and IP within time window
         cursor.execute("""
-            SELECT COUNT(*) FROM form_submissions
-            WHERE ip_address = ? AND submitted_at >= ?
-            AND json_extract(form_data, '$.email') = ?
-        """, (ip_address, cutoff_time, email))
+                       SELECT COUNT(*)
+                       FROM form_submissions
+                       WHERE ip_address = ?
+                         AND submitted_at >= ?
+                         AND json_extract(form_data, '$.email') = ?
+                       """, (ip_address, cutoff_time, email))
 
         count = cursor.fetchone()[0]
         return count > 0
@@ -504,7 +638,8 @@ class SQLiteFormRepository(FormRepository):
             'contacted_to_qualified': status_counts.get('qualified', 0) / max(status_counts.get('contacted', 0), 1),
             'qualified_to_proposal': status_counts.get('proposal', 0) / max(status_counts.get('qualified', 0), 1),
             'proposal_to_negotiation': status_counts.get('negotiation', 0) / max(status_counts.get('proposal', 0), 1),
-            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(status_counts.get('negotiation', 0), 1),
+            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(
+                status_counts.get('negotiation', 0), 1),
             'overall_win_rate': status_counts.get('closed_won', 0) / max(total_new, 1)
         }
 

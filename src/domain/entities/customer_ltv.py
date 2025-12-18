@@ -14,8 +14,8 @@
 """Customer LTV entity for gaming deposits."""
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime, date
+from typing import Optional
 
 
 @dataclass

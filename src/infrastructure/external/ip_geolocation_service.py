@@ -14,8 +14,8 @@
 """IP geolocation service interface and implementation."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 from ipaddress import IPv4Address, IPv6Address
+from typing import Optional, Dict, Any
 
 
 class IpGeolocationService(ABC):

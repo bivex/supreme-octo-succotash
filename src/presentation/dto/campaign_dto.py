@@ -14,8 +14,8 @@
 """Campaign data transfer objects."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Optional, Dict, Any
 
 from ...domain.value_objects import Money
 
@@ -97,14 +97,17 @@ class CampaignResponse:
             description=campaign.description,
             status=campaign.status.value,
             costModel=campaign.cost_model,
-            payout={"amount": float(campaign.payout.amount), "currency": campaign.payout.currency} if campaign.payout else None,
+            payout={"amount": float(campaign.payout.amount),
+                    "currency": campaign.payout.currency} if campaign.payout else None,
             urls={
                 "safePage": str(campaign.safe_page_url) if campaign.safe_page_url else None,
                 "offerPage": str(campaign.offer_page_url) if campaign.offer_page_url else None,
             },
             financial={
-                "dailyBudget": {"amount": float(campaign.daily_budget.amount), "currency": campaign.daily_budget.currency} if campaign.daily_budget else None,
-                "totalBudget": {"amount": float(campaign.total_budget.amount), "currency": campaign.total_budget.currency} if campaign.total_budget else None,
+                "dailyBudget": {"amount": float(campaign.daily_budget.amount),
+                                "currency": campaign.daily_budget.currency} if campaign.daily_budget else None,
+                "totalBudget": {"amount": float(campaign.total_budget.amount),
+                                "currency": campaign.total_budget.currency} if campaign.total_budget else None,
                 "spent": {"amount": float(campaign.spent_amount.amount), "currency": campaign.spent_amount.currency},
             },
             performance={
@@ -112,7 +115,8 @@ class CampaignResponse:
                 "conversions": campaign.conversions_count,
                 "ctr": campaign.ctr,
                 "cr": campaign.cr,
-                "epc": {"amount": float(campaign.epc.amount), "currency": campaign.epc.currency} if campaign.epc else None,
+                "epc": {"amount": float(campaign.epc.amount),
+                        "currency": campaign.epc.currency} if campaign.epc else None,
                 "roi": campaign.roi,
             },
             schedule={
@@ -152,7 +156,8 @@ class CampaignSummaryResponse:
                 "conversions": campaign.conversions_count,
                 "ctr": float(campaign.ctr),
                 "cr": float(campaign.cr),
-                "epc": {"amount": float(campaign.epc.amount), "currency": campaign.epc.currency} if campaign.epc else None,
+                "epc": {"amount": float(campaign.epc.amount),
+                        "currency": campaign.epc.currency} if campaign.epc else None,
                 "roi": float(campaign.roi),
             },
             _links={"self": f"/api/v1/campaigns/{campaign.id.value}"}

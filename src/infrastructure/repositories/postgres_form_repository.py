@@ -13,10 +13,8 @@
 
 """PostgreSQL form repository implementation."""
 
-import psycopg2
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from collections import defaultdict
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatus, LeadSource
 from ...domain.repositories.form_repository import FormRepository
@@ -51,81 +49,253 @@ class PostgresFormRepository(FormRepository):
 
             # Create form_submissions table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS form_submissions (
-                    id TEXT PRIMARY KEY,
-                    form_id TEXT NOT NULL,
-                    campaign_id TEXT,
-                    click_id TEXT,
-                    ip_address INET NOT NULL,
-                    user_agent TEXT,
-                    referrer TEXT,
-                    form_data JSONB NOT NULL,
-                    validation_errors JSONB DEFAULT '[]'::jsonb,
-                    is_valid BOOLEAN NOT NULL DEFAULT false,
-                    is_duplicate BOOLEAN NOT NULL DEFAULT false,
-                    duplicate_of TEXT,
-                    submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    processed_at TIMESTAMP
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS form_submissions
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               form_id
+                               TEXT
+                               NOT
+                               NULL,
+                               campaign_id
+                               TEXT,
+                               click_id
+                               TEXT,
+                               ip_address
+                               INET
+                               NOT
+                               NULL,
+                               user_agent
+                               TEXT,
+                               referrer
+                               TEXT,
+                               form_data
+                               JSONB
+                               NOT
+                               NULL,
+                               validation_errors
+                               JSONB
+                               DEFAULT
+                               '[]'
+                               :
+                               :
+                               jsonb,
+                               is_valid
+                               BOOLEAN
+                               NOT
+                               NULL
+                               DEFAULT
+                               false,
+                               is_duplicate
+                               BOOLEAN
+                               NOT
+                               NULL
+                               DEFAULT
+                               false,
+                               duplicate_of
+                               TEXT,
+                               submitted_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               processed_at
+                               TIMESTAMP
+                           )
+                           """)
 
             # Create leads table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS leads (
-                    id TEXT PRIMARY KEY,
-                    email TEXT NOT NULL UNIQUE,
-                    first_name TEXT,
-                    last_name TEXT,
-                    phone TEXT,
-                    company TEXT,
-                    job_title TEXT,
-                    source TEXT NOT NULL,
-                    source_campaign TEXT,
-                    status TEXT NOT NULL DEFAULT 'new',
-                    tags JSONB DEFAULT '[]'::jsonb,
-                    custom_fields JSONB DEFAULT '{}'::jsonb,
-                    first_submission_id TEXT NOT NULL,
-                    last_submission_id TEXT NOT NULL,
-                    submission_count INTEGER NOT NULL DEFAULT 1,
-                    converted_at TIMESTAMP,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS leads
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               email
+                               TEXT
+                               NOT
+                               NULL
+                               UNIQUE,
+                               first_name
+                               TEXT,
+                               last_name
+                               TEXT,
+                               phone
+                               TEXT,
+                               company
+                               TEXT,
+                               job_title
+                               TEXT,
+                               source
+                               TEXT
+                               NOT
+                               NULL,
+                               source_campaign
+                               TEXT,
+                               status
+                               TEXT
+                               NOT
+                               NULL
+                               DEFAULT
+                               'new',
+                               tags
+                               JSONB
+                               DEFAULT
+                               '[]'
+                               :
+                               :
+                               jsonb,
+                               custom_fields
+                               JSONB
+                               DEFAULT
+                               '{}'
+                               :
+                               :
+                               jsonb,
+                               first_submission_id
+                               TEXT
+                               NOT
+                               NULL,
+                               last_submission_id
+                               TEXT
+                               NOT
+                               NULL,
+                               submission_count
+                               INTEGER
+                               NOT
+                               NULL
+                               DEFAULT
+                               1,
+                               converted_at
+                               TIMESTAMP,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               updated_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )
+                           """)
 
             # Create lead_scores table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS lead_scores (
-                    lead_id TEXT PRIMARY KEY,
-                    total_score INTEGER NOT NULL DEFAULT 0,
-                    scores JSONB DEFAULT '{}'::jsonb,
-                    grade TEXT NOT NULL DEFAULT 'F',
-                    is_hot_lead BOOLEAN NOT NULL DEFAULT false,
-                    reasons JSONB DEFAULT '[]'::jsonb,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS lead_scores
+                           (
+                               lead_id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               total_score
+                               INTEGER
+                               NOT
+                               NULL
+                               DEFAULT
+                               0,
+                               scores
+                               JSONB
+                               DEFAULT
+                               '{}'
+                               :
+                               :
+                               jsonb,
+                               grade
+                               TEXT
+                               NOT
+                               NULL
+                               DEFAULT
+                               'F',
+                               is_hot_lead
+                               BOOLEAN
+                               NOT
+                               NULL
+                               DEFAULT
+                               false,
+                               reasons
+                               JSONB
+                               DEFAULT
+                               '[]'
+                               :
+                               :
+                               jsonb,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               updated_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP,
+                               FOREIGN
+                               KEY
+                           (
+                               lead_id
+                           ) REFERENCES leads
+                           (
+                               id
+                           ) ON DELETE CASCADE
+                               )
+                           """)
 
             # Create validation_rules table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS validation_rules (
-                    id TEXT PRIMARY KEY,
-                    form_id TEXT NOT NULL,
-                    field_name TEXT NOT NULL,
-                    rule_type TEXT NOT NULL,
-                    rule_value TEXT,
-                    error_message TEXT NOT NULL,
-                    is_active BOOLEAN NOT NULL DEFAULT true,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS validation_rules
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               form_id
+                               TEXT
+                               NOT
+                               NULL,
+                               field_name
+                               TEXT
+                               NOT
+                               NULL,
+                               rule_type
+                               TEXT
+                               NOT
+                               NULL,
+                               rule_value
+                               TEXT,
+                               error_message
+                               TEXT
+                               NOT
+                               NULL,
+                               is_active
+                               BOOLEAN
+                               NOT
+                               NULL
+                               DEFAULT
+                               true,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               CURRENT_TIMESTAMP
+                           )
+                           """)
 
             # Create indexes
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_form ON form_submissions(form_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_ip ON form_submissions(ip_address)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions((form_data->>'email'))")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_submissions_email ON form_submissions((form_data->>'email'))")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_submissions_date ON form_submissions(submitted_at)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
@@ -148,29 +318,29 @@ class PostgresFormRepository(FormRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO form_submissions
-                (id, form_id, campaign_id, click_id, ip_address, user_agent, referrer,
-                 form_data, validation_errors, is_valid, is_duplicate, duplicate_of,
-                 submitted_at, processed_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    processed_at = EXCLUDED.processed_at
-            """, (
-                submission.id,
-                submission.form_id,
-                submission.campaign_id,
-                submission.click_id,
-                submission.ip_address,
-                submission.user_agent,
-                submission.referrer,
-                json.dumps(submission.form_data),
-                json.dumps(submission.validation_errors),
-                submission.is_valid,
-                submission.is_duplicate,
-                submission.duplicate_of,
-                submission.submitted_at,
-                submission.processed_at
-            ))
+                           INSERT INTO form_submissions
+                           (id, form_id, campaign_id, click_id, ip_address, user_agent, referrer,
+                            form_data, validation_errors, is_valid, is_duplicate, duplicate_of,
+                            submitted_at, processed_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               processed_at = EXCLUDED.processed_at
+                           """, (
+                               submission.id,
+                               submission.form_id,
+                               submission.campaign_id,
+                               submission.click_id,
+                               submission.ip_address,
+                               submission.user_agent,
+                               submission.referrer,
+                               json.dumps(submission.form_data),
+                               json.dumps(submission.validation_errors),
+                               submission.is_valid,
+                               submission.is_duplicate,
+                               submission.duplicate_of,
+                               submission.submitted_at,
+                               submission.processed_at
+                           ))
 
             conn.commit()
         finally:
@@ -201,11 +371,12 @@ class PostgresFormRepository(FormRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM form_submissions
-                WHERE form_id = %s
-                ORDER BY submitted_at DESC
-                LIMIT %s
-            """, (form_id, limit))
+                           SELECT *
+                           FROM form_submissions
+                           WHERE form_id = %s
+                           ORDER BY submitted_at DESC
+                               LIMIT %s
+                           """, (form_id, limit))
 
             rows = cursor.fetchall()
 
@@ -224,10 +395,12 @@ class PostgresFormRepository(FormRepository):
             cutoff_time = datetime.now() - timedelta(minutes=time_window_minutes)
 
             cursor.execute("""
-                SELECT * FROM form_submissions
-                WHERE ip_address = %s AND submitted_at >= %s
-                ORDER BY submitted_at DESC
-            """, (ip_address, cutoff_time))
+                           SELECT *
+                           FROM form_submissions
+                           WHERE ip_address = %s
+                             AND submitted_at >= %s
+                           ORDER BY submitted_at DESC
+                           """, (ip_address, cutoff_time))
 
             rows = cursor.fetchall()
 
@@ -245,47 +418,48 @@ class PostgresFormRepository(FormRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO leads
-                (id, email, first_name, last_name, phone, company, job_title, source,
-                 source_campaign, status, tags, custom_fields, first_submission_id,
-                 last_submission_id, submission_count, converted_at, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    email = EXCLUDED.email,
-                    first_name = EXCLUDED.first_name,
-                    last_name = EXCLUDED.last_name,
-                    phone = EXCLUDED.phone,
-                    company = EXCLUDED.company,
-                    job_title = EXCLUDED.job_title,
-                    source = EXCLUDED.source,
-                    source_campaign = EXCLUDED.source_campaign,
-                    status = EXCLUDED.status,
-                    tags = EXCLUDED.tags,
-                    custom_fields = EXCLUDED.custom_fields,
-                    last_submission_id = EXCLUDED.last_submission_id,
-                    submission_count = EXCLUDED.submission_count,
-                    converted_at = EXCLUDED.converted_at,
-                    updated_at = CURRENT_TIMESTAMP
-            """, (
-                lead.id,
-                lead.email,
-                lead.first_name,
-                lead.last_name,
-                lead.phone,
-                lead.company,
-                lead.job_title,
-                lead.source.value,
-                lead.source_campaign,
-                lead.status.value,
-                json.dumps(lead.tags),
-                json.dumps(lead.custom_fields),
-                lead.first_submission_id,
-                lead.last_submission_id,
-                lead.submission_count,
-                lead.converted_at,
-                lead.created_at,
-                lead.updated_at
-            ))
+                           INSERT INTO leads
+                           (id, email, first_name, last_name, phone, company, job_title, source,
+                            source_campaign, status, tags, custom_fields, first_submission_id,
+                            last_submission_id, submission_count, converted_at, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               email = EXCLUDED.email,
+                               first_name = EXCLUDED.first_name,
+                               last_name = EXCLUDED.last_name,
+                               phone = EXCLUDED.phone,
+                               company = EXCLUDED.company,
+                               job_title = EXCLUDED.job_title,
+                               source = EXCLUDED.source,
+                               source_campaign = EXCLUDED.source_campaign,
+                               status = EXCLUDED.status,
+                               tags = EXCLUDED.tags,
+                               custom_fields = EXCLUDED.custom_fields,
+                               last_submission_id = EXCLUDED.last_submission_id,
+                               submission_count = EXCLUDED.submission_count,
+                               converted_at = EXCLUDED.converted_at,
+                               updated_at = CURRENT_TIMESTAMP
+                           """, (
+                               lead.id,
+                               lead.email,
+                               lead.first_name,
+                               lead.last_name,
+                               lead.phone,
+                               lead.company,
+                               lead.job_title,
+                               lead.source.value,
+                               lead.source_campaign,
+                               lead.status.value,
+                               json.dumps(lead.tags),
+                               json.dumps(lead.custom_fields),
+                               lead.first_submission_id,
+                               lead.last_submission_id,
+                               lead.submission_count,
+                               lead.converted_at,
+                               lead.created_at,
+                               lead.updated_at
+                           ))
 
             conn.commit()
         finally:
@@ -332,11 +506,12 @@ class PostgresFormRepository(FormRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM leads
-                WHERE status = %s
-                ORDER BY created_at DESC
-                LIMIT %s
-            """, (status.value, limit))
+                           SELECT *
+                           FROM leads
+                           WHERE status = %s
+                           ORDER BY created_at DESC
+                               LIMIT %s
+                           """, (status.value, limit))
 
             rows = cursor.fetchall()
 
@@ -351,11 +526,12 @@ class PostgresFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM leads
-            WHERE source = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (source.value, limit))
+                       SELECT *
+                       FROM leads
+                       WHERE source = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (source.value, limit))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -369,13 +545,13 @@ class PostgresFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT l.*
-            FROM leads l
-            LEFT JOIN lead_scores s ON l.id = s.lead_id
-            WHERE s.total_score >= %s
-            ORDER BY s.total_score DESC
-            LIMIT %s
-        """, (score_threshold, limit))
+                       SELECT l.*
+                       FROM leads l
+                                LEFT JOIN lead_scores s ON l.id = s.lead_id
+                       WHERE s.total_score >= %s
+                       ORDER BY s.total_score DESC
+                           LIMIT %s
+                       """, (score_threshold, limit))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -389,10 +565,11 @@ class PostgresFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE leads
-            SET status = %s, updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (status.value, lead_id))
+                       UPDATE leads
+                       SET status     = %s,
+                           updated_at = CURRENT_TIMESTAMP
+                       WHERE id = %s
+                       """, (status.value, lead_id))
 
         conn.commit()
         cursor.close()
@@ -405,26 +582,26 @@ class PostgresFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO lead_scores
-            (lead_id, total_score, scores, grade, is_hot_lead, reasons, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (lead_id) DO UPDATE SET
-                total_score = EXCLUDED.total_score,
-                scores = EXCLUDED.scores,
-                grade = EXCLUDED.grade,
-                is_hot_lead = EXCLUDED.is_hot_lead,
-                reasons = EXCLUDED.reasons,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            score.lead_id,
-            score.total_score,
-            json.dumps(score.scores),
-            score.grade,
-            score.is_hot_lead,
-            json.dumps(score.reasons),
-            score.created_at,
-            score.updated_at
-        ))
+                       INSERT INTO lead_scores
+                       (lead_id, total_score, scores, grade, is_hot_lead, reasons, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (lead_id) DO
+                       UPDATE SET
+                           total_score = EXCLUDED.total_score,
+                           scores = EXCLUDED.scores,
+                           grade = EXCLUDED.grade,
+                           is_hot_lead = EXCLUDED.is_hot_lead,
+                           reasons = EXCLUDED.reasons,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           score.lead_id,
+                           score.total_score,
+                           json.dumps(score.scores),
+                           score.grade,
+                           score.is_hot_lead,
+                           json.dumps(score.reasons),
+                           score.created_at,
+                           score.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -449,25 +626,25 @@ class PostgresFormRepository(FormRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO validation_rules
-            (id, form_id, field_name, rule_type, rule_value, error_message, is_active, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                field_name = EXCLUDED.field_name,
-                rule_type = EXCLUDED.rule_type,
-                rule_value = EXCLUDED.rule_value,
-                error_message = EXCLUDED.error_message,
-                is_active = EXCLUDED.is_active
-        """, (
-            rule.id,
-            "default_form",  # Simplified - could be parameterized
-            rule.field_name,
-            rule.rule_type,
-            rule.rule_value,
-            rule.error_message,
-            rule.is_active,
-            rule.created_at
-        ))
+                       INSERT INTO validation_rules
+                       (id, form_id, field_name, rule_type, rule_value, error_message, is_active, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           field_name = EXCLUDED.field_name,
+                           rule_type = EXCLUDED.rule_type,
+                           rule_value = EXCLUDED.rule_value,
+                           error_message = EXCLUDED.error_message,
+                           is_active = EXCLUDED.is_active
+                       """, (
+                           rule.id,
+                           "default_form",  # Simplified - could be parameterized
+                           rule.field_name,
+                           rule.rule_type,
+                           rule.rule_value,
+                           rule.error_message,
+                           rule.is_active,
+                           rule.created_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -493,34 +670,35 @@ class PostgresFormRepository(FormRepository):
 
         # Get submission metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_submissions,
-                SUM(CASE WHEN is_valid THEN 1 ELSE 0 END) as valid_submissions,
-                SUM(CASE WHEN is_duplicate THEN 1 ELSE 0 END) as duplicate_submissions
-            FROM form_submissions
-            WHERE submitted_at >= %s AND submitted_at <= %s
-        """, (start_date, end_date))
+                       SELECT COUNT(*)                                      as total_submissions,
+                              SUM(CASE WHEN is_valid THEN 1 ELSE 0 END)     as valid_submissions,
+                              SUM(CASE WHEN is_duplicate THEN 1 ELSE 0 END) as duplicate_submissions
+                       FROM form_submissions
+                       WHERE submitted_at >= %s
+                         AND submitted_at <= %s
+                       """, (start_date, end_date))
 
         sub_row = cursor.fetchone()
 
         # Get lead conversion metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_leads,
-                SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as converted_leads
-            FROM leads
-            WHERE created_at >= %s AND created_at <= %s
-        """, (start_date, end_date))
+                       SELECT COUNT(*)                                                  as total_leads,
+                              SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as converted_leads
+                       FROM leads
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       """, (start_date, end_date))
 
         lead_row = cursor.fetchone()
 
         # Get source distribution
         cursor.execute("""
-            SELECT source, COUNT(*) as count
-            FROM leads
-            WHERE created_at >= %s AND created_at <= %s
-            GROUP BY source
-        """, (start_date, end_date))
+                       SELECT source, COUNT(*) as count
+                       FROM leads
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       GROUP BY source
+                       """, (start_date, end_date))
 
         source_rows = cursor.fetchall()
         source_distribution = {row[0]: row[1] for row in source_rows}
@@ -561,11 +739,12 @@ class PostgresFormRepository(FormRepository):
 
         # Get status counts
         cursor.execute("""
-            SELECT status, COUNT(*) as count
-            FROM leads
-            WHERE created_at >= %s AND created_at <= %s
-            GROUP BY status
-        """, (start_date, end_date))
+                       SELECT status, COUNT(*) as count
+                       FROM leads
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       GROUP BY status
+                       """, (start_date, end_date))
 
         status_rows = cursor.fetchall()
         status_counts = {row[0]: row[1] for row in status_rows}
@@ -591,7 +770,7 @@ class PostgresFormRepository(FormRepository):
         }
 
     def check_duplicate_submission(self, form_data: Dict[str, Any],
-                                 ip_address: str, time_window_hours: int = 24) -> bool:
+                                   ip_address: str, time_window_hours: int = 24) -> bool:
         """Check if submission is duplicate within time window."""
         conn = self._container.get_db_connection()
         cursor = conn.cursor()
@@ -606,10 +785,12 @@ class PostgresFormRepository(FormRepository):
 
         # Check for existing submissions with same email and IP within time window
         cursor.execute("""
-            SELECT COUNT(*) FROM form_submissions
-            WHERE ip_address = %s AND submitted_at >= %s
-            AND form_data->>'email' = %s
-        """, (ip_address, cutoff_time, email))
+                       SELECT COUNT(*)
+                       FROM form_submissions
+                       WHERE ip_address = %s
+                         AND submitted_at >= %s
+                         AND form_data ->>'email' = %s
+                       """, (ip_address, cutoff_time, email))
 
         count = cursor.fetchone()[0]
         cursor.close()
@@ -628,7 +809,8 @@ class PostgresFormRepository(FormRepository):
             'contacted_to_qualified': status_counts.get('qualified', 0) / max(status_counts.get('contacted', 0), 1),
             'qualified_to_proposal': status_counts.get('proposal', 0) / max(status_counts.get('qualified', 0), 1),
             'proposal_to_negotiation': status_counts.get('negotiation', 0) / max(status_counts.get('proposal', 0), 1),
-            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(status_counts.get('negotiation', 0), 1),
+            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(
+                status_counts.get('negotiation', 0), 1),
             'overall_win_rate': status_counts.get('closed_won', 0) / max(total_new, 1)
         }
 

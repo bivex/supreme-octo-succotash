@@ -11,6 +11,7 @@ Run the automated setup script:
 ```
 
 This script will:
+
 - Install PostgreSQL 18 (if not already installed)
 - Create the database `supreme_octosuccotash_db`
 - Create the user `app_user` with password `app_password`
@@ -22,12 +23,14 @@ This script will:
 If you prefer to do it step by step:
 
 ### 1. Install PostgreSQL
+
 ```bash
 brew install postgresql@18
 brew services start postgresql@18
 ```
 
 ### 2. Create Database and User
+
 ```bash
 # Create database
 psql -h localhost -d postgres -c "CREATE DATABASE supreme_octosuccotash_db;"
@@ -40,6 +43,7 @@ psql -h localhost -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE supreme_octos
 ```
 
 ### 3. Initialize Tables
+
 ```bash
 python3 init_db.py
 ```
@@ -47,6 +51,7 @@ python3 init_db.py
 ## Database Configuration
 
 The application connects to PostgreSQL with these settings:
+
 - **Host**: localhost
 - **Port**: 5432
 - **Database**: supreme_octosuccotash_db
@@ -68,14 +73,17 @@ psql -h localhost -d supreme_octosuccotash_db -U app_user -c "SELECT table_name 
 ## Troubleshooting
 
 ### Connection Issues
+
 - Ensure PostgreSQL service is running: `brew services list | grep postgresql`
 - Check if the service is started: `brew services start postgresql@18`
 
 ### Permission Issues
+
 - Make sure the user has proper permissions on the database
 - Verify the password is correct
 
 ### Table Creation Issues
+
 - Run `python3 init_db.py` to initialize tables
 - Check logs for specific error messages
 

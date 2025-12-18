@@ -13,17 +13,18 @@
 
 """Vectorized cache monitoring with high-performance analytics."""
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Callable
+import logging
 import threading
 import time
-import logging
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, List, Optional, Callable
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class VectorizedCacheMetrics:
@@ -36,6 +37,7 @@ class VectorizedCacheMetrics:
     timestamps: np.ndarray
     trend_analysis: Dict[str, float]  # Trend coefficients
 
+
 @dataclass
 class CacheAlert:
     """Cache performance alert."""
@@ -45,6 +47,7 @@ class CacheAlert:
     recommendations: List[str]
     timestamp: datetime
     metrics: Dict[str, float]
+
 
 class VectorizedCacheMonitor:
     """High-performance cache monitoring using vectorized operations."""
@@ -162,15 +165,17 @@ class VectorizedCacheMonitor:
         try:
             # Get basic cache statistics
             cursor.execute("""
-                SELECT
-                    sum(heap_blks_hit) * 1.0 / (sum(heap_blks_hit) + sum(heap_blks_read)) as heap_hit_ratio,
-                    sum(idx_blks_hit) * 1.0 / (sum(idx_blks_hit) + sum(idx_blks_read)) as index_hit_ratio,
-                    sum(buffers_backend) * 8192.0 / (SELECT setting::float * 1024*1024 FROM pg_settings WHERE name = 'shared_buffers') as shared_buffer_usage,
-                    sum(temp_files) as temp_files_created,
-                    sum(temp_bytes) as temp_bytes_written
-                FROM pg_stat_database
-                WHERE datname = current_database()
-            """)
+                           SELECT
+                               sum(heap_blks_hit) * 1.0 / (sum(heap_blks_hit) + sum(heap_blks_read))              as heap_hit_ratio,
+                               sum(idx_blks_hit) * 1.0 / (sum(idx_blks_hit) + sum(idx_blks_read))                 as index_hit_ratio,
+                               sum(buffers_backend) * 8192.0 / (SELECT setting::float * 1024*1024
+                                                                FROM pg_settings
+                                                                WHERE name = 'shared_buffers')                    as shared_buffer_usage,
+                               sum(temp_files)                                                                    as temp_files_created,
+                               sum(temp_bytes)                                                                    as temp_bytes_written
+                           FROM pg_stat_database
+                           WHERE datname = current_database()
+                           """)
 
             result = cursor.fetchone()
             if not result:

@@ -13,13 +13,13 @@
 
 """In-memory analytics repository implementation."""
 
-from typing import Optional, Dict, Any
 from datetime import date
+from typing import Optional, Dict, Any
 
-from ...domain.value_objects import Analytics
 from ...domain.repositories.analytics_repository import AnalyticsRepository
-from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.repositories.click_repository import ClickRepository
+from ...domain.value_objects import Analytics
 from ...domain.value_objects import Money
 
 
@@ -34,7 +34,7 @@ class InMemoryAnalyticsRepository(AnalyticsRepository):
         self._analytics_cache: Dict[str, Analytics] = {}
 
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
-                              end_date: date, granularity: str = "day") -> Analytics:
+                               end_date: date, granularity: str = "day") -> Analytics:
         """Get analytics for a campaign within date range."""
         # Check cache first
         cache_key = f"{campaign_id}_{start_date}_{end_date}_{granularity}"
@@ -108,7 +108,7 @@ class InMemoryAnalyticsRepository(AnalyticsRepository):
         return analytics
 
     def get_aggregated_metrics(self, campaign_id: str, start_date: date,
-                              end_date: date) -> Dict[str, Any]:
+                               end_date: date) -> Dict[str, Any]:
         """Get aggregated metrics for a campaign."""
         analytics = self.get_campaign_analytics(campaign_id, start_date, end_date)
 
@@ -130,7 +130,7 @@ class InMemoryAnalyticsRepository(AnalyticsRepository):
         self._analytics_cache[cache_key] = analytics
 
     def get_cached_analytics(self, campaign_id: str, start_date: date,
-                           end_date: date) -> Optional[Analytics]:
+                             end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
         cache_key = f"{campaign_id}_{start_date}_{end_date}_day"
         return self._analytics_cache.get(cache_key)

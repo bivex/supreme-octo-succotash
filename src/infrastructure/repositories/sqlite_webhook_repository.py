@@ -14,8 +14,8 @@
 """SQLite webhook repository implementation."""
 
 import sqlite3
-from typing import Optional, List
 from datetime import datetime
+from typing import Optional, List
 
 from ...domain.entities.webhook import TelegramWebhook
 from ...domain.repositories.webhook_repository import WebhookRepository
@@ -42,19 +42,40 @@ class SQLiteWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS webhooks (
-                id TEXT PRIMARY KEY,
-                chat_id INTEGER NOT NULL,
-                message_type TEXT NOT NULL,
-                message_text TEXT,
-                user_id INTEGER,
-                username TEXT,
-                first_name TEXT,
-                last_name TEXT,
-                timestamp TEXT NOT NULL,
-                processed INTEGER DEFAULT 0
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS webhooks
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           chat_id
+                           INTEGER
+                           NOT
+                           NULL,
+                           message_type
+                           TEXT
+                           NOT
+                           NULL,
+                           message_text
+                           TEXT,
+                           user_id
+                           INTEGER,
+                           username
+                           TEXT,
+                           first_name
+                           TEXT,
+                           last_name
+                           TEXT,
+                           timestamp
+                           TEXT
+                           NOT
+                           NULL,
+                           processed
+                           INTEGER
+                           DEFAULT
+                           0
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhooks_chat_id ON webhooks(chat_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhooks_processed ON webhooks(processed)")
@@ -95,11 +116,12 @@ class SQLiteWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM webhooks
-            WHERE processed = 0
-            ORDER BY timestamp ASC
-            LIMIT ?
-        """, (limit,))
+                       SELECT *
+                       FROM webhooks
+                       WHERE processed = 0
+                       ORDER BY timestamp ASC
+                           LIMIT ?
+                       """, (limit,))
 
         return [self._row_to_webhook(row) for row in cursor.fetchall()]
 
@@ -118,11 +140,12 @@ class SQLiteWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM webhooks
-            WHERE chat_id = ?
-            ORDER BY timestamp DESC
-            LIMIT ?
-        """, (chat_id, limit))
+                       SELECT *
+                       FROM webhooks
+                       WHERE chat_id = ?
+                       ORDER BY timestamp DESC
+                           LIMIT ?
+                       """, (chat_id, limit))
 
         return [self._row_to_webhook(row) for row in cursor.fetchall()]
 

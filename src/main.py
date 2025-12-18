@@ -15,16 +15,18 @@
 
 # uvloop not available on Windows, skipping (would give +20-40% HTTP performance boost on Linux/macOS)
 
-import socketify
-from loguru import logger
+import inspect
 import json
 import os
 import time
-import inspect
 from decimal import Decimal
+
+import socketify
+from loguru import logger
 
 from .config.settings import settings
 from .container import container
+
 
 # Custom JSON encoder for Decimal objects, Money objects, and datetime objects
 class CustomJSONEncoder(json.JSONEncoder):
@@ -46,14 +48,18 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+
 # Monkey patch json.dumps to handle Decimal objects
 _original_dumps = json.dumps
+
+
 def custom_dumps(obj, **kwargs):
     """Custom json.dumps that handles Decimal objects."""
     # If cls is already specified, don't override it
     if 'cls' not in kwargs:
         kwargs['cls'] = CustomJSONEncoder
     return _original_dumps(obj, **kwargs)
+
 
 json.dumps = custom_dumps
 
@@ -91,7 +97,7 @@ async def create_app() -> socketify.App:
     _configure_logging(app)
     _setup_global_exception_handler()
     _apply_middleware(app)
-    await _register_routes(app) # Await the async function
+    await _register_routes(app)  # Await the async function
     _register_error_handlers(app)
     _add_health_endpoints(app)
     # _initialize_postgres_upholder(app) # Removed, will be called in background tasks
@@ -184,8 +190,6 @@ def _setup_global_exception_handler() -> None:
 
     import sys
     import traceback
-    import functools
-    from decimal import Decimal
 
     def global_exception_handler(exc_type, exc_value, exc_traceback):
         """Global exception handler that logs full traceback."""
@@ -233,6 +237,7 @@ async def _register_routes(app: socketify.App) -> None:
     except Exception:
         def debug_async_trace(msg: str = ""):
             return
+
         def save_debug_snapshot(reason: str = "debug"):
             return None
 
@@ -258,30 +263,34 @@ async def _register_routes(app: socketify.App) -> None:
     ]
 
     try:
-            for i, (name, getter) in enumerate(steps, 1):
-                step_start = time.time()
-                logger.info(f"🔌 [{i:2d}/{len(steps)}] Processing route module: {name}")
-                debug_async_trace(f"Before route step: {name}")
-                routes = await getter()
-                register_result = routes.register(app)
-                if inspect.isawaitable(register_result):
-                    await register_result
-                step_duration = time.time() - step_start
-                logger.info(f"✅ [{i:2d}/{len(steps)}] ✓ {name} registered in {step_duration:.3f}s")
-                debug_async_trace(f"After route step: {name}")
+        for i, (name, getter) in enumerate(steps, 1):
+            step_start = time.time()
+            logger.info(f"🔌 [{i:2d}/{len(steps)}] Processing route module: {name}")
+            debug_async_trace(f"Before route step: {name}")
+            routes = await getter()
+            register_result = routes.register(app)
+            if inspect.isawaitable(register_result):
+                await register_result
+            step_duration = time.time() - step_start
+            logger.info(f"✅ [{i:2d}/{len(steps)}] ✓ {name} registered in {step_duration:.3f}s")
+            debug_async_trace(f"After route step: {name}")
 
-            duration = time.time() - start
-            logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
-            logger.info("✅ ALL ROUTES REGISTERED SUCCESSFULLY")
-            logger.info(f"⏱️  Total route registration time: {duration:.3f}s")
-            logger.info(f"📊 Registered {len(steps)} route modules")
-            logger.info("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        duration = time.time() - start
+        logger.info(
+            "🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.info("✅ ALL ROUTES REGISTERED SUCCESSFULLY")
+        logger.info(f"⏱️  Total route registration time: {duration:.3f}s")
+        logger.info(f"📊 Registered {len(steps)} route modules")
+        logger.info(
+            "🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
     except Exception as e:
         duration = time.time() - start
-        logger.error("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.error(
+            "🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
         logger.error("❌ ROUTE REGISTRATION FAILED")
         logger.error(f"⏱️  Failed after {duration:.3f}s")
-        logger.error("🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.error(
+            "🔌 ════════════════════════════════════════════════════════════════════════════════════════════════")
         logger.exception(f"❌ Route registration error: {e}")
         try:
             snapshot = save_debug_snapshot(f"routes_error_{name}")
@@ -302,14 +311,14 @@ def _register_error_handlers(app: socketify.App) -> None:
 
 async def _start_background_tasks(app: socketify.App):
     """Start background tasks like PostgreSQL upholder and cache monitoring."""
-    import asyncio
     logger.info("🚀 Starting background tasks...")
-    await _initialize_postgres_upholder(app) # Await here
+    await _initialize_postgres_upholder(app)  # Await here
     logger.info("✅ Background tasks started.")
 
 
 def _add_health_endpoints(app: socketify.App) -> None:
     """Add health check and utility endpoints."""
+
     def health(res, req):
         """Health check endpoint."""
         import socket
@@ -350,15 +359,17 @@ def _add_health_endpoints(app: socketify.App) -> None:
     app.post("/v1/reset", reset)
 
 
-async def _initialize_postgres_upholder(app: socketify.App) -> None: # Made async
+async def _initialize_postgres_upholder(app: socketify.App) -> None:  # Made async
     """Initialize PostgreSQL Auto Upholder system."""
     try:
-        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.info(
+            "🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
         logger.info("🗃️  POSTGRESQL AUTO UPHOLDER INITIALIZATION")
-        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.info(
+            "🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
 
         # Get upholder instance from container
-        upholder = await container.get_postgres_upholder() # Await here
+        upholder = await container.get_postgres_upholder()  # Await here
 
         # Add custom alert handler that integrates with app logging
         def app_alert_handler(alert_type: str, message: str):
@@ -372,7 +383,8 @@ async def _initialize_postgres_upholder(app: socketify.App) -> None: # Made asyn
         # Start upholder monitoring
         upholder.start()
         logger.info("✅ PostgreSQL Auto Upholder started successfully")
-        logger.info("🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
+        logger.info(
+            "🔧 ════════════════════════════════════════════════════════════════════════════════════════════════")
 
         # Initialize vectorized cache monitor if performance mode is enabled
         import os
@@ -639,18 +651,17 @@ def _add_cors_headers(app: socketify.App) -> None:
     pass
 
 
-
-
 if __name__ == "__main__":
     logger.info("🚀 START: Application main execution")
     main_start = time.time()
 
     import multiprocessing
-    import asyncio # Import asyncio here if not already imported
+    import asyncio  # Import asyncio here if not already imported
+
 
     async def start_server():
         logger.info("🏗️ Creating application (async)...")
-        app = await create_app() # Await the async create_app
+        app = await create_app()  # Await the async create_app
         app_create_time = time.time() - main_start
         logger.info(f"🏗️ Application created in {app_create_time:.4f} seconds")
 
@@ -677,7 +688,7 @@ if __name__ == "__main__":
 
             def run_worker():
                 # Each worker needs its own app instance and event loop
-                worker_app = asyncio.run(create_app()) # Run create_app in new event loop for worker
+                worker_app = asyncio.run(create_app())  # Run create_app in new event loop for worker
                 # Initialize background tasks for each worker as well
                 asyncio.run(_start_background_tasks(worker_app))
                 worker_app.listen(listen_options, on_listen)
@@ -687,7 +698,7 @@ if __name__ == "__main__":
             for i in range(num_processes):
                 process = multiprocessing.Process(
                     target=run_worker,
-                    name=f"Socketify-Worker-{i+1}",
+                    name=f"Socketify-Worker-{i + 1}",
                     daemon=True
                 )
                 process.start()
@@ -696,7 +707,7 @@ if __name__ == "__main__":
             try:
                 logger.info("🎯 All workers started! Server ready for maximum throughput.")
                 # Start background tasks in the main process (only once)
-                await _start_background_tasks(app) # Await the background tasks
+                await _start_background_tasks(app)  # Await the background tasks
 
                 for process in processes:
                     process.join()
@@ -709,10 +720,11 @@ if __name__ == "__main__":
         else:
             # Single process mode
             # Start background tasks in the single process
-            await _start_background_tasks(app) # Await here
-            
+            await _start_background_tasks(app)  # Await here
+
             app.listen(listen_options, on_listen)
             logger.info("🎯 Single-process mode. For maximum performance, set WORKERS environment variable.")
             app.run()
 
-    asyncio.run(start_server()) # Run the async server startup
+
+    asyncio.run(start_server())  # Run the async server startup

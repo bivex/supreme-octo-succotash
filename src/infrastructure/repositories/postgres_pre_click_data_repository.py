@@ -1,10 +1,10 @@
-import psycopg2
-import json
-import psycopg2.extras
-from typing import Optional, Dict, Any
-from datetime import datetime
 import asyncio
 import functools
+import json
+from typing import Optional, Dict, Any
+
+import psycopg2
+import psycopg2.extras
 from loguru import logger
 
 from ...domain.entities.pre_click_data import PreClickData
@@ -23,7 +23,8 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         """Get a blocking database connection from the container pool in a thread pool."""
         loop = asyncio.get_event_loop()
         if not loop.is_running():
-            logger.warning("Attempted to get blocking connection outside of a running event loop. This might be a problem if not handled by a background task.")
+            logger.warning(
+                "Attempted to get blocking connection outside of a running event loop. This might be a problem if not handled by a background task.")
 
         # Ensure pool is initialized in the async context, then get sync connection in executor
         await self._container.get_db_connection_pool()
@@ -42,22 +43,39 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             # Get a dedicated blocking connection for initialization
             conn = await self._get_blocking_connection()
             cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
-            
+
             logger.info("Attempting to create pre_click_data table if not exists...")
             await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
-                CREATE TABLE IF NOT EXISTS pre_click_data (
-                    click_id TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-                    tracking_params JSONB,
-                    metadata JSONB
-                )
-            """))
+                                                                                                   CREATE TABLE IF NOT EXISTS pre_click_data
+                                                                                                   (
+                                                                                                       click_id
+                                                                                                       TEXT
+                                                                                                       PRIMARY
+                                                                                                       KEY,
+                                                                                                       campaign_id
+                                                                                                       TEXT
+                                                                                                       NOT
+                                                                                                       NULL,
+                                                                                                       timestamp
+                                                                                                       TIMESTAMP
+                                                                                                       WITH
+                                                                                                       TIME
+                                                                                                       ZONE
+                                                                                                       NOT
+                                                                                                       NULL,
+                                                                                                       tracking_params
+                                                                                                       JSONB,
+                                                                                                       metadata
+                                                                                                       JSONB
+                                                                                                   )
+                                                                                                   """))
             logger.info("Table pre_click_data created or already exists.")
 
             logger.info("Attempting to create indexes for pre_click_data table...")
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "CREATE INDEX IF NOT EXISTS idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
+            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute,
+                                                                                   "CREATE INDEX IF NOT EXISTS idx_pre_click_data_campaign_id ON pre_click_data(campaign_id)"))
+            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute,
+                                                                                   "CREATE INDEX IF NOT EXISTS idx_pre_click_data_timestamp ON pre_click_data(timestamp)"))
             logger.info("Indexes for pre_click_data table created or already exist.")
 
             await asyncio.get_event_loop().run_in_executor(None, conn.commit)
@@ -74,7 +92,9 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None,
+                                                               functools.partial(self._container.release_db_connection,
+                                                                                 conn))
 
     def _row_to_pre_click_data(self, row: Dict[str, Any]) -> PreClickData:
         """Convert database row to PreClickData entity."""
@@ -93,24 +113,28 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         try:
             conn = await self._get_blocking_connection()
             cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
-            
+
             logger.info(f"Saving PreClickData for click_id: {pre_click_data.click_id.value}")
             await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, """
-                INSERT INTO pre_click_data
-                (click_id, campaign_id, timestamp, tracking_params, metadata)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (click_id) DO UPDATE SET
-                    campaign_id = EXCLUDED.campaign_id,
-                    timestamp = EXCLUDED.timestamp,
-                    tracking_params = EXCLUDED.tracking_params,
-                    metadata = EXCLUDED.metadata
-            """, (
-                pre_click_data.click_id.value,
-                pre_click_data.campaign_id.value,
-                pre_click_data.timestamp,
-                json.dumps(pre_click_data.tracking_params),
-                json.dumps(pre_click_data.metadata)
-            )))
+                                                                                                   INSERT INTO pre_click_data
+                                                                                                       (click_id, campaign_id, timestamp, tracking_params, metadata)
+                                                                                                   VALUES (%s, %s, %s,
+                                                                                                           %s,
+                                                                                                           %s) ON CONFLICT (click_id) DO
+                                                                                                   UPDATE SET
+                                                                                                       campaign_id = EXCLUDED.campaign_id,
+                                                                                                       timestamp = EXCLUDED.timestamp,
+                                                                                                       tracking_params = EXCLUDED.tracking_params,
+                                                                                                       metadata = EXCLUDED.metadata
+                                                                                                   """, (
+                                                                                       pre_click_data.click_id.value,
+                                                                                       pre_click_data.campaign_id.value,
+                                                                                       pre_click_data.timestamp,
+                                                                                       json.dumps(
+                                                                                           pre_click_data.tracking_params),
+                                                                                       json.dumps(
+                                                                                           pre_click_data.metadata)
+                                                                                   )))
             await asyncio.get_event_loop().run_in_executor(None, conn.commit)
             logger.info(f"PreClickData saved and committed for click_id: {pre_click_data.click_id.value}")
         except Exception as e:
@@ -120,7 +144,9 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None,
+                                                               functools.partial(self._container.release_db_connection,
+                                                                                 conn))
 
     async def find_by_click_id(self, click_id: ClickId) -> Optional[PreClickData]:
         """Finds pre-click data by click ID."""
@@ -128,15 +154,19 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         conn = None
         try:
             conn = await self._get_blocking_connection()
-            cursor = await asyncio.get_event_loop().run_in_executor(None, functools.partial(conn.cursor, cursor_factory=psycopg2.extras.DictCursor))
-            
+            cursor = await asyncio.get_event_loop().run_in_executor(None, functools.partial(conn.cursor,
+                                                                                            cursor_factory=psycopg2.extras.DictCursor))
+
             logger.info(f"Attempting to find PreClickData for click_id: {click_id.value}")
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "SELECT * FROM pre_click_data WHERE click_id = %s", (click_id.value,)))
+            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute,
+                                                                                   "SELECT * FROM pre_click_data WHERE click_id = %s",
+                                                                                   (click_id.value,)))
 
             row = await asyncio.get_event_loop().run_in_executor(None, cursor.fetchone)
             if row:
                 pre_click_data = self._row_to_pre_click_data(dict(row))
-                logger.info(f"PreClickData found for click_id: {click_id.value}. Data: {pre_click_data.tracking_params}")
+                logger.info(
+                    f"PreClickData found for click_id: {click_id.value}. Data: {pre_click_data.tracking_params}")
                 return pre_click_data
             logger.warning(f"No PreClickData found for click_id: {click_id.value} in DB.")
             return None
@@ -145,7 +175,9 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None,
+                                                               functools.partial(self._container.release_db_connection,
+                                                                                 conn))
 
     async def delete_by_click_id(self, click_id: ClickId) -> None:
         """Deletes pre-click data by click ID."""
@@ -154,9 +186,11 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         try:
             conn = await self._get_blocking_connection()
             cursor = await asyncio.get_event_loop().run_in_executor(None, conn.cursor)
-            
+
             logger.info(f"Attempting to delete PreClickData for click_id: {click_id.value}")
-            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute, "DELETE FROM pre_click_data WHERE click_id = %s", (click_id.value,)))
+            await asyncio.get_event_loop().run_in_executor(None, functools.partial(cursor.execute,
+                                                                                   "DELETE FROM pre_click_data WHERE click_id = %s",
+                                                                                   (click_id.value,)))
             await asyncio.get_event_loop().run_in_executor(None, conn.commit)
             logger.info(f"PreClickData deleted and committed for click_id: {click_id.value}")
         except Exception as e:
@@ -166,4 +200,6 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
+                await asyncio.get_event_loop().run_in_executor(None,
+                                                               functools.partial(self._container.release_db_connection,
+                                                                                 conn))

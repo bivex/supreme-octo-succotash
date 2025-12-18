@@ -14,8 +14,8 @@
 """SQLite postback repository implementation."""
 
 import sqlite3
-from typing import Optional, List
 from datetime import datetime, timezone
+from typing import Optional, List
 
 from ...domain.entities.postback import Postback, PostbackStatus
 from ...domain.repositories.postback_repository import PostbackRepository
@@ -42,23 +42,56 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS postbacks (
-                id TEXT PRIMARY KEY,
-                conversion_id TEXT NOT NULL,
-                url TEXT NOT NULL,
-                method TEXT NOT NULL,
-                payload TEXT,  -- JSON string
-                headers TEXT,  -- JSON string
-                status TEXT NOT NULL,
-                response_status_code INTEGER,
-                response_body TEXT,
-                retry_count INTEGER DEFAULT 0,
-                max_retries INTEGER DEFAULT 3,
-                next_retry_at TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS postbacks
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           conversion_id
+                           TEXT
+                           NOT
+                           NULL,
+                           url
+                           TEXT
+                           NOT
+                           NULL,
+                           method
+                           TEXT
+                           NOT
+                           NULL,
+                           payload
+                           TEXT, -- JSON string
+                           headers
+                           TEXT, -- JSON string
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           response_status_code
+                           INTEGER,
+                           response_body
+                           TEXT,
+                           retry_count
+                           INTEGER
+                           DEFAULT
+                           0,
+                           max_retries
+                           INTEGER
+                           DEFAULT
+                           3,
+                           next_retry_at
+                           TEXT,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_postbacks_conversion_id ON postbacks(conversion_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_postbacks_status ON postbacks(status)")
@@ -105,10 +138,11 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE conversion_id = ?
-            ORDER BY created_at DESC
-        """, (conversion_id,))
+                       SELECT *
+                       FROM postbacks
+                       WHERE conversion_id = ?
+                       ORDER BY created_at DESC
+                       """, (conversion_id,))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 
@@ -128,10 +162,11 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE conversion_id = ?
-            ORDER BY created_at DESC
-        """, (conversion_id,))
+                       SELECT *
+                       FROM postbacks
+                       WHERE conversion_id = ?
+                       ORDER BY created_at DESC
+                       """, (conversion_id,))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 
@@ -141,11 +176,11 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status = 'pending'
-            ORDER BY created_at ASC
-            LIMIT ?
-        """, (limit,))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status = 'pending'
+                       ORDER BY created_at ASC LIMIT ?
+                       """, (limit,))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 
@@ -155,11 +190,11 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (status.value, limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (status.value, limit))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 
@@ -169,10 +204,11 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE postbacks
-            SET status = ?, updated_at = ?
-            WHERE id = ?
-        """, (status.value, datetime.now(timezone.utc).isoformat(), postback_id))
+                       UPDATE postbacks
+                       SET status     = ?,
+                           updated_at = ?
+                       WHERE id = ?
+                       """, (status.value, datetime.now(timezone.utc).isoformat(), postback_id))
 
         conn.commit()
 
@@ -182,12 +218,12 @@ class SQLitePostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status = 'retry'
-              AND next_retry_at <= ?
-            ORDER BY next_retry_at ASC
-            LIMIT ?
-        """, (current_time.isoformat(), limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status = 'retry'
+                         AND next_retry_at <= ?
+                       ORDER BY next_retry_at ASC LIMIT ?
+                       """, (current_time.isoformat(), limit))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 
@@ -198,12 +234,12 @@ class SQLitePostbackRepository(PostbackRepository):
 
         now = datetime.now(timezone.utc).isoformat()
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status IN ('pending', 'retry')
-              AND (next_retry_at IS NULL OR next_retry_at <= ?)
-            ORDER BY created_at ASC
-            LIMIT ?
-        """, (now, limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status IN ('pending', 'retry')
+                         AND (next_retry_at IS NULL OR next_retry_at <= ?)
+                       ORDER BY created_at ASC LIMIT ?
+                       """, (now, limit))
 
         return [self._row_to_postback(row) for row in cursor.fetchall()]
 

@@ -14,19 +14,8 @@
 """Campaign HTTP routes."""
 
 import json
-from loguru import logger
 
-from ...application.handlers.create_campaign_handler import CreateCampaignHandler
-from ...application.handlers.update_campaign_handler import UpdateCampaignHandler
-from ...application.handlers.pause_campaign_handler import PauseCampaignHandler
-from ...application.handlers.resume_campaign_handler import ResumeCampaignHandler
-from ...application.handlers.create_landing_page_handler import CreateLandingPageHandler
-from ...application.handlers.create_offer_handler import CreateOfferHandler
-from ...application.queries.get_campaign_query import GetCampaignHandler
-from ...application.queries.get_campaign_analytics_query import GetCampaignAnalyticsHandler
-from ...application.queries.get_campaign_landing_pages_query import GetCampaignLandingPagesHandler
-from ...application.queries.get_campaign_offers_query import GetCampaignOffersHandler
-from ..dto.campaign_dto import CampaignSummaryResponse
+from loguru import logger
 
 
 class CampaignRoutes:
@@ -106,7 +95,6 @@ class CampaignRoutes:
             self._get_campaign_offers_handler = await self._container.get_get_campaign_offers_handler()
         return self._get_campaign_offers_handler
 
-
     def _validate_query_parameters(self, req, allowed_params: set):
         """Validate that request contains only allowed query parameters."""
         query_string = ""
@@ -146,6 +134,7 @@ class CampaignRoutes:
 
     async def _register_list_campaigns(self, app):
         """Register list campaigns route."""
+
         async def list_campaigns(res, req):
             """List campaigns with pagination."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -283,6 +272,7 @@ class CampaignRoutes:
 
     async def _register_create_campaign(self, app):
         """Register create campaign route."""
+
         async def create_campaign(res, req):
             """Create a new campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -295,7 +285,7 @@ class CampaignRoutes:
                 # Parse request body using socketify's res.get_json()
                 logger.info("Starting campaign creation")
                 body_data = await res.get_json()
-                
+
                 logger.info(f"Parsed body data: {body_data}")
 
                 if not body_data:
@@ -311,7 +301,8 @@ class CampaignRoutes:
                 required_fields = ['name']
                 for field in required_fields:
                     if field not in body_data:
-                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        error_response = {
+                            "error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
                         res.write_status(400)
                         res.write_header("Content-Type", "application/json")
                         add_security_headers(res)
@@ -327,13 +318,18 @@ class CampaignRoutes:
                     description=body_data.get('description'),
                     cost_model=body_data.get('costModel', 'CPA'),
                     payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
+                                            body_data.get('payout', {}).get('currency', 'USD')) if body_data.get(
+                        'payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
                     white_url=body_data.get('whiteUrl'),  # safe page URL
                     black_url=body_data.get('blackUrl'),  # offer page URL
                     daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
+                                                  body_data.get('dailyBudget', {}).get('currency',
+                                                                                       'USD')) if body_data.get(
+                        'dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
                     total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
+                                                  body_data.get('totalBudget', {}).get('currency',
+                                                                                       'USD')) if body_data.get(
+                        'totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
                     start_date=body_data.get('startDate'),
                     end_date=body_data.get('endDate')
                 )
@@ -369,7 +365,8 @@ class CampaignRoutes:
                 import traceback
                 logger.error(f"Error creating campaign: {e}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
+                error_response = {
+                    "error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -378,6 +375,7 @@ class CampaignRoutes:
 
     async def _register_get_campaign(self, app):
         """Register get campaign route."""
+
         async def get_campaign(res, req):
             """Get campaign details."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -391,7 +389,8 @@ class CampaignRoutes:
 
                 # Get campaign from repository
                 from ...domain.value_objects import CampaignId
-                campaign = (await self.create_campaign_handler)._campaign_repository.find_by_id(CampaignId.from_string(campaign_id))
+                campaign = (await self.create_campaign_handler)._campaign_repository.find_by_id(
+                    CampaignId.from_string(campaign_id))
 
                 if not campaign:
                     error_response = {"error": {"code": "NOT_FOUND", "message": "Campaign not found"}}
@@ -470,7 +469,8 @@ class CampaignRoutes:
                 import traceback
                 logger.error(f"Error getting campaign: {e}", exc_info=True)
                 logger.error(f"Full traceback: {traceback.format_exc()}")
-                error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
+                error_response = {
+                    "error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                 res.write_status(500)
                 res.write_header("Content-Type", "application/json")
                 res.end(json.dumps(error_response))
@@ -558,13 +558,18 @@ class CampaignRoutes:
                     description=body_data.get('description'),
                     cost_model=body_data.get('costModel'),
                     payout=Money.from_float(body_data.get('payout', {}).get('amount', 0.0),
-                                          body_data.get('payout', {}).get('currency', 'USD')) if body_data.get('payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
+                                            body_data.get('payout', {}).get('currency', 'USD')) if body_data.get(
+                        'payout') and body_data.get('payout', {}).get('amount', 0) > 0 else None,
                     safe_page_url=Url(body_data['safe_page_url']) if body_data.get('safe_page_url') else None,
                     offer_page_url=Url(body_data['offer_page_url']) if body_data.get('offer_page_url') else None,
                     daily_budget=Money.from_float(body_data.get('dailyBudget', {}).get('amount', 0.0),
-                                                body_data.get('dailyBudget', {}).get('currency', 'USD')) if body_data.get('dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
+                                                  body_data.get('dailyBudget', {}).get('currency',
+                                                                                       'USD')) if body_data.get(
+                        'dailyBudget') and body_data.get('dailyBudget', {}).get('amount', 0) > 0 else None,
                     total_budget=Money.from_float(body_data.get('totalBudget', {}).get('amount', 0.0),
-                                                body_data.get('totalBudget', {}).get('currency', 'USD')) if body_data.get('totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
+                                                  body_data.get('totalBudget', {}).get('currency',
+                                                                                       'USD')) if body_data.get(
+                        'totalBudget') and body_data.get('totalBudget', {}).get('amount', 0) > 0 else None,
                     start_date=body_data.get('startDate'),
                     end_date=body_data.get('endDate')
                 )
@@ -622,6 +627,7 @@ class CampaignRoutes:
 
     async def _register_campaign_analytics(self, app):
         """Register campaign analytics route."""
+
         async def get_campaign_analytics(res, req):
             """Get campaign analytics."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -659,7 +665,8 @@ class CampaignRoutes:
 
                     breakdown = req.get_query('breakdown') or 'date'
                     if breakdown not in ['date', 'traffic_source', 'landing_page', 'offer', 'geography', 'device']:
-                        raise ValueError("Breakdown must be one of: date, traffic_source, landing_page, offer, geography, device")
+                        raise ValueError(
+                            "Breakdown must be one of: date, traffic_source, landing_page, offer, geography, device")
 
                 except ValueError as e:
                     error_response = {"error": {"code": "VALIDATION_ERROR", "message": str(e)}}
@@ -754,6 +761,7 @@ class CampaignRoutes:
     async def _register_campaign_landing_pages(self, app):
         """Register campaign landing pages route."""
         logger.debug("_register_campaign_landing_pages called")
+
         async def get_campaign_landing_pages(res, req):
             """Get campaign landing pages."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -813,7 +821,8 @@ class CampaignRoutes:
 
                 offset = (page - 1) * page_size
                 limit = min(page_size, 100)  # Ensure limit <= 100
-                logger.debug(f"Landing pages query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
+                logger.debug(
+                    f"Landing pages query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
 
                 query = GetCampaignLandingPagesQuery(
                     campaign_id=campaign_id,
@@ -897,7 +906,8 @@ class CampaignRoutes:
                 required_fields = ['name', 'url']
                 for field in required_fields:
                     if field not in body_data:
-                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
+                        error_response = {
+                            "error": {"code": "VALIDATION_ERROR", "message": f"Field '{field}' is required"}}
                         res.write_status(400)
                         res.write_header("Content-Type", "application/json")
                         add_security_headers(res)
@@ -952,6 +962,7 @@ class CampaignRoutes:
 
     async def _register_campaign_offers(self, app):
         """Register campaign offers route with CQRS query pattern."""
+
         async def get_campaign_offers(res, req):
             """Get campaign offers using GetCampaignOffersQuery and business logic handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -994,7 +1005,8 @@ class CampaignRoutes:
 
                 offset = (page - 1) * page_size
                 limit = min(page_size, 100)  # Ensure limit <= 100
-                logger.debug(f"Offers query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
+                logger.debug(
+                    f"Offers query: campaign_id={campaign_id}, page={page}, page_size={page_size}, limit={limit}, offset={offset}")
 
                 query = GetCampaignOffersQuery(
                     campaign_id=campaign_id,
@@ -1104,7 +1116,8 @@ class CampaignRoutes:
                     required_fields = ['name', 'url', 'offerType', 'weight', 'isActive', 'isControl', 'payout']
                     missing_fields = [field for field in required_fields if field not in body_data]
                     if missing_fields:
-                        error_response = {"error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
+                        error_response = {
+                            "error": {"code": "VALIDATION_ERROR", "message": f"{missing_fields[0]} is required"}}
                         res.write_status(400)
                         res.write_header("Content-Type", "application/json")
                         add_security_headers(res)
@@ -1123,9 +1136,12 @@ class CampaignRoutes:
                         name=body_data['name'],
                         url=Url(body_data['url']),
                         offer_type=body_data.get('offerType', 'direct'),
-                        payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
+                        payout=Money.from_float(body_data['payout']['amount'], body_data['payout']['currency']) if
+                        body_data['payout']['amount'] > 0 else Money.zero(body_data['payout']['currency']),
                         revenue_share=Decimal(str(body_data.get('revenueShare', 0.0))),
-                        cost_per_click=Money.from_float(body_data['costPerClick']['amount'], body_data['costPerClick']['currency']) if body_data.get('costPerClick') else None,
+                        cost_per_click=Money.from_float(body_data['costPerClick']['amount'],
+                                                        body_data['costPerClick']['currency']) if body_data.get(
+                            'costPerClick') else None,
                         weight=body_data.get('weight', 100),
                         is_control=body_data.get('isControl', False)
                     )
@@ -1177,7 +1193,8 @@ class CampaignRoutes:
                         logger.error(f"Failed to save error trace: {trace_error}")
 
                     logger.error(f"Error in create_campaign_offer processing: {e}", exc_info=True)
-                    error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
+                    error_response = {
+                        "error": {"code": "INTERNAL_SERVER_ERROR", "message": f"Internal server error: {str(e)}"}}
                     res.write_status(500)
                     res.write_header("Content-Type", "application/json")
                     add_security_headers(res)
@@ -1196,6 +1213,7 @@ class CampaignRoutes:
 
     async def _register_campaign_pause(self, app):
         """Register campaign pause route."""
+
         async def pause_campaign(res, req):
             """Pause a campaign using CQRS pattern with PauseCampaignCommand and handler."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -1259,6 +1277,7 @@ class CampaignRoutes:
 
     async def _register_campaign_resume(self, app):
         """Register campaign resume route."""
+
         async def resume_campaign(res, req):
             """Resume a campaign."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers

@@ -16,14 +16,13 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
+from .campaign_lifecycle_service import CampaignLifecycleService
+from .campaign_performance_service import CampaignPerformanceService
+# Import specialized services
+from .campaign_validation_service import CampaignValidationService
 from ...entities.campaign import Campaign
 from ...entities.click import Click
 from ...value_objects import CampaignStatus
-
-# Import specialized services
-from .campaign_validation_service import CampaignValidationService
-from .campaign_performance_service import CampaignPerformanceService
-from .campaign_lifecycle_service import CampaignLifecycleService
 
 
 class CampaignService:
@@ -46,7 +45,8 @@ class CampaignService:
         """Delegate to performance service."""
         return self.performance_service.calculate_campaign_performance(campaign, clicks)
 
-    def should_pause_campaign(self, campaign: Campaign, current_time: Optional[datetime] = None) -> tuple[bool, Optional[str]]:
+    def should_pause_campaign(self, campaign: Campaign, current_time: Optional[datetime] = None) -> tuple[
+        bool, Optional[str]]:
         """Delegate to lifecycle service."""
         return self.lifecycle_service.should_pause_campaign(campaign, current_time)
 

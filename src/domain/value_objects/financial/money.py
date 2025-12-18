@@ -14,8 +14,8 @@
 """Money value object for handling monetary amounts with currency."""
 
 from dataclasses import dataclass
-from typing import Union
 from decimal import Decimal, ROUND_HALF_UP
+from typing import Union
 
 
 @dataclass(frozen=True)

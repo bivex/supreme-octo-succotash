@@ -13,15 +13,12 @@
 
 """PostgreSQL click repository implementation."""
 
-import psycopg2
-import psycopg2.extensions
+from datetime import date
 from typing import Any, Optional, List
-from datetime import datetime, date
 
 from ...domain.entities.click import Click
 from ...domain.repositories.click_repository import ClickRepository
-from ...domain.value_objects import ClickId, CampaignId
-
+from ...domain.value_objects import ClickId
 
 
 class PostgresClickRepository(ClickRepository):
@@ -39,30 +36,64 @@ class PostgresClickRepository(ClickRepository):
 
             # Create clicks table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS clicks (
-                    id TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    click_id TEXT NOT NULL,
-                    ip_address INET NOT NULL,
-                    user_agent TEXT,
-                    referrer TEXT,
-                    is_valid BOOLEAN DEFAULT TRUE,
-                    sub1 TEXT,
-                    sub2 TEXT,
-                    sub3 TEXT,
-                    sub4 TEXT,
-                    sub5 TEXT,
-                    click_id_param TEXT,
-                    affiliate_sub TEXT,
-                    affiliate_sub2 TEXT,
-                    landing_page_id INTEGER,
-                    campaign_offer_id INTEGER,
-                    traffic_source_id INTEGER,
-                    conversion_type TEXT,
-                    converted_at TIMESTAMP,
-                    created_at TIMESTAMP NOT NULL
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS clicks
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               campaign_id
+                               TEXT
+                               NOT
+                               NULL,
+                               click_id
+                               TEXT
+                               NOT
+                               NULL,
+                               ip_address
+                               INET
+                               NOT
+                               NULL,
+                               user_agent
+                               TEXT,
+                               referrer
+                               TEXT,
+                               is_valid
+                               BOOLEAN
+                               DEFAULT
+                               TRUE,
+                               sub1
+                               TEXT,
+                               sub2
+                               TEXT,
+                               sub3
+                               TEXT,
+                               sub4
+                               TEXT,
+                               sub5
+                               TEXT,
+                               click_id_param
+                               TEXT,
+                               affiliate_sub
+                               TEXT,
+                               affiliate_sub2
+                               TEXT,
+                               landing_page_id
+                               INTEGER,
+                               campaign_offer_id
+                               INTEGER,
+                               traffic_source_id
+                               INTEGER,
+                               conversion_type
+                               TEXT,
+                               converted_at
+                               TIMESTAMP,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                           )
+                           """)
 
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_is_valid ON clicks(is_valid)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_click_id ON clicks(click_id)")
@@ -117,40 +148,42 @@ class PostgresClickRepository(ClickRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO clicks
-                (id, campaign_id, click_id, ip_address, user_agent, referrer, is_valid,
-                sub1, sub2, sub3, sub4, sub5, click_id_param, affiliate_sub, affiliate_sub2,
-                landing_page_id, campaign_offer_id, traffic_source_id,
-                conversion_type, converted_at, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    campaign_id = EXCLUDED.campaign_id,
-                    click_id = EXCLUDED.click_id,
-                    ip_address = EXCLUDED.ip_address,
-                    user_agent = EXCLUDED.user_agent,
-                    referrer = EXCLUDED.referrer,
-                    is_valid = EXCLUDED.is_valid,
-                    sub1 = EXCLUDED.sub1,
-                    sub2 = EXCLUDED.sub2,
-                    sub3 = EXCLUDED.sub3,
-                    sub4 = EXCLUDED.sub4,
-                    sub5 = EXCLUDED.sub5,
-                    click_id_param = EXCLUDED.click_id_param,
-                    affiliate_sub = EXCLUDED.affiliate_sub,
-                    affiliate_sub2 = EXCLUDED.affiliate_sub2,
-                    landing_page_id = EXCLUDED.landing_page_id,
-                    campaign_offer_id = EXCLUDED.campaign_offer_id,
-                    traffic_source_id = EXCLUDED.traffic_source_id,
-                    conversion_type = EXCLUDED.conversion_type,
-                    converted_at = EXCLUDED.converted_at
-            """, (
-                self._extract_value(click.id), self._extract_value(click.campaign_id), self._extract_value(click.id),
-                click.ip_address, click.user_agent, click.referrer,
-                click.is_valid, click.sub1, click.sub2, click.sub3, click.sub4, click.sub5,
-                click.click_id_param, click.affiliate_sub, click.affiliate_sub2,
-                click.landing_page_id, click.campaign_offer_id, click.traffic_source_id,
-                click.conversion_type, click.converted_at, click.created_at
-            ))
+                           INSERT INTO clicks
+                           (id, campaign_id, click_id, ip_address, user_agent, referrer, is_valid,
+                            sub1, sub2, sub3, sub4, sub5, click_id_param, affiliate_sub, affiliate_sub2,
+                            landing_page_id, campaign_offer_id, traffic_source_id,
+                            conversion_type, converted_at, created_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               campaign_id = EXCLUDED.campaign_id,
+                               click_id = EXCLUDED.click_id,
+                               ip_address = EXCLUDED.ip_address,
+                               user_agent = EXCLUDED.user_agent,
+                               referrer = EXCLUDED.referrer,
+                               is_valid = EXCLUDED.is_valid,
+                               sub1 = EXCLUDED.sub1,
+                               sub2 = EXCLUDED.sub2,
+                               sub3 = EXCLUDED.sub3,
+                               sub4 = EXCLUDED.sub4,
+                               sub5 = EXCLUDED.sub5,
+                               click_id_param = EXCLUDED.click_id_param,
+                               affiliate_sub = EXCLUDED.affiliate_sub,
+                               affiliate_sub2 = EXCLUDED.affiliate_sub2,
+                               landing_page_id = EXCLUDED.landing_page_id,
+                               campaign_offer_id = EXCLUDED.campaign_offer_id,
+                               traffic_source_id = EXCLUDED.traffic_source_id,
+                               conversion_type = EXCLUDED.conversion_type,
+                               converted_at = EXCLUDED.converted_at
+                           """, (
+                               self._extract_value(click.id), self._extract_value(click.campaign_id),
+                               self._extract_value(click.id),
+                               click.ip_address, click.user_agent, click.referrer,
+                               click.is_valid, click.sub1, click.sub2, click.sub3, click.sub4, click.sub5,
+                               click.click_id_param, click.affiliate_sub, click.affiliate_sub2,
+                               click.landing_page_id, click.campaign_offer_id, click.traffic_source_id,
+                               click.conversion_type, click.converted_at, click.created_at
+                           ))
 
             conn.commit()
         finally:
@@ -178,7 +211,7 @@ class PostgresClickRepository(ClickRepository):
                 self._container.release_db_connection(conn)
 
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Click]:
+                            offset: int = 0) -> List[Click]:
         """Find clicks by campaign ID."""
         conn = None
         try:
@@ -186,11 +219,13 @@ class PostgresClickRepository(ClickRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM clicks
-                WHERE campaign_id = %s
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-            """, (campaign_id, limit, offset))
+                           SELECT *
+                           FROM clicks
+                           WHERE campaign_id = %s
+                           ORDER BY created_at DESC
+                               LIMIT %s
+                           OFFSET %s
+                           """, (campaign_id, limit, offset))
 
             clicks = []
             columns = [desc[0] for desc in cursor.description]
@@ -266,16 +301,18 @@ class PostgresClickRepository(ClickRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT COUNT(*) FROM clicks
-                WHERE campaign_id = %s AND conversion_type IS NOT NULL
-            """, (campaign_id,))
+                           SELECT COUNT(*)
+                           FROM clicks
+                           WHERE campaign_id = %s
+                             AND conversion_type IS NOT NULL
+                           """, (campaign_id,))
             return cursor.fetchone()[0]
         finally:
             if conn:
                 self._container.release_db_connection(conn)
 
     def get_clicks_in_date_range(self, campaign_id: str,
-                                start_date: date, end_date: date) -> List[Click]:
+                                 start_date: date, end_date: date) -> List[Click]:
         """Get clicks within date range for analytics."""
         conn = None
         try:
@@ -283,10 +320,13 @@ class PostgresClickRepository(ClickRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM clicks
-                WHERE campaign_id = %s AND DATE(created_at) >= %s AND DATE(created_at) <= %s
-                ORDER BY created_at DESC
-            """, (campaign_id, start_date, end_date))
+                           SELECT *
+                           FROM clicks
+                           WHERE campaign_id = %s
+                             AND DATE (created_at) >= %s
+                             AND DATE (created_at) <= %s
+                           ORDER BY created_at DESC
+                           """, (campaign_id, start_date, end_date))
 
             clicks = []
             columns = [desc[0] for desc in cursor.description]

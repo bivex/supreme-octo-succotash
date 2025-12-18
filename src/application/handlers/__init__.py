@@ -13,31 +13,31 @@
 
 """Application handlers."""
 
-from .create_campaign_handler import CreateCampaignHandler
-from .update_campaign_handler import UpdateCampaignHandler
-from .pause_campaign_handler import PauseCampaignHandler
-from .resume_campaign_handler import ResumeCampaignHandler
-from .create_landing_page_handler import CreateLandingPageHandler
-from .create_offer_handler import CreateOfferHandler
-from .track_click_handler import TrackClickHandler
-from .process_webhook_handler import ProcessWebhookHandler
-from .track_event_handler import TrackEventHandler
-from .track_conversion_handler import TrackConversionHandler
-from .gaming_webhook_handler import GamingWebhookHandler
-from .send_postback_handler import SendPostbackHandler
-from .generate_click_handler import GenerateClickHandler
-from .manage_goal_handler import ManageGoalHandler
+from .analytics_handler import AnalyticsHandler
 from .analyze_journey_handler import AnalyzeJourneyHandler
 from .bulk_click_handler import BulkClickHandler
 from .click_validation_handler import ClickValidationHandler
-from .fraud_handler import FraudHandler
-from .system_handler import SystemHandler
-from .analytics_handler import AnalyticsHandler
-from .ltv_handler import LTVHandler
-from .retention_handler import RetentionHandler
-from .form_handler import FormHandler
 from .cohort_analysis_handler import CohortAnalysisHandler
+from .create_campaign_handler import CreateCampaignHandler
+from .create_landing_page_handler import CreateLandingPageHandler
+from .create_offer_handler import CreateOfferHandler
+from .form_handler import FormHandler
+from .fraud_handler import FraudHandler
+from .gaming_webhook_handler import GamingWebhookHandler
+from .generate_click_handler import GenerateClickHandler
+from .ltv_handler import LTVHandler
+from .manage_goal_handler import ManageGoalHandler
+from .pause_campaign_handler import PauseCampaignHandler
+from .process_webhook_handler import ProcessWebhookHandler
+from .resume_campaign_handler import ResumeCampaignHandler
+from .retention_handler import RetentionHandler
 from .segmentation_handler import SegmentationHandler
+from .send_postback_handler import SendPostbackHandler
+from .system_handler import SystemHandler
+from .track_click_handler import TrackClickHandler
+from .track_conversion_handler import TrackConversionHandler
+from .track_event_handler import TrackEventHandler
+from .update_campaign_handler import UpdateCampaignHandler
 
 __all__ = [
     'CreateCampaignHandler',

@@ -14,8 +14,9 @@
 """Postback repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from ..entities.postback import Postback, PostbackStatus
 
 

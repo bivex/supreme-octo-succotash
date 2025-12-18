@@ -14,13 +14,13 @@
 """SQLite analytics repository implementation."""
 
 import sqlite3
-from typing import Optional, Dict, Any
 from datetime import date
+from typing import Optional, Dict, Any
 
-from ...domain.value_objects import Analytics
 from ...domain.repositories.analytics_repository import AnalyticsRepository
-from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.repositories.click_repository import ClickRepository
+from ...domain.value_objects import Analytics
 from ...domain.value_objects import Money
 
 
@@ -51,29 +51,88 @@ class SQLiteAnalyticsRepository(AnalyticsRepository):
 
         # Create analytics cache table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS analytics_cache (
-                cache_key TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                granularity TEXT NOT NULL,
-                clicks INTEGER DEFAULT 0,
-                unique_clicks INTEGER DEFAULT 0,
-                conversions INTEGER DEFAULT 0,
-                revenue_amount REAL DEFAULT 0.0,
-                revenue_currency TEXT DEFAULT 'USD',
-                cost_amount REAL DEFAULT 0.0,
-                cost_currency TEXT DEFAULT 'USD',
-                ctr REAL DEFAULT 0.0,
-                cr REAL DEFAULT 0.0,
-                epc_amount REAL DEFAULT 0.0,
-                epc_currency TEXT DEFAULT 'USD',
-                roi REAL DEFAULT 0.0,
-                breakdowns TEXT,  -- JSON string
-                created_at TEXT NOT NULL,
-                expires_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS analytics_cache
+                       (
+                           cache_key
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           start_date
+                           TEXT
+                           NOT
+                           NULL,
+                           end_date
+                           TEXT
+                           NOT
+                           NULL,
+                           granularity
+                           TEXT
+                           NOT
+                           NULL,
+                           clicks
+                           INTEGER
+                           DEFAULT
+                           0,
+                           unique_clicks
+                           INTEGER
+                           DEFAULT
+                           0,
+                           conversions
+                           INTEGER
+                           DEFAULT
+                           0,
+                           revenue_amount
+                           REAL
+                           DEFAULT
+                           0.0,
+                           revenue_currency
+                           TEXT
+                           DEFAULT
+                           'USD',
+                           cost_amount
+                           REAL
+                           DEFAULT
+                           0.0,
+                           cost_currency
+                           TEXT
+                           DEFAULT
+                           'USD',
+                           ctr
+                           REAL
+                           DEFAULT
+                           0.0,
+                           cr
+                           REAL
+                           DEFAULT
+                           0.0,
+                           epc_amount
+                           REAL
+                           DEFAULT
+                           0.0,
+                           epc_currency
+                           TEXT
+                           DEFAULT
+                           'USD',
+                           roi
+                           REAL
+                           DEFAULT
+                           0.0,
+                           breakdowns
+                           TEXT, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           expires_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create index for performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_campaign_id ON analytics_cache(campaign_id)")
@@ -82,7 +141,7 @@ class SQLiteAnalyticsRepository(AnalyticsRepository):
         conn.commit()
 
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
-                              end_date: date, granularity: str = "day") -> Analytics:
+                               end_date: date, granularity: str = "day") -> Analytics:
         """Get analytics for a campaign within date range."""
         # Check cache first
         cache_key = f"{campaign_id}_{start_date}_{end_date}_{granularity}"
@@ -157,7 +216,7 @@ class SQLiteAnalyticsRepository(AnalyticsRepository):
         return analytics
 
     def get_aggregated_metrics(self, campaign_id: str, start_date: date,
-                              end_date: date) -> Dict[str, Any]:
+                               end_date: date) -> Dict[str, Any]:
         """Get aggregated metrics for a campaign."""
         analytics = self.get_campaign_analytics(campaign_id, start_date, end_date)
 
@@ -208,7 +267,7 @@ class SQLiteAnalyticsRepository(AnalyticsRepository):
         conn.commit()
 
     def get_cached_analytics(self, campaign_id: str, start_date: date,
-                           end_date: date) -> Optional[Analytics]:
+                             end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
         import json
         from datetime import datetime, timezone
@@ -220,9 +279,11 @@ class SQLiteAnalyticsRepository(AnalyticsRepository):
         now = datetime.now(timezone.utc).isoformat()
 
         cursor.execute("""
-            SELECT * FROM analytics_cache
-            WHERE cache_key = ? AND expires_at > ?
-        """, (cache_key, now))
+                       SELECT *
+                       FROM analytics_cache
+                       WHERE cache_key = ?
+                         AND expires_at > ?
+                       """, (cache_key, now))
 
         row = cursor.fetchone()
         if not row:

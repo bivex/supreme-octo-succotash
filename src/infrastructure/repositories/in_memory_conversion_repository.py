@@ -13,11 +13,12 @@
 
 """In-memory conversion repository implementation."""
 
-from typing import Dict, List, Optional, Any
-from datetime import datetime
 from collections import defaultdict
-from ...domain.repositories.conversion_repository import ConversionRepository
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+
 from ...domain.entities.conversion import Conversion
+from ...domain.repositories.conversion_repository import ConversionRepository
 
 
 class InMemoryConversionRepository(ConversionRepository):
@@ -95,11 +96,11 @@ class InMemoryConversionRepository(ConversionRepository):
             self._conversions[conversion_id] = updated_conversion
 
     def get_conversions_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Conversion]:
         """Get conversions within a time range."""
         # Find conversions in time range
@@ -116,10 +117,10 @@ class InMemoryConversionRepository(ConversionRepository):
         return [self._conversions[conversion_id] for conversion_id in matching_ids]
 
     def get_conversion_stats(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'conversion_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'conversion_type'
     ) -> Dict[str, Any]:
         """Get conversion statistics grouped by specified field."""
         stats = defaultdict(lambda: {'count': 0, 'revenue': 0.0})
@@ -140,10 +141,10 @@ class InMemoryConversionRepository(ConversionRepository):
         return dict(stats)
 
     def get_total_revenue(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None
     ) -> float:
         """Get total revenue from conversions in time range."""
         total = 0.0

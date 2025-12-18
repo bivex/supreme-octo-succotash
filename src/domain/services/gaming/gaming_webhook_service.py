@@ -15,7 +15,9 @@
 
 import re
 from typing import Dict, Any, Optional, Tuple
+
 from loguru import logger
+
 from ...repositories.click_repository import ClickRepository
 
 
@@ -65,7 +67,8 @@ class GamingWebhookService:
     def find_click_by_user_identifier(self, webhook_data: Dict[str, Any]) -> Optional[Any]:
         """Find the original click by user identifier from webhook data."""
         user_id = webhook_data.get('user_id')
-        logger.info(f"GamingWebhookService.find_click_by_user_identifier called with user_id: {user_id}, click_repository: {self.click_repository}")
+        logger.info(
+            f"GamingWebhookService.find_click_by_user_identifier called with user_id: {user_id}, click_repository: {self.click_repository}")
         if not user_id:
             return None
 
@@ -142,7 +145,7 @@ class GamingWebhookService:
         simple_pattern = r'^[A-Za-z0-9_-]{5,50}$'
 
         return (
-            bool(re.match(email_pattern, user_id)) or
-            bool(re.match(uuid_pattern, user_id)) or
-            bool(re.match(simple_pattern, user_id))
+                bool(re.match(email_pattern, user_id)) or
+                bool(re.match(uuid_pattern, user_id)) or
+                bool(re.match(simple_pattern, user_id))
         )

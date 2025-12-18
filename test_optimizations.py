@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -13,15 +12,17 @@
 # Commercial licensing available upon request.
 """Simple test to verify optimizations work without database dependencies."""
 
-import sys
 import os
+import sys
 import time
+from typing import List, Dict
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
 
 def test_vectorized_operations():
     """Test vectorized operations work."""
@@ -68,6 +69,7 @@ def test_vectorized_operations():
         'valid_clicks': len(valid_clicks)
     }
 
+
 def test_bulk_optimizer_mock():
     """Test bulk optimizer logic without database."""
     print("\n🔥 Testing bulk optimizer logic...")
@@ -79,10 +81,10 @@ def test_bulk_optimizer_mock():
 
             # Vectorized validation
             df['is_valid'] = (
-                df['campaign_id'].notna() &
-                df['click_id'].notna() &
-                (df['revenue'] >= 0) &
-                (df['cost'] >= 0)
+                    df['campaign_id'].notna() &
+                    df['click_id'].notna() &
+                    (df['revenue'] >= 0) &
+                    (df['cost'] >= 0)
             )
 
             valid_clicks = df[df['is_valid']]
@@ -120,6 +122,7 @@ def test_bulk_optimizer_mock():
     print(".1%")
 
     return result
+
 
 def test_async_io_mock():
     """Test async I/O processor logic."""
@@ -170,6 +173,7 @@ def test_async_io_mock():
         return result
 
     return asyncio.run(run_test())
+
 
 def main():
     """Run all optimization tests."""
@@ -226,6 +230,7 @@ def main():
     print("\n✅ All optimizations tested successfully!")
     print("💡 Optimizations are ready for production use.")
     print("   Set PERFORMANCE_MODE=true to enable them.")
+
 
 if __name__ == "__main__":
     main()

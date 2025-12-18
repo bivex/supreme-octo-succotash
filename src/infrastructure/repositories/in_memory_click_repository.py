@@ -13,8 +13,8 @@
 
 """In-memory click repository implementation."""
 
-from typing import Optional, List
 from datetime import datetime, timezone, date
+from typing import Optional, List
 
 from ...domain.entities.click import Click
 from ...domain.repositories.click_repository import ClickRepository
@@ -26,7 +26,6 @@ class InMemoryClickRepository(ClickRepository):
 
     def __init__(self):
         self._clicks: List[Click] = []
-
 
     def save(self, click: Click) -> None:
         """Save a click."""
@@ -50,7 +49,7 @@ class InMemoryClickRepository(ClickRepository):
         return None
 
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Click]:
+                            offset: int = 0) -> List[Click]:
         """Find clicks by campaign ID."""
         matching_clicks = [c for c in self._clicks if c.campaign_id == campaign_id]
         # Sort by creation time descending
@@ -84,10 +83,10 @@ class InMemoryClickRepository(ClickRepository):
     def count_conversions(self, campaign_id: str) -> int:
         """Count conversions for a campaign."""
         return len([c for c in self._clicks
-                   if c.campaign_id == campaign_id and c.has_conversion])
+                    if c.campaign_id == campaign_id and c.has_conversion])
 
     def get_clicks_in_date_range(self, campaign_id: str,
-                                start_date: date, end_date: date) -> List[Click]:
+                                 start_date: date, end_date: date) -> List[Click]:
         """Get clicks within date range for analytics."""
         start_datetime = datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
         end_datetime = datetime.combine(end_date, datetime.max.time(), tzinfo=timezone.utc)

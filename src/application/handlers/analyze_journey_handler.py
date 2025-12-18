@@ -13,9 +13,10 @@
 
 """Customer journey analysis handler."""
 
-import json
 from typing import Dict, Any, Optional, List
+
 from loguru import logger
+
 from ...domain.services.journey.journey_service import JourneyService
 
 
@@ -59,7 +60,7 @@ class AnalyzeJourneyHandler:
             }
 
     def populate_journeys_from_data(self, click_data: List[Dict[str, Any]] = None,
-                                   impression_data: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+                                    impression_data: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Populate journey data from clicks and impressions for analysis."""
         try:
             journeys_created = 0

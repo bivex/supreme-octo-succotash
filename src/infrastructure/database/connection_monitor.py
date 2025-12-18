@@ -16,10 +16,10 @@ Database connection monitoring and health checks.
 """
 
 import logging
-import time
 import threading
+import time
+from datetime import datetime
 from typing import Dict, List, Callable
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,8 @@ class ConnectionMonitor:
         if self._consecutive_errors == 1:
             logger.warning(f"⚠️  Database connection issue detected: {error}")
         elif self._consecutive_errors >= 3:
-            logger.error(f"🚨 CRITICAL: Database connection failed {self._consecutive_errors} times consecutively: {error}")
+            logger.error(
+                f"🚨 CRITICAL: Database connection failed {self._consecutive_errors} times consecutively: {error}")
 
             # Trigger alerts for critical issues
             self._trigger_alerts()

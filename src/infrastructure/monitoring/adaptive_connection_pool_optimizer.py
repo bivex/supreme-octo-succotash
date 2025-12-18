@@ -13,16 +13,15 @@
 
 """Adaptive PostgreSQL connection pool optimizer with real-time monitoring and optimization."""
 
-import psycopg2
-from typing import Dict, List, Any, Optional, Callable, Tuple
-from dataclasses import dataclass, field
 import logging
-import time
-import threading
-from datetime import datetime, timedelta
-from collections import deque
 import statistics
+import threading
+import time
+from collections import deque
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Dict, List, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ class PoolOptimizationRecommendation:
 class PoolLoadPattern:
     """Analysis of connection pool load patterns."""
     peak_hours: List[int] = field(default_factory=list)  # Hours with high load
-    low_hours: List[int] = field(default_factory=list)   # Hours with low load
+    low_hours: List[int] = field(default_factory=list)  # Hours with low load
     avg_utilization_by_hour: Dict[int, float] = field(default_factory=dict)
     peak_utilization: float = 0.0
     low_utilization: float = 0.0
@@ -132,12 +131,12 @@ class AdaptiveConnectionPoolOptimizer:
 
         # Optimization thresholds
         self.thresholds = {
-            'high_utilization': 85.0,      # % - trigger scale up
-            'low_utilization': 30.0,       # % - trigger scale down consideration
+            'high_utilization': 85.0,  # % - trigger scale up
+            'low_utilization': 30.0,  # % - trigger scale down consideration
             'critical_utilization': 95.0,  # % - emergency scale up
-            'min_efficiency': 60.0,        # Minimum efficiency score
-            'max_connection_errors': 5,    # Max errors per monitoring cycle
-            'scaling_confidence': 70.0     # Minimum confidence for auto-scaling
+            'min_efficiency': 60.0,  # Minimum efficiency score
+            'max_connection_errors': 5,  # Max errors per monitoring cycle
+            'scaling_confidence': 70.0  # Minimum confidence for auto-scaling
         }
 
         # Callbacks
@@ -262,7 +261,7 @@ class AdaptiveConnectionPoolOptimizer:
             self.load_pattern.recommended_max_conn = recommended_max
 
             logger.info(f"Load pattern analysis complete: peak_hours={peak_hours}, "
-                       f"recommended_min={recommended_min}, recommended_max={recommended_max}")
+                        f"recommended_min={recommended_min}, recommended_max={recommended_max}")
 
             return self.load_pattern
 
@@ -283,7 +282,7 @@ class AdaptiveConnectionPoolOptimizer:
         if utilization >= self.thresholds['critical_utilization']:
             recommendations.append(PoolOptimizationRecommendation(
                 action=PoolOptimizationAction.SCALE_UP,
-                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['critical_utilization']*100:.1f}%)",
+                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['critical_utilization'] * 100:.1f}%)",
                 current_value=current_metrics.max_connections,
                 recommended_value=min(current_metrics.max_connections + 10, 200),
                 confidence_score=95.0,
@@ -296,7 +295,7 @@ class AdaptiveConnectionPoolOptimizer:
         elif utilization >= self.thresholds['high_utilization']:
             recommendations.append(PoolOptimizationRecommendation(
                 action=PoolOptimizationAction.INCREASE_MAX,
-                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['high_utilization']*100:.1f}%)",
+                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['high_utilization'] * 100:.1f}%)",
                 current_value=current_metrics.max_connections,
                 recommended_value=min(current_metrics.max_connections + 5, 150),
                 confidence_score=85.0,
@@ -309,7 +308,7 @@ class AdaptiveConnectionPoolOptimizer:
         elif utilization <= self.thresholds['low_utilization'] and current_metrics.max_connections > 20:
             recommendations.append(PoolOptimizationRecommendation(
                 action=PoolOptimizationAction.DECREASE_MAX,
-                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['low_utilization']*100:.1f}%)",
+                reason=f"Pool utilization is {utilization:.1f}% (threshold: {self.thresholds['low_utilization'] * 100:.1f}%)",
                 current_value=current_metrics.max_connections,
                 recommended_value=max(current_metrics.max_connections - 5, 10),
                 confidence_score=70.0,
@@ -363,7 +362,7 @@ class AdaptiveConnectionPoolOptimizer:
         return recommendations
 
     def apply_optimization(self, recommendation: PoolOptimizationRecommendation,
-                          dry_run: bool = True) -> Dict[str, Any]:
+                           dry_run: bool = True) -> Dict[str, Any]:
         """Apply a pool optimization recommendation."""
         result = {
             'success': False,
@@ -377,7 +376,7 @@ class AdaptiveConnectionPoolOptimizer:
         if dry_run:
             result['success'] = True
             logger.info(f"DRY RUN: Would apply {recommendation.action.value}: "
-                       f"{recommendation.current_value} -> {recommendation.recommended_value}")
+                        f"{recommendation.current_value} -> {recommendation.recommended_value}")
             return result
 
         try:
@@ -386,8 +385,8 @@ class AdaptiveConnectionPoolOptimizer:
             # For now, we'll log the recommendation and suggest manual implementation
 
             logger.warning(f"Automatic pool reconfiguration not implemented. "
-                          f"Manual action required: {recommendation.action.value} "
-                          f"from {recommendation.current_value} to {recommendation.recommended_value}")
+                           f"Manual action required: {recommendation.action.value} "
+                           f"from {recommendation.current_value} to {recommendation.recommended_value}")
 
             result['success'] = False
             result['error'] = "Automatic pool reconfiguration not implemented - manual action required"
@@ -486,7 +485,7 @@ class AdaptiveConnectionPoolOptimizer:
                 # Periodic optimization check (every 5 minutes)
                 now = datetime.now()
                 if (not self.last_optimization_time or
-                    now - self.last_optimization_time > self.optimization_cooldown):
+                        now - self.last_optimization_time > self.optimization_cooldown):
 
                     recommendations = self.get_optimization_recommendations()
                     high_confidence_recs = [r for r in recommendations if r.confidence_score >= 80]
@@ -512,18 +511,18 @@ class AdaptiveConnectionPoolOptimizer:
 
         if metrics.utilization_rate >= self.thresholds['critical_utilization']:
             alerts.append(("critical_utilization",
-                          f"Pool utilization is {metrics.utilization_rate:.1f}% (threshold: {self.thresholds['critical_utilization']*100:.1f}%)",
-                          metrics))
+                           f"Pool utilization is {metrics.utilization_rate:.1f}% (threshold: {self.thresholds['critical_utilization'] * 100:.1f}%)",
+                           metrics))
 
         elif metrics.utilization_rate >= self.thresholds['high_utilization']:
             alerts.append(("high_utilization",
-                          f"Pool utilization is {metrics.utilization_rate:.1f}% (threshold: {self.thresholds['high_utilization']*100:.1f}%)",
-                          metrics))
+                           f"Pool utilization is {metrics.utilization_rate:.1f}% (threshold: {self.thresholds['high_utilization'] * 100:.1f}%)",
+                           metrics))
 
         if metrics.connection_errors > self.thresholds['max_connection_errors']:
             alerts.append(("connection_errors",
-                          f"High connection errors: {metrics.connection_errors}",
-                          metrics))
+                           f"High connection errors: {metrics.connection_errors}",
+                           metrics))
 
         # Notify alert handlers
         for alert_type, message, metrics_data in alerts:

@@ -13,20 +13,17 @@
 
 """PostgreSQL Auto Upholder - автоматическая система оптимизации производительности базы данных."""
 
-import psycopg2
 import logging
-import time
-import json
-from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timedelta
 from dataclasses import dataclass
-import threading
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.interval import IntervalTrigger
+
     logger.info("✅ APScheduler imported successfully")
 except ImportError as e:
     logger.error(f"Failed to import APScheduler: {e}")
@@ -34,15 +31,13 @@ except ImportError as e:
     raise
 
 # Import our optimization modules
-from ..monitoring.postgres_query_analyzer import PostgresQueryAnalyzer, QueryAnalysisResult
+from ..monitoring.postgres_query_analyzer import PostgresQueryAnalyzer
 from ..monitoring.postgres_index_auditor import PostgresIndexAuditor
-from ..monitoring.postgres_cache_monitor import PostgresCacheMonitor, create_default_cache_monitor
+from ..monitoring.postgres_cache_monitor import create_default_cache_monitor
 from ..monitoring.postgres_query_optimizer import PostgresQueryOptimizer
-from ..monitoring.postgres_performance_analyzer import PostgresPerformanceAnalyzer, SystemPerformanceReport
-from ..monitoring.adaptive_connection_pool_optimizer import AdaptiveConnectionPoolOptimizer
+from ..monitoring.postgres_performance_analyzer import PostgresPerformanceAnalyzer
 from ..database.postgres_connection_pool_monitor import PostgresConnectionPoolMonitor
 from ..repositories.postgres_bulk_loader import PostgresBulkLoader
-from ..repositories.postgres_prepared_statements import PreparedStatementsManager
 
 
 @dataclass
@@ -67,7 +62,7 @@ class UpholderConfig:
     """Configuration for auto upholder."""
     # Schedule intervals (in minutes)
     query_analysis_interval: int = 60  # Every hour
-    index_audit_interval: int = 240    # Every 4 hours
+    index_audit_interval: int = 240  # Every 4 hours
     cache_monitoring_interval: int = 30  # Every 30 minutes
     bulk_optimization_interval: int = 15  # Every 15 minutes
 
@@ -261,9 +256,11 @@ class PostgresAutoUpholder:
             cache_metrics = self.cache_monitor.get_current_metrics()
 
             if cache_metrics.heap_hit_ratio < self.config.cache_hit_ratio_min * 100:
-                alerts_generated.append(f"Heap cache hit ratio is {cache_metrics.heap_hit_ratio:.1f}% (threshold: {self.config.cache_hit_ratio_min*100:.1f}%)")
+                alerts_generated.append(
+                    f"Heap cache hit ratio is {cache_metrics.heap_hit_ratio:.1f}% (threshold: {self.config.cache_hit_ratio_min * 100:.1f}%)")
             if cache_metrics.index_hit_ratio < 90:
-                alerts_generated.append(f"Index cache hit ratio is {cache_metrics.index_hit_ratio:.1f}% (threshold: 90.0%)")
+                alerts_generated.append(
+                    f"Index cache hit ratio is {cache_metrics.index_hit_ratio:.1f}% (threshold: 90.0%)")
 
             # 3.5. Connection Pool Analysis
             logger.info("Analyzing connection pool performance...")
@@ -458,14 +455,13 @@ class PostgresAutoUpholder:
 
                             # Safety check 2: Check index age
                             cursor.execute("""
-                                SELECT
-                                    pg_stat_get_last_scan_time(indexrelid) as last_scan,
-                                    pg_relation_size(indexrelid) as size_bytes,
-                                    schemaname,
-                                    tablename
-                                FROM pg_stat_user_indexes
-                                WHERE indexrelname = %s
-                            """, (index_name,))
+                                           SELECT pg_stat_get_last_scan_time(indexrelid) as last_scan,
+                                                  pg_relation_size(indexrelid)           as size_bytes,
+                                                  schemaname,
+                                                  tablename
+                                           FROM pg_stat_user_indexes
+                                           WHERE indexrelname = %s
+                                           """, (index_name,))
 
                             result = cursor.fetchone()
                             if not result:
@@ -480,21 +476,21 @@ class PostgresAutoUpholder:
                                 age_days = (datetime.now() - last_scan).days
                                 if age_days < self.config.unused_index_age_days:
                                     logger.info(f"Skipping {index_name}: only {age_days} days unused "
-                                              f"(minimum {self.config.unused_index_age_days})")
+                                                f"(minimum {self.config.unused_index_age_days})")
                                     continue
 
                             # Safety check 4: Index size (don't delete very large indexes automatically)
                             if size_mb > self.config.unused_index_max_size_mb:
                                 logger.warning(f"Skipping {index_name}: too large ({size_mb:.1f}MB > "
-                                             f"{self.config.unused_index_max_size_mb}MB limit)")
+                                               f"{self.config.unused_index_max_size_mb}MB limit)")
                                 continue
 
                             # Safety check 5: Don't delete primary key or unique indexes
                             cursor.execute("""
-                                SELECT indisprimary, indisunique
-                                FROM pg_index
-                                WHERE indexrelid = (SELECT oid FROM pg_class WHERE relname = %s)
-                            """, (index_name,))
+                                           SELECT indisprimary, indisunique
+                                           FROM pg_index
+                                           WHERE indexrelid = (SELECT oid FROM pg_class WHERE relname = %s)
+                                           """, (index_name,))
                             index_props = cursor.fetchone()
                             if index_props and (index_props[0] or index_props[1]):  # primary or unique
                                 logger.warning(f"Skipping {index_name}: primary key or unique index")
@@ -504,8 +500,8 @@ class PostgresAutoUpholder:
                             try:
                                 drop_statement = f"DROP INDEX IF EXISTS {schema}.{index_name}"
                                 logger.warning(f"🗑️ AUTO-DELETING unused index: {index_name} on {table} "
-                                             f"(age: {age_days if last_scan else 'unknown'} days, "
-                                             f"size: {size_mb:.1f}MB)")
+                                               f"(age: {age_days if last_scan else 'unknown'} days, "
+                                               f"size: {size_mb:.1f}MB)")
 
                                 cursor.execute(drop_statement)
                                 deleted_indexes.append(f"Dropped unused index: {index_name}")
@@ -553,17 +549,21 @@ class PostgresAutoUpholder:
             improvements = {}
 
             # Cache improvements
-            cache_heap_improvement = current_cache.heap_hit_ratio - self.performance_baseline.get('cache_heap_hit_ratio', 0)
+            cache_heap_improvement = current_cache.heap_hit_ratio - self.performance_baseline.get(
+                'cache_heap_hit_ratio', 0)
             if abs(cache_heap_improvement) > 1:
                 improvements['cache_heap_hit_ratio'] = ".2f"
 
-            cache_index_improvement = current_cache.index_hit_ratio - self.performance_baseline.get('cache_index_hit_ratio', 0)
+            cache_index_improvement = current_cache.index_hit_ratio - self.performance_baseline.get(
+                'cache_index_hit_ratio', 0)
             if abs(cache_index_improvement) > 1:
                 improvements['cache_index_hit_ratio'] = ".2f"
             # Slow queries improvement
-            slow_queries_improvement = self.performance_baseline.get('slow_queries_count', 0) - len(current_slow_queries)
+            slow_queries_improvement = self.performance_baseline.get('slow_queries_count', 0) - len(
+                current_slow_queries)
             if slow_queries_improvement != 0:
-                improvements['slow_queries'] = f"{slow_queries_improvement} queries {'faster' if slow_queries_improvement > 0 else 'slower'}"
+                improvements[
+                    'slow_queries'] = f"{slow_queries_improvement} queries {'faster' if slow_queries_improvement > 0 else 'slower'}"
 
             return improvements
 
@@ -679,7 +679,7 @@ class PostgresAutoUpholder:
             logger.warning(f"Connection pool status failed: {e}")
 
         print("DEBUG: Got pool report (with protection)")
-        
+
         logger.info("📊 Building dashboard response")
         dashboard = {
             'upholder_status': upholder_status,
@@ -714,8 +714,8 @@ def create_default_upholder(connection_pool) -> PostgresAutoUpholder:
     # Add default report handler (logs reports)
     def log_report_handler(report: UpholderReport):
         logger.info(f"Auto Upholder Report: {len(report.optimizations_applied)} optimizations, "
-                   f"{len(report.alerts_generated)} alerts, "
-                   f"{len(report.recommendations_pending)} recommendations")
+                    f"{len(report.alerts_generated)} alerts, "
+                    f"{len(report.recommendations_pending)} recommendations")
 
     # Add default alert handler (logs alerts)
     def log_alert_handler(alert_type: str, message: str):

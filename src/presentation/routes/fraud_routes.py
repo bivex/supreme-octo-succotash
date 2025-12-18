@@ -14,7 +14,9 @@
 """Fraud detection HTTP routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.fraud_handler import FraudHandler
 
 
@@ -31,6 +33,7 @@ class FraudRoutes:
 
     def _register_fraud_rules_list(self, app):
         """Register fraud rules list route."""
+
         def list_fraud_rules(res, req):
             """List fraud detection rules with pagination."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers
@@ -83,6 +86,7 @@ class FraudRoutes:
 
     def _register_fraud_rule_create(self, app):
         """Register fraud rule creation route."""
+
         def create_fraud_rule(res, req):
             """Create a new fraud detection rule."""
             # Temporarily disable security middleware for testing
@@ -121,7 +125,8 @@ class FraudRoutes:
                                     res.write_status(400)
                                     res.write_header("Content-Type", "application/json")
                                     res.end(json.dumps({
-                                        "error": {"code": "VALIDATION_ERROR", "message": f"Missing required field: {field}"}
+                                        "error": {"code": "VALIDATION_ERROR",
+                                                  "message": f"Missing required field: {field}"}
                                     }))
                                     return
 
@@ -139,7 +144,8 @@ class FraudRoutes:
 
                     except Exception as e:
                         logger.error(f"Error processing fraud rule creation data: {e}", exc_info=True)
-                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        error_response = {
+                            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                         res.write_status(500)
                         res.write_header("Content-Type", "application/json")
                         res.end(json.dumps(error_response))

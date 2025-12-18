@@ -14,8 +14,9 @@
 """Conversion repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import List, Optional, Dict, Any
+
 from ..entities.conversion import Conversion
 
 
@@ -54,31 +55,31 @@ class ConversionRepository(ABC):
 
     @abstractmethod
     def get_conversions_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Conversion]:
         """Get conversions within a time range."""
         pass
 
     @abstractmethod
     def get_conversion_stats(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'conversion_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'conversion_type'
     ) -> Dict[str, Any]:
         """Get conversion statistics grouped by specified field."""
         pass
 
     @abstractmethod
     def get_total_revenue(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None
     ) -> float:
         """Get total revenue from conversions in time range."""
         pass

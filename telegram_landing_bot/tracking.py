@@ -43,6 +43,7 @@ DEFAULT_TRACKING_PARAMS = {
     "sub5": "premium_offer"
 }
 
+
 # Note: Now using Advertising Platform API instead of direct URL shortener calls
 
 class TrackingManager:
@@ -85,12 +86,12 @@ class TrackingManager:
         return click_id
 
     async def generate_tracking_link(self,
-                                   user_id: int,
-                                   source: str = "telegram_bot",
-                                   additional_params: Optional[Dict[str, Any]] = None,
-                                   lp_id: Optional[int] = None,
-                                   offer_id: Optional[int] = None,
-                                   ts_id: Optional[int] = None) -> Dict[str, Any]:
+                                     user_id: int,
+                                     source: str = "telegram_bot",
+                                     additional_params: Optional[Dict[str, Any]] = None,
+                                     lp_id: Optional[int] = None,
+                                     offer_id: Optional[int] = None,
+                                     ts_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Generate tracking link for user using API URL generation
 
@@ -140,7 +141,8 @@ class TrackingManager:
             "click_data": click_data
         }
 
-    async def _generate_short_tracking_url(self, user_id: int, click_id: str, source: str, additional_params: Dict[str, Any]) -> str:
+    async def _generate_short_tracking_url(self, user_id: int, click_id: str, source: str,
+                                           additional_params: Dict[str, Any]) -> str:
         """Generate tracking URL using Advertising Platform API"""
         try:
             logger.info("Generating tracking URL via Advertising Platform API...")
@@ -172,7 +174,7 @@ class TrackingManager:
                     "aff_sub3": additional_params.get("aff_sub3"),
                     "aff_sub4": additional_params.get("aff_sub4"),
                     "aff_sub5": additional_params.get("aff_sub5"),
-                    "user_id": user_id, # Add user_id to tracking params for PreClickData
+                    "user_id": user_id,  # Add user_id to tracking params for PreClickData
                     "bot_source": "telegram",
                     "generated_at": int(time.time()),
                     **(additional_params.get("metadata", {}) if additional_params else {})
@@ -209,9 +211,9 @@ class TrackingManager:
             raise Exception(f"Failed to generate tracking URL: {str(e)}")
 
     async def track_event(self,
-                         click_id: str,
-                         event_type: str,
-                         event_data: Optional[Dict[str, Any]] = None) -> bool:
+                          click_id: str,
+                          event_type: str,
+                          event_data: Optional[Dict[str, Any]] = None) -> bool:
         """
         Send event to tracker
 
@@ -233,7 +235,8 @@ class TrackingManager:
         try:
             return await self._track_event_locally(click_id, event_type, event_data)
         except Exception as e:
-            logger.warning(f"Event tracking failed for {event_type} (click_id: {click_id}): {e} - continuing without event tracking")
+            logger.warning(
+                f"Event tracking failed for {event_type} (click_id: {click_id}): {e} - continuing without event tracking")
             return False  # Don't fail the whole operation
 
         try:
@@ -259,7 +262,8 @@ class TrackingManager:
             logger.warning(f"Error tracking event (network issue): {e} - continuing without tracking")
             return False
 
-    async def _track_event_locally(self, click_id: str, event_type: str, event_data: Optional[Dict[str, Any]] = None) -> bool:
+    async def _track_event_locally(self, click_id: str, event_type: str,
+                                   event_data: Optional[Dict[str, Any]] = None) -> bool:
         """Track event via Advertising Platform API"""
         if not self.session:
             logger.warning("HTTP session not initialized - skipping event tracking")
@@ -272,7 +276,8 @@ class TrackingManager:
                 "event_type": event_type,
                 "event_name": event_data.get("event_name", event_type) if event_data else event_type,
                 "campaign_id": "camp_9061",  # String ID for events API
-                "url": event_data.get("url", f"{self.local_landing_url}/landing") if event_data else f"{self.local_landing_url}/landing",
+                "url": event_data.get("url",
+                                      f"{self.local_landing_url}/landing") if event_data else f"{self.local_landing_url}/landing",
                 "timestamp": int(time.time()),
                 "properties": {
                     "source": "telegram_bot",
@@ -312,10 +317,10 @@ class TrackingManager:
             return False
 
     async def track_conversion(self,
-                             click_id: str,
-                             conversion_type: str,
-                             conversion_value: float = 0.0,
-                             conversion_data: Optional[Dict[str, Any]] = None) -> bool:
+                               click_id: str,
+                               conversion_type: str,
+                               conversion_value: float = 0.0,
+                               conversion_data: Optional[Dict[str, Any]] = None) -> bool:
         """
         Send conversion to tracker
 
@@ -355,14 +360,16 @@ class TrackingManager:
                     logger.info(f"Conversion tracked: {conversion_type} for click_id {click_id}")
                     return result.get("recorded", False)
                 else:
-                    logger.warning(f"Failed to track conversion (status {response.status}) - continuing without tracking")
+                    logger.warning(
+                        f"Failed to track conversion (status {response.status}) - continuing without tracking")
                     return False
 
         except Exception as e:
             logger.warning(f"Error tracking conversion (network issue): {e} - continuing without tracking")
             return False
 
-    async def _track_conversion_locally(self, click_id: str, conversion_type: str, conversion_value: float = 0.0, conversion_data: Optional[Dict[str, Any]] = None) -> bool:
+    async def _track_conversion_locally(self, click_id: str, conversion_type: str, conversion_value: float = 0.0,
+                                        conversion_data: Optional[Dict[str, Any]] = None) -> bool:
         """Track conversion via Advertising Platform API"""
         if not self.session:
             logger.warning("HTTP session not initialized - skipping conversion tracking")
@@ -415,9 +422,9 @@ class TrackingManager:
             return False
 
     async def send_postback(self,
-                          click_id: str,
-                          postback_type: str,
-                          postback_data: Optional[Dict[str, Any]] = None) -> bool:
+                            click_id: str,
+                            postback_type: str,
+                            postback_data: Optional[Dict[str, Any]] = None) -> bool:
         """
         Send postback notification
 
@@ -461,7 +468,8 @@ class TrackingManager:
             logger.warning(f"Error sending postback (network issue): {e} - continuing without postback")
             return False
 
-    async def _send_postback_locally(self, click_id: str, postback_type: str, postback_data: Optional[Dict[str, Any]] = None) -> bool:
+    async def _send_postback_locally(self, click_id: str, postback_type: str,
+                                     postback_data: Optional[Dict[str, Any]] = None) -> bool:
         """Send postback via Advertising Platform API"""
         if not self.session:
             logger.warning("HTTP session not initialized - skipping postback")

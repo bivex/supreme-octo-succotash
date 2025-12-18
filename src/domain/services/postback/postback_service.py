@@ -13,11 +13,12 @@
 
 """Postback service for sending notifications."""
 
-import asyncio
-import aiohttp
 from typing import Dict, Any, Optional, Tuple
+
+import aiohttp
 from loguru import logger
-from ...entities.postback import Postback, PostbackStatus
+
+from ...entities.postback import Postback
 
 
 class PostbackService:
@@ -70,12 +71,12 @@ class PostbackService:
 
             # Send request
             async with self._session.request(
-                method=method,
-                url=url,
-                headers=headers,
-                params=params,
-                json=data if isinstance(data, dict) else None,
-                data=data if not isinstance(data, dict) else None
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    params=params,
+                    json=data if isinstance(data, dict) else None,
+                    data=data if not isinstance(data, dict) else None
             ) as response:
                 response_code = response.status
                 response_text = await response.text()

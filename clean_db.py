@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,11 +14,11 @@
 Clean all database tables by truncating them.
 """
 
-import sys
-import os
 import logging
-from typing import List, Tuple, Optional
+import os
+import sys
 from contextlib import contextmanager
+from typing import List
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -65,11 +64,11 @@ class DatabaseCleaner:
         cursor = connection.cursor()
         try:
             cursor.execute("""
-                SELECT tablename
-                FROM pg_tables
-                WHERE schemaname = 'public'
-                ORDER BY tablename
-            """)
+                           SELECT tablename
+                           FROM pg_tables
+                           WHERE schemaname = 'public'
+                           ORDER BY tablename
+                           """)
             tables = cursor.fetchall()
             return [table_name for (table_name,) in tables]
         finally:

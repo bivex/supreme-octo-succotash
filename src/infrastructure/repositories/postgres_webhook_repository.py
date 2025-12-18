@@ -13,9 +13,7 @@
 
 """PostgreSQL webhook repository implementation."""
 
-import psycopg2
 from typing import Optional, List
-from datetime import datetime
 
 from ...domain.entities.webhook import TelegramWebhook
 from ...domain.repositories.webhook_repository import WebhookRepository
@@ -31,24 +29,15 @@ class PostgresWebhookRepository(WebhookRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -58,19 +47,40 @@ class PostgresWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS webhooks (
-                id TEXT PRIMARY KEY,
-                chat_id BIGINT NOT NULL,
-                message_type TEXT NOT NULL,
-                message_text TEXT,
-                user_id BIGINT,
-                username TEXT,
-                first_name TEXT,
-                last_name TEXT,
-                timestamp TIMESTAMP NOT NULL,
-                processed BOOLEAN DEFAULT FALSE
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS webhooks
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           chat_id
+                           BIGINT
+                           NOT
+                           NULL,
+                           message_type
+                           TEXT
+                           NOT
+                           NULL,
+                           message_text
+                           TEXT,
+                           user_id
+                           BIGINT,
+                           username
+                           TEXT,
+                           first_name
+                           TEXT,
+                           last_name
+                           TEXT,
+                           timestamp
+                           TIMESTAMP
+                           NOT
+                           NULL,
+                           processed
+                           BOOLEAN
+                           DEFAULT
+                           FALSE
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhooks_chat_id ON webhooks(chat_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhooks_processed ON webhooks(processed)")
@@ -98,23 +108,23 @@ class PostgresWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO webhooks
-            (id, chat_id, message_type, message_text, user_id, username,
-             first_name, last_name, timestamp, processed)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                message_type = EXCLUDED.message_type,
-                message_text = EXCLUDED.message_text,
-                user_id = EXCLUDED.user_id,
-                username = EXCLUDED.username,
-                first_name = EXCLUDED.first_name,
-                last_name = EXCLUDED.last_name,
-                processed = EXCLUDED.processed
-        """, (
-            webhook.id, webhook.chat_id, webhook.message_type, webhook.message_text,
-            webhook.user_id, webhook.username, webhook.first_name, webhook.last_name,
-            webhook.timestamp, webhook.processed
-        ))
+                       INSERT INTO webhooks
+                       (id, chat_id, message_type, message_text, user_id, username,
+                        first_name, last_name, timestamp, processed)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           message_type = EXCLUDED.message_type,
+                           message_text = EXCLUDED.message_text,
+                           user_id = EXCLUDED.user_id,
+                           username = EXCLUDED.username,
+                           first_name = EXCLUDED.first_name,
+                           last_name = EXCLUDED.last_name,
+                           processed = EXCLUDED.processed
+                       """, (
+                           webhook.id, webhook.chat_id, webhook.message_type, webhook.message_text,
+                           webhook.user_id, webhook.username, webhook.first_name, webhook.last_name,
+                           webhook.timestamp, webhook.processed
+                       ))
 
         conn.commit()
 
@@ -139,11 +149,12 @@ class PostgresWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM webhooks
-            WHERE processed = FALSE
-            ORDER BY timestamp ASC
-            LIMIT %s
-        """, (limit,))
+                       SELECT *
+                       FROM webhooks
+                       WHERE processed = FALSE
+                       ORDER BY timestamp ASC
+                           LIMIT %s
+                       """, (limit,))
 
         webhooks = []
         columns = [desc[0] for desc in cursor.description]
@@ -159,9 +170,10 @@ class PostgresWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE webhooks SET processed = TRUE
-            WHERE id = %s
-        """, (webhook_id,))
+                       UPDATE webhooks
+                       SET processed = TRUE
+                       WHERE id = %s
+                       """, (webhook_id,))
 
         conn.commit()
 
@@ -171,11 +183,12 @@ class PostgresWebhookRepository(WebhookRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM webhooks
-            WHERE chat_id = %s
-            ORDER BY timestamp DESC
-            LIMIT %s
-        """, (chat_id, limit))
+                       SELECT *
+                       FROM webhooks
+                       WHERE chat_id = %s
+                       ORDER BY timestamp DESC
+                           LIMIT %s
+                       """, (chat_id, limit))
 
         webhooks = []
         columns = [desc[0] for desc in cursor.description]

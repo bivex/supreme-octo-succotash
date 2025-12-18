@@ -13,14 +13,12 @@
 
 """PostgreSQL cache monitoring with automatic alerts and optimization recommendations."""
 
-import psycopg2
-from typing import Dict, List, Any, Optional, Callable
 import logging
+import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-import threading
-import json
+from datetime import datetime
+from typing import Dict, List, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +51,10 @@ class PostgresCacheMonitor:
     def __init__(self, connection, alert_thresholds: Optional[Dict[str, float]] = None):
         self.connection = connection
         self.alert_thresholds = alert_thresholds or {
-            'heap_hit_ratio_min': 0.95,      # 95%
-            'index_hit_ratio_min': 0.90,     # 90%
-            'shared_buffer_usage_max': 0.90, # 90%
-            'temp_files_max': 100,           # per hour
+            'heap_hit_ratio_min': 0.95,  # 95%
+            'index_hit_ratio_min': 0.90,  # 90%
+            'shared_buffer_usage_max': 0.90,  # 90%
+            'temp_files_max': 100,  # per hour
             'temp_bytes_max': 1_000_000_000  # 1GB per hour
         }
 
@@ -113,12 +111,11 @@ class PostgresCacheMonitor:
                 try:
                     # Try to query pg_buffercache directly - if it fails, extension is not available
                     cursor.execute("""
-                        SELECT
-                            sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
-                        FROM pg_buffercache b
-                        CROSS JOIN pg_settings s
-                        WHERE s.name = 'shared_buffers'
-                    """)
+                                   SELECT sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
+                                   FROM pg_buffercache b
+                                            CROSS JOIN pg_settings s
+                                   WHERE s.name = 'shared_buffers'
+                                   """)
                     buffer_usage_row = cursor.fetchone()
                     buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
                     logger.debug(f"Successfully retrieved buffer usage: {buffer_usage}%")
@@ -129,12 +126,11 @@ class PostgresCacheMonitor:
 
                 # Get temporary file statistics (last hour)
                 cursor.execute("""
-                    SELECT
-                        count(*) as temp_files,
-                        sum(bytes) as temp_bytes
-                    FROM pg_stat_database
-                    WHERE temp_files > 0
-                """)
+                               SELECT count(*)   as temp_files,
+                                      sum(bytes) as temp_bytes
+                               FROM pg_stat_database
+                               WHERE temp_files > 0
+                               """)
 
                 temp_row = cursor.fetchone()
                 temp_files = temp_row[0] if temp_row else 0
@@ -164,15 +160,16 @@ class PostgresCacheMonitor:
         """Execute cache-related queries and return metrics."""
         # Get cache hit ratios with null safety
         cursor.execute("""
-            SELECT
-                CASE WHEN sum(heap_blks_hit) + sum(heap_blks_read) > 0
-                     THEN sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read))
-                     ELSE 0 END as heap_hit_ratio,
-                CASE WHEN sum(idx_blks_hit) + sum(idx_blks_read) > 0
-                     THEN sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read))
-                     ELSE 0 END as index_hit_ratio
-            FROM pg_statio_user_tables
-        """)
+                       SELECT CASE
+                                  WHEN sum(heap_blks_hit) + sum(heap_blks_read) > 0
+                                      THEN sum(heap_blks_hit) * 100.0 / (sum(heap_blks_hit) + sum(heap_blks_read))
+                                  ELSE 0 END as heap_hit_ratio,
+                              CASE
+                                  WHEN sum(idx_blks_hit) + sum(idx_blks_read) > 0
+                                      THEN sum(idx_blks_hit) * 100.0 / (sum(idx_blks_hit) + sum(idx_blks_read))
+                                  ELSE 0 END as index_hit_ratio
+                       FROM pg_statio_user_tables
+                       """)
 
         result = cursor.fetchone()
         if result and result[0] is not None and result[1] is not None:
@@ -192,12 +189,11 @@ class PostgresCacheMonitor:
             try:
                 # Extension exists, try to query it
                 cursor.execute("""
-                    SELECT
-                        sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
-                    FROM pg_buffercache b
-                    CROSS JOIN pg_settings s
-                    WHERE s.name = 'shared_buffers'
-                """)
+                               SELECT sum(CASE WHEN bufferid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / setting::float as buffer_usage
+                               FROM pg_buffercache b
+                                        CROSS JOIN pg_settings s
+                               WHERE s.name = 'shared_buffers'
+                               """)
                 buffer_usage_row = cursor.fetchone()
                 buffer_usage = buffer_usage_row[0] if buffer_usage_row else 0
                 logger.debug(f"Successfully retrieved buffer usage: {buffer_usage}%")
@@ -212,11 +208,10 @@ class PostgresCacheMonitor:
 
         # Get temporary file statistics (last hour)
         cursor.execute("""
-            SELECT
-                sum(temp_files) as temp_files,
-                sum(temp_bytes) as temp_bytes
-            FROM pg_stat_database
-        """)
+                       SELECT sum(temp_files) as temp_files,
+                              sum(temp_bytes) as temp_bytes
+                       FROM pg_stat_database
+                       """)
 
         temp_row = cursor.fetchone()
         temp_files = temp_row[0] if temp_row else 0
@@ -241,7 +236,7 @@ class PostgresCacheMonitor:
             alerts.append(CacheAlert(
                 alert_type='low_heap_hit_ratio',
                 severity=severity,
-                message=f"Heap cache hit ratio is {metrics.heap_hit_ratio:.1f}% (threshold: {self.alert_thresholds['heap_hit_ratio_min']*100:.1f}%)",
+                message=f"Heap cache hit ratio is {metrics.heap_hit_ratio:.1f}% (threshold: {self.alert_thresholds['heap_hit_ratio_min'] * 100:.1f}%)",
                 recommendations=[
                     "Consider increasing shared_buffers",
                     "Review frequently accessed tables for proper indexing",
@@ -258,7 +253,7 @@ class PostgresCacheMonitor:
             alerts.append(CacheAlert(
                 alert_type='low_index_hit_ratio',
                 severity=severity,
-                message=f"Index cache hit ratio is {metrics.index_hit_ratio:.1f}% (threshold: {self.alert_thresholds['index_hit_ratio_min']*100:.1f}%)",
+                message=f"Index cache hit ratio is {metrics.index_hit_ratio:.1f}% (threshold: {self.alert_thresholds['index_hit_ratio_min'] * 100:.1f}%)",
                 recommendations=[
                     "Review index usage - drop unused indexes",
                     "Consider covering indexes for frequent query patterns",
@@ -274,7 +269,7 @@ class PostgresCacheMonitor:
             alerts.append(CacheAlert(
                 alert_type='high_buffer_usage',
                 severity='medium',
-                message=f"Shared buffer usage is {metrics.shared_buffer_usage:.1f}% (threshold: {self.alert_thresholds['shared_buffer_usage_max']*100:.1f}%)",
+                message=f"Shared buffer usage is {metrics.shared_buffer_usage:.1f}% (threshold: {self.alert_thresholds['shared_buffer_usage_max'] * 100:.1f}%)",
                 recommendations=[
                     "Consider increasing shared_buffers in postgresql.conf",
                     "Review and optimize frequently accessed data",
@@ -355,10 +350,11 @@ class PostgresCacheMonitor:
             with self.connection.cursor() as cursor:
                 # Get current configuration
                 cursor.execute("""
-                    SELECT name, setting, unit
-                    FROM pg_settings
-                    WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size')
-                """)
+                               SELECT name, setting, unit
+                               FROM pg_settings
+                               WHERE name IN
+                                     ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size')
+                               """)
 
                 config = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
 
@@ -373,7 +369,8 @@ class PostgresCacheMonitor:
                         total_ram_mb = self._get_system_memory_mb()
 
                         if total_ram_mb and size_mb < total_ram_mb * 0.25:  # Less than 25% of RAM
-                            recommendations.append(f"Increase shared_buffers from {shared_buffers} to {int(total_ram_mb * 0.25)}MB (25% of RAM)")
+                            recommendations.append(
+                                f"Increase shared_buffers from {shared_buffers} to {int(total_ram_mb * 0.25)}MB (25% of RAM)")
                     except:
                         pass
 
@@ -385,7 +382,8 @@ class PostgresCacheMonitor:
                         max_connections = self._get_max_connections()
 
                         if max_connections and work_mem_mb * max_connections > 1000:  # Over 1GB total
-                            recommendations.append(f"Consider reducing work_mem from {work_mem} or reducing max_connections")
+                            recommendations.append(
+                                f"Consider reducing work_mem from {work_mem} or reducing max_connections")
                     except:
                         pass
 
@@ -400,12 +398,12 @@ class PostgresCacheMonitor:
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT query, calls, total_time, mean_time, rows
-                    FROM pg_stat_statements
-                    WHERE mean_time > 100  -- Queries taking > 100ms on average
-                    ORDER BY mean_time DESC
-                    LIMIT 10
-                """)
+                               SELECT query, calls, total_time, mean_time, rows
+                               FROM pg_stat_statements
+                               WHERE mean_time > 100 -- Queries taking > 100ms on average
+                               ORDER BY mean_time DESC
+                                   LIMIT 10
+                               """)
 
                 suggestions = []
                 for row in cursor.fetchall():

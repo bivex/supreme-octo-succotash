@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,9 +15,11 @@ PostgreSQL Query Optimization Demo
 Shows how to properly analyze and optimize queries using EXPLAIN ANALYZE
 """
 
-import psycopg2
 import time
 from datetime import datetime
+
+import psycopg2
+
 
 class QueryOptimizerDemo:
     def __init__(self):
@@ -41,43 +42,43 @@ class QueryOptimizerDemo:
         # Add more test campaigns
         for i in range(50, 100):
             cursor.execute("""
-                INSERT INTO campaigns (id, name, description, status, cost_model,
-                                     payout_amount, payout_currency, safe_page_url, offer_page_url,
-                                     daily_budget_amount, daily_budget_currency,
-                                     total_budget_amount, total_budget_currency,
-                                     start_date, end_date, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO NOTHING
-            """, (
-                f'opt_campaign_{i}',
-                f'Optimization Test Campaign {i}',
-                f'Description for optimization test {i}',
-                'active' if i % 3 != 0 else 'paused',
-                'CPA',
-                15.0 + (i % 10), 'USD',
-                f'https://example.com/safe_opt_{i}',
-                f'https://example.com/offer_opt_{i}',
-                200.0 + (i % 50), 'USD',
-                5000.0 + (i % 1000), 'USD',
-                datetime.now(),
-                datetime.now().replace(day=28),
-                datetime.now(),
-                datetime.now()
-            ))
+                           INSERT INTO campaigns (id, name, description, status, cost_model,
+                                                  payout_amount, payout_currency, safe_page_url, offer_page_url,
+                                                  daily_budget_amount, daily_budget_currency,
+                                                  total_budget_amount, total_budget_currency,
+                                                  start_date, end_date, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s) ON CONFLICT (id) DO NOTHING
+                           """, (
+                               f'opt_campaign_{i}',
+                               f'Optimization Test Campaign {i}',
+                               f'Description for optimization test {i}',
+                               'active' if i % 3 != 0 else 'paused',
+                               'CPA',
+                               15.0 + (i % 10), 'USD',
+                               f'https://example.com/safe_opt_{i}',
+                               f'https://example.com/offer_opt_{i}',
+                               200.0 + (i % 50), 'USD',
+                               5000.0 + (i % 1000), 'USD',
+                               datetime.now(),
+                               datetime.now().replace(day=28),
+                               datetime.now(),
+                               datetime.now()
+                           ))
 
         # Add more test events
         for i in range(500):
             campaign_id = f'opt_campaign_{50 + (i % 50)}'
             cursor.execute("""
-                INSERT INTO events (id, click_id, event_type, event_data, created_at)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                f'opt_event_{i}',
-                f'opt_click_{i % 100}',
-                ['page_view', 'click', 'conversion'][i % 3],
-                f'{{"campaign": "{campaign_id}", "position": {i % 10}}}',
-                datetime.now()
-            ))
+                           INSERT INTO events (id, click_id, event_type, event_data, created_at)
+                           VALUES (%s, %s, %s, %s, %s)
+                           """, (
+                               f'opt_event_{i}',
+                               f'opt_click_{i % 100}',
+                               ['page_view', 'click', 'conversion'][i % 3],
+                               f'{{"campaign": "{campaign_id}", "position": {i % 10}}}',
+                               datetime.now()
+                           ))
 
         conn.commit()
         conn.close()
@@ -106,7 +107,8 @@ class QueryOptimizerDemo:
 
         print(f"\nActual execution:")
         print(f"  Rows returned: {len(results)}")
-        print(".4f"        print(".0f"
+        print(".4f"
+        print(".0f"
         conn.close()
         return exec_time
 
@@ -126,9 +128,11 @@ class QueryOptimizerDemo:
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT indexname FROM pg_indexes
-            WHERE tablename = 'campaigns' AND indexdef LIKE '%status%'
-        """)
+                       SELECT indexname
+                       FROM pg_indexes
+                       WHERE tablename = 'campaigns'
+                         AND indexdef LIKE '%status%'
+                       """)
 
         if not cursor.fetchall():
             print("\n⚠️  No index on status column!")
@@ -147,6 +151,7 @@ class QueryOptimizerDemo:
         if time2 > 0:
             improvement = (time1 - time2) / time1 * 100
             print(".1f"
+
     def demonstrate_join_optimization(self):
         """Demonstrate JOIN query optimization."""
         print("\n🔗 JOIN Optimization")
@@ -154,15 +159,16 @@ class QueryOptimizerDemo:
 
         # Query with JOIN
         join_query = """
-            SELECT c.name, c.status, COUNT(e.id) as event_count,
-                   MAX(e.created_at) as last_event
-            FROM campaigns c
-            LEFT JOIN events e ON c.id = e.click_id
-            WHERE c.status = 'active'
-            GROUP BY c.id, c.name, c.status
-            ORDER BY event_count DESC
-            LIMIT 5
-        """
+                     SELECT c.name,
+                            c.status,
+                            COUNT(e.id)       as event_count,
+                            MAX(e.created_at) as last_event
+                     FROM campaigns c
+                              LEFT JOIN events e ON c.id = e.click_id
+                     WHERE c.status = 'active'
+                     GROUP BY c.id, c.name, c.status
+                     ORDER BY event_count DESC LIMIT 5 \
+                     """
 
         print("JOIN Query Analysis:")
         self.analyze_query_performance(join_query, "Campaign events JOIN query")
@@ -173,11 +179,11 @@ class QueryOptimizerDemo:
 
         print("\nChecking indexes for JOIN optimization:")
         cursor.execute("""
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE tablename IN ('campaigns', 'events')
-            AND (indexdef LIKE '%id%' OR indexdef LIKE '%click_id%')
-        """)
+                       SELECT indexname, indexdef
+                       FROM pg_indexes
+                       WHERE tablename IN ('campaigns', 'events')
+                         AND (indexdef LIKE '%id%' OR indexdef LIKE '%click_id%')
+                       """)
 
         indexes = cursor.fetchall()
         if indexes:
@@ -199,12 +205,11 @@ class QueryOptimizerDemo:
 
         # Query with ORDER BY
         order_query = """
-            SELECT id, name, created_at, status
-            FROM campaigns
-            WHERE status = 'active'
-            ORDER BY created_at DESC
-            LIMIT 10
-        """
+                      SELECT id, name, created_at, status
+                      FROM campaigns
+                      WHERE status = 'active'
+                      ORDER BY created_at DESC LIMIT 10 \
+                      """
 
         print("ORDER BY Query Analysis:")
         self.analyze_query_performance(order_query, "ORDER BY created_at query")
@@ -214,11 +219,11 @@ class QueryOptimizerDemo:
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE tablename = 'campaigns'
-            AND indexdef LIKE '%created_at%'
-        """)
+                       SELECT indexname, indexdef
+                       FROM pg_indexes
+                       WHERE tablename = 'campaigns'
+                         AND indexdef LIKE '%created_at%'
+                       """)
 
         if cursor.fetchall():
             print("✅ Index on created_at exists (good for ORDER BY)")
@@ -239,18 +244,18 @@ class QueryOptimizerDemo:
 
         # Analyze column selectivity
         cursor.execute("""
-            SELECT
-                column_name,
-                n_distinct,
-                CASE WHEN n_distinct > 0 THEN
-                    ROUND((n_distinct::float / (SELECT COUNT(*) FROM campaigns)) * 100, 2)
-                ELSE 0 END as selectivity_percent
-            FROM information_schema.columns c
-            JOIN pg_stats s ON s.tablename = c.table_name AND s.attname = c.column_name
-            WHERE c.table_name = 'campaigns'
-            AND c.column_name IN ('status', 'cost_model', 'created_at')
-            ORDER BY selectivity_percent DESC
-        """)
+                       SELECT column_name,
+                              n_distinct,
+                              CASE
+                                  WHEN n_distinct > 0 THEN
+                                      ROUND((n_distinct::float / (SELECT COUNT(*) FROM campaigns)) * 100, 2)
+                                  ELSE 0 END as selectivity_percent
+                       FROM information_schema.columns c
+                                JOIN pg_stats s ON s.tablename = c.table_name AND s.attname = c.column_name
+                       WHERE c.table_name = 'campaigns'
+                         AND c.column_name IN ('status', 'cost_model', 'created_at')
+                       ORDER BY selectivity_percent DESC
+                       """)
 
         print("Column selectivity analysis:")
         print("Column".ljust(15), "Distinct Values", "Selectivity %")
@@ -315,9 +320,11 @@ class QueryOptimizerDemo:
         print("6. Use partial indexes for selective conditions")
         print("7. Consider composite indexes for multi-column queries")
 
+
 def main():
     optimizer = QueryOptimizerDemo()
     optimizer.run_optimization_analysis()
+
 
 if __name__ == "__main__":
     main()

@@ -14,9 +14,10 @@
 """Click tracking HTTP routes."""
 
 import json
-import sys
 import os
+import sys
 from typing import Optional
+
 from loguru import logger
 
 from ...application.handlers.track_click_handler import TrackClickHandler
@@ -24,6 +25,7 @@ from ...application.handlers.track_click_handler import TrackClickHandler
 # Import shared URL shortener
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
 from shared_url_shortener import url_shortener, recover_unknown_code
+
 
 # Cache functions removed - now using Supreme API for URL generation
 
@@ -42,6 +44,7 @@ class ClickRoutes:
     def register(self, app):
         """Register routes with socketify app."""
         logger.info(f"🔧 ClickRoutes.register() called with app: {type(app)}")
+
         async def track_click(res, req):
             """Handle click tracking and redirection."""
             logger.info("🔥 TRACK_CLICK HANDLER CALLED")
@@ -108,16 +111,20 @@ class ClickRoutes:
                     logger.warning(f"Campaign {campaign_id_param} is not properly configured with offer/safe URLs")
 
                     if is_valid:
-                        logger.warning(f"VALID click for campaign {campaign_id_param} redirected to fallback - campaign needs proper URLs!")
-                        logger.warning(f"Set offer_page_url for campaign {campaign_id_param} via: PUT /v1/campaigns/{campaign_id_param}")
+                        logger.warning(
+                            f"VALID click for campaign {campaign_id_param} redirected to fallback - campaign needs proper URLs!")
+                        logger.warning(
+                            f"Set offer_page_url for campaign {campaign_id_param} via: PUT /v1/campaigns/{campaign_id_param}")
                     else:
-                        logger.info(f"Invalid/fraud click for campaign {campaign_id_param} - correctly using safe fallback")
+                        logger.info(
+                            f"Invalid/fraud click for campaign {campaign_id_param} - correctly using safe fallback")
 
                     # Provide helpful setup instructions
                     logger.warning("To configure campaign URLs:")
                     logger.warning(f"  curl -X PUT http://localhost:5000/v1/campaigns/{campaign_id_param} \\")
                     logger.warning("    -H 'Content-Type: application/json' \\")
-                    logger.warning("    -d '{\"offer_page_url\": \"https://your-offer.com\", \"safe_page_url\": \"https://your-safe.com\"}'")
+                    logger.warning(
+                        "    -d '{\"offer_page_url\": \"https://your-offer.com\", \"safe_page_url\": \"https://your-safe.com\"}'")
 
                 if test_mode:
                     logger.info("Test mode: returning HTML response")
@@ -163,7 +170,8 @@ class ClickRoutes:
                 try:
                     uuid.UUID(click_id)
                 except (ValueError, TypeError):
-                    error_response = {"error": {"code": "VALIDATION_ERROR", "message": "Invalid UUID format for click ID"}}
+                    error_response = {
+                        "error": {"code": "VALIDATION_ERROR", "message": "Invalid UUID format for click ID"}}
                     res.write_status(400)
                     res.write_header("Content-Type", "application/json")
                     add_security_headers(res)
@@ -300,7 +308,8 @@ class ClickRoutes:
 
                     # Get total count for pagination
                     if filters.campaign_id:
-                        total_clicks = self.track_click_handler._click_repository.count_by_campaign_id(filters.campaign_id)
+                        total_clicks = self.track_click_handler._click_repository.count_by_campaign_id(
+                            filters.campaign_id)
                     else:
                         # For now, approximate total - in production would need a count query
                         total_clicks = len(clicks) + offset if len(clicks) == limit else len(clicks) + offset
@@ -506,7 +515,8 @@ class ClickRoutes:
                         # Analyze the code structure
                         diagnostics = []
                         if short_code.startswith(('s', 'c', 'h')):
-                            strategy = "Sequential" if short_code.startswith('s') else "Compressed" if short_code.startswith('c') else "Hybrid"
+                            strategy = "Sequential" if short_code.startswith(
+                                's') else "Compressed" if short_code.startswith('c') else "Hybrid"
                             diagnostics.append(f"Format: {strategy}")
                         else:
                             diagnostics.append("Format: Unknown (should start with s/c/h)")

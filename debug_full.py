@@ -10,9 +10,10 @@
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
-from shared_url_shortener import URLShortener, URLParams, EncodingStrategy
-import zlib
 import base64
+import zlib
+
+from shared_url_shortener import URLShortener, URLParams
 
 # Recreate the exact encoding process
 params = URLParams(
@@ -91,5 +92,3 @@ try:
 
 except Exception as e:
     print(f'Decoding failed: {e}')
-
-

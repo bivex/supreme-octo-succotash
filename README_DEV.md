@@ -37,6 +37,7 @@ setup_dev.bat
 ### Troubleshooting
 
 Если hot reload не работает:
+
 1. Убедитесь, что установлен `watchdog`: `pip install watchdog`
 2. Проверьте, что файлы не в `__pycache__` директориях
 3. Для Windows может потребоваться запуск с правами администратора

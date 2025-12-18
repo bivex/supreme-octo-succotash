@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -19,18 +18,19 @@ hot reload capabilities, and graceful shutdown handling.
 """
 
 import argparse
+import asyncio
+import inspect
 import signal
 import sys
 import threading
 import time
 import weakref
-import inspect
-import asyncio
 from contextlib import contextmanager
 
 # Async trace import (optional)
 try:
     import async_trace
+
     ASYNC_TRACE_AVAILABLE = True
 except ImportError:
     ASYNC_TRACE_AVAILABLE = False
@@ -43,18 +43,20 @@ try:
     import psycopg2.extensions
     from src.domain.value_objects import CampaignId
 
+
     def adapt_campaign_id(campaign_id):
         return psycopg2.extensions.adapt(campaign_id.value)
+
 
     psycopg2.extensions.register_adapter(CampaignId, adapt_campaign_id)
     logger.info("Registered psycopg2 adapter for CampaignId")
 except ImportError:
     logger.warning("psycopg2 not available for adapter registration")
 from src.config.settings import load_settings
+
 settings = load_settings()
 from src.container import container
 from src.main import create_app
-
 
 # Global registry to prevent conflicts between multiple managers
 _active_managers = weakref.WeakSet()
@@ -234,7 +236,7 @@ class DatabaseConnectionTester:
         """Initialize with container instance for thread-safe connection testing."""
         self.container = container_instance
         self._connection_lock = threading.RLock()  # Reentrant lock for connection testing and container access
-        self._container_lock = threading.RLock()   # Separate lock for container operations
+        self._container_lock = threading.RLock()  # Separate lock for container operations
 
     def test_postgresql_connection(self) -> tuple[bool, str]:
         """Test PostgreSQL connection using connection pool with thread safety."""
@@ -295,6 +297,7 @@ class ServerRunner:
 
     def setup_signal_handlers(self) -> None:
         """Setup signal handlers for graceful shutdown."""
+
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, initiating graceful shutdown...")
 
@@ -397,13 +400,13 @@ class HotReloadManager:
         def __init__(self, script_path: str):
             from watchdog.events import FileSystemEventHandler
             import subprocess
-            import asyncio # Import asyncio here
+            import asyncio  # Import asyncio here
 
             self.FileSystemEventHandler = FileSystemEventHandler
             self.subprocess = subprocess
             self.script_path = script_path
             self.process: Optional[subprocess.Popen] = None
-            asyncio.run(self.restart_server()) # Run restart_server as async
+            asyncio.run(self.restart_server())  # Run restart_server as async
 
         async def restart_server(self) -> None:
             """Restart the server process (async)."""
@@ -424,7 +427,7 @@ class HotReloadManager:
         def on_modified(self, event) -> None:
             """Handle file modification events."""
             if (event.src_path.endswith('.py') and
-                not event.src_path.endswith(('__pycache__', '__init__.py'))):
+                    not event.src_path.endswith(('__pycache__', '__init__.py'))):
                 logger.info(f"File changed: {event.src_path}")
                 import asyncio
                 asyncio.run(self.restart_server())
@@ -455,7 +458,7 @@ class HotReloadManager:
             observer.join()
 
 
-def main_async(): # Now synchronous wrapper, keeps arg parsing logic
+def main_async():  # Now synchronous wrapper, keeps arg parsing logic
     """Main entry point for the application (sync wrapper)."""
     parser = argparse.ArgumentParser(
         description='Clean Architecture Affiliate Marketing API Server',
@@ -491,7 +494,7 @@ Examples:
             logger.info("🔍 Async-trace enabled for debugging asyncio tasks")
 
             # Import async debug utilities
-            from src.utils.async_debug import save_debug_snapshot, log_trace_to_continuous_file
+            from src.utils.async_debug import save_debug_snapshot
 
             # Save initial server startup trace if a loop is running
             try:
@@ -526,7 +529,7 @@ Examples:
         except ImportError as e:
             logger.error(str(e))
             logger.info("Falling back to normal run mode")
-            ServerRunner().run_server() # fallback
+            ServerRunner().run_server()  # fallback
     else:
         # Normal server run
         ServerRunner().run_server()

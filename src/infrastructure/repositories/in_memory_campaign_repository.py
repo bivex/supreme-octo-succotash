@@ -14,11 +14,10 @@
 """In-memory campaign repository implementation."""
 
 from typing import Optional, List, Dict
-from datetime import datetime, timezone
 
 from ...domain.entities.campaign import Campaign
 from ...domain.repositories.campaign_repository import CampaignRepository
-from ...domain.value_objects import CampaignId, Money, Url
+from ...domain.value_objects import CampaignId
 
 
 class InMemoryCampaignRepository(CampaignRepository):
@@ -57,4 +56,4 @@ class InMemoryCampaignRepository(CampaignRepository):
     def count_all(self) -> int:
         """Count total campaigns."""
         return len([c for c in self._campaigns.values()
-                   if c.id.value not in self._deleted_campaigns])
+                    if c.id.value not in self._deleted_campaigns])

@@ -1,9 +1,8 @@
 """SQLite campaign repository implementation."""
 
 import sqlite3
-from typing import Optional, List, Dict
 from datetime import datetime, timezone
-import json
+from typing import Optional, List
 
 from ...domain.entities.campaign import Campaign
 from ...domain.repositories.campaign_repository import CampaignRepository
@@ -32,34 +31,96 @@ class SQLiteCampaignRepository(CampaignRepository):
 
         # Create campaigns table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS campaigns (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT,
-                status TEXT NOT NULL,
-                cost_model TEXT NOT NULL,
-                payout_amount REAL NOT NULL,
-                payout_currency TEXT NOT NULL,
-                safe_page_url TEXT NOT NULL,
-                offer_page_url TEXT NOT NULL,
-                daily_budget_amount REAL NOT NULL,
-                daily_budget_currency TEXT NOT NULL,
-                total_budget_amount REAL NOT NULL,
-                total_budget_currency TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                end_date TEXT NOT NULL,
-                clicks_count INTEGER DEFAULT 0,
-                conversions_count INTEGER DEFAULT 0,
-                spent_amount REAL DEFAULT 0.0,
-                spent_currency TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                is_deleted INTEGER DEFAULT 0
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS campaigns
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           description
+                           TEXT,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           cost_model
+                           TEXT
+                           NOT
+                           NULL,
+                           payout_amount
+                           REAL
+                           NOT
+                           NULL,
+                           payout_currency
+                           TEXT
+                           NOT
+                           NULL,
+                           safe_page_url
+                           TEXT
+                           NOT
+                           NULL,
+                           offer_page_url
+                           TEXT
+                           NOT
+                           NULL,
+                           daily_budget_amount
+                           REAL
+                           NOT
+                           NULL,
+                           daily_budget_currency
+                           TEXT
+                           NOT
+                           NULL,
+                           total_budget_amount
+                           REAL
+                           NOT
+                           NULL,
+                           total_budget_currency
+                           TEXT
+                           NOT
+                           NULL,
+                           start_date
+                           TEXT
+                           NOT
+                           NULL,
+                           end_date
+                           TEXT
+                           NOT
+                           NULL,
+                           clicks_count
+                           INTEGER
+                           DEFAULT
+                           0,
+                           conversions_count
+                           INTEGER
+                           DEFAULT
+                           0,
+                           spent_amount
+                           REAL
+                           DEFAULT
+                           0.0,
+                           spent_currency
+                           TEXT,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL,
+                           is_deleted
+                           INTEGER
+                           DEFAULT
+                           0
+                       )
+                       """)
 
         conn.commit()
-
 
     def _row_to_campaign(self, row) -> Campaign:
         """Convert database row to Campaign entity."""
@@ -117,9 +178,11 @@ class SQLiteCampaignRepository(CampaignRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM campaigns
-            WHERE id = ? AND is_deleted = 0
-        """, (campaign_id.value,))
+                       SELECT *
+                       FROM campaigns
+                       WHERE id = ?
+                         AND is_deleted = 0
+                       """, (campaign_id.value,))
 
         row = cursor.fetchone()
         return self._row_to_campaign(row) if row else None
@@ -130,11 +193,12 @@ class SQLiteCampaignRepository(CampaignRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM campaigns
-            WHERE is_deleted = 0
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        """, (limit, offset))
+                       SELECT *
+                       FROM campaigns
+                       WHERE is_deleted = 0
+                       ORDER BY created_at DESC LIMIT ?
+                       OFFSET ?
+                       """, (limit, offset))
 
         return [self._row_to_campaign(row) for row in cursor.fetchall()]
 
@@ -144,9 +208,11 @@ class SQLiteCampaignRepository(CampaignRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT 1 FROM campaigns
-            WHERE id = ? AND is_deleted = 0
-        """, (campaign_id.value,))
+                       SELECT 1
+                       FROM campaigns
+                       WHERE id = ?
+                         AND is_deleted = 0
+                       """, (campaign_id.value,))
 
         return cursor.fetchone() is not None
 
@@ -156,9 +222,11 @@ class SQLiteCampaignRepository(CampaignRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE campaigns SET is_deleted = 1, updated_at = ?
-            WHERE id = ?
-        """, (datetime.now(timezone.utc).isoformat(), campaign_id.value))
+                       UPDATE campaigns
+                       SET is_deleted = 1,
+                           updated_at = ?
+                       WHERE id = ?
+                       """, (datetime.now(timezone.utc).isoformat(), campaign_id.value))
 
         conn.commit()
 

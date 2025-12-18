@@ -14,8 +14,8 @@
 """Create offer command."""
 
 from dataclasses import dataclass
-from typing import Optional
 from decimal import Decimal
+from typing import Optional
 
 from ...domain.value_objects import Money, Url
 

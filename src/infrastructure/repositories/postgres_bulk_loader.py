@@ -13,14 +13,12 @@
 
 """PostgreSQL bulk loader with automatic COPY optimization for large datasets."""
 
-import psycopg2
 import csv
 import io
-from typing import List, Dict, Any, Optional, Union
-from dataclasses import dataclass
 import logging
-from contextlib import contextmanager
 import time
+from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ class PostgresBulkLoader:
         self.batch_size_threshold = batch_size_threshold
 
     def bulk_insert(self, table_name: str, records: List[Dict[str, Any]],
-                   conflict_resolution: str = 'none') -> BulkLoadResult:
+                    conflict_resolution: str = 'none') -> BulkLoadResult:
         """Automatically choose between COPY and individual INSERTs based on data size."""
         start_time = time.time()
 
@@ -118,7 +116,7 @@ class PostgresBulkLoader:
             raise
 
     def _bulk_insert(self, table_name: str, records: List[Dict[str, Any]],
-                    conflict_resolution: str, start_time: float) -> BulkLoadResult:
+                     conflict_resolution: str, start_time: float) -> BulkLoadResult:
         """Load data using individual INSERT statements."""
         try:
             if not records:
@@ -217,7 +215,7 @@ class BulkOperationOptimizer:
         self.performance_stats = {}
 
     def optimize_bulk_operation(self, table_name: str, records: List[Dict[str, Any]],
-                               operation_type: str = 'generic') -> BulkLoadResult:
+                                operation_type: str = 'generic') -> BulkLoadResult:
         """Optimize bulk operation based on table type and data characteristics."""
         # Analyze data characteristics
         data_size = len(records)
@@ -255,7 +253,7 @@ class BulkOperationOptimizer:
         return size
 
     def _record_performance_stats(self, table_name: str, result: BulkLoadResult,
-                                data_size: int, avg_record_size: int):
+                                  data_size: int, avg_record_size: int):
         """Record performance statistics for analysis."""
         if table_name not in self.performance_stats:
             self.performance_stats[table_name] = []
@@ -303,7 +301,8 @@ class BulkOperationOptimizer:
             'copy_operations': len(copy_stats),
             'insert_operations': len(insert_stats),
             'copy_avg_rps': sum(s['records_per_second'] for s in copy_stats) / len(copy_stats) if copy_stats else 0,
-            'insert_avg_rps': sum(s['records_per_second'] for s in insert_stats) / len(insert_stats) if insert_stats else 0,
+            'insert_avg_rps': sum(s['records_per_second'] for s in insert_stats) / len(
+                insert_stats) if insert_stats else 0,
             'recommendations': self._generate_performance_recommendations(stats)
         }
 
@@ -319,7 +318,8 @@ class BulkOperationOptimizer:
             insert_avg = sum(s['records_per_second'] for s in insert_ops) / len(insert_ops)
 
             if copy_avg > insert_avg * 2:  # COPY is significantly faster
-                recommendations.append("🚀 COPY method is significantly faster than INSERT. Consider using COPY for all bulk operations > 100 records.")
+                recommendations.append(
+                    "🚀 COPY method is significantly faster than INSERT. Consider using COPY for all bulk operations > 100 records.")
 
         # Check for performance degradation
         if len(stats) >= 10:
@@ -330,7 +330,8 @@ class BulkOperationOptimizer:
             older_avg = sum(s['records_per_second'] for s in older_stats) / len(older_stats)
 
             if recent_avg < older_avg * 0.8:  # 20% degradation
-                recommendations.append("📉 Performance degradation detected. Consider database maintenance or index optimization.")
+                recommendations.append(
+                    "📉 Performance degradation detected. Consider database maintenance or index optimization.")
 
         return recommendations
 

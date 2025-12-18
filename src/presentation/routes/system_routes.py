@@ -14,7 +14,9 @@
 """System administration HTTP routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.system_handler import SystemHandler
 
 
@@ -30,6 +32,7 @@ class SystemRoutes:
 
     def _register_cache_flush(self, app):
         """Register cache flush route."""
+
         def flush_cache(res, req):
             """Flush application cache with selective options."""
             # Temporarily disable security middleware for testing
@@ -71,7 +74,8 @@ class SystemRoutes:
                                     res.write_status(400)
                                     res.write_header("Content-Type", "application/json")
                                     res.end(json.dumps({
-                                        "error": {"code": "VALIDATION_ERROR", "message": f"Invalid cache types: {', '.join(invalid_types)}. Valid types: {', '.join(valid_types)}"}
+                                        "error": {"code": "VALIDATION_ERROR",
+                                                  "message": f"Invalid cache types: {', '.join(invalid_types)}. Valid types: {', '.join(valid_types)}"}
                                     }))
                                     return
                             else:
@@ -86,7 +90,8 @@ class SystemRoutes:
 
                     except Exception as e:
                         logger.error(f"Error processing cache flush data: {e}", exc_info=True)
-                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        error_response = {
+                            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                         res.write_status(500)
                         res.write_header("Content-Type", "application/json")
                         res.end(json.dumps(error_response))

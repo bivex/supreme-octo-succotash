@@ -13,13 +13,14 @@
 
 """Retention campaign domain service."""
 
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import List, Dict
 
-from ...entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
 from ...entities.click import Click
 from ...entities.conversion import Conversion
+from ...entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, \
+    RetentionCampaignStatus
 
 
 class RetentionService:
@@ -29,8 +30,8 @@ class RetentionService:
         pass
 
     def analyze_user_engagement(self, clicks: List[Click],
-                               conversions: List[Conversion],
-                               user_id: str) -> UserEngagementProfile:
+                                conversions: List[Conversion],
+                                user_id: str) -> UserEngagementProfile:
         """
         Analyze user engagement based on click and conversion history.
 
@@ -106,7 +107,7 @@ class RetentionService:
         )
 
     def predict_churn_risk(self, user_profile: UserEngagementProfile,
-                          historical_patterns: List[UserEngagementProfile]) -> ChurnPrediction:
+                           historical_patterns: List[UserEngagementProfile]) -> ChurnPrediction:
         """
         Predict churn risk based on user profile and historical patterns.
 
@@ -179,7 +180,7 @@ class RetentionService:
         )
 
     def create_retention_campaigns(self, churn_predictions: List[ChurnPrediction],
-                                  user_profiles: List[UserEngagementProfile]) -> List[RetentionCampaign]:
+                                   user_profiles: List[UserEngagementProfile]) -> List[RetentionCampaign]:
         """
         Create automated retention campaigns based on churn predictions and user profiles.
 
@@ -229,7 +230,7 @@ class RetentionService:
         return campaigns
 
     def optimize_campaign_performance(self, campaign: RetentionCampaign,
-                                    performance_data: Dict) -> Dict[str, any]:
+                                      performance_data: Dict) -> Dict[str, any]:
         """
         Optimize campaign performance based on A/B testing and performance data.
 
@@ -297,7 +298,7 @@ class RetentionService:
         return sessions
 
     def _calculate_engagement_score(self, sessions: int, clicks: int,
-                                   conversions: int, avg_duration: float) -> float:
+                                    conversions: int, avg_duration: float) -> float:
         """Calculate user engagement score (0-100)."""
         score = 0.0
 
@@ -340,7 +341,7 @@ class RetentionService:
         return min(100.0, score)
 
     def _determine_user_segment(self, engagement_score: float,
-                               conversions: int, clicks: List[Click]) -> UserSegment:
+                                conversions: int, clicks: List[Click]) -> UserSegment:
         """Determine user segment based on engagement and behavior."""
         if engagement_score >= 70:
             return UserSegment.HIGH_VALUE
@@ -374,8 +375,8 @@ class RetentionService:
         return list(interests)
 
     def _create_targeted_campaign(self, name: str, description: str,
-                                target_users: List[ChurnPrediction],
-                                segment: UserSegment) -> RetentionCampaign:
+                                  target_users: List[ChurnPrediction],
+                                  segment: UserSegment) -> RetentionCampaign:
         """Create a targeted retention campaign."""
         from ...entities.retention import RetentionTrigger
 
@@ -410,7 +411,7 @@ class RetentionService:
         )
 
     def _create_segment_campaign(self, segment: UserSegment,
-                                profiles: List[UserEngagementProfile]) -> RetentionCampaign:
+                                 profiles: List[UserEngagementProfile]) -> RetentionCampaign:
         """Create segment-specific retention campaign."""
         from ...entities.retention import RetentionTrigger
 

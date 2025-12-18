@@ -13,8 +13,8 @@
 
 """Conversion tracking HTTP routes."""
 
-import json
 from loguru import logger
+
 from ...application.handlers.track_conversion_handler import TrackConversionHandler
 
 
@@ -30,9 +30,10 @@ class ConversionRoutes:
 
     def _register_track_conversion(self, app):
         """Register conversion tracking route."""
+
         def track_conversion(res, req):
             """Track conversions from external systems."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:

@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,10 +15,10 @@ PostgreSQL Connection Pool Monitor with deadlock protection.
 """
 
 import threading
-from typing import Dict, Optional
-from loguru import logger
-from datetime import datetime
 import time
+from typing import Dict
+
+from loguru import logger
 
 
 class TimeoutError(Exception):
@@ -50,7 +49,7 @@ class PostgresConnectionPoolMonitor:
         # Проверить кеш
         current_time = time.time()
         if (self._last_stats and
-            current_time - self._last_stats_time < self._stats_cache_ttl):
+                current_time - self._last_stats_time < self._stats_cache_ttl):
             logger.debug("Returning cached pool stats")
             return self._last_stats
 

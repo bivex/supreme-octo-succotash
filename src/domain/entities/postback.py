@@ -14,9 +14,9 @@
 """Postback entity."""
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Optional, Dict, Any
 
 
 class PostbackStatus(Enum):
@@ -50,9 +50,9 @@ class Postback:
 
     @classmethod
     def create_from_conversion(
-        cls,
-        conversion_id: str,
-        postback_config: Dict[str, Any]
+            cls,
+            conversion_id: str,
+            postback_config: Dict[str, Any]
     ) -> 'Postback':
         """Create postback from conversion and configuration."""
         import uuid
@@ -77,7 +77,8 @@ class Postback:
             completed_at=None
         )
 
-    def mark_attempted(self, response_code: Optional[int], response_body: Optional[str], error_message: Optional[str]) -> None:
+    def mark_attempted(self, response_code: Optional[int], response_body: Optional[str],
+                       error_message: Optional[str]) -> None:
         """Mark a delivery attempt."""
         from datetime import datetime, timedelta
 

@@ -13,23 +13,24 @@
 
 """Send postback handler."""
 
-import json
-from typing import Dict, Any, List
+from typing import Dict, Any
+
 from loguru import logger
-from ...domain.repositories.postback_repository import PostbackRepository
+
+from ...domain.entities.postback import Postback
 from ...domain.repositories.conversion_repository import ConversionRepository
+from ...domain.repositories.postback_repository import PostbackRepository
 from ...domain.services.postback.postback_service import PostbackService
-from ...domain.entities.postback import Postback, PostbackStatus
 
 
 class SendPostbackHandler:
     """Handler for sending postback notifications."""
 
     def __init__(
-        self,
-        postback_repository: PostbackRepository,
-        conversion_repository: ConversionRepository,
-        postback_service: PostbackService
+            self,
+            postback_repository: PostbackRepository,
+            conversion_repository: ConversionRepository,
+            postback_service: PostbackService
     ):
         self.postback_repository = postback_repository
         self.conversion_repository = conversion_repository

@@ -13,10 +13,9 @@
 
 """PostgreSQL goal repository implementation."""
 
-import psycopg2
 import json
-from typing import Optional, List
 from datetime import datetime
+from typing import Optional, List
 
 from ...domain.entities.goal import Goal, GoalType
 from ...domain.repositories.goal_repository import GoalRepository
@@ -32,24 +31,15 @@ class PostgresGoalRepository(GoalRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -59,21 +49,44 @@ class PostgresGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS goals (
-                id TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                description TEXT,
-                goal_type TEXT NOT NULL,
-                target_value DECIMAL(10,2),
-                current_value DECIMAL(10,2) DEFAULT 0.0,
-                status TEXT NOT NULL,
-                priority INTEGER DEFAULT 1,
-                conditions JSONB,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS goals
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           description
+                           TEXT,
+                           goal_type
+                           TEXT
+                           NOT
+                           NULL,
+                           target_value
+                           DECIMAL
+                       (
+                           10,
+                           2
+                       ),
+                           current_value DECIMAL
+                       (
+                           10,
+                           2
+                       ) DEFAULT 0.0,
+                           status TEXT NOT NULL,
+                           priority INTEGER DEFAULT 1,
+                           conditions JSONB,
+                           created_at TIMESTAMP NOT NULL,
+                           updated_at TIMESTAMP NOT NULL
+                           )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_campaign_id ON goals(campaign_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)")
@@ -104,27 +117,27 @@ class PostgresGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO goals
-            (id, campaign_id, name, description, goal_type, target_value,
-             current_value, status, priority, conditions, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                campaign_id = EXCLUDED.campaign_id,
-                name = EXCLUDED.name,
-                description = EXCLUDED.description,
-                goal_type = EXCLUDED.goal_type,
-                target_value = EXCLUDED.target_value,
-                current_value = EXCLUDED.current_value,
-                status = EXCLUDED.status,
-                priority = EXCLUDED.priority,
-                conditions = EXCLUDED.conditions,
-                updated_at = EXCLUDED.updated_at
-        """, (
-            goal.id, goal.campaign_id, goal.name, goal.description,
-            goal.goal_type.value, goal.target_value, goal.current_value,
-            goal.status, goal.priority, json.dumps(goal.conditions),
-            goal.created_at, goal.updated_at
-        ))
+                       INSERT INTO goals
+                       (id, campaign_id, name, description, goal_type, target_value,
+                        current_value, status, priority, conditions, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           campaign_id = EXCLUDED.campaign_id,
+                           name = EXCLUDED.name,
+                           description = EXCLUDED.description,
+                           goal_type = EXCLUDED.goal_type,
+                           target_value = EXCLUDED.target_value,
+                           current_value = EXCLUDED.current_value,
+                           status = EXCLUDED.status,
+                           priority = EXCLUDED.priority,
+                           conditions = EXCLUDED.conditions,
+                           updated_at = EXCLUDED.updated_at
+                       """, (
+                           goal.id, goal.campaign_id, goal.name, goal.description,
+                           goal.goal_type.value, goal.target_value, goal.current_value,
+                           goal.status, goal.priority, json.dumps(goal.conditions),
+                           goal.created_at, goal.updated_at
+                       ))
 
         conn.commit()
 
@@ -150,16 +163,19 @@ class PostgresGoalRepository(GoalRepository):
 
         if active_only:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE campaign_id = %s AND status = 'active'
-                ORDER BY priority DESC, created_at DESC
-            """, (str(campaign_id),))
+                           SELECT *
+                           FROM goals
+                           WHERE campaign_id = %s
+                             AND status = 'active'
+                           ORDER BY priority DESC, created_at DESC
+                           """, (str(campaign_id),))
         else:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE campaign_id = %s
-                ORDER BY priority DESC, created_at DESC
-            """, (str(campaign_id),))
+                           SELECT *
+                           FROM goals
+                           WHERE campaign_id = %s
+                           ORDER BY priority DESC, created_at DESC
+                           """, (str(campaign_id),))
 
         goals = []
         columns = [desc[0] for desc in cursor.description]
@@ -176,16 +192,19 @@ class PostgresGoalRepository(GoalRepository):
 
         if campaign_id is not None:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE goal_type = %s AND campaign_id = %s
-                ORDER BY priority DESC, created_at DESC
-            """, (goal_type.value, str(campaign_id)))
+                           SELECT *
+                           FROM goals
+                           WHERE goal_type = %s
+                             AND campaign_id = %s
+                           ORDER BY priority DESC, created_at DESC
+                           """, (goal_type.value, str(campaign_id)))
         else:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE goal_type = %s
-                ORDER BY priority DESC, created_at DESC
-            """, (goal_type.value,))
+                           SELECT *
+                           FROM goals
+                           WHERE goal_type = %s
+                           ORDER BY priority DESC, created_at DESC
+                           """, (goal_type.value,))
 
         goals = []
         columns = [desc[0] for desc in cursor.description]
@@ -256,16 +275,19 @@ class PostgresGoalRepository(GoalRepository):
 
         if campaign_id is not None:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE campaign_id = %s AND conditions->>'tags' ? %s
-                ORDER BY priority DESC, created_at DESC
-            """, (str(campaign_id), tag))
+                           SELECT *
+                           FROM goals
+                           WHERE campaign_id = %s
+                             AND conditions ->>'tags' ? %s
+                           ORDER BY priority DESC, created_at DESC
+                           """, (str(campaign_id), tag))
         else:
             cursor.execute("""
-                SELECT * FROM goals
-                WHERE conditions->>'tags' ? %s
-                ORDER BY priority DESC, created_at DESC
-            """, (tag,))
+                           SELECT *
+                           FROM goals
+                           WHERE conditions ->>'tags' ? %s
+                           ORDER BY priority DESC, created_at DESC
+                           """, (tag,))
 
         goals = []
         columns = [desc[0] for desc in cursor.description]

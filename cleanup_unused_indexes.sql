@@ -2,16 +2,15 @@
 -- Run this script to find indexes that haven't been used since the last stats reset
 
 -- First, let's see unused indexes (indexes with 0 scans)
-SELECT
-    schemaname,
-    relname as table_name,
-    indexrelname as index_name,
-    idx_scan,
-    pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
-    pg_get_indexdef(indexrelid) as index_definition
+SELECT schemaname,
+       relname                                      as table_name,
+       indexrelname                                 as index_name,
+       idx_scan,
+       pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
+       pg_get_indexdef(indexrelid)                  as index_definition
 FROM pg_stat_user_indexes
 WHERE idx_scan = 0
-    AND schemaname = 'public'
+  AND schemaname = 'public'
 ORDER BY pg_relation_size(indexrelid) DESC;
 
 -- To drop unused indexes, uncomment and modify the following template:

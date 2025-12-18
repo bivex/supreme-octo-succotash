@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,17 +14,19 @@
 Simple PostgreSQL load test - quick performance check.
 """
 
-import psycopg2
-import time
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any
+from typing import List, Dict
+
+import psycopg2
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DatabaseConfig:
@@ -36,6 +37,7 @@ class DatabaseConfig:
     user: str = 'app_user'
     password: str = 'app_password'
 
+
 @dataclass
 class TestResult:
     """Result of a load test."""
@@ -43,6 +45,7 @@ class TestResult:
     total_queries: int
     duration: float
     qps: float
+
 
 class DatabaseConnectionManager:
     """Manages database connections with proper cleanup."""
@@ -66,6 +69,7 @@ class DatabaseConnectionManager:
         finally:
             if conn:
                 conn.close()
+
 
 class LoadTestBase:
     """Base class for load tests."""
@@ -96,6 +100,7 @@ class LoadTestBase:
         """Worker function to be implemented by subclasses."""
         raise NotImplementedError
 
+
 class SelectLoadTest(LoadTestBase):
     """Test SELECT performance under load."""
 
@@ -118,6 +123,7 @@ class SelectLoadTest(LoadTestBase):
 
         return queries
 
+
 class InsertLoadTest(LoadTestBase):
     """Test INSERT performance under load."""
 
@@ -133,9 +139,9 @@ class InsertLoadTest(LoadTestBase):
                     with conn.cursor() as cursor:
                         click_id = f'loadtest_click_{worker_id}_{int(time.time() * 1000000)}'
                         cursor.execute("""
-                            INSERT INTO events (id, event_type, event_data, created_at)
-                            VALUES (%s, %s, %s, NOW())
-                        """, (click_id, 'load_test', '{"test": true}',))
+                                       INSERT INTO events (id, event_type, event_data, created_at)
+                                       VALUES (%s, %s, %s, NOW())
+                                       """, (click_id, 'load_test', '{"test": true}',))
                         conn.commit()
                         queries += 1
             except psycopg2.IntegrityError:
@@ -158,6 +164,7 @@ class InsertLoadTest(LoadTestBase):
         except psycopg2.Error as e:
             logger.warning(f"Cleanup failed: {e}")
 
+
 class MixedLoadTest(LoadTestBase):
     """Test mixed read/write load."""
 
@@ -179,15 +186,16 @@ class MixedLoadTest(LoadTestBase):
                             cursor.fetchone()
                         elif operation_type == 1:
                             # UPDATE
-                            cursor.execute("UPDATE campaigns SET updated_at = NOW() WHERE id = (SELECT id FROM campaigns LIMIT 1)")
+                            cursor.execute(
+                                "UPDATE campaigns SET updated_at = NOW() WHERE id = (SELECT id FROM campaigns LIMIT 1)")
                             conn.commit()
                         else:
                             # INSERT
                             event_id = f'mixed_load_{worker_id}_{queries}'
                             cursor.execute("""
-                                INSERT INTO events (id, event_type, event_data, created_at)
-                                VALUES (%s, %s, %s, NOW())
-                            """, (event_id, 'mixed_test', '{"mixed": true}',))
+                                           INSERT INTO events (id, event_type, event_data, created_at)
+                                           VALUES (%s, %s, %s, NOW())
+                                           """, (event_id, 'mixed_test', '{"mixed": true}',))
                             conn.commit()
 
                         queries += 1
@@ -207,6 +215,7 @@ class MixedLoadTest(LoadTestBase):
                     conn.commit()
         except psycopg2.Error as e:
             logger.warning(f"Cleanup failed: {e}")
+
 
 class PerformanceAnalyzer:
     """Analyzes and reports performance results."""
@@ -271,6 +280,7 @@ class PerformanceAnalyzer:
         else:
             print(f"  {test_type} performance could be improved")
 
+
 def main():
     """Main entry point for the load testing application."""
     print("PostgreSQL Load Testing Results")
@@ -311,6 +321,7 @@ def main():
     analyzer.print_recommendations()
 
     print("\nLoad testing completed!")
+
 
 if __name__ == "__main__":
     main()

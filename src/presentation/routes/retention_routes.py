@@ -14,6 +14,7 @@
 """Retention campaign routes."""
 
 import json
+
 from loguru import logger
 
 
@@ -32,9 +33,10 @@ class RetentionRoutes:
 
     def _register_retention_campaigns(self, app):
         """Register retention campaigns route."""
+
         def get_retention_campaigns(res, req):
             """Get retention campaigns."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters
@@ -61,9 +63,10 @@ class RetentionRoutes:
 
     def _register_campaign_performance(self, app):
         """Register campaign performance route."""
+
         def get_campaign_performance(res, req):
             """Get performance data for a specific campaign."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get campaign_id from URL path
@@ -98,9 +101,10 @@ class RetentionRoutes:
 
     def _register_user_retention_analysis(self, app):
         """Register user retention analysis route."""
+
         def get_user_retention_analysis(res, req):
             """Analyze retention profile for a specific user."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get customer_id from URL path
@@ -135,9 +139,10 @@ class RetentionRoutes:
 
     def _register_retention_analytics(self, app):
         """Register retention analytics route."""
+
         def get_retention_analytics(res, req):
             """Get retention analytics data."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters for date range

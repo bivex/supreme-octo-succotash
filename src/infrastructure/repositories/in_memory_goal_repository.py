@@ -14,9 +14,9 @@
 """In-memory goal repository implementation."""
 
 from typing import Dict, List, Optional
-from collections import defaultdict
-from ...domain.repositories.goal_repository import GoalRepository
+
 from ...domain.entities.goal import Goal, GoalType
+from ...domain.repositories.goal_repository import GoalRepository
 
 
 class InMemoryGoalRepository(GoalRepository):

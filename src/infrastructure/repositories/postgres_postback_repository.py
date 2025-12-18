@@ -13,10 +13,9 @@
 
 """PostgreSQL postback repository implementation."""
 
-import psycopg2
 import json
-from typing import Optional, List
 from datetime import datetime
+from typing import Optional, List
 
 from ...domain.entities.postback import Postback, PostbackStatus
 from ...domain.repositories.postback_repository import PostbackRepository
@@ -32,24 +31,15 @@ class PostgresPostbackRepository(PostbackRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -59,23 +49,56 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS postbacks (
-                id TEXT PRIMARY KEY,
-                conversion_id TEXT NOT NULL,
-                url TEXT NOT NULL,
-                method TEXT NOT NULL,
-                payload JSONB,
-                headers JSONB,
-                status TEXT NOT NULL,
-                response_status_code INTEGER,
-                response_body TEXT,
-                retry_count INTEGER DEFAULT 0,
-                max_retries INTEGER DEFAULT 3,
-                next_retry_at TIMESTAMP,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS postbacks
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           conversion_id
+                           TEXT
+                           NOT
+                           NULL,
+                           url
+                           TEXT
+                           NOT
+                           NULL,
+                           method
+                           TEXT
+                           NOT
+                           NULL,
+                           payload
+                           JSONB,
+                           headers
+                           JSONB,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           response_status_code
+                           INTEGER,
+                           response_body
+                           TEXT,
+                           retry_count
+                           INTEGER
+                           DEFAULT
+                           0,
+                           max_retries
+                           INTEGER
+                           DEFAULT
+                           3,
+                           next_retry_at
+                           TIMESTAMP,
+                           created_at
+                           TIMESTAMP
+                           NOT
+                           NULL,
+                           updated_at
+                           TIMESTAMP
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_postbacks_conversion_id ON postbacks(conversion_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_postbacks_status ON postbacks(status)")
@@ -108,31 +131,31 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO postbacks
-            (id, conversion_id, url, method, payload, headers, status,
-             response_status_code, response_body, retry_count, max_retries,
-             next_retry_at, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                conversion_id = EXCLUDED.conversion_id,
-                url = EXCLUDED.url,
-                method = EXCLUDED.method,
-                payload = EXCLUDED.payload,
-                headers = EXCLUDED.headers,
-                status = EXCLUDED.status,
-                response_status_code = EXCLUDED.response_status_code,
-                response_body = EXCLUDED.response_body,
-                retry_count = EXCLUDED.retry_count,
-                max_retries = EXCLUDED.max_retries,
-                next_retry_at = EXCLUDED.next_retry_at,
-                updated_at = EXCLUDED.updated_at
-        """, (
-            postback.id, postback.conversion_id, postback.url, postback.method,
-            json.dumps(postback.payload), json.dumps(postback.headers),
-            postback.status.value, postback.response_status_code,
-            postback.response_body, postback.retry_count, postback.max_retries,
-            postback.next_retry_at, postback.created_at, postback.updated_at
-        ))
+                       INSERT INTO postbacks
+                       (id, conversion_id, url, method, payload, headers, status,
+                        response_status_code, response_body, retry_count, max_retries,
+                        next_retry_at, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           conversion_id = EXCLUDED.conversion_id,
+                           url = EXCLUDED.url,
+                           method = EXCLUDED.method,
+                           payload = EXCLUDED.payload,
+                           headers = EXCLUDED.headers,
+                           status = EXCLUDED.status,
+                           response_status_code = EXCLUDED.response_status_code,
+                           response_body = EXCLUDED.response_body,
+                           retry_count = EXCLUDED.retry_count,
+                           max_retries = EXCLUDED.max_retries,
+                           next_retry_at = EXCLUDED.next_retry_at,
+                           updated_at = EXCLUDED.updated_at
+                       """, (
+                           postback.id, postback.conversion_id, postback.url, postback.method,
+                           json.dumps(postback.payload), json.dumps(postback.headers),
+                           postback.status.value, postback.response_status_code,
+                           postback.response_body, postback.retry_count, postback.max_retries,
+                           postback.next_retry_at, postback.created_at, postback.updated_at
+                       ))
 
         conn.commit()
 
@@ -157,10 +180,11 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE conversion_id = %s
-            ORDER BY created_at DESC
-        """, (conversion_id,))
+                       SELECT *
+                       FROM postbacks
+                       WHERE conversion_id = %s
+                       ORDER BY created_at DESC
+                       """, (conversion_id,))
 
         postbacks = []
         columns = [desc[0] for desc in cursor.description]
@@ -176,11 +200,13 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status = 'pending' AND (next_retry_at IS NULL OR next_retry_at <= %s)
-            ORDER BY created_at ASC
-            LIMIT %s
-        """, (datetime.now(), limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status = 'pending'
+                         AND (next_retry_at IS NULL OR next_retry_at <= %s)
+                       ORDER BY created_at ASC
+                           LIMIT %s
+                       """, (datetime.now(), limit))
 
         postbacks = []
         columns = [desc[0] for desc in cursor.description]
@@ -196,11 +222,12 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (status.value, limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (status.value, limit))
 
         postbacks = []
         columns = [desc[0] for desc in cursor.description]
@@ -216,9 +243,11 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE postbacks SET status = %s, updated_at = %s
-            WHERE id = %s
-        """, (status.value, datetime.now(), postback_id))
+                       UPDATE postbacks
+                       SET status     = %s,
+                           updated_at = %s
+                       WHERE id = %s
+                       """, (status.value, datetime.now(), postback_id))
 
         conn.commit()
 
@@ -228,13 +257,14 @@ class PostgresPostbackRepository(PostbackRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM postbacks
-            WHERE status IN ('retry', 'failed')
-              AND next_retry_at <= %s
-              AND retry_count < max_retries
-            ORDER BY next_retry_at ASC
-            LIMIT %s
-        """, (current_time, limit))
+                       SELECT *
+                       FROM postbacks
+                       WHERE status IN ('retry', 'failed')
+                         AND next_retry_at <= %s
+                         AND retry_count < max_retries
+                       ORDER BY next_retry_at ASC
+                           LIMIT %s
+                       """, (current_time, limit))
 
         postbacks = []
         columns = [desc[0] for desc in cursor.description]

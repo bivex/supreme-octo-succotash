@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,12 +15,14 @@ PostgreSQL Bulk Loading and Prepared Statements Demo
 Shows efficient data loading techniques and query optimization
 """
 
-import psycopg2
-import time
 import csv
 import io
-from datetime import datetime, timedelta
 import random
+import time
+from datetime import datetime, timedelta
+
+import psycopg2
+
 
 class BulkLoadingDemo:
     def __init__(self):
@@ -40,7 +41,7 @@ class BulkLoadingDemo:
 
         # Write header
         writer.writerow(['id', 'campaign_id', 'user_id', 'ip_address', 'user_agent',
-                        'click_url', 'referer', 'created_at', 'is_valid'])
+                         'click_url', 'referer', 'created_at', 'is_valid'])
 
         # Generate test data
         campaign_ids = [f'test_campaign_{i}' for i in range(10)]
@@ -96,7 +97,9 @@ class BulkLoadingDemo:
             conn.commit()
             copy_time = time.time() - start_time
 
-            print("✅ COPY loading completed"            print(".2f"            print(".0f"
+            print("✅ COPY loading completed"
+            print(".2f"
+            print(".0f"
         except Exception as e:
             print(f"❌ COPY failed: {e}")
             conn.rollback()
@@ -126,17 +129,18 @@ class BulkLoadingDemo:
             for row in reader:
                 if len(row) >= 9:  # Ensure we have all required columns
                     cursor.execute("""
-                        INSERT INTO clicks (
-                            id, campaign_id, user_id, ip_address, user_agent,
-                            click_url, referer, created_at, is_valid
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, row[:9])
+                                   INSERT INTO clicks (id, campaign_id, user_id, ip_address, user_agent,
+                                                       click_url, referer, created_at, is_valid)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                   """, row[:9])
                     inserts_count += 1
 
             conn.commit()
             insert_time = time.time() - start_time
 
-            print("✅ Individual INSERTs completed"            print(".2f"            print(".0f"
+            print("✅ Individual INSERTs completed"
+            print(".2f"
+            print(".0f"
         except Exception as e:
             print(f"❌ INSERTs failed: {e}")
             conn.rollback()
@@ -178,13 +182,15 @@ class BulkLoadingDemo:
             for row in reader:
                 if len(row) >= 9:
                     cursor.execute("EXECUTE bulk_click_insert (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                                 row[:9])
+                                   row[:9])
                     inserts_count += 1
 
             conn.commit()
             prep_time = time.time() - start_time
 
-            print("✅ Prepared statements completed"            print(".2f"            print(".0f"
+            print("✅ Prepared statements completed"
+            print(".2f"
+            print(".0f"
         except Exception as e:
             print(f"❌ Prepared statements failed: {e}")
             conn.rollback()
@@ -256,7 +262,7 @@ class BulkLoadingDemo:
         writer = csv.writer(csv_data)
 
         writer.writerow(['id', 'campaign_id', 'user_id', 'ip_address', 'user_agent',
-                        'click_url', 'referer', 'created_at', 'is_valid'])
+                         'click_url', 'referer', 'created_at', 'is_valid'])
 
         # Add some valid and invalid rows
         for i in range(10):
@@ -306,7 +312,8 @@ class BulkLoadingDemo:
             print("❌ Unexpected: COPY succeeded (should have failed)")
 
         except psycopg2.Error as e:
-            print("✅ COPY correctly failed with error:"            print(f"   {e}")
+            print("✅ COPY correctly failed with error:"
+            print(f"   {e}")
             conn.rollback()
 
             print("\n🔧 Error Recovery Options:")
@@ -315,7 +322,7 @@ class BulkLoadingDemo:
             print("3. Load to temporary table first")
             print("4. Use individual INSERTs with error handling")
 
-        conn.close()
+            conn.close()
 
     def cleanup_demo_data(self):
         """Clean up demo data."""
@@ -354,9 +361,11 @@ class BulkLoadingDemo:
         print("• Handle errors gracefully")
         print("• Consider temporary staging tables")
 
+
 def main():
     demo = BulkLoadingDemo()
     demo.run_bulk_loading_demo()
+
 
 if __name__ == "__main__":
     main()

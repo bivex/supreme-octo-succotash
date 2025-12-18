@@ -14,9 +14,9 @@
 """Retention campaign domain entities."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
 
 
 class RetentionCampaignStatus(Enum):

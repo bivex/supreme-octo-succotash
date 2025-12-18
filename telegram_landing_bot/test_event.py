@@ -6,6 +6,7 @@ Test event tracking to Supreme server
 import requests
 import json
 
+
 def test_event_tracking():
     """Test event tracking to the Supreme server"""
 
@@ -40,6 +41,7 @@ def test_event_tracking():
 
     except Exception as e:
         print(f"❌ Error: {e}")
+
 
 if __name__ == "__main__":
     test_event_tracking()

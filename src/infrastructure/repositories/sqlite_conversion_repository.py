@@ -14,8 +14,8 @@
 """SQLite conversion repository implementation."""
 
 import sqlite3
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.conversion import Conversion
 from ...domain.repositories.conversion_repository import ConversionRepository
@@ -42,20 +42,50 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS conversions (
-                id TEXT PRIMARY KEY,
-                click_id TEXT NOT NULL,
-                campaign_id TEXT NOT NULL,
-                conversion_type TEXT NOT NULL,
-                conversion_value REAL DEFAULT 0.0,
-                currency TEXT DEFAULT 'USD',
-                status TEXT NOT NULL,
-                external_id TEXT,
-                metadata TEXT,  -- JSON string
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS conversions
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           click_id
+                           TEXT
+                           NOT
+                           NULL,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           conversion_type
+                           TEXT
+                           NOT
+                           NULL,
+                           conversion_value
+                           REAL
+                           DEFAULT
+                           0.0,
+                           currency
+                           TEXT
+                           DEFAULT
+                           'USD',
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           external_id
+                           TEXT,
+                           metadata
+                           TEXT, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_conversions_click_id ON conversions(click_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_conversions_campaign_id ON conversions(campaign_id)")
@@ -100,10 +130,11 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM conversions
-            WHERE click_id = ?
-            ORDER BY created_at DESC
-        """, (click_id,))
+                       SELECT *
+                       FROM conversions
+                       WHERE click_id = ?
+                       ORDER BY created_at DESC
+                       """, (click_id,))
 
         return [self._row_to_conversion(row) for row in cursor.fetchall()]
 
@@ -113,11 +144,11 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM conversions
-            WHERE campaign_id = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (campaign_id, limit))
+                       SELECT *
+                       FROM conversions
+                       WHERE campaign_id = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (campaign_id, limit))
 
         return [self._row_to_conversion(row) for row in cursor.fetchall()]
 
@@ -145,10 +176,11 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM conversions
-            WHERE click_id = ?
-            ORDER BY created_at DESC
-        """, (click_id,))
+                       SELECT *
+                       FROM conversions
+                       WHERE click_id = ?
+                       ORDER BY created_at DESC
+                       """, (click_id,))
 
         return [self._row_to_conversion(row) for row in cursor.fetchall()]
 
@@ -168,11 +200,11 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM conversions
-            WHERE status = 'pending'
-            ORDER BY created_at ASC
-            LIMIT ?
-        """, (limit,))
+                       SELECT *
+                       FROM conversions
+                       WHERE status = 'pending'
+                       ORDER BY created_at ASC LIMIT ?
+                       """, (limit,))
 
         return [self._row_to_conversion(row) for row in cursor.fetchall()]
 
@@ -182,28 +214,31 @@ class SQLiteConversionRepository(ConversionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE conversions
-            SET status = 'processed', updated_at = ?
-            WHERE id = ?
-        """, (datetime.now(timezone.utc).isoformat(), conversion_id))
+                       UPDATE conversions
+                       SET status     = 'processed',
+                           updated_at = ?
+                       WHERE id = ?
+                       """, (datetime.now(timezone.utc).isoformat(), conversion_id))
 
         conn.commit()
 
     def get_conversions_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Conversion]:
         """Get conversions within a time range."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         query = """
-            SELECT * FROM conversions
-            WHERE created_at >= ? AND created_at <= ?
-        """
+                SELECT *
+                FROM conversions
+                WHERE created_at >= ?
+                  AND created_at <= ? \
+                """
         params = [start_time.isoformat(), end_time.isoformat()]
 
         if conversion_type:
@@ -217,10 +252,10 @@ class SQLiteConversionRepository(ConversionRepository):
         return [self._row_to_conversion(row) for row in cursor.fetchall()]
 
     def get_conversion_stats(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'conversion_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'conversion_type'
     ) -> Dict[str, Any]:
         """Get conversion statistics grouped by specified field."""
         conn = self._get_connection()
@@ -228,18 +263,18 @@ class SQLiteConversionRepository(ConversionRepository):
 
         if group_by == 'conversion_type':
             cursor.execute("""
-                SELECT conversion_type, COUNT(*) as count, SUM(conversion_value) as total_value
-                FROM conversions
-                WHERE created_at >= ? AND created_at <= ?
-                GROUP BY conversion_type
-            """, (start_time.isoformat(), end_time.isoformat()))
+                           SELECT conversion_type, COUNT(*) as count, SUM(conversion_value) as total_value
+                           FROM conversions
+                           WHERE created_at >= ? AND created_at <= ?
+                           GROUP BY conversion_type
+                           """, (start_time.isoformat(), end_time.isoformat()))
         elif group_by == 'campaign_id':
             cursor.execute("""
-                SELECT campaign_id, COUNT(*) as count, SUM(conversion_value) as total_value
-                FROM conversions
-                WHERE created_at >= ? AND created_at <= ?
-                GROUP BY campaign_id
-            """, (start_time.isoformat(), end_time.isoformat()))
+                           SELECT campaign_id, COUNT(*) as count, SUM(conversion_value) as total_value
+                           FROM conversions
+                           WHERE created_at >= ? AND created_at <= ?
+                           GROUP BY campaign_id
+                           """, (start_time.isoformat(), end_time.isoformat()))
         else:
             return {}
 
@@ -253,20 +288,21 @@ class SQLiteConversionRepository(ConversionRepository):
         return stats
 
     def get_total_revenue(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        conversion_type: Optional[str] = None
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            conversion_type: Optional[str] = None
     ) -> float:
         """Get total revenue from conversions in time range."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         query = """
-            SELECT SUM(conversion_value) as total
-            FROM conversions
-            WHERE created_at >= ? AND created_at <= ?
-        """
+                SELECT SUM(conversion_value) as total
+                FROM conversions
+                WHERE created_at >= ?
+                  AND created_at <= ? \
+                """
         params = [start_time.isoformat(), end_time.isoformat()]
 
         if conversion_type:

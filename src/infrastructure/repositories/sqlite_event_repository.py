@@ -14,8 +14,8 @@
 """SQLite event repository implementation."""
 
 import sqlite3
+from datetime import datetime
 from typing import Optional, List, Dict
-from datetime import datetime, timezone
 
 from ...domain.entities.event import Event
 from ...domain.repositories.event_repository import EventRepository
@@ -42,14 +42,26 @@ class SQLiteEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS events (
-                id TEXT PRIMARY KEY,
-                click_id TEXT,
-                event_type TEXT NOT NULL,
-                event_data TEXT,  -- JSON string
-                created_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS events
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           click_id
+                           TEXT,
+                           event_type
+                           TEXT
+                           NOT
+                           NULL,
+                           event_data
+                           TEXT, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_click_id ON events(click_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)")
@@ -101,11 +113,11 @@ class SQLiteEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM events
-            WHERE click_id = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (click_id, limit))
+                       SELECT *
+                       FROM events
+                       WHERE click_id = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       """, (click_id, limit))
 
         return [self._row_to_event(row) for row in cursor.fetchall()]
 
@@ -115,20 +127,22 @@ class SQLiteEventRepository(EventRepository):
         return []
 
     def get_events_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        event_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            event_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Event]:
         """Get events within a time range."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         query = """
-            SELECT * FROM events
-            WHERE created_at >= ? AND created_at <= ?
-        """
+                SELECT *
+                FROM events
+                WHERE created_at >= ?
+                  AND created_at <= ? \
+                """
         params = [start_time.isoformat(), end_time.isoformat()]
 
         if event_type:
@@ -142,10 +156,10 @@ class SQLiteEventRepository(EventRepository):
         return [self._row_to_event(row) for row in cursor.fetchall()]
 
     def get_event_counts(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'event_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'event_type'
     ) -> Dict[str, int]:
         """Get event counts grouped by specified field."""
         conn = self._get_connection()
@@ -153,11 +167,11 @@ class SQLiteEventRepository(EventRepository):
 
         if group_by == 'event_type':
             cursor.execute("""
-                SELECT event_type, COUNT(*) as count
-                FROM events
-                WHERE created_at >= ? AND created_at <= ?
-                GROUP BY event_type
-            """, (start_time.isoformat(), end_time.isoformat()))
+                           SELECT event_type, COUNT(*) as count
+                           FROM events
+                           WHERE created_at >= ? AND created_at <= ?
+                           GROUP BY event_type
+                           """, (start_time.isoformat(), end_time.isoformat()))
         else:
             # For other group_by fields, return empty dict as they're not implemented
             return {}

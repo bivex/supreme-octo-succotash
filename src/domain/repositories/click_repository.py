@@ -14,8 +14,8 @@
 """Click repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
 from datetime import date
+from typing import Optional, List
 
 from ..entities.click import Click
 from ..value_objects import ClickId
@@ -36,7 +36,7 @@ class ClickRepository(ABC):
 
     @abstractmethod
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Click]:
+                            offset: int = 0) -> List[Click]:
         """Find clicks by campaign ID."""
         pass
 
@@ -57,6 +57,6 @@ class ClickRepository(ABC):
 
     @abstractmethod
     def get_clicks_in_date_range(self, campaign_id: str,
-                                start_date: date, end_date: date) -> List[Click]:
+                                 start_date: date, end_date: date) -> List[Click]:
         """Get clicks within date range for analytics."""
         pass

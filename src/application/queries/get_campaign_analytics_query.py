@@ -16,8 +16,8 @@
 from dataclasses import dataclass
 from datetime import date
 
-from ...domain.value_objects import Analytics
 from ...domain.repositories.analytics_repository import AnalyticsRepository
+from ...domain.value_objects import Analytics
 
 
 @dataclass

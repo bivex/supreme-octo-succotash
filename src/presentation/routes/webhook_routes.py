@@ -13,8 +13,8 @@
 
 """Webhook HTTP routes."""
 
-import json
 from loguru import logger
+
 from ...application.handlers.process_webhook_handler import ProcessWebhookHandler
 
 
@@ -30,9 +30,10 @@ class WebhookRoutes:
 
     def _register_telegram_webhook(self, app):
         """Register Telegram webhook route."""
+
         def telegram_webhook(res, req):
             """Handle incoming Telegram webhook."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:

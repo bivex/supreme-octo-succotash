@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,24 +14,28 @@
 Advanced PostgreSQL connection pool with monitoring and optimization.
 """
 
-import psycopg2
-from psycopg2 import pool
+import logging
 import threading
 import time
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-import logging
 from contextlib import contextmanager
+from datetime import datetime
+from typing import Dict, Any
+
+import psycopg2
+from psycopg2 import pool
 
 logger = logging.getLogger(__name__)
+
 
 class TimeoutError(Exception):
     """Timeout exception for pool operations"""
     pass
 
+
 @contextmanager
 def timeout_context(seconds: int):
     """Context manager для таймаута операций"""
+
     def timeout_handler(signum, frame):
         raise TimeoutError(f"Operation timed out after {seconds} seconds")
 
@@ -49,6 +52,7 @@ def timeout_context(seconds: int):
     else:
         # На Windows просто пропускаем таймаут
         yield
+
 
 class ConnectionPoolStats:
     """Statistics for connection pool monitoring."""
@@ -82,6 +86,7 @@ class ConnectionPoolStats:
             'qps': round(self.query_count / max(total_time, 1), 2),
             'uptime_seconds': round(total_time, 1)
         }
+
 
 class AdvancedConnectionPool:
     """
@@ -215,7 +220,7 @@ class AdvancedConnectionPool:
             logger.error(f"Error returning connection to pool: {e}")
 
     def execute_with_monitoring(self, conn: psycopg2.extensions.connection,
-                               query: str, params: tuple = None) -> Any:
+                                query: str, params: tuple = None) -> Any:
         """
         Execute query with performance monitoring.
 
@@ -268,7 +273,7 @@ class AdvancedConnectionPool:
 
         # Проверить кеш
         if (self._stats_cache and
-            current_time - self._stats_cache_time < self._stats_cache_ttl):
+                current_time - self._stats_cache_time < self._stats_cache_ttl):
             logger.debug("Returning cached pool stats")
             return self._stats_cache.copy()
 
@@ -357,11 +362,11 @@ class AdvancedConnectionPool:
         if 0.6 <= utilization <= 0.8:
             return 100.0  # Perfect utilization
         elif 0.3 <= utilization < 0.6:
-            return 75.0   # Good utilization
+            return 75.0  # Good utilization
         elif 0.8 < utilization <= 0.95:
-            return 60.0   # High utilization, may need more connections
+            return 60.0  # High utilization, may need more connections
         else:
-            return 40.0   # Poor utilization
+            return 40.0  # Poor utilization
 
     def _get_health_status(self) -> str:
         """Get overall pool health status."""
@@ -377,7 +382,7 @@ class AdvancedConnectionPool:
             return "HEALTHY"
 
     def _is_connection_healthy(self, conn: psycopg2.extensions.connection,
-                              quick: bool = False) -> bool:
+                               quick: bool = False) -> bool:
         """
         Check if connection is healthy.
 

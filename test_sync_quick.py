@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -17,11 +16,10 @@
 Использование: python test_sync_quick.py
 """
 
-import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 from src.container import container
+
 
 def quick_sync_test():
     """Быстрая проверка синхронизации."""
@@ -69,6 +67,7 @@ def quick_sync_test():
     else:
         print("🎉 Синхронизация работает корректно!")
         return True
+
 
 if __name__ == "__main__":
     success = quick_sync_test()

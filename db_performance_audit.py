@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,9 +15,10 @@ Comprehensive PostgreSQL performance audit script.
 Checks cache hit ratio, slow queries, index usage, and provides optimization recommendations.
 """
 
-import psycopg2
-import sys
 from datetime import datetime
+
+import psycopg2
+
 
 class DatabaseAuditor:
     def __init__(self):
@@ -50,16 +50,16 @@ class DatabaseAuditor:
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT name, setting, unit, context
-                FROM pg_settings
-                WHERE name IN (
-                    'shared_buffers', 'effective_cache_size', 'work_mem',
-                    'maintenance_work_mem', 'checkpoint_completion_target',
-                    'wal_buffers', 'default_statistics_target', 'random_page_cost',
-                    'effective_io_concurrency', 'max_connections'
-                )
-                ORDER BY name
-            """)
+                           SELECT name, setting, unit, context
+                           FROM pg_settings
+                           WHERE name IN (
+                                          'shared_buffers', 'effective_cache_size', 'work_mem',
+                                          'maintenance_work_mem', 'checkpoint_completion_target',
+                                          'wal_buffers', 'default_statistics_target', 'random_page_cost',
+                                          'effective_io_concurrency', 'max_connections'
+                               )
+                           ORDER BY name
+                           """)
 
             print("Current PostgreSQL settings:")
             for row in cursor.fetchall():
@@ -96,23 +96,23 @@ class DatabaseAuditor:
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT
-                    relname as table_name,
-                    heap_blks_read,
-                    heap_blks_hit,
-                    idx_blks_read,
-                    idx_blks_hit,
-                    CASE WHEN (heap_blks_hit + heap_blks_read) > 0
-                         THEN ROUND((heap_blks_hit::numeric / (heap_blks_hit + heap_blks_read)) * 100, 2)
-                         ELSE 0 END as heap_hit_ratio,
-                    CASE WHEN (idx_blks_hit + idx_blks_read) > 0
-                         THEN ROUND((idx_blks_hit::numeric / (idx_blks_hit + idx_blks_read)) * 100, 2)
-                         ELSE 0 END as idx_hit_ratio
-                FROM pg_statio_user_tables
-                WHERE heap_blks_hit + heap_blks_read + idx_blks_hit + idx_blks_read > 0
-                ORDER BY heap_blks_hit + heap_blks_read + idx_blks_hit + idx_blks_read DESC
-                LIMIT 15
-            """)
+                           SELECT relname        as table_name,
+                                  heap_blks_read,
+                                  heap_blks_hit,
+                                  idx_blks_read,
+                                  idx_blks_hit,
+                                  CASE
+                                      WHEN (heap_blks_hit + heap_blks_read) > 0
+                                          THEN ROUND((heap_blks_hit::numeric / (heap_blks_hit + heap_blks_read)) * 100, 2)
+                                      ELSE 0 END as heap_hit_ratio,
+                                  CASE
+                                      WHEN (idx_blks_hit + idx_blks_read) > 0
+                                          THEN ROUND((idx_blks_hit::numeric / (idx_blks_hit + idx_blks_read)) * 100, 2)
+                                      ELSE 0 END as idx_hit_ratio
+                           FROM pg_statio_user_tables
+                           WHERE heap_blks_hit + heap_blks_read + idx_blks_hit + idx_blks_read > 0
+                           ORDER BY heap_blks_hit + heap_blks_read + idx_blks_hit + idx_blks_read DESC LIMIT 15
+                           """)
 
             results = cursor.fetchall()
 
@@ -139,8 +139,10 @@ class DatabaseAuditor:
                 total_idx_hits += idx_hits
 
             # Overall cache hit ratio
-            overall_heap_ratio = (total_heap_hits / (total_heap_hits + total_heap_reads) * 100) if (total_heap_hits + total_heap_reads) > 0 else 0
-            overall_idx_ratio = (total_idx_hits / (total_idx_hits + total_idx_reads) * 100) if (total_idx_hits + total_idx_reads) > 0 else 0
+            overall_heap_ratio = (total_heap_hits / (total_heap_hits + total_heap_reads) * 100) if (
+                                                                                                               total_heap_hits + total_heap_reads) > 0 else 0
+            overall_idx_ratio = (total_idx_hits / (total_idx_hits + total_idx_reads) * 100) if (
+                                                                                                           total_idx_hits + total_idx_reads) > 0 else 0
 
             print("-" * 75)
             print(f"{'OVERALL':<25} {overall_heap_ratio:>12.1f} {overall_idx_ratio:>12.1f}")
@@ -175,7 +177,8 @@ class DatabaseAuditor:
             conn = psycopg2.connect(**postgres_conn_params)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT name, installed_version FROM pg_available_extensions WHERE name = 'pg_stat_statements'")
+            cursor.execute(
+                "SELECT name, installed_version FROM pg_available_extensions WHERE name = 'pg_stat_statements'")
             result = cursor.fetchone()
 
             if result:
@@ -227,12 +230,11 @@ class DatabaseAuditor:
 
             # Check if pg_stat_statements is available
             cursor.execute("""
-                SELECT EXISTS (
-                    SELECT 1 FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    AND table_name = 'pg_stat_statements'
-                )
-            """)
+                           SELECT EXISTS (SELECT 1
+                                          FROM information_schema.tables
+                                          WHERE table_schema = 'public'
+                                            AND table_name = 'pg_stat_statements')
+                           """)
 
             if not cursor.fetchone()[0]:
                 print("❌ pg_stat_statements is not available in this database")
@@ -241,21 +243,15 @@ class DatabaseAuditor:
 
             # Get slow queries
             cursor.execute("""
-                SELECT
-                    query,
-                    calls,
-                    total_exec_time,
-                    mean_exec_time,
-                    rows,
-                    shared_blks_hit,
-                    shared_blks_read,
-                    temp_blks_read,
-                    temp_blks_written
-                FROM pg_stat_statements
-                WHERE mean_exec_time > 10  -- queries taking more than 10ms on average
-                ORDER BY mean_exec_time DESC
-                LIMIT 10
-            """)
+                           SELECT query,
+                                  calls,
+                                  total_exec_time,
+                                  mean_exec_time, rows, shared_blks_hit, shared_blks_read, temp_blks_read, temp_blks_written
+                           FROM pg_stat_statements
+                           WHERE mean_exec_time > 10 -- queries taking more than 10ms on average
+                           ORDER BY mean_exec_time DESC
+                               LIMIT 10
+                           """)
 
             slow_queries = cursor.fetchall()
 
@@ -269,7 +265,8 @@ class DatabaseAuditor:
 
             for query, calls, total_exec_time, mean_exec_time, rows, blk_hit, blk_read, temp_read, temp_written in slow_queries:
                 # Truncate query for display
-                short_query = query.replace('\n', ' ').strip()[:47] + '...' if len(query) > 50 else query.replace('\n', ' ').strip()
+                short_query = query.replace('\n', ' ').strip()[:47] + '...' if len(query) > 50 else query.replace('\n',
+                                                                                                                  ' ').strip()
                 print(f"{calls:<8} {mean_exec_time:<12.2f} {total_exec_time:<12.2f} {rows:<8} {short_query}")
 
             print("\n📋 Slow Query Recommendations:")
@@ -296,17 +293,16 @@ class DatabaseAuditor:
 
             # Get index usage statistics
             cursor.execute("""
-                SELECT
-                    schemaname,
-                    relname as table_name,
-                    indexrelname as index_name,
-                    idx_scan,
-                    idx_tup_read,
-                    idx_tup_fetch,
-                    pg_size_pretty(pg_relation_size(indexrelid)) as index_size
-                FROM pg_stat_user_indexes
-                ORDER BY idx_scan DESC, pg_relation_size(indexrelid) DESC
-            """)
+                           SELECT schemaname,
+                                  relname                                      as table_name,
+                                  indexrelname                                 as index_name,
+                                  idx_scan,
+                                  idx_tup_read,
+                                  idx_tup_fetch,
+                                  pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+                           FROM pg_stat_user_indexes
+                           ORDER BY idx_scan DESC, pg_relation_size(indexrelid) DESC
+                           """)
 
             indexes = cursor.fetchall()
 
@@ -345,7 +341,7 @@ class DatabaseAuditor:
                     elif 'bytes' in size:
                         total_unused_size += float(size.replace(' bytes', ''))
 
-                print(f"\nTotal unused index size: ~{total_unused_size / (1024*1024):.1f} MB")
+                print(f"\nTotal unused index size: ~{total_unused_size / (1024 * 1024):.1f} MB")
 
                 print("\n📋 Index Recommendations:")
                 print("  🗑️  Consider removing unused indexes to:")
@@ -397,9 +393,11 @@ class DatabaseAuditor:
         print("   - Run after significant schema changes")
         print("   - Monitor after application updates")
 
+
 def main():
     auditor = DatabaseAuditor()
     auditor.generate_report()
+
 
 if __name__ == "__main__":
     main()

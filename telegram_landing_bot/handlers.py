@@ -32,7 +32,6 @@ from loguru import logger
 from config import BOT_MESSAGES, settings
 from tracking import get_tracking_manager
 
-
 # Create router for handlers
 router = Router()
 
@@ -124,16 +123,16 @@ async def callback_get_offer(callback: CallbackQuery):
             user_id=user_id,
             source="telegram_bot_visit",
             additional_params={
-                "sub1": "telegram_bot_visit", # Added sub1
-                "sub2": "callback", # Added sub2
+                "sub1": "telegram_bot_visit",  # Added sub1
+                "sub2": "callback",  # Added sub2
                 "sub3": "direct_visit",
                 "sub4": callback.from_user.username or "user",
-                "sub5": "offer_page", # Added sub5
-                "aff_sub": "test_aff_sub_1", # Added for testing aff_sub
-                "aff_sub2": "test_aff_sub_2", # Added for testing aff_sub2
-                "aff_sub3": "test_aff_sub_3", # Added for testing aff_sub3
-                "aff_sub4": "test_aff_sub_4", # Added for testing aff_sub4
-                "aff_sub5": "test_aff_sub_5", # Added for testing aff_sub5
+                "sub5": "offer_page",  # Added sub5
+                "aff_sub": "test_aff_sub_1",  # Added for testing aff_sub
+                "aff_sub2": "test_aff_sub_2",  # Added for testing aff_sub2
+                "aff_sub3": "test_aff_sub_3",  # Added for testing aff_sub3
+                "aff_sub4": "test_aff_sub_4",  # Added for testing aff_sub4
+                "aff_sub5": "test_aff_sub_5",  # Added for testing aff_sub5
                 # "click_id": click_id # Removed click_id here
             },
             lp_id=settings.default_lp_id,
@@ -141,7 +140,7 @@ async def callback_get_offer(callback: CallbackQuery):
             ts_id=settings.default_ts_id
         )
 
-        click_id = tracking_result["click_id"] # click_id is assigned here
+        click_id = tracking_result["click_id"]  # click_id is assigned here
         tracking_url = tracking_result["tracking_url"]
 
         logger.info(f"Generated tracking link for user {user_id}: {click_id}")

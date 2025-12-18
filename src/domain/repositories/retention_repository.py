@@ -14,8 +14,8 @@
 """Retention repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 
 from ..entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment
 
@@ -45,7 +45,7 @@ class RetentionRepository(ABC):
 
     @abstractmethod
     def update_campaign_metrics(self, campaign_id: str, sent_count: int,
-                               opened_count: int, clicked_count: int, converted_count: int) -> None:
+                                opened_count: int, clicked_count: int, converted_count: int) -> None:
         """Update campaign performance metrics."""
         pass
 

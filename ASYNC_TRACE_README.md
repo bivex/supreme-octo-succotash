@@ -1,6 +1,7 @@
 # 🔍 Async-Trace Integration Guide
 
-Этот гид объясняет, как использовать **async-trace** для отладки asyncio задач в вашем сервере с **автоматическим сохранением трейсов в файлы** для последующего анализа.
+Этот гид объясняет, как использовать **async-trace** для отладки asyncio задач в вашем сервере с **автоматическим
+сохранением трейсов в файлы** для последующего анализа.
 
 ## ⚡ Быстрый старт с автоматическим сохранением
 
@@ -11,6 +12,7 @@ python main_clean.py --async-trace
 ```
 
 **Что сохраняется автоматически:**
+
 - 🚀 **Server startup** → `debug_snapshot_server_startup_*.html`
 - 🛑 **Signal shutdown** → `debug_snapshot_signal_shutdown_*.html`
 - 💥 **Unhandled exceptions** → `debug_snapshot_unhandled_exception_*.html`
@@ -59,6 +61,7 @@ python examples/async_trace_demo.py
 ```
 
 Из этого видно:
+
 - Где была создана зависшая задача (`server.py:120`)
 - Полный путь выполнения до текущей точки
 - Место, где происходит зависание
@@ -86,6 +89,7 @@ traces/
 Сервер автоматически сохраняет трейсы при:
 
 #### 🚀 **Запуск сервера**
+
 ```python
 # main_clean.py
 startup_trace = save_debug_snapshot("server_startup")
@@ -93,6 +97,7 @@ logger.info(f"📸 Server startup trace saved: {startup_trace}")
 ```
 
 #### 🛑 **Обработка сигналов**
+
 ```python
 # main_clean.py - signal_handler
 signal_trace = save_debug_snapshot(f"signal_shutdown_sig{signum}")
@@ -100,6 +105,7 @@ logger.info(f"📸 Signal shutdown trace saved: {signal_trace}")
 ```
 
 #### 💥 **Необработанные исключения**
+
 ```python
 # src/main.py - global_exception_handler
 error_trace = save_debug_snapshot("unhandled_exception")
@@ -107,6 +113,7 @@ logger.critical(f"📸 Unhandled exception trace saved: {error_trace}")
 ```
 
 #### ❌ **Ошибки в route handlers**
+
 ```python
 # src/presentation/routes/campaign_routes.py
 try:
@@ -117,6 +124,7 @@ except Exception as e:
 ```
 
 #### 🛑 **Graceful shutdown**
+
 ```python
 # main_clean.py - atexit handler
 shutdown_trace = save_debug_snapshot("server_shutdown")
@@ -126,6 +134,7 @@ logger.info(f"📸 Server shutdown trace saved: {shutdown_trace}")
 ### Форматы сохранения
 
 **JSON** - Для программного анализа:
+
 ```python
 from utils.async_debug import save_trace_to_file
 json_file = save_trace_to_file(format="json")
@@ -133,6 +142,7 @@ json_file = save_trace_to_file(format="json")
 ```
 
 **HTML** - Для визуального просмотра:
+
 ```python
 html_file = save_trace_to_file(format="html")
 # Сохраняет в traces/async_trace_YYYYMMDD_HHMMSS.html
@@ -140,6 +150,7 @@ html_file = save_trace_to_file(format="html")
 ```
 
 **JSONL (JSON Lines)** - Для непрерывного логирования:
+
 ```python
 from utils.async_debug import log_trace_to_continuous_file
 log_trace_to_continuous_file("server_trace.jsonl")
@@ -165,6 +176,7 @@ log_trace_to_continuous_file()
 ### Структура файлов
 
 **traces/async_trace_20231211_143052.json:**
+
 ```json
 {
   "timestamp": 1702305052.123,
@@ -188,6 +200,7 @@ log_trace_to_continuous_file()
 ```
 
 **HTML файлы** содержат красивую визуализацию с:
+
 - Статистикой (количество фреймов, задач, глубина)
 - Интерактивными элементами
 - Цветовой подсветкой границ задач
@@ -196,6 +209,7 @@ log_trace_to_continuous_file()
 ### Примеры использования
 
 #### При ошибках:
+
 ```python
 try:
     await risky_database_operation()
@@ -207,6 +221,7 @@ except Exception as e:
 ```
 
 #### Мониторинг производительности:
+
 ```python
 async def monitored_handler():
     start_time = time.time()
@@ -228,6 +243,7 @@ async def monitored_handler():
 ```
 
 #### Анализ после факта:
+
 ```bash
 # Просмотреть все сохраненные трейсы
 ls traces/*.html
@@ -340,6 +356,7 @@ async def risky_operation():
 ```
 
 #### Сохранение трейсов при подозрительных ситуациях:
+
 ```python
 async def database_handler():
     debug_before_await("complex query")
@@ -394,17 +411,20 @@ async def request_handler():
 ### Пример: Route registration зависал
 
 В коде было:
+
 ```python
 (await container.get_click_routes()).register(app)  # ❌ Нет await для register()
 ```
 
 async-trace показал:
+
 ```
 ↑ register() coroutine never awaited
   ↑ _register_routes() at line 177 [main.py]
 ```
 
 Исправлено на:
+
 ```python
 await (await container.get_click_routes()).register(app)  # ✅ Правильно
 ```
@@ -471,6 +491,7 @@ if settings.debug_mode or random.random() < 0.01:  # 1% запросов
 
 ---
 
-**Запомните**: async-trace дает то же понимание async кода, что и обычный traceback для sync кода. Используйте его, когда asyncio "ведет себя странно"! 🎯</contents>
+**Запомните**: async-trace дает то же понимание async кода, что и обычный traceback для sync кода. Используйте его,
+когда asyncio "ведет себя странно"! 🎯</contents>
 </xai:function_call: write>
 <parameter name="file_path">ASYNC_TRACE_README.md

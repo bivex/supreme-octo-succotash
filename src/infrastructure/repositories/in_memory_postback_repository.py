@@ -13,11 +13,11 @@
 
 """In-memory postback repository implementation."""
 
-from typing import Dict, List, Optional
 from datetime import datetime
-from collections import defaultdict
-from ...domain.repositories.postback_repository import PostbackRepository
+from typing import Dict, List, Optional
+
 from ...domain.entities.postback import Postback, PostbackStatus
+from ...domain.repositories.postback_repository import PostbackRepository
 
 
 class InMemoryPostbackRepository(PostbackRepository):

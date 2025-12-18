@@ -1,10 +1,12 @@
 # PostgreSQL Adapters for DDD Architecture
 
-This document describes the PostgreSQL adapters (implementations) for the Domain-Driven Design (DDD) architecture in the Supreme Octo Succotash project.
+This document describes the PostgreSQL adapters (implementations) for the Domain-Driven Design (DDD) architecture in the
+Supreme Octo Succotash project.
 
 ## 📋 Overview
 
 Following DDD principles, we maintain clean separation between:
+
 - **Domain Layer** - Business logic and entities (ports/interfaces)
 - **Infrastructure Layer** - Database implementations (adapters)
 - **Application Layer** - Use cases and handlers
@@ -50,6 +52,7 @@ python setup_postgres_db.py
 ```
 
 This creates:
+
 - Database: `supreme_octosuccotash_db`
 - User: `app_user` with password `app_password`
 - Required tables and indexes
@@ -76,6 +79,7 @@ form_handler = container.get_form_handler()  # Uses PostgresFormRepository
 ## 📊 Repository Interfaces (Ports)
 
 ### LTV Repository
+
 ```python
 class LTVRepository(ABC):
     def save_customer_ltv(self, customer_ltv: CustomerLTV) -> None
@@ -88,6 +92,7 @@ class LTVRepository(ABC):
 ```
 
 ### Retention Repository
+
 ```python
 class RetentionRepository(ABC):
     def save_retention_campaign(self, campaign: RetentionCampaign) -> None
@@ -100,6 +105,7 @@ class RetentionRepository(ABC):
 ```
 
 ### Form Repository
+
 ```python
 class FormRepository(ABC):
     def save_form_submission(self, submission: FormSubmission) -> None
@@ -116,22 +122,26 @@ class FormRepository(ABC):
 ### Features
 
 ✅ **Connection Management**
+
 - Automatic connection pooling
 - Connection retry logic
 - Proper connection cleanup
 
 ✅ **Data Persistence**
+
 - ACID transactions
 - JSONB support for complex data
 - Optimized indexes
 - Foreign key relationships
 
 ✅ **Performance**
+
 - Prepared statements
 - Batch operations support
 - Query optimization
 
 ✅ **Error Handling**
+
 - Graceful error handling
 - Detailed logging
 - Transaction rollback on errors
@@ -167,6 +177,7 @@ PostgresLTVRepository(
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 # Test individual adapters
 python -m pytest tests/unit/test_postgres_ltv_repository.py
@@ -175,12 +186,14 @@ python -m pytest tests/unit/test_postgres_form_repository.py
 ```
 
 ### Integration Tests
+
 ```bash
 # Test with real PostgreSQL database
 python -m pytest tests/integration/test_postgres_adapters.py
 ```
 
 ### Manual Testing
+
 ```bash
 # Run the test script
 python test_postgres_adapters.py
@@ -214,12 +227,14 @@ def get_ltv_repository(self):
 ## 📈 Performance Considerations
 
 ### Indexes
+
 - Primary keys on all tables
 - Foreign key indexes
 - JSONB GIN indexes for JSON queries
 - Composite indexes for common query patterns
 
 ### Connection Pooling
+
 ```python
 # For high-traffic applications, consider connection pooling
 from psycopg2.pool import SimpleConnectionPool
@@ -235,6 +250,7 @@ pool = SimpleConnectionPool(
 ```
 
 ### Query Optimization
+
 - Use `EXPLAIN ANALYZE` to optimize slow queries
 - Consider partitioning for large tables
 - Use appropriate data types (INET for IPs, JSONB for flexible data)
@@ -242,6 +258,7 @@ pool = SimpleConnectionPool(
 ## 🔧 Maintenance
 
 ### Backup
+
 ```bash
 # Backup database
 pg_dump -U app_user -h localhost supreme_octosuccotash_db > backup.sql
@@ -251,6 +268,7 @@ psql -U app_user -h localhost -d supreme_octosuccotash_db < backup.sql
 ```
 
 ### Monitoring
+
 ```sql
 -- Check active connections
 SELECT * FROM pg_stat_activity;
@@ -292,6 +310,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ## 📚 API Usage Examples
 
 ### LTV Analytics
+
 ```python
 from src.container import container
 
@@ -307,6 +326,7 @@ print(f"Customer segment: {customer['segment']}")
 ```
 
 ### Retention Campaigns
+
 ```python
 retention_handler = container.get_retention_handler()
 
@@ -320,6 +340,7 @@ print(f"Churn risk: {analysis['churn_risk']['risk_level']}")
 ```
 
 ### Form Processing
+
 ```python
 form_handler = container.get_form_handler()
 

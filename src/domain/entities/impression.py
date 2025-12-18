@@ -15,8 +15,8 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional
 from ipaddress import IPv4Address, IPv6Address
+from typing import Optional
 
 from ..value_objects import ImpressionId, CampaignId
 
@@ -88,8 +88,8 @@ class Impression:
     def _validate_tracking_parameters(self) -> None:
         """Validate tracking parameters format."""
         tracking_params = [self.sub1, self.sub2, self.sub3, self.sub4, self.sub5,
-                          self.affiliate_sub, self.affiliate_sub2, self.affiliate_sub3,
-                          self.affiliate_sub4, self.affiliate_sub5, self.impression_id_param]
+                           self.affiliate_sub, self.affiliate_sub2, self.affiliate_sub3,
+                           self.affiliate_sub4, self.affiliate_sub5, self.impression_id_param]
 
         import re
         pattern = re.compile(r'^[a-zA-Z0-9._-]*$')

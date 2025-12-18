@@ -13,21 +13,22 @@
 
 """Process webhook handler."""
 
-import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 from loguru import logger
+
+from ...domain.entities.webhook import TelegramWebhook
 from ...domain.repositories.webhook_repository import WebhookRepository
 from ...domain.services.webhook.webhook_service import WebhookService
-from ...domain.entities.webhook import TelegramWebhook
 
 
 class ProcessWebhookHandler:
     """Handler for processing Telegram webhooks."""
 
     def __init__(
-        self,
-        webhook_repository: WebhookRepository,
-        webhook_service: WebhookService
+            self,
+            webhook_repository: WebhookRepository,
+            webhook_service: WebhookService
     ):
         self.webhook_repository = webhook_repository
         self.webhook_service = webhook_service

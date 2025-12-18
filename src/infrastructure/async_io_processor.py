@@ -14,17 +14,18 @@
 """Asynchronous I/O processor for high-performance concurrent operations."""
 
 import asyncio
-import aiohttp
-import aiofiles
-from typing import List, Dict, Any, Optional, Callable
+import json
+import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-import time
-import logging
-from urllib.parse import urlparse
-import json
+from typing import List, Dict, Any, Optional, Callable
+
+import aiofiles
+import aiohttp
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class AsyncTaskResult:
@@ -36,6 +37,7 @@ class AsyncTaskResult:
     execution_time: float
     timestamp: float
 
+
 @dataclass
 class BatchResult:
     """Result of a batch operation."""
@@ -45,6 +47,7 @@ class BatchResult:
     total_time: float
     throughput: float
     results: List[AsyncTaskResult]
+
 
 class AsyncIOProcessor:
     """High-performance asynchronous I/O processor."""
@@ -106,11 +109,11 @@ class AsyncIOProcessor:
                     json_data = req.get('json')
 
                     async with self.http_session.request(
-                        method=method,
-                        url=url,
-                        headers=headers,
-                        data=data,
-                        json=json_data
+                            method=method,
+                            url=url,
+                            headers=headers,
+                            data=data,
+                            json=json_data
                     ) as response:
                         result_data = await response.text()
                         status = response.status
@@ -174,7 +177,7 @@ class AsyncIOProcessor:
         )
 
         logger.info(".2f"
-                   f"successful: {successful}/{len(requests)}")
+                    f"successful: {successful}/{len(requests)}")
 
         return batch_result
 
@@ -276,7 +279,7 @@ class AsyncIOProcessor:
         }
 
     async def process_with_cpu_work(self, io_operations: List[Dict[str, Any]],
-                                  cpu_callback: Callable) -> BatchResult:
+                                    cpu_callback: Callable) -> BatchResult:
         """Process I/O operations with CPU-intensive work."""
         start_time = time.time()
 
@@ -290,10 +293,10 @@ class AsyncIOProcessor:
                     if 'url' in op:
                         # HTTP request
                         async with self.http_session.request(
-                            method=op.get('method', 'GET'),
-                            url=op['url'],
-                            headers=op.get('headers', {}),
-                            json=op.get('json')
+                                method=op.get('method', 'GET'),
+                                url=op['url'],
+                                headers=op.get('headers', {}),
+                                json=op.get('json')
                         ) as response:
                             io_result = await response.json()
                     else:
@@ -370,7 +373,3 @@ class AsyncIOProcessor:
             'completed_tasks': self.completed_tasks,
             'http_session_active': self.http_session is not None
         }
-
-
-
-

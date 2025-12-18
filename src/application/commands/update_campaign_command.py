@@ -14,8 +14,8 @@
 """Update campaign command."""
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 from ...domain.value_objects import CampaignId, Money, Url
 

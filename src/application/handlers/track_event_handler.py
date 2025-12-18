@@ -13,12 +13,13 @@
 
 """Track event handler."""
 
-import json
 from typing import Dict, Any
+
 from loguru import logger
+
+from ...domain.entities.event import Event
 from ...domain.repositories.event_repository import EventRepository
 from ...domain.services.event.event_service import EventService
-from ...domain.entities.event import Event
 from ...utils.encoding import safe_string_for_logging
 
 
@@ -26,9 +27,9 @@ class TrackEventHandler:
     """Handler for tracking user events."""
 
     def __init__(
-        self,
-        event_repository: EventRepository,
-        event_service: EventService
+            self,
+            event_repository: EventRepository,
+            event_service: EventService
     ):
         self.event_repository = event_repository
         self.event_service = event_service

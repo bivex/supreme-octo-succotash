@@ -14,8 +14,9 @@
 """LTV (Lifetime Value) domain entities."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, Optional
+
 from ..value_objects.financial import Money
 
 

@@ -13,16 +13,16 @@
 
 """Security middleware for socketify applications."""
 
-import time
 import json
-import jwt
+import time
 from datetime import datetime, timezone
+
+import jwt
 from loguru import logger
 
 from ...config.settings import settings
 from ...domain.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
 from ...utils.encoding import safe_string_for_logging
-
 
 # Rate limiting storage (simple in-memory for demo)
 _request_counts = {}
@@ -99,7 +99,8 @@ def validate_request(req, res):
             return None  # Skip all validation for these endpoints
 
         # Basic URL validation - reject obviously malformed URLs
-        if full_url is None or (isinstance(full_url, str) and (not full_url or len(full_url) > 8192)):  # Reasonable URL length limit
+        if full_url is None or (
+                isinstance(full_url, str) and (not full_url or len(full_url) > 8192)):  # Reasonable URL length limit
             logger.warning(f"URL too long or empty: {len(full_url) if isinstance(full_url, str) else 'None'} chars")
             error_response = {
                 'error': {
@@ -253,7 +254,8 @@ def _validate_authentication_socketify(req, res):
         is_click_tracking = False
         is_auth_token = False
 
-    logger.debug(f"Checking auth: method={method}, is_health={is_health}, is_click_tracking={is_click_tracking}, is_auth_token={is_auth_token}")
+    logger.debug(
+        f"Checking auth: method={method}, is_health={is_health}, is_click_tracking={is_click_tracking}, is_auth_token={is_auth_token}")
 
     if is_health or is_click_tracking or is_auth_token:
         logger.debug("Skipping auth for public endpoint")
@@ -330,7 +332,8 @@ def _validate_authentication_socketify(req, res):
         return None
 
     # No valid authentication found
-    logger.warning(f"Invalid authentication: auth_header={safe_string_for_logging(auth_header)}, api_key={safe_string_for_logging(api_key)}")
+    logger.warning(
+        f"Invalid authentication: auth_header={safe_string_for_logging(auth_header)}, api_key={safe_string_for_logging(api_key)}")
     error_response = {
         'error': {
             'code': 'UNAUTHENTICATED',
@@ -516,7 +519,7 @@ def _is_rate_limited(ip: str) -> bool:
 
     # Count requests from this IP in the window
     ip_requests = [timestamp for timestamp in _request_counts.keys()
-                  if _request_counts[timestamp] == ip]
+                   if _request_counts[timestamp] == ip]
 
     if len(ip_requests) >= RATE_LIMIT_REQUESTS_PER_MINUTE:
         return True

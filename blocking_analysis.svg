@@ -1,15 +1,27 @@
-<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" width="1200" height="298" onload="init(evt)" viewBox="0 0 1200 298" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fg="http://github.com/jonhoo/inferno"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: --><defs><linearGradient id="background" y1="0" y2="1" x1="0" x2="0"><stop stop-color="#eeeeee" offset="5%"/><stop stop-color="#eeeeb0" offset="95%"/></linearGradient></defs><style type="text/css">
-text { font-family:monospace; font-size:12px }
-#title { text-anchor:middle; font-size:17px; }
-#matched { text-anchor:end; }
-#search { text-anchor:end; opacity:0.1; cursor:pointer; }
-#search:hover, #search.show { opacity:1; }
-#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
-#unzoom { cursor:pointer; }
-#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
-.hide { display:none; }
-.parent { opacity:0.5; }
-</style><script type="text/ecmascript"><![CDATA[
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:fg="http://github.com/jonhoo/inferno" version="1.1" width="1200" height="298" onload="init(evt)"
+     viewBox="0 0 1200 298"
+     xmlns="http://www.w3.org/2000/svg"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: -->
+    <defs>
+        <linearGradient id="background" y1="0" y2="1" x1="0" x2="0">
+            <stop stop-color="#eeeeee" offset="5%"/>
+            <stop stop-color="#eeeeb0" offset="95%"/>
+        </linearGradient>
+    </defs>
+    <style type="text/css">
+        text { font-family:monospace; font-size:12px }
+        #title { text-anchor:middle; font-size:17px; }
+        #matched { text-anchor:end; }
+        #search { text-anchor:end; opacity:0.1; cursor:pointer; }
+        #search:hover, #search.show { opacity:1; }
+        #subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+        #unzoom { cursor:pointer; }
+        #frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+        .hide { display:none; }
+        .parent { opacity:0.5; }
+    </style>
+    <script type="text/ecmascript"><![CDATA[
         var nametype = 'Function:';
         var fontsize = 12;
         var fontwidth = 0.59;
@@ -488,4 +500,260 @@ function search(term) {
 function format_percent(n) {
     return n.toFixed(4) + "%";
 }
-]]></script><rect x="0" y="0" width="100%" height="298" fill="url(#background)"/><text id="title" fill="rgb(0,0,0)" x="50.0000%" y="24.00">C:\ProgramData\anaconda3\Scripts\py-spy.exe record -o blocking_analysis.svg --pid 18344 --duration 10</text><text id="details" fill="rgb(0,0,0)" x="10" y="40.00"> </text><text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="24.00">Reset Zoom</text><text id="search" fill="rgb(0,0,0)" x="1190" y="24.00">Search</text><text id="matched" fill="rgb(0,0,0)" x="1190" y="287.00"> </text><svg id="frames" x="10" width="1180" total_samples="153"><g><title>_run_once (asyncio\base_events.py:1918) (1 samples, 0.65%)</title><rect x="1.3072%" y="164" width="0.6536%" height="15" fill="rgb(227,0,7)" fg:x="2" fg:w="1"/><text x="1.5572%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1919) (3 samples, 1.96%)</title><rect x="1.9608%" y="164" width="1.9608%" height="15" fill="rgb(217,0,24)" fg:x="3" fg:w="3"/><text x="2.2108%" y="174.50">_..</text></g><g><title>_run_once (asyncio\base_events.py:1936) (1 samples, 0.65%)</title><rect x="3.9216%" y="164" width="0.6536%" height="15" fill="rgb(221,193,54)" fg:x="6" fg:w="1"/><text x="4.1716%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1947) (2 samples, 1.31%)</title><rect x="4.5752%" y="164" width="1.3072%" height="15" fill="rgb(248,212,6)" fg:x="7" fg:w="2"/><text x="4.8252%" y="174.50"></text></g><g><title>_poll (asyncio\windows_events.py:769) (1 samples, 0.65%)</title><rect x="7.1895%" y="196" width="0.6536%" height="15" fill="rgb(208,68,35)" fg:x="11" fg:w="1"/><text x="7.4395%" y="206.50"></text></g><g><title>_poll (asyncio\windows_events.py:773) (1 samples, 0.65%)</title><rect x="7.8431%" y="196" width="0.6536%" height="15" fill="rgb(232,128,0)" fg:x="12" fg:w="1"/><text x="8.0931%" y="206.50"></text></g><g><title>_poll (asyncio\windows_events.py:774) (61 samples, 39.87%)</title><rect x="8.4967%" y="196" width="39.8693%" height="15" fill="rgb(207,160,47)" fg:x="13" fg:w="61"/><text x="8.7467%" y="206.50">_poll (asyncio\windows_events.py:774)</text></g><g><title>select (asyncio\windows_events.py:445) (64 samples, 41.83%)</title><rect x="7.1895%" y="180" width="41.8301%" height="15" fill="rgb(228,23,34)" fg:x="11" fg:w="64"/><text x="7.4395%" y="190.50">select (asyncio\windows_events.py:445)</text></g><g><title>_poll (asyncio\windows_events.py:816) (1 samples, 0.65%)</title><rect x="48.3660%" y="196" width="0.6536%" height="15" fill="rgb(218,30,26)" fg:x="74" fg:w="1"/><text x="48.6160%" y="206.50"></text></g><g><title>select (asyncio\windows_events.py:446) (1 samples, 0.65%)</title><rect x="49.0196%" y="180" width="0.6536%" height="15" fill="rgb(220,122,19)" fg:x="75" fg:w="1"/><text x="49.2696%" y="190.50"></text></g><g><title>_run_once (asyncio\base_events.py:1949) (68 samples, 44.44%)</title><rect x="5.8824%" y="164" width="44.4444%" height="15" fill="rgb(250,228,42)" fg:x="9" fg:w="68"/><text x="6.1324%" y="174.50">_run_once (asyncio\base_events.py:1949)</text></g><g><title>select (asyncio\windows_events.py:447) (1 samples, 0.65%)</title><rect x="49.6732%" y="180" width="0.6536%" height="15" fill="rgb(240,193,28)" fg:x="76" fg:w="1"/><text x="49.9232%" y="190.50"></text></g><g><title>_run_once (asyncio\base_events.py:1952) (2 samples, 1.31%)</title><rect x="50.3268%" y="164" width="1.3072%" height="15" fill="rgb(216,20,37)" fg:x="77" fg:w="2"/><text x="50.5768%" y="174.50"></text></g><g><title>time (asyncio\base_events.py:734) (1 samples, 0.65%)</title><rect x="52.2876%" y="180" width="0.6536%" height="15" fill="rgb(206,188,39)" fg:x="80" fg:w="1"/><text x="52.5376%" y="190.50"></text></g><g><title>_run_once (asyncio\base_events.py:1955) (3 samples, 1.96%)</title><rect x="51.6340%" y="164" width="1.9608%" height="15" fill="rgb(217,207,13)" fg:x="79" fg:w="3"/><text x="51.8840%" y="174.50">_..</text></g><g><title>time (asyncio\base_events.py:741) (1 samples, 0.65%)</title><rect x="52.9412%" y="180" width="0.6536%" height="15" fill="rgb(231,73,38)" fg:x="81" fg:w="1"/><text x="53.1912%" y="190.50"></text></g><g><title>_run_once (asyncio\base_events.py:1957) (1 samples, 0.65%)</title><rect x="53.5948%" y="164" width="0.6536%" height="15" fill="rgb(225,20,46)" fg:x="82" fg:w="1"/><text x="53.8448%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1959) (1 samples, 0.65%)</title><rect x="54.2484%" y="164" width="0.6536%" height="15" fill="rgb(210,31,41)" fg:x="83" fg:w="1"/><text x="54.4984%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1960) (2 samples, 1.31%)</title><rect x="54.9020%" y="164" width="1.3072%" height="15" fill="rgb(221,200,47)" fg:x="84" fg:w="2"/><text x="55.1520%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1961) (1 samples, 0.65%)</title><rect x="56.2092%" y="164" width="0.6536%" height="15" fill="rgb(226,26,5)" fg:x="86" fg:w="1"/><text x="56.4592%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1962) (2 samples, 1.31%)</title><rect x="56.8627%" y="164" width="1.3072%" height="15" fill="rgb(249,33,26)" fg:x="87" fg:w="2"/><text x="57.1127%" y="174.50"></text></g><g><title>_run_once (asyncio\base_events.py:1970) (4 samples, 2.61%)</title><rect x="58.1699%" y="164" width="2.6144%" height="15" fill="rgb(235,183,28)" fg:x="89" fg:w="4"/><text x="58.4199%" y="174.50">_r..</text></g><g><title>_run_once (asyncio\base_events.py:1971) (3 samples, 1.96%)</title><rect x="60.7843%" y="164" width="1.9608%" height="15" fill="rgb(221,5,38)" fg:x="93" fg:w="3"/><text x="61.0343%" y="174.50">_..</text></g><g><title>run_nowait (socketify\uv.py:87) (1 samples, 0.65%)</title><rect x="74.5098%" y="212" width="0.6536%" height="15" fill="rgb(247,18,42)" fg:x="114" fg:w="1"/><text x="74.7598%" y="222.50"></text></g><g><title>run_nowait (socketify\uv.py:88) (3 samples, 1.96%)</title><rect x="75.1634%" y="212" width="1.9608%" height="15" fill="rgb(241,131,45)" fg:x="115" fg:w="3"/><text x="75.4134%" y="222.50">r..</text></g><g><title>_keep_alive (socketify\loop.py:93) (18 samples, 11.76%)</title><rect x="73.8562%" y="196" width="11.7647%" height="15" fill="rgb(249,31,29)" fg:x="113" fg:w="18"/><text x="74.1062%" y="206.50">_keep_alive (sock..</text></g><g><title>run_nowait (socketify\uv.py:89) (13 samples, 8.50%)</title><rect x="77.1242%" y="212" width="8.4967%" height="15" fill="rgb(225,111,53)" fg:x="118" fg:w="13"/><text x="77.3742%" y="222.50">run_nowait (..</text></g><g><title>call_later (asyncio\base_events.py:760) (1 samples, 0.65%)</title><rect x="86.2745%" y="212" width="0.6536%" height="15" fill="rgb(238,160,17)" fg:x="132" fg:w="1"/><text x="86.5245%" y="222.50"></text></g><g><title>call_at (asyncio\base_events.py:774) (3 samples, 1.96%)</title><rect x="88.8889%" y="228" width="1.9608%" height="15" fill="rgb(214,148,48)" fg:x="136" fg:w="3"/><text x="89.1389%" y="238.50">c..</text></g><g><title>_check_closed (asyncio\base_events.py:541) (2 samples, 1.31%)</title><rect x="89.5425%" y="244" width="1.3072%" height="15" fill="rgb(232,36,49)" fg:x="137" fg:w="2"/><text x="89.7925%" y="254.50"></text></g><g><title>__init__ (asyncio\events.py:38) (2 samples, 1.31%)</title><rect x="94.1176%" y="260" width="1.3072%" height="15" fill="rgb(209,103,24)" fg:x="144" fg:w="2"/><text x="94.3676%" y="270.50"></text></g><g><title>__init__ (asyncio\events.py:42) (1 samples, 0.65%)</title><rect x="95.4248%" y="260" width="0.6536%" height="15" fill="rgb(229,88,8)" fg:x="146" fg:w="1"/><text x="95.6748%" y="270.50"></text></g><g><title>__init__ (asyncio\events.py:112) (7 samples, 4.58%)</title><rect x="92.1569%" y="244" width="4.5752%" height="15" fill="rgb(213,181,19)" fg:x="141" fg:w="7"/><text x="92.4069%" y="254.50">__ini..</text></g><g><title>__init__ (asyncio\events.py:45) (1 samples, 0.65%)</title><rect x="96.0784%" y="260" width="0.6536%" height="15" fill="rgb(254,191,54)" fg:x="147" fg:w="1"/><text x="96.3284%" y="270.50"></text></g><g><title>call_at (asyncio\base_events.py:778) (10 samples, 6.54%)</title><rect x="90.8497%" y="228" width="6.5359%" height="15" fill="rgb(241,83,37)" fg:x="139" fg:w="10"/><text x="91.0997%" y="238.50">call_at (..</text></g><g><title>__init__ (asyncio\events.py:113) (1 samples, 0.65%)</title><rect x="96.7320%" y="244" width="0.6536%" height="15" fill="rgb(233,36,39)" fg:x="148" fg:w="1"/><text x="96.9820%" y="254.50"></text></g><g><title>call_at (asyncio\base_events.py:779) (1 samples, 0.65%)</title><rect x="97.3856%" y="228" width="0.6536%" height="15" fill="rgb(226,3,54)" fg:x="149" fg:w="1"/><text x="97.6356%" y="238.50"></text></g><g><title>all (153 samples, 100%)</title><rect x="0.0000%" y="52" width="100.0000%" height="15" fill="rgb(245,192,40)" fg:x="0" fg:w="153"/><text x="0.2500%" y="62.50"></text></g><g><title>&lt;module&gt; (main_clean.py:121) (153 samples, 100.00%)</title><rect x="0.0000%" y="68" width="100.0000%" height="15" fill="rgb(238,167,29)" fg:x="0" fg:w="153"/><text x="0.2500%" y="78.50">&lt;module&gt; (main_clean.py:121)</text></g><g><title>run_server (main_clean.py:45) (153 samples, 100.00%)</title><rect x="0.0000%" y="84" width="100.0000%" height="15" fill="rgb(232,182,51)" fg:x="0" fg:w="153"/><text x="0.2500%" y="94.50">run_server (main_clean.py:45)</text></g><g><title>run (socketify\socketify.py:3403) (153 samples, 100.00%)</title><rect x="0.0000%" y="100" width="100.0000%" height="15" fill="rgb(231,60,39)" fg:x="0" fg:w="153"/><text x="0.2500%" y="110.50">run (socketify\socketify.py:3403)</text></g><g><title>run (socketify\loop.py:167) (153 samples, 100.00%)</title><rect x="0.0000%" y="116" width="100.0000%" height="15" fill="rgb(208,69,12)" fg:x="0" fg:w="153"/><text x="0.2500%" y="126.50">run (socketify\loop.py:167)</text></g><g><title>run_forever (asyncio\windows_events.py:322) (153 samples, 100.00%)</title><rect x="0.0000%" y="132" width="100.0000%" height="15" fill="rgb(235,93,37)" fg:x="0" fg:w="153"/><text x="0.2500%" y="142.50">run_forever (asyncio\windows_events.py:322)</text></g><g><title>run_forever (asyncio\base_events.py:641) (153 samples, 100.00%)</title><rect x="0.0000%" y="148" width="100.0000%" height="15" fill="rgb(213,116,39)" fg:x="0" fg:w="153"/><text x="0.2500%" y="158.50">run_forever (asyncio\base_events.py:641)</text></g><g><title>_run_once (asyncio\base_events.py:1987) (57 samples, 37.25%)</title><rect x="62.7451%" y="164" width="37.2549%" height="15" fill="rgb(222,207,29)" fg:x="96" fg:w="57"/><text x="62.9951%" y="174.50">_run_once (asyncio\base_events.py:1987)</text></g><g><title>_run (asyncio\events.py:88) (57 samples, 37.25%)</title><rect x="62.7451%" y="180" width="37.2549%" height="15" fill="rgb(206,96,30)" fg:x="96" fg:w="57"/><text x="62.9951%" y="190.50">_run (asyncio\events.py:88)</text></g><g><title>_keep_alive (socketify\loop.py:98) (22 samples, 14.38%)</title><rect x="85.6209%" y="196" width="14.3791%" height="15" fill="rgb(218,138,4)" fg:x="131" fg:w="22"/><text x="85.8709%" y="206.50">_keep_alive (socketify..</text></g><g><title>call_later (asyncio\base_events.py:761) (20 samples, 13.07%)</title><rect x="86.9281%" y="212" width="13.0719%" height="15" fill="rgb(250,191,14)" fg:x="133" fg:w="20"/><text x="87.1781%" y="222.50">call_later (asyncio\..</text></g><g><title>call_at (asyncio\base_events.py:781) (3 samples, 1.96%)</title><rect x="98.0392%" y="228" width="1.9608%" height="15" fill="rgb(239,60,40)" fg:x="150" fg:w="3"/><text x="98.2892%" y="238.50">c..</text></g></svg></svg>
+]]></script>
+    <rect x="0" y="0" width="100%" height="298" fill="url(#background)"/>
+    <text id="title" fill="rgb(0,0,0)" x="50.0000%" y="24.00">C:\ProgramData\anaconda3\Scripts\py-spy.exe record -o
+        blocking_analysis.svg --pid 18344 --duration 10
+    </text>
+    <text id="details" fill="rgb(0,0,0)" x="10" y="40.00"></text>
+    <text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="24.00">Reset Zoom</text>
+    <text id="search" fill="rgb(0,0,0)" x="1190" y="24.00">Search</text>
+    <text id="matched" fill="rgb(0,0,0)" x="1190" y="287.00"></text>
+    <svg id="frames" x="10" width="1180" total_samples="153">
+        <g>
+            <title>_run_once (asyncio\base_events.py:1918) (1 samples, 0.65%)</title>
+            <rect x="1.3072%" y="164" width="0.6536%" height="15" fill="rgb(227,0,7)" fg:x="2" fg:w="1"/>
+            <text x="1.5572%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1919) (3 samples, 1.96%)</title>
+            <rect x="1.9608%" y="164" width="1.9608%" height="15" fill="rgb(217,0,24)" fg:x="3" fg:w="3"/>
+            <text x="2.2108%" y="174.50">_..</text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1936) (1 samples, 0.65%)</title>
+            <rect x="3.9216%" y="164" width="0.6536%" height="15" fill="rgb(221,193,54)" fg:x="6" fg:w="1"/>
+            <text x="4.1716%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1947) (2 samples, 1.31%)</title>
+            <rect x="4.5752%" y="164" width="1.3072%" height="15" fill="rgb(248,212,6)" fg:x="7" fg:w="2"/>
+            <text x="4.8252%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_poll (asyncio\windows_events.py:769) (1 samples, 0.65%)</title>
+            <rect x="7.1895%" y="196" width="0.6536%" height="15" fill="rgb(208,68,35)" fg:x="11" fg:w="1"/>
+            <text x="7.4395%" y="206.50"></text>
+        </g>
+        <g>
+            <title>_poll (asyncio\windows_events.py:773) (1 samples, 0.65%)</title>
+            <rect x="7.8431%" y="196" width="0.6536%" height="15" fill="rgb(232,128,0)" fg:x="12" fg:w="1"/>
+            <text x="8.0931%" y="206.50"></text>
+        </g>
+        <g>
+            <title>_poll (asyncio\windows_events.py:774) (61 samples, 39.87%)</title>
+            <rect x="8.4967%" y="196" width="39.8693%" height="15" fill="rgb(207,160,47)" fg:x="13" fg:w="61"/>
+            <text x="8.7467%" y="206.50">_poll (asyncio\windows_events.py:774)</text>
+        </g>
+        <g>
+            <title>select (asyncio\windows_events.py:445) (64 samples, 41.83%)</title>
+            <rect x="7.1895%" y="180" width="41.8301%" height="15" fill="rgb(228,23,34)" fg:x="11" fg:w="64"/>
+            <text x="7.4395%" y="190.50">select (asyncio\windows_events.py:445)</text>
+        </g>
+        <g>
+            <title>_poll (asyncio\windows_events.py:816) (1 samples, 0.65%)</title>
+            <rect x="48.3660%" y="196" width="0.6536%" height="15" fill="rgb(218,30,26)" fg:x="74" fg:w="1"/>
+            <text x="48.6160%" y="206.50"></text>
+        </g>
+        <g>
+            <title>select (asyncio\windows_events.py:446) (1 samples, 0.65%)</title>
+            <rect x="49.0196%" y="180" width="0.6536%" height="15" fill="rgb(220,122,19)" fg:x="75" fg:w="1"/>
+            <text x="49.2696%" y="190.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1949) (68 samples, 44.44%)</title>
+            <rect x="5.8824%" y="164" width="44.4444%" height="15" fill="rgb(250,228,42)" fg:x="9" fg:w="68"/>
+            <text x="6.1324%" y="174.50">_run_once (asyncio\base_events.py:1949)</text>
+        </g>
+        <g>
+            <title>select (asyncio\windows_events.py:447) (1 samples, 0.65%)</title>
+            <rect x="49.6732%" y="180" width="0.6536%" height="15" fill="rgb(240,193,28)" fg:x="76" fg:w="1"/>
+            <text x="49.9232%" y="190.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1952) (2 samples, 1.31%)</title>
+            <rect x="50.3268%" y="164" width="1.3072%" height="15" fill="rgb(216,20,37)" fg:x="77" fg:w="2"/>
+            <text x="50.5768%" y="174.50"></text>
+        </g>
+        <g>
+            <title>time (asyncio\base_events.py:734) (1 samples, 0.65%)</title>
+            <rect x="52.2876%" y="180" width="0.6536%" height="15" fill="rgb(206,188,39)" fg:x="80" fg:w="1"/>
+            <text x="52.5376%" y="190.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1955) (3 samples, 1.96%)</title>
+            <rect x="51.6340%" y="164" width="1.9608%" height="15" fill="rgb(217,207,13)" fg:x="79" fg:w="3"/>
+            <text x="51.8840%" y="174.50">_..</text>
+        </g>
+        <g>
+            <title>time (asyncio\base_events.py:741) (1 samples, 0.65%)</title>
+            <rect x="52.9412%" y="180" width="0.6536%" height="15" fill="rgb(231,73,38)" fg:x="81" fg:w="1"/>
+            <text x="53.1912%" y="190.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1957) (1 samples, 0.65%)</title>
+            <rect x="53.5948%" y="164" width="0.6536%" height="15" fill="rgb(225,20,46)" fg:x="82" fg:w="1"/>
+            <text x="53.8448%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1959) (1 samples, 0.65%)</title>
+            <rect x="54.2484%" y="164" width="0.6536%" height="15" fill="rgb(210,31,41)" fg:x="83" fg:w="1"/>
+            <text x="54.4984%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1960) (2 samples, 1.31%)</title>
+            <rect x="54.9020%" y="164" width="1.3072%" height="15" fill="rgb(221,200,47)" fg:x="84" fg:w="2"/>
+            <text x="55.1520%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1961) (1 samples, 0.65%)</title>
+            <rect x="56.2092%" y="164" width="0.6536%" height="15" fill="rgb(226,26,5)" fg:x="86" fg:w="1"/>
+            <text x="56.4592%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1962) (2 samples, 1.31%)</title>
+            <rect x="56.8627%" y="164" width="1.3072%" height="15" fill="rgb(249,33,26)" fg:x="87" fg:w="2"/>
+            <text x="57.1127%" y="174.50"></text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1970) (4 samples, 2.61%)</title>
+            <rect x="58.1699%" y="164" width="2.6144%" height="15" fill="rgb(235,183,28)" fg:x="89" fg:w="4"/>
+            <text x="58.4199%" y="174.50">_r..</text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1971) (3 samples, 1.96%)</title>
+            <rect x="60.7843%" y="164" width="1.9608%" height="15" fill="rgb(221,5,38)" fg:x="93" fg:w="3"/>
+            <text x="61.0343%" y="174.50">_..</text>
+        </g>
+        <g>
+            <title>run_nowait (socketify\uv.py:87) (1 samples, 0.65%)</title>
+            <rect x="74.5098%" y="212" width="0.6536%" height="15" fill="rgb(247,18,42)" fg:x="114" fg:w="1"/>
+            <text x="74.7598%" y="222.50"></text>
+        </g>
+        <g>
+            <title>run_nowait (socketify\uv.py:88) (3 samples, 1.96%)</title>
+            <rect x="75.1634%" y="212" width="1.9608%" height="15" fill="rgb(241,131,45)" fg:x="115" fg:w="3"/>
+            <text x="75.4134%" y="222.50">r..</text>
+        </g>
+        <g>
+            <title>_keep_alive (socketify\loop.py:93) (18 samples, 11.76%)</title>
+            <rect x="73.8562%" y="196" width="11.7647%" height="15" fill="rgb(249,31,29)" fg:x="113" fg:w="18"/>
+            <text x="74.1062%" y="206.50">_keep_alive (sock..</text>
+        </g>
+        <g>
+            <title>run_nowait (socketify\uv.py:89) (13 samples, 8.50%)</title>
+            <rect x="77.1242%" y="212" width="8.4967%" height="15" fill="rgb(225,111,53)" fg:x="118" fg:w="13"/>
+            <text x="77.3742%" y="222.50">run_nowait (..</text>
+        </g>
+        <g>
+            <title>call_later (asyncio\base_events.py:760) (1 samples, 0.65%)</title>
+            <rect x="86.2745%" y="212" width="0.6536%" height="15" fill="rgb(238,160,17)" fg:x="132" fg:w="1"/>
+            <text x="86.5245%" y="222.50"></text>
+        </g>
+        <g>
+            <title>call_at (asyncio\base_events.py:774) (3 samples, 1.96%)</title>
+            <rect x="88.8889%" y="228" width="1.9608%" height="15" fill="rgb(214,148,48)" fg:x="136" fg:w="3"/>
+            <text x="89.1389%" y="238.50">c..</text>
+        </g>
+        <g>
+            <title>_check_closed (asyncio\base_events.py:541) (2 samples, 1.31%)</title>
+            <rect x="89.5425%" y="244" width="1.3072%" height="15" fill="rgb(232,36,49)" fg:x="137" fg:w="2"/>
+            <text x="89.7925%" y="254.50"></text>
+        </g>
+        <g>
+            <title>__init__ (asyncio\events.py:38) (2 samples, 1.31%)</title>
+            <rect x="94.1176%" y="260" width="1.3072%" height="15" fill="rgb(209,103,24)" fg:x="144" fg:w="2"/>
+            <text x="94.3676%" y="270.50"></text>
+        </g>
+        <g>
+            <title>__init__ (asyncio\events.py:42) (1 samples, 0.65%)</title>
+            <rect x="95.4248%" y="260" width="0.6536%" height="15" fill="rgb(229,88,8)" fg:x="146" fg:w="1"/>
+            <text x="95.6748%" y="270.50"></text>
+        </g>
+        <g>
+            <title>__init__ (asyncio\events.py:112) (7 samples, 4.58%)</title>
+            <rect x="92.1569%" y="244" width="4.5752%" height="15" fill="rgb(213,181,19)" fg:x="141" fg:w="7"/>
+            <text x="92.4069%" y="254.50">__ini..</text>
+        </g>
+        <g>
+            <title>__init__ (asyncio\events.py:45) (1 samples, 0.65%)</title>
+            <rect x="96.0784%" y="260" width="0.6536%" height="15" fill="rgb(254,191,54)" fg:x="147" fg:w="1"/>
+            <text x="96.3284%" y="270.50"></text>
+        </g>
+        <g>
+            <title>call_at (asyncio\base_events.py:778) (10 samples, 6.54%)</title>
+            <rect x="90.8497%" y="228" width="6.5359%" height="15" fill="rgb(241,83,37)" fg:x="139" fg:w="10"/>
+            <text x="91.0997%" y="238.50">call_at (..</text>
+        </g>
+        <g>
+            <title>__init__ (asyncio\events.py:113) (1 samples, 0.65%)</title>
+            <rect x="96.7320%" y="244" width="0.6536%" height="15" fill="rgb(233,36,39)" fg:x="148" fg:w="1"/>
+            <text x="96.9820%" y="254.50"></text>
+        </g>
+        <g>
+            <title>call_at (asyncio\base_events.py:779) (1 samples, 0.65%)</title>
+            <rect x="97.3856%" y="228" width="0.6536%" height="15" fill="rgb(226,3,54)" fg:x="149" fg:w="1"/>
+            <text x="97.6356%" y="238.50"></text>
+        </g>
+        <g>
+            <title>all (153 samples, 100%)</title>
+            <rect x="0.0000%" y="52" width="100.0000%" height="15" fill="rgb(245,192,40)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="62.50"></text>
+        </g>
+        <g>
+            <title>&lt;module&gt; (main_clean.py:121) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="68" width="100.0000%" height="15" fill="rgb(238,167,29)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="78.50">&lt;module&gt; (main_clean.py:121)</text>
+        </g>
+        <g>
+            <title>run_server (main_clean.py:45) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="84" width="100.0000%" height="15" fill="rgb(232,182,51)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="94.50">run_server (main_clean.py:45)</text>
+        </g>
+        <g>
+            <title>run (socketify\socketify.py:3403) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="100" width="100.0000%" height="15" fill="rgb(231,60,39)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="110.50">run (socketify\socketify.py:3403)</text>
+        </g>
+        <g>
+            <title>run (socketify\loop.py:167) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="116" width="100.0000%" height="15" fill="rgb(208,69,12)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="126.50">run (socketify\loop.py:167)</text>
+        </g>
+        <g>
+            <title>run_forever (asyncio\windows_events.py:322) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="132" width="100.0000%" height="15" fill="rgb(235,93,37)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="142.50">run_forever (asyncio\windows_events.py:322)</text>
+        </g>
+        <g>
+            <title>run_forever (asyncio\base_events.py:641) (153 samples, 100.00%)</title>
+            <rect x="0.0000%" y="148" width="100.0000%" height="15" fill="rgb(213,116,39)" fg:x="0" fg:w="153"/>
+            <text x="0.2500%" y="158.50">run_forever (asyncio\base_events.py:641)</text>
+        </g>
+        <g>
+            <title>_run_once (asyncio\base_events.py:1987) (57 samples, 37.25%)</title>
+            <rect x="62.7451%" y="164" width="37.2549%" height="15" fill="rgb(222,207,29)" fg:x="96" fg:w="57"/>
+            <text x="62.9951%" y="174.50">_run_once (asyncio\base_events.py:1987)</text>
+        </g>
+        <g>
+            <title>_run (asyncio\events.py:88) (57 samples, 37.25%)</title>
+            <rect x="62.7451%" y="180" width="37.2549%" height="15" fill="rgb(206,96,30)" fg:x="96" fg:w="57"/>
+            <text x="62.9951%" y="190.50">_run (asyncio\events.py:88)</text>
+        </g>
+        <g>
+            <title>_keep_alive (socketify\loop.py:98) (22 samples, 14.38%)</title>
+            <rect x="85.6209%" y="196" width="14.3791%" height="15" fill="rgb(218,138,4)" fg:x="131" fg:w="22"/>
+            <text x="85.8709%" y="206.50">_keep_alive (socketify..</text>
+        </g>
+        <g>
+            <title>call_later (asyncio\base_events.py:761) (20 samples, 13.07%)</title>
+            <rect x="86.9281%" y="212" width="13.0719%" height="15" fill="rgb(250,191,14)" fg:x="133" fg:w="20"/>
+            <text x="87.1781%" y="222.50">call_later (asyncio\..</text>
+        </g>
+        <g>
+            <title>call_at (asyncio\base_events.py:781) (3 samples, 1.96%)</title>
+            <rect x="98.0392%" y="228" width="1.9608%" height="15" fill="rgb(239,60,40)" fg:x="150" fg:w="3"/>
+            <text x="98.2892%" y="238.50">c..</text>
+        </g>
+    </svg>
+</svg>

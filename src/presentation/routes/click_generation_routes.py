@@ -13,8 +13,8 @@
 
 """Click generation HTTP routes."""
 
-import json
 from loguru import logger
+
 from ...application.handlers.generate_click_handler import GenerateClickHandler
 
 
@@ -30,9 +30,10 @@ class ClickGenerationRoutes:
 
     def _register_generate_click(self, app):
         """Register click generation route."""
+
         async def generate_click(res, req):
             """Generate personalized click tracking URLs."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:

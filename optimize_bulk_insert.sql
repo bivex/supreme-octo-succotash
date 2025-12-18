@@ -23,7 +23,8 @@ DROP INDEX IF EXISTS idx_events_created_at;
 BEGIN;
 
 -- Disable autovacuum temporarily for this session
-SET autovacuum_enabled = false;
+SET
+autovacuum_enabled = false;
 
 -- Use COPY for maximum performance (if loading from file)
 /*
@@ -34,16 +35,16 @@ WITH (FORMAT csv, HEADER true);
 
 -- Or optimized multi-row INSERT
 INSERT INTO events (id, click_id, event_type, event_data, created_at)
-VALUES
-    (gen_random_uuid()::text, 'click_1', 'page_view', '{"url": "/home"}', NOW()),
-    (gen_random_uuid()::text, 'click_2', 'click', '{"element": "button"}', NOW()),
-    -- ... more rows
+VALUES (gen_random_uuid()::text, 'click_1', 'page_view', '{"url": "/home"}', NOW()),
+       (gen_random_uuid()::text, 'click_2', 'click', '{"element": "button"}', NOW()),
+-- ... more rows
 ON CONFLICT DO NOTHING; -- Avoid duplicate key errors
 
 COMMIT;
 
 -- 4. Re-enable autovacuum
-SET autovacuum_enabled = true;
+SET
+autovacuum_enabled = true;
 
 -- 5. Recreate indexes if they were dropped
 /*
@@ -53,14 +54,14 @@ CREATE INDEX CONCURRENTLY idx_events_created_at ON events (created_at DESC);
 */
 
 -- 6. Run ANALYZE to update statistics
-ANALYZE events;
+ANALYZE
+events;
 
 -- 7. Monitor performance improvement
-SELECT
-    schemaname,
-    relname as table_name,
-    n_tup_ins as inserts,
-    n_tup_upd as updates,
-    n_tup_del as deletes
+SELECT schemaname,
+       relname   as table_name,
+       n_tup_ins as inserts,
+       n_tup_upd as updates,
+       n_tup_del as deletes
 FROM pg_stat_user_tables
 WHERE relname = 'events';

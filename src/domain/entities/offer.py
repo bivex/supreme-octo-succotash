@@ -15,8 +15,8 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional
 from decimal import Decimal
+from typing import Optional
 
 from ..value_objects import Money, Url
 

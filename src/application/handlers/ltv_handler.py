@@ -13,8 +13,9 @@
 
 """LTV analysis handler."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Dict, Any, Optional
+
 from loguru import logger
 
 from ...domain.repositories.ltv_repository import LTVRepository
@@ -29,7 +30,7 @@ class LTVHandler:
         self._ltv_service = LTVService()
 
     def get_ltv_analysis(self, start_date: Optional[datetime] = None,
-                        end_date: Optional[datetime] = None) -> Dict[str, Any]:
+                         end_date: Optional[datetime] = None) -> Dict[str, Any]:
         """
         Get LTV analysis data.
 
@@ -80,7 +81,8 @@ class LTVHandler:
                 "segment_distribution": analytics.get('segment_distribution', {})
             }
 
-            logger.info(f"LTV analysis generated: {result['total_customers']} customers, ${result['total_revenue']} revenue")
+            logger.info(
+                f"LTV analysis generated: {result['total_customers']} customers, ${result['total_revenue']} revenue")
 
             return result
 

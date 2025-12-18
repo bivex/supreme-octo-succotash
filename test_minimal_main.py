@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,19 +15,23 @@ Minimal test that exactly mimics main_clean.py structure
 """
 
 import asyncio
+import inspect
 import signal
 import sys
-import inspect
+
 import socketify
 from loguru import logger
+
 
 # Mock settings
 class MockSettings:
     class API:
         port = 5004
 
+
 settings = MockSettings()
 MockSettings.api = MockSettings.API()
+
 
 async def create_test_app():
     """Create app exactly like main_clean.py"""
@@ -56,11 +59,13 @@ async def create_test_app():
     logger.info("🏗️ FINISH: Socketify application created")
     return app
 
+
 class MinimalServerRunner:
     def setup_signal_handlers(self):
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, shutting down...")
             sys.exit(0)
+
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
@@ -97,6 +102,7 @@ class MinimalServerRunner:
         except Exception as e:
             logger.error(f"Runner error: {e}")
             raise
+
 
 if __name__ == "__main__":
     MinimalServerRunner().run_server()

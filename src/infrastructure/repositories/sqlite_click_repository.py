@@ -14,8 +14,8 @@
 """SQLite click repository implementation."""
 
 import sqlite3
-from typing import Optional, List
 from datetime import datetime, timezone, date
+from typing import Optional, List
 
 from ...domain.entities.click import Click
 from ...domain.repositories.click_repository import ClickRepository
@@ -44,29 +44,60 @@ class SQLiteClickRepository(ClickRepository):
 
         # Create clicks table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS clicks (
-                id TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                ip_address TEXT NOT NULL,
-                user_agent TEXT,
-                referrer TEXT,
-                is_valid INTEGER DEFAULT 1,
-                sub1 TEXT,
-                sub2 TEXT,
-                sub3 TEXT,
-                sub4 TEXT,
-                sub5 TEXT,
-                click_id_param TEXT,
-                affiliate_sub TEXT,
-                affiliate_sub2 TEXT,
-                landing_page_id INTEGER,
-                campaign_offer_id INTEGER,
-                traffic_source_id INTEGER,
-                conversion_type TEXT,
-                converted_at TEXT,
-                created_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS clicks
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           ip_address
+                           TEXT
+                           NOT
+                           NULL,
+                           user_agent
+                           TEXT,
+                           referrer
+                           TEXT,
+                           is_valid
+                           INTEGER
+                           DEFAULT
+                           1,
+                           sub1
+                           TEXT,
+                           sub2
+                           TEXT,
+                           sub3
+                           TEXT,
+                           sub4
+                           TEXT,
+                           sub5
+                           TEXT,
+                           click_id_param
+                           TEXT,
+                           affiliate_sub
+                           TEXT,
+                           affiliate_sub2
+                           TEXT,
+                           landing_page_id
+                           INTEGER,
+                           campaign_offer_id
+                           INTEGER,
+                           traffic_source_id
+                           INTEGER,
+                           conversion_type
+                           TEXT,
+                           converted_at
+                           TEXT,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create indexes for performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_campaign_id ON clicks(campaign_id)")
@@ -74,7 +105,6 @@ class SQLiteClickRepository(ClickRepository):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_is_valid ON clicks(is_valid)")
 
         conn.commit()
-
 
     def _row_to_click(self, row) -> Click:
         """Convert database row to Click entity."""
@@ -135,17 +165,18 @@ class SQLiteClickRepository(ClickRepository):
         return self._row_to_click(row) if row else None
 
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Click]:
+                            offset: int = 0) -> List[Click]:
         """Find clicks by campaign ID."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM clicks
-            WHERE campaign_id = ?
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        """, (campaign_id, limit, offset))
+                       SELECT *
+                       FROM clicks
+                       WHERE campaign_id = ?
+                       ORDER BY created_at DESC LIMIT ?
+                       OFFSET ?
+                       """, (campaign_id, limit, offset))
 
         return [self._row_to_click(row) for row in cursor.fetchall()]
 
@@ -193,13 +224,15 @@ class SQLiteClickRepository(ClickRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT COUNT(*) FROM clicks
-            WHERE campaign_id = ? AND conversion_type IS NOT NULL
-        """, (campaign_id,))
+                       SELECT COUNT(*)
+                       FROM clicks
+                       WHERE campaign_id = ?
+                         AND conversion_type IS NOT NULL
+                       """, (campaign_id,))
         return cursor.fetchone()[0]
 
     def get_clicks_in_date_range(self, campaign_id: str,
-                                start_date: date, end_date: date) -> List[Click]:
+                                 start_date: date, end_date: date) -> List[Click]:
         """Get clicks within date range for analytics."""
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -208,9 +241,12 @@ class SQLiteClickRepository(ClickRepository):
         end_datetime = datetime.combine(end_date, datetime.max.time(), tzinfo=timezone.utc)
 
         cursor.execute("""
-            SELECT * FROM clicks
-            WHERE campaign_id = ? AND created_at >= ? AND created_at <= ?
-            ORDER BY created_at DESC
-        """, (campaign_id, start_datetime.isoformat(), end_datetime.isoformat()))
+                       SELECT *
+                       FROM clicks
+                       WHERE campaign_id = ?
+                         AND created_at >= ?
+                         AND created_at <= ?
+                       ORDER BY created_at DESC
+                       """, (campaign_id, start_datetime.isoformat(), end_datetime.isoformat()))
 
         return [self._row_to_click(row) for row in cursor.fetchall()]

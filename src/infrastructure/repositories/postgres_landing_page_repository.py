@@ -13,9 +13,7 @@
 
 """PostgreSQL landing page repository implementation."""
 
-import psycopg2
 from typing import Optional, List
-from datetime import datetime
 
 from ...domain.entities.landing_page import LandingPage
 from ...domain.repositories.landing_page_repository import LandingPageRepository
@@ -32,24 +30,15 @@ class PostgresLandingPageRepository(LandingPageRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -61,22 +50,62 @@ class PostgresLandingPageRepository(LandingPageRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS landing_pages (
-                    id TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    url TEXT NOT NULL,
-                    page_type TEXT NOT NULL,
-                    weight INTEGER DEFAULT 100,
-                    is_active BOOLEAN DEFAULT TRUE,
-                    is_control BOOLEAN DEFAULT FALSE,
-                    impressions INTEGER DEFAULT 0,
-                    clicks INTEGER DEFAULT 0,
-                    conversions INTEGER DEFAULT 0,
-                    created_at TIMESTAMP NOT NULL,
-                    updated_at TIMESTAMP NOT NULL
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS landing_pages
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               campaign_id
+                               TEXT
+                               NOT
+                               NULL,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               url
+                               TEXT
+                               NOT
+                               NULL,
+                               page_type
+                               TEXT
+                               NOT
+                               NULL,
+                               weight
+                               INTEGER
+                               DEFAULT
+                               100,
+                               is_active
+                               BOOLEAN
+                               DEFAULT
+                               TRUE,
+                               is_control
+                               BOOLEAN
+                               DEFAULT
+                               FALSE,
+                               impressions
+                               INTEGER
+                               DEFAULT
+                               0,
+                               clicks
+                               INTEGER
+                               DEFAULT
+                               0,
+                               conversions
+                               INTEGER
+                               DEFAULT
+                               0,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL,
+                               updated_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                           )
+                           """)
 
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_landing_pages_campaign_id ON landing_pages(campaign_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_landing_pages_active ON landing_pages(is_active)")
@@ -112,28 +141,28 @@ class PostgresLandingPageRepository(LandingPageRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO landing_pages
-                (id, campaign_id, name, url, page_type, weight, is_active, is_control,
-                 impressions, clicks, conversions, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    url = EXCLUDED.url,
-                    page_type = EXCLUDED.page_type,
-                    weight = EXCLUDED.weight,
-                    is_active = EXCLUDED.is_active,
-                    is_control = EXCLUDED.is_control,
-                    impressions = EXCLUDED.impressions,
-                    clicks = EXCLUDED.clicks,
-                    conversions = EXCLUDED.conversions,
-                    updated_at = EXCLUDED.updated_at
-            """, (
-                landing_page.id, landing_page.campaign_id, landing_page.name,
-                landing_page.url.value, landing_page.page_type, landing_page.weight,
-                landing_page.is_active, landing_page.is_control,
-                landing_page.impressions, landing_page.clicks, landing_page.conversions,
-                landing_page.created_at, landing_page.updated_at
-            ))
+                           INSERT INTO landing_pages
+                           (id, campaign_id, name, url, page_type, weight, is_active, is_control,
+                            impressions, clicks, conversions, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               name = EXCLUDED.name,
+                               url = EXCLUDED.url,
+                               page_type = EXCLUDED.page_type,
+                               weight = EXCLUDED.weight,
+                               is_active = EXCLUDED.is_active,
+                               is_control = EXCLUDED.is_control,
+                               impressions = EXCLUDED.impressions,
+                               clicks = EXCLUDED.clicks,
+                               conversions = EXCLUDED.conversions,
+                               updated_at = EXCLUDED.updated_at
+                           """, (
+                               landing_page.id, landing_page.campaign_id, landing_page.name,
+                               landing_page.url.value, landing_page.page_type, landing_page.weight,
+                               landing_page.is_active, landing_page.is_control,
+                               landing_page.impressions, landing_page.clicks, landing_page.conversions,
+                               landing_page.created_at, landing_page.updated_at
+                           ))
 
             conn.commit()
         finally:
@@ -168,10 +197,11 @@ class PostgresLandingPageRepository(LandingPageRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM landing_pages
-                WHERE campaign_id = %s
-                ORDER BY weight DESC, created_at DESC
-            """, (campaign_id,))
+                           SELECT *
+                           FROM landing_pages
+                           WHERE campaign_id = %s
+                           ORDER BY weight DESC, created_at DESC
+                           """, (campaign_id,))
 
             landing_pages = []
             columns = [desc[0] for desc in cursor.description]

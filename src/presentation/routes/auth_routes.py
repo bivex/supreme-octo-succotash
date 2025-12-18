@@ -14,9 +14,9 @@
 """Authentication routes for JWT token generation."""
 
 import json
-import time
-import jwt
 from datetime import datetime, timedelta, timezone
+
+import jwt
 from loguru import logger
 
 from ..config.settings import settings
@@ -31,6 +31,7 @@ class AuthRoutes:
 
     def _register_token_endpoint(self, app):
         """Register JWT token generation endpoint."""
+
         def generate_token(res, req):
             """Generate JWT token for authentication."""
             try:
@@ -110,7 +111,8 @@ class AuthRoutes:
 
                     except Exception as e:
                         logger.error(f"Error processing token generation data: {e}", exc_info=True)
-                        error_response = {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
+                        error_response = {
+                            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}
                         res.write_status(500)
                         res.write_header("Content-Type", "application/json")
                         res.end(json.dumps(error_response))

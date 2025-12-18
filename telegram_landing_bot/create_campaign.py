@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -17,6 +16,7 @@ Script to create campaign in local API for Supreme Company bot
 
 import requests
 import json
+
 
 def create_campaign():
     """Create campaign ID 123 for Supreme Company"""
@@ -62,6 +62,7 @@ def create_campaign():
 
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+
 
 if __name__ == "__main__":
     create_campaign()

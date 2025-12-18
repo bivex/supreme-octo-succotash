@@ -13,9 +13,11 @@
 
 """Goal management service."""
 
-from typing import Dict, Any, Optional, List
 from datetime import datetime
+from typing import Dict, Any, Optional, List
+
 from loguru import logger
+
 from ...entities.goal import Goal, GoalType, GoalTrigger
 from ...repositories.goal_repository import GoalRepository
 

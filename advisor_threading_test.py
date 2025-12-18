@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -14,14 +13,13 @@
 """Single-process version of the application for Intel Advisor threading analysis."""
 
 import os
-import sys
-import multiprocessing
 
 # Force single process mode for threading analysis
 os.environ['WORKERS'] = '1'
 
 # Import the main application
 from src.main import create_app
+
 
 def run_single_process_app():
     """Run the application in single process mode for threading analysis."""
@@ -49,6 +47,7 @@ def run_single_process_app():
         app.run()
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")
+
 
 if __name__ == "__main__":
     run_single_process_app()

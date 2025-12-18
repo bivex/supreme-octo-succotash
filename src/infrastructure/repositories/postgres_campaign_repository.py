@@ -13,12 +13,12 @@
 
 """PostgreSQL campaign repository implementation."""
 
+import logging
+from datetime import datetime
+from typing import Optional, List
+
 import psycopg2
 import psycopg2.extensions
-from typing import Optional, List, Dict
-from datetime import datetime
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +26,12 @@ from ...domain.entities.campaign import Campaign, CampaignStatus
 from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.value_objects import CampaignId, Money, Url
 
+
 # Register adapter for CampaignId
 def adapt_campaign_id(campaign_id):
     print(f"DEBUG: Adapting CampaignId {campaign_id} to {campaign_id.value}")
     return psycopg2.extensions.adapt(campaign_id.value)
+
 
 psycopg2.extensions.register_adapter(CampaignId, adapt_campaign_id)
 
@@ -55,24 +57,15 @@ class PostgresCampaignRepository(CampaignRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -85,31 +78,62 @@ class PostgresCampaignRepository(CampaignRepository):
 
             # Create campaigns table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS campaigns (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    status TEXT NOT NULL,
-                    cost_model TEXT NOT NULL,
-                    payout_amount DECIMAL(10,2) NOT NULL,
-                    payout_currency TEXT NOT NULL,
-                    safe_page_url TEXT NOT NULL,
-                    offer_page_url TEXT NOT NULL,
-                    daily_budget_amount DECIMAL(10,2) NOT NULL,
-                    daily_budget_currency TEXT NOT NULL,
-                    total_budget_amount DECIMAL(10,2) NOT NULL,
-                    total_budget_currency TEXT NOT NULL,
-                    start_date TIMESTAMP NOT NULL,
-                    end_date TIMESTAMP NOT NULL,
-                    clicks_count INTEGER DEFAULT 0,
-                    conversions_count INTEGER DEFAULT 0,
-                    spent_amount DECIMAL(10,2) DEFAULT 0.0,
-                    spent_currency TEXT,
-                    created_at TIMESTAMP NOT NULL,
-                    updated_at TIMESTAMP NOT NULL,
-                    is_deleted BOOLEAN DEFAULT FALSE
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS campaigns
+                           (
+                               id
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               name
+                               TEXT
+                               NOT
+                               NULL,
+                               description
+                               TEXT,
+                               status
+                               TEXT
+                               NOT
+                               NULL,
+                               cost_model
+                               TEXT
+                               NOT
+                               NULL,
+                               payout_amount
+                               DECIMAL
+                           (
+                               10,
+                               2
+                           ) NOT NULL,
+                               payout_currency TEXT NOT NULL,
+                               safe_page_url TEXT NOT NULL,
+                               offer_page_url TEXT NOT NULL,
+                               daily_budget_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) NOT NULL,
+                               daily_budget_currency TEXT NOT NULL,
+                               total_budget_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) NOT NULL,
+                               total_budget_currency TEXT NOT NULL,
+                               start_date TIMESTAMP NOT NULL,
+                               end_date TIMESTAMP NOT NULL,
+                               clicks_count INTEGER DEFAULT 0,
+                               conversions_count INTEGER DEFAULT 0,
+                               spent_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               spent_currency TEXT,
+                               created_at TIMESTAMP NOT NULL,
+                               updated_at TIMESTAMP NOT NULL,
+                               is_deleted BOOLEAN DEFAULT FALSE
+                               )
+                           """)
 
             conn.commit()
         finally:
@@ -143,11 +167,14 @@ class PostgresCampaignRepository(CampaignRepository):
                 description=row["description"],
                 status=CampaignStatus(str(row["status"] or "draft")),
                 cost_model=str(row["cost_model"] or "CPA").upper(),
-                payout=safe_money_from_float(row["payout_amount"], row["payout_currency"]) if row["payout_amount"] is not None else None,
+                payout=safe_money_from_float(row["payout_amount"], row["payout_currency"]) if row[
+                                                                                                  "payout_amount"] is not None else None,
                 safe_page_url=safe_url(row["safe_page_url"]),
                 offer_page_url=safe_url(row["offer_page_url"]),
-                daily_budget=safe_money_from_float(row["daily_budget_amount"], row["daily_budget_currency"]) if row["daily_budget_amount"] is not None else None,
-                total_budget=safe_money_from_float(row["total_budget_amount"], row["total_budget_currency"]) if row["total_budget_amount"] is not None else None,
+                daily_budget=safe_money_from_float(row["daily_budget_amount"], row["daily_budget_currency"]) if row[
+                                                                                                                    "daily_budget_amount"] is not None else None,
+                total_budget=safe_money_from_float(row["total_budget_amount"], row["total_budget_currency"]) if row[
+                                                                                                                    "total_budget_amount"] is not None else None,
                 start_date=row["start_date"],
                 end_date=row["end_date"],
                 clicks_count=int(row["clicks_count"] or 0),
@@ -167,51 +194,52 @@ class PostgresCampaignRepository(CampaignRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO campaigns
-                (id, name, description, status, cost_model, payout_amount, payout_currency,
-                 safe_page_url, offer_page_url, daily_budget_amount, daily_budget_currency,
-                 total_budget_amount, total_budget_currency, start_date, end_date,
-                 clicks_count, conversions_count, spent_amount, spent_currency,
-                 created_at, updated_at, is_deleted)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    description = EXCLUDED.description,
-                    status = EXCLUDED.status,
-                    cost_model = EXCLUDED.cost_model,
-                    payout_amount = EXCLUDED.payout_amount,
-                    payout_currency = EXCLUDED.payout_currency,
-                    safe_page_url = EXCLUDED.safe_page_url,
-                    offer_page_url = EXCLUDED.offer_page_url,
-                    daily_budget_amount = EXCLUDED.daily_budget_amount,
-                    daily_budget_currency = EXCLUDED.daily_budget_currency,
-                    total_budget_amount = EXCLUDED.total_budget_amount,
-                    total_budget_currency = EXCLUDED.total_budget_currency,
-                    start_date = EXCLUDED.start_date,
-                    end_date = EXCLUDED.end_date,
-                    clicks_count = EXCLUDED.clicks_count,
-                    conversions_count = EXCLUDED.conversions_count,
-                    spent_amount = EXCLUDED.spent_amount,
-                    spent_currency = EXCLUDED.spent_currency,
-                    updated_at = EXCLUDED.updated_at,
-                    is_deleted = EXCLUDED.is_deleted
-            """, (
-                campaign.id.value, campaign.name, campaign.description, campaign.status.value,
-                campaign.cost_model,
-                campaign.payout.amount if campaign.payout else None,
-                campaign.payout.currency if campaign.payout else None,
-                campaign.safe_page_url.value if campaign.safe_page_url else None,
-                campaign.offer_page_url.value if campaign.offer_page_url else None,
-                campaign.daily_budget.amount if campaign.daily_budget else None,
-                campaign.daily_budget.currency if campaign.daily_budget else None,
-                campaign.total_budget.amount if campaign.total_budget else None,
-                campaign.total_budget.currency if campaign.total_budget else None,
-                campaign.start_date, campaign.end_date,
-                campaign.clicks_count, campaign.conversions_count,
-                campaign.spent_amount.amount if campaign.spent_amount else 0.0,
-                campaign.spent_amount.currency if campaign.spent_amount else "USD",
-                campaign.created_at, campaign.updated_at, False
-            ))
+                           INSERT INTO campaigns
+                           (id, name, description, status, cost_model, payout_amount, payout_currency,
+                            safe_page_url, offer_page_url, daily_budget_amount, daily_budget_currency,
+                            total_budget_amount, total_budget_currency, start_date, end_date,
+                            clicks_count, conversions_count, spent_amount, spent_currency,
+                            created_at, updated_at, is_deleted)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               name = EXCLUDED.name,
+                               description = EXCLUDED.description,
+                               status = EXCLUDED.status,
+                               cost_model = EXCLUDED.cost_model,
+                               payout_amount = EXCLUDED.payout_amount,
+                               payout_currency = EXCLUDED.payout_currency,
+                               safe_page_url = EXCLUDED.safe_page_url,
+                               offer_page_url = EXCLUDED.offer_page_url,
+                               daily_budget_amount = EXCLUDED.daily_budget_amount,
+                               daily_budget_currency = EXCLUDED.daily_budget_currency,
+                               total_budget_amount = EXCLUDED.total_budget_amount,
+                               total_budget_currency = EXCLUDED.total_budget_currency,
+                               start_date = EXCLUDED.start_date,
+                               end_date = EXCLUDED.end_date,
+                               clicks_count = EXCLUDED.clicks_count,
+                               conversions_count = EXCLUDED.conversions_count,
+                               spent_amount = EXCLUDED.spent_amount,
+                               spent_currency = EXCLUDED.spent_currency,
+                               updated_at = EXCLUDED.updated_at,
+                               is_deleted = EXCLUDED.is_deleted
+                           """, (
+                               campaign.id.value, campaign.name, campaign.description, campaign.status.value,
+                               campaign.cost_model,
+                               campaign.payout.amount if campaign.payout else None,
+                               campaign.payout.currency if campaign.payout else None,
+                               campaign.safe_page_url.value if campaign.safe_page_url else None,
+                               campaign.offer_page_url.value if campaign.offer_page_url else None,
+                               campaign.daily_budget.amount if campaign.daily_budget else None,
+                               campaign.daily_budget.currency if campaign.daily_budget else None,
+                               campaign.total_budget.amount if campaign.total_budget else None,
+                               campaign.total_budget.currency if campaign.total_budget else None,
+                               campaign.start_date, campaign.end_date,
+                               campaign.clicks_count, campaign.conversions_count,
+                               campaign.spent_amount.amount if campaign.spent_amount else 0.0,
+                               campaign.spent_amount.currency if campaign.spent_amount else "USD",
+                               campaign.created_at, campaign.updated_at, False
+                           ))
 
             conn.commit()
         finally:
@@ -226,9 +254,11 @@ class PostgresCampaignRepository(CampaignRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM campaigns
-                WHERE id = %s AND is_deleted = FALSE
-            """, (campaign_id.value,))
+                           SELECT *
+                           FROM campaigns
+                           WHERE id = %s
+                             AND is_deleted = FALSE
+                           """, (campaign_id.value,))
 
             row = cursor.fetchone()
             if row:
@@ -253,11 +283,13 @@ class PostgresCampaignRepository(CampaignRepository):
                 cursor = conn.cursor()
 
                 cursor.execute("""
-                    SELECT * FROM campaigns
-                    WHERE is_deleted = FALSE
-                    ORDER BY created_at DESC
-                    LIMIT %s OFFSET %s
-                """, (limit, offset))
+                               SELECT *
+                               FROM campaigns
+                               WHERE is_deleted = FALSE
+                               ORDER BY created_at DESC
+                                   LIMIT %s
+                               OFFSET %s
+                               """, (limit, offset))
 
                 campaigns = []
                 columns = [desc[0] for desc in cursor.description]
@@ -275,7 +307,8 @@ class PostgresCampaignRepository(CampaignRepository):
 
             except psycopg2.OperationalError as e:
                 if "server closed the connection unexpectedly" in str(e) and attempt < max_retries - 1:
-                    logger.warning(f"Database connection lost (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                    logger.warning(
+                        f"Database connection lost (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
                     if conn:
                         try:
                             self._container.release_db_connection(conn)
@@ -302,9 +335,11 @@ class PostgresCampaignRepository(CampaignRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT 1 FROM campaigns
-                WHERE id = %s AND is_deleted = FALSE
-            """, (campaign_id.value,))
+                           SELECT 1
+                           FROM campaigns
+                           WHERE id = %s
+                             AND is_deleted = FALSE
+                           """, (campaign_id.value,))
 
             return cursor.fetchone() is not None
         finally:
@@ -319,9 +354,11 @@ class PostgresCampaignRepository(CampaignRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                UPDATE campaigns SET is_deleted = TRUE, updated_at = %s
-                WHERE id = %s
-            """, (datetime.now(), campaign_id.value))
+                           UPDATE campaigns
+                           SET is_deleted = TRUE,
+                               updated_at = %s
+                           WHERE id = %s
+                           """, (datetime.now(), campaign_id.value))
 
             conn.commit()
         finally:
@@ -344,9 +381,10 @@ class PostgresCampaignRepository(CampaignRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT COUNT(*) FROM campaigns
-                WHERE is_deleted = FALSE
-            """)
+                           SELECT COUNT(*)
+                           FROM campaigns
+                           WHERE is_deleted = FALSE
+                           """)
 
             count = cursor.fetchone()[0]
 

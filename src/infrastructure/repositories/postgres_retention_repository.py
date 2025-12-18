@@ -13,12 +13,11 @@
 
 """PostgreSQL retention repository implementation."""
 
-import psycopg2
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from collections import defaultdict
+from typing import Optional, List, Dict, Any
 
-from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
+from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, \
+    RetentionCampaignStatus
 from ...domain.repositories.retention_repository import RetentionRepository
 
 
@@ -46,58 +45,147 @@ class PostgresRetentionRepository(RetentionRepository):
 
         # Create retention_campaigns table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS retention_campaigns (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT NOT NULL,
-                target_segment TEXT NOT NULL,
-                status TEXT NOT NULL,
-                triggers JSONB,
-                message_template TEXT NOT NULL,
-                target_user_count INTEGER NOT NULL,
-                sent_count INTEGER NOT NULL DEFAULT 0,
-                opened_count INTEGER NOT NULL DEFAULT 0,
-                clicked_count INTEGER NOT NULL DEFAULT 0,
-                converted_count INTEGER NOT NULL DEFAULT 0,
-                budget DECIMAL(10,2),
-                start_date TIMESTAMP,
-                end_date TIMESTAMP,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS retention_campaigns
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           description
+                           TEXT
+                           NOT
+                           NULL,
+                           target_segment
+                           TEXT
+                           NOT
+                           NULL,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           triggers
+                           JSONB,
+                           message_template
+                           TEXT
+                           NOT
+                           NULL,
+                           target_user_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           sent_count
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           opened_count
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           clicked_count
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           converted_count
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           budget
+                           DECIMAL
+                       (
+                           10,
+                           2
+                       ),
+                           start_date TIMESTAMP,
+                           end_date TIMESTAMP,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create churn_predictions table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS churn_predictions (
-                customer_id TEXT PRIMARY KEY,
-                churn_probability DECIMAL(3,2) NOT NULL,
-                risk_level TEXT NOT NULL,
-                predicted_churn_date TIMESTAMP,
-                reasons JSONB,
-                last_activity_date TIMESTAMP NOT NULL,
-                engagement_score DECIMAL(5,2) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS churn_predictions
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           churn_probability
+                           DECIMAL
+                       (
+                           3,
+                           2
+                       ) NOT NULL,
+                           risk_level TEXT NOT NULL,
+                           predicted_churn_date TIMESTAMP,
+                           reasons JSONB,
+                           last_activity_date TIMESTAMP NOT NULL,
+                           engagement_score DECIMAL
+                       (
+                           5,
+                           2
+                       ) NOT NULL,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create user_engagement_profiles table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_engagement_profiles (
-                customer_id TEXT PRIMARY KEY,
-                total_sessions INTEGER NOT NULL DEFAULT 0,
-                total_clicks INTEGER NOT NULL DEFAULT 0,
-                total_conversions INTEGER NOT NULL DEFAULT 0,
-                avg_session_duration DECIMAL(5,2) NOT NULL DEFAULT 0.0,
-                last_session_date TIMESTAMP NOT NULL,
-                engagement_score DECIMAL(5,2) NOT NULL DEFAULT 0.0,
-                segment TEXT NOT NULL,
-                interests JSONB DEFAULT '[]'::jsonb,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS user_engagement_profiles
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           total_sessions
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           total_clicks
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           total_conversions
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           avg_session_duration
+                           DECIMAL
+                       (
+                           5,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           last_session_date TIMESTAMP NOT NULL,
+                           engagement_score DECIMAL
+                       (
+                           5,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           segment TEXT NOT NULL,
+                           interests JSONB DEFAULT '[]'::jsonb,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaigns_status ON retention_campaigns(status)")
@@ -119,46 +207,47 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO retention_campaigns
-            (id, name, description, target_segment, status, triggers, message_template,
-             target_user_count, sent_count, opened_count, clicked_count, converted_count,
-             budget, start_date, end_date, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                description = EXCLUDED.description,
-                target_segment = EXCLUDED.target_segment,
-                status = EXCLUDED.status,
-                triggers = EXCLUDED.triggers,
-                message_template = EXCLUDED.message_template,
-                target_user_count = EXCLUDED.target_user_count,
-                sent_count = EXCLUDED.sent_count,
-                opened_count = EXCLUDED.opened_count,
-                clicked_count = EXCLUDED.clicked_count,
-                converted_count = EXCLUDED.converted_count,
-                budget = EXCLUDED.budget,
-                start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            campaign.id,
-            campaign.name,
-            campaign.description,
-            campaign.target_segment.value,
-            campaign.status.value,
-            json.dumps([{"id": t.id, "type": t.type, "value": t.value, "operator": t.operator} for t in campaign.triggers]),
-            campaign.message_template,
-            campaign.target_user_count,
-            campaign.sent_count,
-            campaign.opened_count,
-            campaign.clicked_count,
-            campaign.converted_count,
-            campaign.budget,
-            campaign.start_date,
-            campaign.end_date,
-            campaign.created_at,
-            campaign.updated_at
-        ))
+                       INSERT INTO retention_campaigns
+                       (id, name, description, target_segment, status, triggers, message_template,
+                        target_user_count, sent_count, opened_count, clicked_count, converted_count,
+                        budget, start_date, end_date, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           name = EXCLUDED.name,
+                           description = EXCLUDED.description,
+                           target_segment = EXCLUDED.target_segment,
+                           status = EXCLUDED.status,
+                           triggers = EXCLUDED.triggers,
+                           message_template = EXCLUDED.message_template,
+                           target_user_count = EXCLUDED.target_user_count,
+                           sent_count = EXCLUDED.sent_count,
+                           opened_count = EXCLUDED.opened_count,
+                           clicked_count = EXCLUDED.clicked_count,
+                           converted_count = EXCLUDED.converted_count,
+                           budget = EXCLUDED.budget,
+                           start_date = EXCLUDED.start_date,
+                           end_date = EXCLUDED.end_date,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           campaign.id,
+                           campaign.name,
+                           campaign.description,
+                           campaign.target_segment.value,
+                           campaign.status.value,
+                           json.dumps([{"id": t.id, "type": t.type, "value": t.value, "operator": t.operator} for t in
+                                       campaign.triggers]),
+                           campaign.message_template,
+                           campaign.target_user_count,
+                           campaign.sent_count,
+                           campaign.opened_count,
+                           campaign.clicked_count,
+                           campaign.converted_count,
+                           campaign.budget,
+                           campaign.start_date,
+                           campaign.end_date,
+                           campaign.created_at,
+                           campaign.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -204,11 +293,13 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM retention_campaigns
-            WHERE status = %s AND start_date <= CURRENT_TIMESTAMP
-            AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)
-            ORDER BY created_at DESC
-        """, (RetentionCampaignStatus.ACTIVE.value,))
+                       SELECT *
+                       FROM retention_campaigns
+                       WHERE status = %s
+                         AND start_date <= CURRENT_TIMESTAMP
+                         AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)
+                       ORDER BY created_at DESC
+                       """, (RetentionCampaignStatus.ACTIVE.value,))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -217,17 +308,20 @@ class PostgresRetentionRepository(RetentionRepository):
         return [self._row_to_campaign(row) for row in rows]
 
     def update_campaign_metrics(self, campaign_id: str, sent_count: int,
-                               opened_count: int, clicked_count: int, converted_count: int) -> None:
+                                opened_count: int, clicked_count: int, converted_count: int) -> None:
         """Update campaign performance metrics."""
         conn = self._container.get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE retention_campaigns
-            SET sent_count = %s, opened_count = %s, clicked_count = %s,
-                converted_count = %s, updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (sent_count, opened_count, clicked_count, converted_count, campaign_id))
+                       UPDATE retention_campaigns
+                       SET sent_count      = %s,
+                           opened_count    = %s,
+                           clicked_count   = %s,
+                           converted_count = %s,
+                           updated_at      = CURRENT_TIMESTAMP
+                       WHERE id = %s
+                       """, (sent_count, opened_count, clicked_count, converted_count, campaign_id))
 
         conn.commit()
         cursor.close()
@@ -240,29 +334,29 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO churn_predictions
-            (customer_id, churn_probability, risk_level, predicted_churn_date, reasons,
-             last_activity_date, engagement_score, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (customer_id) DO UPDATE SET
-                churn_probability = EXCLUDED.churn_probability,
-                risk_level = EXCLUDED.risk_level,
-                predicted_churn_date = EXCLUDED.predicted_churn_date,
-                reasons = EXCLUDED.reasons,
-                last_activity_date = EXCLUDED.last_activity_date,
-                engagement_score = EXCLUDED.engagement_score,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            prediction.customer_id,
-            prediction.churn_probability,
-            prediction.risk_level,
-            prediction.predicted_churn_date,
-            json.dumps(prediction.reasons),
-            prediction.last_activity_date,
-            prediction.engagement_score,
-            prediction.created_at,
-            prediction.updated_at
-        ))
+                       INSERT INTO churn_predictions
+                       (customer_id, churn_probability, risk_level, predicted_churn_date, reasons,
+                        last_activity_date, engagement_score, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (customer_id) DO
+                       UPDATE SET
+                           churn_probability = EXCLUDED.churn_probability,
+                           risk_level = EXCLUDED.risk_level,
+                           predicted_churn_date = EXCLUDED.predicted_churn_date,
+                           reasons = EXCLUDED.reasons,
+                           last_activity_date = EXCLUDED.last_activity_date,
+                           engagement_score = EXCLUDED.engagement_score,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           prediction.customer_id,
+                           prediction.churn_probability,
+                           prediction.risk_level,
+                           prediction.predicted_churn_date,
+                           json.dumps(prediction.reasons),
+                           prediction.last_activity_date,
+                           prediction.engagement_score,
+                           prediction.created_at,
+                           prediction.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -287,11 +381,12 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM churn_predictions
-            WHERE risk_level = 'high'
-            ORDER BY churn_probability DESC
-            LIMIT %s
-        """, (limit,))
+                       SELECT *
+                       FROM churn_predictions
+                       WHERE risk_level = 'high'
+                       ORDER BY churn_probability DESC
+                           LIMIT %s
+                       """, (limit,))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -306,33 +401,33 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO user_engagement_profiles
-            (customer_id, total_sessions, total_clicks, total_conversions, avg_session_duration,
-             last_session_date, engagement_score, segment, interests, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (customer_id) DO UPDATE SET
-                total_sessions = EXCLUDED.total_sessions,
-                total_clicks = EXCLUDED.total_clicks,
-                total_conversions = EXCLUDED.total_conversions,
-                avg_session_duration = EXCLUDED.avg_session_duration,
-                last_session_date = EXCLUDED.last_session_date,
-                engagement_score = EXCLUDED.engagement_score,
-                segment = EXCLUDED.segment,
-                interests = EXCLUDED.interests,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            profile.customer_id,
-            profile.total_sessions,
-            profile.total_clicks,
-            profile.total_conversions,
-            profile.avg_session_duration,
-            profile.last_session_date,
-            profile.engagement_score,
-            profile.segment.value,
-            json.dumps(profile.interests),
-            profile.created_at,
-            profile.updated_at
-        ))
+                       INSERT INTO user_engagement_profiles
+                       (customer_id, total_sessions, total_clicks, total_conversions, avg_session_duration,
+                        last_session_date, engagement_score, segment, interests, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (customer_id) DO
+                       UPDATE SET
+                           total_sessions = EXCLUDED.total_sessions,
+                           total_clicks = EXCLUDED.total_clicks,
+                           total_conversions = EXCLUDED.total_conversions,
+                           avg_session_duration = EXCLUDED.avg_session_duration,
+                           last_session_date = EXCLUDED.last_session_date,
+                           engagement_score = EXCLUDED.engagement_score,
+                           segment = EXCLUDED.segment,
+                           interests = EXCLUDED.interests,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           profile.customer_id,
+                           profile.total_sessions,
+                           profile.total_clicks,
+                           profile.total_conversions,
+                           profile.avg_session_duration,
+                           profile.last_session_date,
+                           profile.engagement_score,
+                           profile.segment.value,
+                           json.dumps(profile.interests),
+                           profile.created_at,
+                           profile.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -357,11 +452,12 @@ class PostgresRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM user_engagement_profiles
-            WHERE segment = %s
-            ORDER BY engagement_score DESC
-            LIMIT %s
-        """, (segment.value, limit))
+                       SELECT *
+                       FROM user_engagement_profiles
+                       WHERE segment = %s
+                       ORDER BY engagement_score DESC
+                           LIMIT %s
+                       """, (segment.value, limit))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -376,45 +472,49 @@ class PostgresRetentionRepository(RetentionRepository):
 
         # Get campaign metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_campaigns,
-                SUM(sent_count) as total_sent,
-                SUM(opened_count) as total_opened,
-                SUM(clicked_count) as total_clicked,
-                SUM(converted_count) as total_converted
-            FROM retention_campaigns
-            WHERE created_at >= %s AND created_at <= %s
-        """, (start_date, end_date))
+                       SELECT COUNT(*)             as total_campaigns,
+                              SUM(sent_count)      as total_sent,
+                              SUM(opened_count)    as total_opened,
+                              SUM(clicked_count)   as total_clicked,
+                              SUM(converted_count) as total_converted
+                       FROM retention_campaigns
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       """, (start_date, end_date))
 
         campaign_row = cursor.fetchone()
 
         # Get active campaigns
         cursor.execute("""
-            SELECT COUNT(*) as active_campaigns
-            FROM retention_campaigns
-            WHERE status = %s AND created_at >= %s AND created_at <= %s
-        """, (RetentionCampaignStatus.ACTIVE.value, start_date, end_date))
+                       SELECT COUNT(*) as active_campaigns
+                       FROM retention_campaigns
+                       WHERE status = %s
+                         AND created_at >= %s
+                         AND created_at <= %s
+                       """, (RetentionCampaignStatus.ACTIVE.value, start_date, end_date))
 
         active_row = cursor.fetchone()
 
         # Get churn risk distribution
         cursor.execute("""
-            SELECT risk_level, COUNT(*) as count
-            FROM churn_predictions
-            WHERE created_at >= %s AND created_at <= %s
-            GROUP BY risk_level
-        """, (start_date, end_date))
+                       SELECT risk_level, COUNT(*) as count
+                       FROM churn_predictions
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       GROUP BY risk_level
+                       """, (start_date, end_date))
 
         risk_rows = cursor.fetchall()
         risk_distribution = {row[0]: row[1] for row in risk_rows}
 
         # Get segment distribution
         cursor.execute("""
-            SELECT segment, COUNT(*) as count
-            FROM user_engagement_profiles
-            WHERE created_at >= %s AND created_at <= %s
-            GROUP BY segment
-        """, (start_date, end_date))
+                       SELECT segment, COUNT(*) as count
+                       FROM user_engagement_profiles
+                       WHERE created_at >= %s
+                         AND created_at <= %s
+                       GROUP BY segment
+                       """, (start_date, end_date))
 
         segment_rows = cursor.fetchall()
         segment_distribution = {row[0]: row[1] for row in segment_rows}

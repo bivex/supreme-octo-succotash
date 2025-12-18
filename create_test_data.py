@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,13 +14,13 @@
 Create test data for cache testing.
 """
 
-import sys
-import os
 import logging
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
-from contextlib import contextmanager
+import os
 import random
+import sys
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from typing import Dict, Any
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -93,25 +92,24 @@ class TestDataCreator:
         cursor = connection.cursor()
         try:
             cursor.execute("""
-                INSERT INTO campaigns (
-                    id, name, description, status, cost_model,
-                    payout_amount, payout_currency,
-                    safe_page_url, offer_page_url,
-                    daily_budget_amount, daily_budget_currency,
-                    total_budget_amount, total_budget_currency,
-                    start_date, end_date,
-                    created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                campaign_data['id'], campaign_data['name'], campaign_data['description'],
-                campaign_data['status'], campaign_data['cost_model'],
-                campaign_data['payout_amount'], campaign_data['payout_currency'],
-                campaign_data['safe_page_url'], campaign_data['offer_page_url'],
-                campaign_data['daily_budget_amount'], campaign_data['daily_budget_currency'],
-                campaign_data['total_budget_amount'], campaign_data['total_budget_currency'],
-                campaign_data['start_date'], campaign_data['end_date'],
-                campaign_data['created_at'], campaign_data['updated_at']
-            ))
+                           INSERT INTO campaigns (id, name, description, status, cost_model,
+                                                  payout_amount, payout_currency,
+                                                  safe_page_url, offer_page_url,
+                                                  daily_budget_amount, daily_budget_currency,
+                                                  total_budget_amount, total_budget_currency,
+                                                  start_date, end_date,
+                                                  created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                           """, (
+                               campaign_data['id'], campaign_data['name'], campaign_data['description'],
+                               campaign_data['status'], campaign_data['cost_model'],
+                               campaign_data['payout_amount'], campaign_data['payout_currency'],
+                               campaign_data['safe_page_url'], campaign_data['offer_page_url'],
+                               campaign_data['daily_budget_amount'], campaign_data['daily_budget_currency'],
+                               campaign_data['total_budget_amount'], campaign_data['total_budget_currency'],
+                               campaign_data['start_date'], campaign_data['end_date'],
+                               campaign_data['created_at'], campaign_data['updated_at']
+                           ))
 
             self.logger.info(f"Successfully created campaign: {campaign_data['id']}")
             return True
@@ -179,6 +177,7 @@ def create_test_data() -> None:
     except Exception as e:
         print(f"Failed to create test data: {str(e)}")
         sys.exit(1)
+
 
 class CacheTester:
     """Handles cache testing operations."""
@@ -262,7 +261,7 @@ class CacheTester:
                 start = time.time()
                 count = repo.count_all()
                 elapsed = time.time() - start
-                self.logger.info(f"Call {i+1}: count={count}, time={elapsed:.4f}s")
+                self.logger.info(f"Call {i + 1}: count={count}, time={elapsed:.4f}s")
 
             # Get final call count
             with self.get_database_connection() as conn:
@@ -282,6 +281,7 @@ class CacheTester:
 
         except Exception as e:
             self.logger.error(f"Error testing pg_stat calls: {str(e)}")
+
 
 class APILoadTester:
     """Handles API load testing operations."""
@@ -334,7 +334,8 @@ class APILoadTester:
                 elapsed = time.time() - start_time
                 return {'id': request_id, 'status': 'exception', 'time': elapsed, 'error': str(e)}
 
-        self.logger.info(f"Test parameters: Total requests: {num_requests}, Concurrent: {concurrent_requests}, Endpoint: {ENDPOINT}")
+        self.logger.info(
+            f"Test parameters: Total requests: {num_requests}, Concurrent: {concurrent_requests}, Endpoint: {ENDPOINT}")
 
         results = []
         start_test = time.time()
@@ -382,9 +383,9 @@ class APILoadTester:
             self.logger.error("All requests failed authentication - check token or endpoint")
 
         self.logger.info(f"Total time: {total_test_time:.1f}s")
-        self.logger.info(f"Requests/sec: {num_requests/total_test_time:.1f}")
+        self.logger.info(f"Requests/sec: {num_requests / total_test_time:.1f}")
 
-            # Database check
+        # Database check
         self._check_database_calls(num_requests)
 
     def _check_database_calls(self, num_requests: int) -> None:
@@ -395,7 +396,8 @@ class APILoadTester:
         try:
             with self.get_database_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT calls FROM pg_stat_statements WHERE query LIKE '%COUNT(*) FROM campaigns WHERE is_deleted%'")
+                cursor.execute(
+                    "SELECT calls FROM pg_stat_statements WHERE query LIKE '%COUNT(*) FROM campaigns WHERE is_deleted%'")
                 count_result = cursor.fetchone()
 
                 if count_result:
@@ -494,7 +496,8 @@ class APILoadTester:
                     progress = (i + 1) / total_campaigns * 100
                     rate = (i + 1) / elapsed
 
-                    self.logger.info(f"Progress: {progress:.1f}% | {successful}/{successful + failed} successful | Speed: {rate:.1f} campaigns/sec")
+                    self.logger.info(
+                        f"Progress: {progress:.1f}% | {successful}/{successful + failed} successful | Speed: {rate:.1f} campaigns/sec")
 
         total_time = time.time() - start_time
 
@@ -503,8 +506,8 @@ class APILoadTester:
         self.logger.info(f"Created: {successful} campaigns")
         self.logger.info(f"Errors: {failed} campaigns")
         self.logger.info(f"Total time: {total_time:.2f} seconds")
-        self.logger.info(f"Speed: {total_campaigns/total_time:.1f} campaigns/second")
-        self.logger.info(f"Efficiency: {successful/total_campaigns*100:.1f}%")
+        self.logger.info(f"Speed: {total_campaigns / total_time:.1f} campaigns/second")
+        self.logger.info(f"Efficiency: {successful / total_campaigns * 100:.1f}%")
 
         # Check cache impact
         self._check_mass_creation_cache_impact(total_campaigns, successful)
@@ -520,7 +523,8 @@ class APILoadTester:
         try:
             with self.get_database_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT calls FROM pg_stat_statements WHERE query LIKE '%COUNT(*) FROM campaigns WHERE is_deleted%'")
+                cursor.execute(
+                    "SELECT calls FROM pg_stat_statements WHERE query LIKE '%COUNT(*) FROM campaigns WHERE is_deleted%'")
                 count_result = cursor.fetchone()
 
                 if count_result:
@@ -536,6 +540,7 @@ class APILoadTester:
 
         except Exception as e:
             self.logger.error(f"Error checking cache impact: {str(e)}")
+
 
 def main() -> None:
     """Main entry point for test data operations."""

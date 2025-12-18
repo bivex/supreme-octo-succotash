@@ -1,9 +1,11 @@
 import asyncio
-import aiohttp
 import json
 import time
 import uuid
+
+import aiohttp
 from loguru import logger
+
 
 async def test_generate_tracking_url():
     api_base_url = "http://localhost:5000"
@@ -68,6 +70,7 @@ async def test_generate_tracking_url():
             logger.error(f"Error details: {e}")
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_generate_tracking_url())

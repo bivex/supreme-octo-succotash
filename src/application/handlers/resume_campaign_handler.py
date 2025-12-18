@@ -45,7 +45,8 @@ class ResumeCampaignHandler:
 
         # Check if campaign can be resumed
         if campaign.status != CampaignStatus.PAUSED:
-            raise ValueError(f"Campaign {command.campaign_id.value} is not paused (current status: {campaign.status.value})")
+            raise ValueError(
+                f"Campaign {command.campaign_id.value} is not paused (current status: {campaign.status.value})")
 
         # Update status to active
         campaign.status = CampaignStatus.ACTIVE

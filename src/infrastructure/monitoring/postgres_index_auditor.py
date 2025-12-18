@@ -13,12 +13,10 @@
 
 """PostgreSQL index auditor for automatic index optimization recommendations."""
 
-import psycopg2
-from typing import Dict, List, Any, Set, Tuple
-from dataclasses import dataclass
 import logging
 import re
-from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Set
 
 logger = logging.getLogger(__name__)
 
@@ -78,11 +76,11 @@ class PostgresIndexAuditor:
             try:
                 # Get all user tables
                 cursor.execute("""
-                    SELECT schemaname, tablename
-                    FROM pg_tables
-                    WHERE schemaname = 'public'
-                    ORDER BY tablename
-                """)
+                               SELECT schemaname, tablename
+                               FROM pg_tables
+                               WHERE schemaname = 'public'
+                               ORDER BY tablename
+                               """)
 
                 results = {}
                 for schema, table in cursor.fetchall():
@@ -133,18 +131,18 @@ class PostgresIndexAuditor:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT
-                        i.indexname,
-                        i.indexdef,
-                        pg_size_pretty(pg_relation_size(i.indexname::regclass)) as size,
+                               SELECT i.indexname,
+                                      i.indexdef,
+                                      pg_size_pretty(pg_relation_size(i.indexname::regclass)) as size,
                         idx_scan as usage_count,
                         pg_stat_get_last_autoanalyze_time(c.oid) as last_analyze
-                    FROM pg_indexes i
-                    LEFT JOIN pg_stat_user_indexes ui ON i.indexname = ui.indexname
-                    LEFT JOIN pg_class c ON c.relname = i.tablename
-                    WHERE i.tablename = %s
-                    ORDER BY i.indexname
-                """, (table_name,))
+                               FROM pg_indexes i
+                                   LEFT JOIN pg_stat_user_indexes ui
+                               ON i.indexname = ui.indexname
+                                   LEFT JOIN pg_class c ON c.relname = i.tablename
+                               WHERE i.tablename = %s
+                               ORDER BY i.indexname
+                               """, (table_name,))
 
                 indexes = []
                 for row in cursor.fetchall():
@@ -178,12 +176,12 @@ class PostgresIndexAuditor:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT query, calls
-                    FROM pg_stat_statements
-                    WHERE query ILIKE %s
-                    ORDER BY calls DESC
-                    LIMIT 50
-                """, (f'%{table_name}%',))
+                               SELECT query, calls
+                               FROM pg_stat_statements
+                               WHERE query ILIKE %s
+                               ORDER BY calls DESC
+                                   LIMIT 50
+                               """, (f'%{table_name}%',))
 
                 for row in cursor.fetchall():
                     query = row[0]
@@ -269,7 +267,7 @@ class PostgresIndexAuditor:
         return columns
 
     def _find_missing_indexes(self, table_name: str, existing_indexes: List[Dict],
-                            query_patterns: Dict[str, Set[str]]) -> List[IndexRecommendation]:
+                              query_patterns: Dict[str, Set[str]]) -> List[IndexRecommendation]:
         """Find missing indexes based on query patterns."""
         recommendations = []
 
@@ -339,11 +337,12 @@ class PostgresIndexAuditor:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = %s AND table_schema = 'public'
-                    ORDER BY column_name
-                """, (table_name,))
+                               SELECT column_name
+                               FROM information_schema.columns
+                               WHERE table_name = %s
+                                 AND table_schema = 'public'
+                               ORDER BY column_name
+                               """, (table_name,))
 
                 return {row[0] for row in cursor.fetchall()}
             finally:
@@ -375,16 +374,15 @@ class PostgresIndexAuditor:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT
-                        indexname,
-                        idx_scan as usage_count,
-                        pg_size_pretty(pg_relation_size(indexname::regclass)) as size,
+                               SELECT indexname,
+                                      idx_scan as usage_count,
+                                      pg_size_pretty(pg_relation_size(indexname::regclass)) as size,
                         pg_stat_get_last_idx_scan_time(indexrelid) as last_used
-                    FROM pg_stat_user_indexes
-                    WHERE tablename = %s
-                    AND idx_scan = 0
-                    AND schemaname = 'public'
-                """, (table_name,))
+                               FROM pg_stat_user_indexes
+                               WHERE tablename = %s
+                                 AND idx_scan = 0
+                                 AND schemaname = 'public'
+                               """, (table_name,))
 
                 unused = []
                 for row in cursor.fetchall():
@@ -409,16 +407,16 @@ class PostgresIndexAuditor:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT
-                        indexname,
-                        pg_size_pretty(pg_relation_size(indexname::regclass)) as size,
+                               SELECT indexname,
+                                      pg_size_pretty(pg_relation_size(indexname::regclass)) as size,
                         n_tup_ins, n_tup_upd, n_tup_del,
                         (n_tup_ins + n_tup_upd + n_tup_del) as total_operations
-                    FROM pg_stat_user_indexes
-                    WHERE tablename = %s
-                    AND (n_tup_ins + n_tup_upd + n_tup_del) > 10000
-                    ORDER BY total_operations DESC
-                """, (table_name,))
+                               FROM pg_stat_user_indexes
+                               WHERE tablename = %s
+                                 AND (n_tup_ins + n_tup_upd + n_tup_del)
+                                   > 10000
+                               ORDER BY total_operations DESC
+                               """, (table_name,))
 
                 bloated = []
                 for row in cursor.fetchall():
@@ -440,7 +438,7 @@ class PostgresIndexAuditor:
             return []
 
     def _generate_recommendations(self, missing: List[IndexRecommendation],
-                                unused: List[Dict], bloated: List[Dict]) -> List[str]:
+                                  unused: List[Dict], bloated: List[Dict]) -> List[str]:
         """Generate human-readable recommendations."""
         recommendations = []
 
@@ -459,7 +457,7 @@ class PostgresIndexAuditor:
         return recommendations
 
     def apply_recommendations(self, recommendations: List[IndexRecommendation],
-                            dry_run: bool = True) -> List[str]:
+                              dry_run: bool = True) -> List[str]:
         """Apply index recommendations."""
         applied = []
 

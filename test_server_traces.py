@@ -3,15 +3,15 @@
 Test script to verify that async traces are automatically saved during server lifecycle.
 """
 
-import asyncio
-import signal
-import sys
 import os
-import time
+import signal
 import subprocess
+import sys
+import time
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
 
 def test_server_traces():
     """Test that server automatically saves traces during startup and shutdown."""
@@ -133,6 +133,7 @@ def test_server_traces():
     else:
         print(f"\n⚠️  Only {len(found_patterns)}/{len(expected_patterns)} expected trace patterns found")
         return False
+
 
 if __name__ == "__main__":
     success = test_server_traces()

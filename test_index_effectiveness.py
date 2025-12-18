@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,20 +14,20 @@
 Test script to verify index effectiveness by generating realistic application usage.
 """
 
-import sys
 import os
-import time
-import requests
-import json
-import threading
-import subprocess
-from datetime import datetime, timedelta
 import random
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+import requests
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.container import Container
+
 
 class IndexEffectivenessTester:
     """Test index effectiveness by generating realistic application usage."""
@@ -108,11 +107,11 @@ class IndexEffectivenessTester:
                     timeout=5
                 )
                 if response.status_code in [200, 201]:
-                    print(f"✅ Click {i+1} created for campaign {campaign_id}")
+                    print(f"✅ Click {i + 1} created for campaign {campaign_id}")
                 else:
-                    print(f"❌ Click {i+1} failed: {response.status_code} - {response.text}")
+                    print(f"❌ Click {i + 1} failed: {response.status_code} - {response.text}")
             except Exception as e:
-                print(f"❌ Click {i+1} error: {e}")
+                print(f"❌ Click {i + 1} error: {e}")
 
             time.sleep(0.1)  # Small delay between requests
 
@@ -162,11 +161,11 @@ class IndexEffectivenessTester:
                         )
 
                         if event_response.status_code in [200, 201]:
-                            print(f"✅ Event {i+1} created for click {click_id}")
+                            print(f"✅ Event {i + 1} created for click {click_id}")
                         else:
-                            print(f"❌ Event {i+1} failed: {event_response.status_code}")
+                            print(f"❌ Event {i + 1} failed: {event_response.status_code}")
             except Exception as e:
-                print(f"❌ Event {i+1} error: {e}")
+                print(f"❌ Event {i + 1} error: {e}")
 
             time.sleep(0.1)
 
@@ -213,17 +212,16 @@ class IndexEffectivenessTester:
 
             # Get current index statistics
             cursor.execute('''
-                SELECT
-                    schemaname,
-                    indexrelname,
-                    idx_scan,
-                    idx_tup_read,
-                    idx_tup_fetch,
-                    pg_size_pretty(pg_relation_size(indexrelid)) as size
-                FROM pg_stat_user_indexes
-                WHERE schemaname = 'public'
-                ORDER BY indexrelname
-            ''')
+                           SELECT schemaname,
+                                  indexrelname,
+                                  idx_scan,
+                                  idx_tup_read,
+                                  idx_tup_fetch,
+                                  pg_size_pretty(pg_relation_size(indexrelid)) as size
+                           FROM pg_stat_user_indexes
+                           WHERE schemaname = 'public'
+                           ORDER BY indexrelname
+                           ''')
 
             stats = cursor.fetchall()
             return stats

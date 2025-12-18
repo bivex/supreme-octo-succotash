@@ -13,13 +13,14 @@
 
 """Track conversion handler."""
 
-import json
 from typing import Dict, Any
+
 from loguru import logger
-from ...domain.repositories.conversion_repository import ConversionRepository
-from ...domain.repositories.click_repository import ClickRepository
-from ...domain.services.conversion.conversion_service import ConversionService
+
 from ...domain.entities.conversion import Conversion
+from ...domain.repositories.click_repository import ClickRepository
+from ...domain.repositories.conversion_repository import ConversionRepository
+from ...domain.services.conversion.conversion_service import ConversionService
 from ...utils.encoding import safe_string_for_logging
 
 
@@ -27,10 +28,10 @@ class TrackConversionHandler:
     """Handler for tracking conversions."""
 
     def __init__(
-        self,
-        conversion_repository: ConversionRepository,
-        click_repository: ClickRepository,
-        conversion_service: ConversionService
+            self,
+            conversion_repository: ConversionRepository,
+            click_repository: ClickRepository,
+            conversion_service: ConversionService
     ):
         self.conversion_repository = conversion_repository
         self.click_repository = click_repository
@@ -39,7 +40,8 @@ class TrackConversionHandler:
     def handle(self, conversion_data: Dict[str, Any]) -> Dict[str, Any]:
         """Track a conversion."""
         try:
-            logger.info(f"Tracking conversion: {safe_string_for_logging(conversion_data.get('conversion_type'))} for click {safe_string_for_logging(conversion_data.get('click_id'))}")
+            logger.info(
+                f"Tracking conversion: {safe_string_for_logging(conversion_data.get('conversion_type'))} for click {safe_string_for_logging(conversion_data.get('click_id'))}")
 
             # Validate conversion data
             is_valid, error_message = self.conversion_service.validate_conversion_data(conversion_data)
@@ -70,7 +72,8 @@ class TrackConversionHandler:
 
             # Check for duplicates
             if self.conversion_service.detect_duplicate_conversion(conversion):
-                logger.warning(f"Duplicate conversion detected for click {safe_string_for_logging(str(conversion.click_id))}")
+                logger.warning(
+                    f"Duplicate conversion detected for click {safe_string_for_logging(str(conversion.click_id))}")
                 return {
                     "status": "duplicate",
                     "message": "Conversion already tracked",

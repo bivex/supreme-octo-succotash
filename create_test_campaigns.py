@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,9 +14,10 @@
 Script to create test campaigns with landing pages and offers.
 """
 
-import psycopg2
-from datetime import datetime, timedelta
 import sys
+from datetime import datetime, timedelta
+
+import psycopg2
 
 # Database configuration
 DB_CONFIG = {
@@ -27,6 +27,7 @@ DB_CONFIG = {
     'user': 'app_user',
     'password': 'app_password'
 }
+
 
 def create_test_campaigns(count=10):
     """Create test campaigns with landing pages and offers."""
@@ -50,42 +51,39 @@ def create_test_campaigns(count=10):
             # Create campaign
             try:
                 cursor.execute("""
-                    INSERT INTO campaigns (
-                        id, name, description, status, cost_model,
-                        payout_amount, payout_currency,
-                        safe_page_url, offer_page_url,
-                        daily_budget_amount, daily_budget_currency,
-                        total_budget_amount, total_budget_currency,
-                        start_date, end_date,
-                        created_at, updated_at
-                    ) VALUES (
-                        %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s,
-                        %s, %s, %s, %s,
-                        %s, %s, %s, %s
-                    )
-                    ON CONFLICT (id) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        updated_at = EXCLUDED.updated_at
-                """, (
-                    campaign_id,
-                    f"Test Campaign {9000 + i}",
-                    f"Auto-generated test campaign #{i}",
-                    "active",
-                    "cpa",
-                    10.00 + i,  # Incremental payout
-                    "USD",
-                    f"https://example.com/safe/{campaign_id}",
-                    f"https://example.com/offer/{campaign_id}",
-                    100.00,
-                    "USD",
-                    1000.00,
-                    "USD",
-                    datetime.now(),
-                    datetime.now() + timedelta(days=30),
-                    datetime.now(),
-                    datetime.now()
-                ))
+                               INSERT INTO campaigns (id, name, description, status, cost_model,
+                                                      payout_amount, payout_currency,
+                                                      safe_page_url, offer_page_url,
+                                                      daily_budget_amount, daily_budget_currency,
+                                                      total_budget_amount, total_budget_currency,
+                                                      start_date, end_date,
+                                                      created_at, updated_at)
+                               VALUES (%s, %s, %s, %s, %s,
+                                       %s, %s, %s, %s,
+                                       %s, %s, %s, %s,
+                                       %s, %s, %s, %s) ON CONFLICT (id) DO
+                               UPDATE SET
+                                   name = EXCLUDED.name,
+                                   updated_at = EXCLUDED.updated_at
+                               """, (
+                                   campaign_id,
+                                   f"Test Campaign {9000 + i}",
+                                   f"Auto-generated test campaign #{i}",
+                                   "active",
+                                   "cpa",
+                                   10.00 + i,  # Incremental payout
+                                   "USD",
+                                   f"https://example.com/safe/{campaign_id}",
+                                   f"https://example.com/offer/{campaign_id}",
+                                   100.00,
+                                   "USD",
+                                   1000.00,
+                                   "USD",
+                                   datetime.now(),
+                                   datetime.now() + timedelta(days=30),
+                                   datetime.now(),
+                                   datetime.now()
+                               ))
                 created_campaigns += 1
                 print(f"✓ Campaign {campaign_id} created")
             except Exception as e:
@@ -94,32 +92,29 @@ def create_test_campaigns(count=10):
             # Create 2-3 landing pages per campaign
             num_landings = 2 if i % 2 == 0 else 3
             for j in range(1, num_landings + 1):
-                landing_id = f"{40 + (i-1)*3 + j}"
+                landing_id = f"{40 + (i - 1) * 3 + j}"
                 try:
                     cursor.execute("""
-                        INSERT INTO landing_pages (
-                            id, campaign_id, name, url, page_type,
-                            weight, is_active, is_control,
-                            created_at, updated_at
-                        ) VALUES (
-                            %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s, %s
-                        )
-                        ON CONFLICT (id) DO UPDATE SET
-                            name = EXCLUDED.name,
-                            updated_at = EXCLUDED.updated_at
-                    """, (
-                        landing_id,
-                        campaign_id,
-                        f"Landing Page {j} for {campaign_id}",
-                        f"https://example.com/lp/{campaign_id}/{j}",
-                        "direct" if j == 1 else "presell",
-                        100 if j == 1 else 50,  # First landing has higher weight
-                        True,
-                        j == 1,  # First landing is control
-                        datetime.now(),
-                        datetime.now()
-                    ))
+                                   INSERT INTO landing_pages (id, campaign_id, name, url, page_type,
+                                                              weight, is_active, is_control,
+                                                              created_at, updated_at)
+                                   VALUES (%s, %s, %s, %s, %s,
+                                           %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                                   UPDATE SET
+                                       name = EXCLUDED.name,
+                                       updated_at = EXCLUDED.updated_at
+                                   """, (
+                                       landing_id,
+                                       campaign_id,
+                                       f"Landing Page {j} for {campaign_id}",
+                                       f"https://example.com/lp/{campaign_id}/{j}",
+                                       "direct" if j == 1 else "presell",
+                                       100 if j == 1 else 50,  # First landing has higher weight
+                                       True,
+                                       j == 1,  # First landing is control
+                                       datetime.now(),
+                                       datetime.now()
+                                   ))
                     created_landings += 1
                 except Exception as e:
                     print(f"  ✗ Landing {landing_id} error: {e}")
@@ -127,34 +122,31 @@ def create_test_campaigns(count=10):
             # Create 1-2 offers per campaign
             num_offers = 1 if i % 3 == 0 else 2
             for k in range(1, num_offers + 1):
-                offer_id = f"{20 + (i-1)*2 + k}"
+                offer_id = f"{20 + (i - 1) * 2 + k}"
                 try:
                     cursor.execute("""
-                        INSERT INTO offers (
-                            id, campaign_id, name, url, offer_type,
-                            payout_amount, payout_currency,
-                            is_active, weight,
-                            created_at, updated_at
-                        ) VALUES (
-                            %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s, %s, %s
-                        )
-                        ON CONFLICT (id) DO UPDATE SET
-                            name = EXCLUDED.name,
-                            updated_at = EXCLUDED.updated_at
-                    """, (
-                        offer_id,
-                        campaign_id,
-                        f"Offer {k} for {campaign_id}",
-                        f"https://example.com/offers/{campaign_id}/{k}",
-                        "cpa",
-                        10.00 + i + k,
-                        "USD",
-                        True,
-                        100 if k == 1 else 80,
-                        datetime.now(),
-                        datetime.now()
-                    ))
+                                   INSERT INTO offers (id, campaign_id, name, url, offer_type,
+                                                       payout_amount, payout_currency,
+                                                       is_active, weight,
+                                                       created_at, updated_at)
+                                   VALUES (%s, %s, %s, %s, %s,
+                                           %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                                   UPDATE SET
+                                       name = EXCLUDED.name,
+                                       updated_at = EXCLUDED.updated_at
+                                   """, (
+                                       offer_id,
+                                       campaign_id,
+                                       f"Offer {k} for {campaign_id}",
+                                       f"https://example.com/offers/{campaign_id}/{k}",
+                                       "cpa",
+                                       10.00 + i + k,
+                                       "USD",
+                                       True,
+                                       100 if k == 1 else 80,
+                                       datetime.now(),
+                                       datetime.now()
+                                   ))
                     created_offers += 1
                 except Exception as e:
                     print(f"  ✗ Offer {offer_id} error: {e}")
@@ -195,6 +187,7 @@ def create_test_campaigns(count=10):
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
 
 def show_stats():
     """Show current database statistics."""
@@ -238,17 +231,18 @@ def show_stats():
     except Exception as e:
         print(f"Error getting stats: {e}")
 
+
 def main():
     """Main function."""
     import argparse
 
     parser = argparse.ArgumentParser(description='Create test campaigns')
     parser.add_argument('-c', '--count', type=int, default=10,
-                       help='Number of campaigns to create (default: 10)')
+                        help='Number of campaigns to create (default: 10)')
     parser.add_argument('-s', '--stats', action='store_true',
-                       help='Show database statistics')
+                        help='Show database statistics')
     parser.add_argument('--clean', action='store_true',
-                       help='Clean all test campaigns (camp_9*)')
+                        help='Clean all test campaigns (camp_9*)')
 
     args = parser.parse_args()
 
@@ -291,6 +285,7 @@ def main():
     else:
         create_test_campaigns(args.count)
         show_stats()
+
 
 if __name__ == '__main__':
     main()

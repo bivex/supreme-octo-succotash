@@ -20,18 +20,14 @@ from .campaign import (
     CampaignPerformanceService,
     CampaignLifecycleService
 )
-
 # Click services
 from .click import ClickValidationService
-
-# LTV services
-from .ltv import LTVService
-
-# Retention services
-from .retention import RetentionService
-
 # Form services
 from .form import FormService
+# LTV services
+from .ltv import LTVService
+# Retention services
+from .retention import RetentionService
 
 __all__ = [
     'CampaignService',

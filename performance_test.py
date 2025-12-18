@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -14,19 +13,19 @@
 """Performance test script to demonstrate optimizations."""
 
 import asyncio
-import pytest
 import time
-import os
-import sys
 from typing import List, Dict, Any
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import pytest
+
+from src.infrastructure.async_io_processor import AsyncIOProcessor
+from src.infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer
+
 
 # Add src to path
 
-from src.infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer, BulkOperationMetrics
-from src.infrastructure.async_io_processor import AsyncIOProcessor
-from src.infrastructure.repositories.optimized_analytics_repository import OptimizedAnalyticsRepository
 
 def generate_test_clicks(count: int = 1000) -> List[Dict[str, Any]]:
     """Generate test click data."""
@@ -52,6 +51,7 @@ def generate_test_clicks(count: int = 1000) -> List[Dict[str, Any]]:
 
     return clicks
 
+
 @pytest.mark.asyncio
 async def test_bulk_optimizer():
     """Test bulk optimizer performance."""
@@ -64,11 +64,17 @@ async def test_bulk_optimizer():
                 def cursor(self):
                     class MockCursor:
                         def execute(self, *args): pass
+
                         def copy_expert(self, *args): pass
+
                         def close(self): pass
+
                     return MockCursor()
+
                 def commit(self): pass
+
                 def close(self): pass
+
             return MockConn()
 
         def putconn(self, conn): pass
@@ -91,6 +97,7 @@ async def test_bulk_optimizer():
     print(".2f")
 
     return result
+
 
 @pytest.mark.asyncio
 async def test_async_io_processor():
@@ -142,6 +149,7 @@ async def test_async_io_processor():
 
         return http_result, file_result
 
+
 def test_vectorized_analytics():
     """Test vectorized analytics processing."""
     print("\n📈 Testing Vectorized Analytics")
@@ -187,6 +195,7 @@ def test_vectorized_analytics():
         'epc': epc,
         'roi': roi
     }
+
 
 async def main():
     """Run all performance tests."""
@@ -245,6 +254,7 @@ async def main():
 
     print("\n✅ Performance optimizations successfully tested!")
     print("💡 To enable optimizations in production, set: PERFORMANCE_MODE=true")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

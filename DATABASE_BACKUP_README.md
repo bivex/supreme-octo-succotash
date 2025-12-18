@@ -1,6 +1,7 @@
 # Database Backup Script
 
-This Python script provides automated backup functionality for the PostgreSQL database used in the Supreme Octo Succotash project.
+This Python script provides automated backup functionality for the PostgreSQL database used in the Supreme Octo
+Succotash project.
 
 ## Features
 
@@ -14,21 +15,25 @@ This Python script provides automated backup functionality for the PostgreSQL da
 ## Usage
 
 ### Basic Backup
+
 ```bash
 python3 backup_database.py
 ```
 
 ### Create Uncompressed Backup
+
 ```bash
 python3 backup_database.py --no-compress
 ```
 
 ### List Existing Backups
+
 ```bash
 python3 backup_database.py --list
 ```
 
 ### Cleanup Old Backups (Keep Last 30 Days)
+
 ```bash
 python3 backup_database.py --cleanup 30
 ```
@@ -36,6 +41,7 @@ python3 backup_database.py --cleanup 30
 ## Configuration
 
 The script uses the same database configuration as the main application:
+
 - **Host**: localhost
 - **Port**: 5432
 - **Database**: supreme_octosuccotash_db

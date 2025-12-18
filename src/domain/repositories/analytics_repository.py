@@ -14,8 +14,8 @@
 """Analytics repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 from datetime import date
+from typing import Optional, Dict, Any
 
 from ..value_objects import Analytics
 
@@ -25,13 +25,13 @@ class AnalyticsRepository(ABC):
 
     @abstractmethod
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
-                              end_date: date, granularity: str = "day") -> Analytics:
+                               end_date: date, granularity: str = "day") -> Analytics:
         """Get analytics for a campaign within date range."""
         pass
 
     @abstractmethod
     def get_aggregated_metrics(self, campaign_id: str, start_date: date,
-                              end_date: date) -> Dict[str, Any]:
+                               end_date: date) -> Dict[str, Any]:
         """Get aggregated metrics for a campaign."""
         pass
 
@@ -42,6 +42,6 @@ class AnalyticsRepository(ABC):
 
     @abstractmethod
     def get_cached_analytics(self, campaign_id: str, start_date: date,
-                           end_date: date) -> Optional[Analytics]:
+                             end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
         pass

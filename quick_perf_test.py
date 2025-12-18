@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -17,12 +16,13 @@ Measures basic database performance metrics.
 """
 
 import os
-import psycopg2
-import time
 import statistics
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional
+from typing import Dict
+
+import psycopg2
 
 
 class DatabaseConfig:
@@ -75,7 +75,8 @@ class PerformanceTester:
 
         connection_time = time.time() - start_time
         print(f"Created {connections_created} connections in {connection_time:.2f}s")
-        print(f"Rate: {connections_created/connection_time:.1f} connections/second")
+        print(f"Rate: {connections_created / connection_time:.1f} connections/second")
+
     def test_simple_queries(self) -> None:
         """Test simple query performance."""
         print("\nTesting simple queries...")
@@ -181,23 +182,22 @@ class PerformanceTester:
         try:
             for i in range(100):
                 cursor.execute("""
-                    INSERT INTO events (
-                        id, click_id, event_type, event_data, created_at
-                    ) VALUES (%s, %s, %s, %s, %s)
-                """, (
-                    f'perf_test_event_{i}',
-                    'test_click_1' if i % 2 == 0 else None,
-                    'page_view',
-                    '{"url": "/test", "duration": 100}',
-                    datetime.now()
-                ))
+                               INSERT INTO events (id, click_id, event_type, event_data, created_at)
+                               VALUES (%s, %s, %s, %s, %s)
+                               """, (
+                                   f'perf_test_event_{i}',
+                                   'test_click_1' if i % 2 == 0 else None,
+                                   'page_view',
+                                   '{"url": "/test", "duration": 100}',
+                                   datetime.now()
+                               ))
                 inserts += 1
 
             conn.commit()
             insert_time = time.time() - start_time
 
             print(f"Inserted {inserts} events in {insert_time:.2f}s")
-            print(f"Rate: {inserts/insert_time:.0f} inserts/second")
+            print(f"Rate: {inserts / insert_time:.0f} inserts/second")
         except Exception as e:
             print(f"Write test failed: {e}")
             conn.rollback()

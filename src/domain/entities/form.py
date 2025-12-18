@@ -14,9 +14,9 @@
 """Form processing domain entities."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 from datetime import datetime
 from enum import Enum
+from typing import Dict, List, Optional, Any
 
 
 class LeadStatus(Enum):

@@ -13,11 +13,12 @@
 
 """Conversion tracking service."""
 
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
+
 from loguru import logger
-from ...entities.conversion import Conversion
+
 from ...entities.click import Click
+from ...entities.conversion import Conversion
 from ...repositories.click_repository import ClickRepository
 from ...value_objects.identifiers.click_id import ClickId
 from ....utils.encoding import safe_string_for_logging

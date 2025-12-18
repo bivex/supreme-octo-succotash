@@ -5,9 +5,9 @@ This script makes HTTP requests to the server to show the full async call stack.
 """
 
 import asyncio
+
 import aiohttp
-import time
-import sys
+
 
 async def test_campaign_creation():
     """Test creating a campaign to see the async trace in action."""
@@ -24,9 +24,9 @@ async def test_campaign_creation():
         async with aiohttp.ClientSession() as session:
             print("📤 Sending POST request to create campaign...")
             async with session.post(
-                'http://localhost:8000/v1/campaigns',
-                json=campaign_data,
-                headers={'Content-Type': 'application/json'}
+                    'http://localhost:8000/v1/campaigns',
+                    json=campaign_data,
+                    headers={'Content-Type': 'application/json'}
             ) as response:
                 print(f"📥 Response status: {response.status}")
                 if response.status == 201:
@@ -41,6 +41,7 @@ async def test_campaign_creation():
         print("💡 Make sure the server is running with: python main_clean.py --async-trace")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+
 
 async def test_campaign_offer_creation():
     """Test creating an offer for a campaign."""
@@ -64,9 +65,9 @@ async def test_campaign_offer_creation():
         async with aiohttp.ClientSession() as session:
             print(f"📤 Sending POST request to create offer for campaign {campaign_id}...")
             async with session.post(
-                f'http://localhost:8000/v1/campaigns/{campaign_id}/offers',
-                json=offer_data,
-                headers={'Content-Type': 'application/json'}
+                    f'http://localhost:8000/v1/campaigns/{campaign_id}/offers',
+                    json=offer_data,
+                    headers={'Content-Type': 'application/json'}
             ) as response:
                 print(f"📥 Response status: {response.status}")
                 if response.status in [201, 400, 404]:  # 400/404 are expected for test
@@ -85,6 +86,7 @@ async def test_campaign_offer_creation():
         print("💡 Make sure the server is running with: python main_clean.py --async-trace")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+
 
 async def test_multiple_requests():
     """Test multiple concurrent requests to see task traces."""
@@ -108,13 +110,14 @@ async def test_multiple_requests():
     for result in results:
         print(f"📊 {result}")
 
+
 async def simulate_server_processing():
     """Simulate server request processing with async-trace."""
     print("🎭 Simulating server request processing with async-trace...")
 
     async def simulate_http_request_handler(endpoint: str):
         """Simulate an HTTP request handler with async-trace."""
-        from src.utils.async_debug import debug_http_request, debug_database_call, debug_before_await, debug_after_await
+        from src.utils.async_debug import debug_http_request, debug_before_await, debug_after_await
 
         debug_http_request(f"POST {endpoint}")
 
@@ -151,6 +154,7 @@ async def simulate_server_processing():
 
     await simulate_concurrent_requests()
 
+
 async def main():
     """Main test function."""
     print("🎭 Async-Trace Demonstration")
@@ -172,6 +176,7 @@ async def main():
     print("   2. Run: python test_async_trace_http.py")
     print("   3. Watch server logs for detailed async call stacks!")
     print("\n📖 Read ASYNC_TRACE_README.md for complete usage guide")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -13,23 +13,23 @@
 
 """Presentation routes."""
 
+from .analytics_routes import AnalyticsRoutes
+from .bulk_operations_routes import BulkOperationsRoutes
 from .campaign_routes import CampaignRoutes
-from .click_routes import ClickRoutes
-from .webhook_routes import WebhookRoutes
-from .event_routes import EventRoutes
-from .conversion_routes import ConversionRoutes
-from .gaming_webhook_routes import GamingWebhookRoutes
-from .postback_routes import PostbackRoutes
 from .click_generation_routes import ClickGenerationRoutes
+from .click_routes import ClickRoutes
+from .conversion_routes import ConversionRoutes
+from .event_routes import EventRoutes
+from .form_routes import FormRoutes
+from .fraud_routes import FraudRoutes
+from .gaming_webhook_routes import GamingWebhookRoutes
 from .goal_routes import GoalRoutes
 from .journey_routes import JourneyRoutes
 from .ltv_routes import LtvRoutes
-from .form_routes import FormRoutes
+from .postback_routes import PostbackRoutes
 from .retention_routes import RetentionRoutes
-from .bulk_operations_routes import BulkOperationsRoutes
-from .fraud_routes import FraudRoutes
 from .system_routes import SystemRoutes
-from .analytics_routes import AnalyticsRoutes
+from .webhook_routes import WebhookRoutes
 
 __all__ = [
     'CampaignRoutes',

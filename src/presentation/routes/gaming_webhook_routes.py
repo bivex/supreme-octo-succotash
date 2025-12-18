@@ -13,8 +13,8 @@
 
 """Gaming platform webhook HTTP routes."""
 
-import json
 from loguru import logger
+
 from ...application.handlers.gaming_webhook_handler import GamingWebhookHandler
 
 
@@ -31,6 +31,7 @@ class GamingWebhookRoutes:
 
     def _register_deposit_webhook(self, app):
         """Register deposit webhook route."""
+
         def deposit_webhook(res, req):
             """Handle deposit webhooks from gaming platforms."""
             from ...presentation.middleware.security_middleware import add_security_headers
@@ -111,6 +112,7 @@ class GamingWebhookRoutes:
 
     def _register_registration_webhook(self, app):
         """Register user registration webhook route."""
+
         def registration_webhook(res, req):
             """Handle user registration webhooks from gaming platforms."""
             from ...presentation.middleware.security_middleware import add_security_headers

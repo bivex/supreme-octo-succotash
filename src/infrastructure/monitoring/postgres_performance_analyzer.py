@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,12 +14,11 @@
 Advanced PostgreSQL Performance Analyzer - извлекает глубокие метрики из pg_stat_statements
 """
 
-import psycopg2
+import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
-import logging
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +145,8 @@ class PostgresPerformanceAnalyzer:
             total_queries=len(query_metrics),
             total_calls=sum(m.calls for m in query_metrics),
             total_exec_time=sum(m.total_exec_time for m in query_metrics),
-            avg_cache_hit_ratio=sum(m.shared_blks_cache_ratio for m in query_metrics) / len(query_metrics) if query_metrics else 0,
+            avg_cache_hit_ratio=sum(m.shared_blks_cache_ratio for m in query_metrics) / len(
+                query_metrics) if query_metrics else 0,
             queries_with_bad_cache=len([m for m in query_metrics if m.shared_blks_cache_ratio < 95]),
             total_temp_bytes=sum(m.temp_blks_written * 8192 for m in query_metrics),  # 8KB blocks
             queries_using_temp=len([m for m in query_metrics if m.temp_blks_written > 0]),
@@ -164,11 +163,11 @@ class PostgresPerformanceAnalyzer:
 
         # Проверить доступные колонки
         cursor.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = 'pg_stat_statements'
-            ORDER BY column_name
-        """)
+                       SELECT column_name
+                       FROM information_schema.columns
+                       WHERE table_name = 'pg_stat_statements'
+                       ORDER BY column_name
+                       """)
         available_columns = {row[0] for row in cursor.fetchall()}
 
         # Построить запрос на основе доступных колонок
@@ -180,7 +179,8 @@ class PostgresPerformanceAnalyzer:
 
         # Время выполнения
         if 'total_exec_time' in available_columns:
-            select_columns.extend(['total_exec_time', 'mean_exec_time', 'min_exec_time', 'max_exec_time', 'stddev_exec_time'])
+            select_columns.extend(
+                ['total_exec_time', 'mean_exec_time', 'min_exec_time', 'max_exec_time', 'stddev_exec_time'])
         elif 'total_time' in available_columns:
             select_columns.extend(['total_time', 'mean_time', 'min_time', 'max_time', 'stddev_time'])
 
@@ -346,9 +346,9 @@ class PostgresPerformanceAnalyzer:
         return analysis
 
     def _generate_optimization_recommendations(
-        self,
-        metrics: List[QueryPerformanceMetrics],
-        analysis: Dict[str, int]
+            self,
+            metrics: List[QueryPerformanceMetrics],
+            analysis: Dict[str, int]
     ) -> List[str]:
         """Генерировать рекомендации по оптимизации"""
         recommendations = []
@@ -396,7 +396,8 @@ class PostgresPerformanceAnalyzer:
                 "Проверьте состояние индексов или параметры PostgreSQL."
             )
 
-        return recommendations if recommendations else ["Система работает оптимально - нет критичных проблем производительности."]
+        return recommendations if recommendations else [
+            "Система работает оптимально - нет критичных проблем производительности."]
 
     def _create_empty_report(self) -> SystemPerformanceReport:
         """Создать пустой отчет при ошибке"""

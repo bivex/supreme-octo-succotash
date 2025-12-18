@@ -14,8 +14,8 @@
 """SQLite goal repository implementation."""
 
 import sqlite3
-from typing import Optional, List
 from datetime import datetime, timezone
+from typing import Optional, List
 
 from ...domain.entities.goal import Goal, GoalType
 from ...domain.repositories.goal_repository import GoalRepository
@@ -42,21 +42,52 @@ class SQLiteGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS goals (
-                id TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                description TEXT,
-                goal_type TEXT NOT NULL,
-                target_value REAL,
-                current_value REAL DEFAULT 0.0,
-                status TEXT NOT NULL,
-                priority INTEGER DEFAULT 1,
-                conditions TEXT,  -- JSON string
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS goals
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           description
+                           TEXT,
+                           goal_type
+                           TEXT
+                           NOT
+                           NULL,
+                           target_value
+                           REAL,
+                           current_value
+                           REAL
+                           DEFAULT
+                           0.0,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           priority
+                           INTEGER
+                           DEFAULT
+                           1,
+                           conditions
+                           TEXT, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_campaign_id ON goals(campaign_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)")
@@ -99,10 +130,11 @@ class SQLiteGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM goals
-            WHERE campaign_id = ?
-            ORDER BY priority DESC, created_at DESC
-        """, (campaign_id,))
+                       SELECT *
+                       FROM goals
+                       WHERE campaign_id = ?
+                       ORDER BY priority DESC, created_at DESC
+                       """, (campaign_id,))
 
         return [self._row_to_goal(row) for row in cursor.fetchall()]
 
@@ -112,10 +144,12 @@ class SQLiteGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM goals
-            WHERE campaign_id = ? AND status = 'active'
-            ORDER BY priority DESC, created_at DESC
-        """, (campaign_id,))
+                       SELECT *
+                       FROM goals
+                       WHERE campaign_id = ?
+                         AND status = 'active'
+                       ORDER BY priority DESC, created_at DESC
+                       """, (campaign_id,))
 
         return [self._row_to_goal(row) for row in cursor.fetchall()]
 
@@ -216,9 +250,10 @@ class SQLiteGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         query = """
-            SELECT * FROM goals
-            WHERE json_extract(conditions, '$.tags') LIKE ?
-        """
+                SELECT *
+                FROM goals
+                WHERE json_extract(conditions, '$.tags') LIKE ? \
+                """
         params = [f'%{tag}%']
 
         if campaign_id is not None:
@@ -236,10 +271,11 @@ class SQLiteGoalRepository(GoalRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE goals
-            SET current_value = ?, updated_at = ?
-            WHERE id = ?
-        """, (new_value, datetime.now(timezone.utc).isoformat(), goal_id))
+                       UPDATE goals
+                       SET current_value = ?,
+                           updated_at    = ?
+                       WHERE id = ?
+                       """, (new_value, datetime.now(timezone.utc).isoformat(), goal_id))
 
         conn.commit()
 

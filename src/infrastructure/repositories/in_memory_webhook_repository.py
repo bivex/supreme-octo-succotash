@@ -14,8 +14,9 @@
 """In-memory webhook repository implementation."""
 
 from typing import Dict, List, Optional
-from ...domain.repositories.webhook_repository import WebhookRepository
+
 from ...domain.entities.webhook import TelegramWebhook
+from ...domain.repositories.webhook_repository import WebhookRepository
 
 
 class InMemoryWebhookRepository(WebhookRepository):

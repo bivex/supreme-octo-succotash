@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,13 +15,10 @@ Database migration script to create missing tables.
 Automatically discovers repository classes and creates their tables.
 """
 
-import os
 import sys
-import psycopg2
-from psycopg2 import sql
-import importlib
-import inspect
 from pathlib import Path
+
+import psycopg2
 
 # Database configuration
 DB_CONFIG = {
@@ -33,22 +29,25 @@ DB_CONFIG = {
     'password': 'app_password'
 }
 
+
 def get_existing_tables(conn):
     """Get list of existing tables in the database."""
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT tablename
-        FROM pg_tables
-        WHERE schemaname = 'public'
-    """)
+                   SELECT tablename
+                   FROM pg_tables
+                   WHERE schemaname = 'public'
+                   """)
     tables = [row[0] for row in cursor.fetchall()]
     cursor.close()
     return tables
+
 
 def find_repository_files():
     """Find all PostgreSQL repository files."""
     repo_dir = Path(__file__).parent / 'src' / 'infrastructure' / 'repositories'
     return list(repo_dir.glob('postgres_*.py'))
+
 
 def extract_table_info_from_file(file_path):
     """Extract table creation SQL from repository file."""
@@ -91,6 +90,7 @@ def extract_table_info_from_file(file_path):
                 indexes[table_name].append(sql)
 
     return tables, indexes
+
 
 def create_missing_tables(conn, dry_run=False):
     """Create missing tables in the database."""
@@ -182,15 +182,16 @@ def create_missing_tables(conn, dry_run=False):
     final_tables = get_existing_tables(conn)
     print(f"📊 Total tables in database: {len(final_tables)}")
 
+
 def main():
     """Main migration function."""
     import argparse
 
     parser = argparse.ArgumentParser(description='Database migration script')
     parser.add_argument('--dry-run', action='store_true',
-                       help='Show what would be done without making changes')
+                        help='Show what would be done without making changes')
     parser.add_argument('--show-connections', action='store_true',
-                       help='Show active database connections')
+                        help='Show active database connections')
     args = parser.parse_args()
 
     try:
@@ -203,11 +204,11 @@ def main():
         if args.show_connections:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT pid, usename, application_name, client_addr, state, query_start
-                FROM pg_stat_activity
-                WHERE datname = 'supreme_octosuccotash_db'
-                ORDER BY query_start DESC
-            """)
+                           SELECT pid, usename, application_name, client_addr, state, query_start
+                           FROM pg_stat_activity
+                           WHERE datname = 'supreme_octosuccotash_db'
+                           ORDER BY query_start DESC
+                           """)
             connections = cursor.fetchall()
             print(f"📊 Active connections: {len(connections)}")
             for pid, user, app, addr, state, start in connections[:10]:
@@ -228,6 +229,7 @@ def main():
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()

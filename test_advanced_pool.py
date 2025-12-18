@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,12 +14,13 @@
 Test script for Advanced Connection Pool
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from infrastructure.database.advanced_connection_pool import AdvancedConnectionPool
-import time
+
 
 def test_advanced_pool():
     """Test advanced connection pool functionality."""
@@ -57,12 +57,12 @@ def test_advanced_pool():
         for i in range(5):
             conn = pool.getconn()
             connections.append(conn)
-            print(f"✅ Connection {i+1} obtained")
+            print(f"✅ Connection {i + 1} obtained")
 
         # Execute queries on each connection
         for i, conn in enumerate(connections):
             result = pool.execute_with_monitoring(conn, "SELECT 1")
-            print(f"✅ Query on connection {i+1} executed")
+            print(f"✅ Query on connection {i + 1} executed")
 
         # Return all connections
         for conn in connections:
@@ -84,6 +84,7 @@ def test_advanced_pool():
 
     finally:
         pool.closeall()
+
 
 if __name__ == "__main__":
     test_advanced_pool()

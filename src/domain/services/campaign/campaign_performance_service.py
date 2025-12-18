@@ -24,7 +24,8 @@ from ...value_objects import Money
 class CampaignPerformanceService:
     """Domain service for campaign performance calculations."""
 
-    def calculate_campaign_performance(self, campaign: Campaign, clicks: List[Click], impressions: List[Impression]) -> Dict[str, Any]:
+    def calculate_campaign_performance(self, campaign: Campaign, clicks: List[Click], impressions: List[Impression]) -> \
+    Dict[str, Any]:
         """
         Calculate campaign performance metrics from click and impression data.
 

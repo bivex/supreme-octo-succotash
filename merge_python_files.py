@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -162,7 +161,7 @@ class PythonFileMerger:
         file_size = file_path.stat().st_size
 
         # Write file header
-        outfile.write(f"[{index:3d}] {'='*10} {relative_path} {'='*10}\n")
+        outfile.write(f"[{index:3d}] {'=' * 10} {relative_path} {'=' * 10}\n")
         outfile.write(f"Full path: {file_path}\n")
         outfile.write(f"Size: {file_size} bytes\n\n")
 
@@ -172,7 +171,7 @@ class PythonFileMerger:
         outfile.write("\n\n")
 
         # Write file footer
-        outfile.write(f"{'='*20} END OF FILE {relative_path} {'='*20}\n\n\n")
+        outfile.write(f"{'=' * 20} END OF FILE {relative_path} {'=' * 20}\n\n\n")
 
     def merge_files(self) -> bool:
         """Main merge operation."""

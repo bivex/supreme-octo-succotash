@@ -14,7 +14,9 @@
 """Bulk operations HTTP routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.bulk_click_handler import BulkClickHandler
 from ...application.handlers.click_validation_handler import ClickValidationHandler
 
@@ -33,9 +35,10 @@ class BulkOperationsRoutes:
 
     def _register_bulk_click_generate(self, app):
         """Register bulk click generation route."""
+
         def bulk_generate_clicks(res, req):
             """Generate multiple click tracking URLs in bulk."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 logger.debug("Bulk click generation request received")
@@ -132,6 +135,7 @@ class BulkOperationsRoutes:
 
     def _register_click_validation(self, app):
         """Register click validation route."""
+
         def validate_click(res, req):
             """Validate click before redirect."""
             try:

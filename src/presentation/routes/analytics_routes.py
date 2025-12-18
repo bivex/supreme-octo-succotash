@@ -14,7 +14,9 @@
 """Analytics HTTP routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.analytics_handler import AnalyticsHandler
 
 
@@ -30,6 +32,7 @@ class AnalyticsRoutes:
 
     def _register_real_time_analytics(self, app):
         """Register real-time analytics route."""
+
         def get_real_time_analytics(res, req):
             """Get real-time analytics data for the last 5 minutes."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers

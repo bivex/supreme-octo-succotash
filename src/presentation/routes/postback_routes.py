@@ -13,8 +13,8 @@
 
 """Postback HTTP routes."""
 
-import json
 from loguru import logger
+
 from ...application.handlers.send_postback_handler import SendPostbackHandler
 
 
@@ -30,9 +30,10 @@ class PostbackRoutes:
 
     def _register_send_postback(self, app):
         """Register postback sending route."""
+
         def send_postback(res, req):
             """Send postback notification to external system."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:

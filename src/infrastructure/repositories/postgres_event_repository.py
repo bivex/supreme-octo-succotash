@@ -13,10 +13,9 @@
 
 """PostgreSQL event repository implementation."""
 
-import psycopg2
 import json
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict
 
 from ...domain.entities.event import Event
 from ...domain.repositories.event_repository import EventRepository
@@ -32,24 +31,15 @@ class PostgresEventRepository(EventRepository):
 
     def _get_connection(self):
 
-
         """Get database connection."""
 
-
         if self._connection is None:
-
-
             self._connection = self._container.get_db_connection()
 
-
         if not self._db_initialized:
-
-
             self._initialize_db()
 
-
             self._db_initialized = True
-
 
         return self._connection
 
@@ -59,14 +49,26 @@ class PostgresEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS events (
-                id TEXT PRIMARY KEY,
-                click_id TEXT,
-                event_type TEXT NOT NULL,
-                event_data JSONB,
-                created_at TIMESTAMP NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS events
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           click_id
+                           TEXT,
+                           event_type
+                           TEXT
+                           NOT
+                           NULL,
+                           event_data
+                           JSONB,
+                           created_at
+                           TIMESTAMP
+                           NOT
+                           NULL
+                       )
+                       """)
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_click_id ON events(click_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)")
@@ -119,17 +121,17 @@ class PostgresEventRepository(EventRepository):
         }
 
         cursor.execute("""
-            INSERT INTO events
-            (id, click_id, event_type, event_data, created_at)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                click_id = EXCLUDED.click_id,
-                event_type = EXCLUDED.event_type,
-                event_data = EXCLUDED.event_data
-        """, (
-            event.id, event.click_id, event.event_type,
-            json.dumps(event_data), event.created_at
-        ))
+                       INSERT INTO events
+                           (id, click_id, event_type, event_data, created_at)
+                       VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           click_id = EXCLUDED.click_id,
+                           event_type = EXCLUDED.event_type,
+                           event_data = EXCLUDED.event_data
+                       """, (
+                           event.id, event.click_id, event.event_type,
+                           json.dumps(event_data), event.created_at
+                       ))
 
         conn.commit()
 
@@ -154,11 +156,12 @@ class PostgresEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM events
-            WHERE event_data->>'user_id' = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (user_id, limit))
+                       SELECT *
+                       FROM events
+                       WHERE event_data ->>'user_id' = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (user_id, limit))
 
         events = []
         columns = [desc[0] for desc in cursor.description]
@@ -174,11 +177,12 @@ class PostgresEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM events
-            WHERE event_data->>'session_id' = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (session_id, limit))
+                       SELECT *
+                       FROM events
+                       WHERE event_data ->>'session_id' = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (session_id, limit))
 
         events = []
         columns = [desc[0] for desc in cursor.description]
@@ -194,11 +198,12 @@ class PostgresEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM events
-            WHERE click_id = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (click_id, limit))
+                       SELECT *
+                       FROM events
+                       WHERE click_id = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (click_id, limit))
 
         events = []
         columns = [desc[0] for desc in cursor.description]
@@ -214,11 +219,12 @@ class PostgresEventRepository(EventRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM events
-            WHERE event_data->>'campaign_id' = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-        """, (str(campaign_id), limit))
+                       SELECT *
+                       FROM events
+                       WHERE event_data ->>'campaign_id' = %s
+                       ORDER BY created_at DESC
+                           LIMIT %s
+                       """, (str(campaign_id), limit))
 
         events = []
         columns = [desc[0] for desc in cursor.description]
@@ -229,11 +235,11 @@ class PostgresEventRepository(EventRepository):
         return events
 
     def get_events_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        event_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            event_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Event]:
         """Get events within a time range."""
         conn = self._container.get_db_connection()
@@ -241,18 +247,23 @@ class PostgresEventRepository(EventRepository):
 
         if event_type:
             cursor.execute("""
-                SELECT * FROM events
-                WHERE created_at >= %s AND created_at <= %s AND event_type = %s
-                ORDER BY created_at DESC
-                LIMIT %s
-            """, (start_time, end_time, event_type, limit))
+                           SELECT *
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                             AND event_type = %s
+                           ORDER BY created_at DESC
+                               LIMIT %s
+                           """, (start_time, end_time, event_type, limit))
         else:
             cursor.execute("""
-                SELECT * FROM events
-                WHERE created_at >= %s AND created_at <= %s
-                ORDER BY created_at DESC
-                LIMIT %s
-            """, (start_time, end_time, limit))
+                           SELECT *
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                           ORDER BY created_at DESC
+                               LIMIT %s
+                           """, (start_time, end_time, limit))
 
         events = []
         columns = [desc[0] for desc in cursor.description]
@@ -263,10 +274,10 @@ class PostgresEventRepository(EventRepository):
         return events
 
     def get_event_counts(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'event_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'event_type'
     ) -> Dict[str, int]:
         """Get event counts grouped by specified field."""
         conn = self._container.get_db_connection()
@@ -274,33 +285,39 @@ class PostgresEventRepository(EventRepository):
 
         if group_by == 'event_type':
             cursor.execute("""
-                SELECT event_type, COUNT(*) as count
-                FROM events
-                WHERE created_at >= %s AND created_at <= %s
-                GROUP BY event_type
-            """, (start_time, end_time))
+                           SELECT event_type, COUNT(*) as count
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                           GROUP BY event_type
+                           """, (start_time, end_time))
         elif group_by == 'user_id':
             cursor.execute("""
-                SELECT event_data->>'user_id' as user_id, COUNT(*) as count
-                FROM events
-                WHERE created_at >= %s AND created_at <= %s AND event_data->>'user_id' IS NOT NULL
-                GROUP BY event_data->>'user_id'
-            """, (start_time, end_time))
+                           SELECT event_data ->>'user_id' as user_id, COUNT (*) as count
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                             AND event_data->>'user_id' IS NOT NULL
+                           GROUP BY event_data->>'user_id'
+                           """, (start_time, end_time))
         elif group_by == 'campaign_id':
             cursor.execute("""
-                SELECT event_data->>'campaign_id' as campaign_id, COUNT(*) as count
-                FROM events
-                WHERE created_at >= %s AND created_at <= %s AND event_data->>'campaign_id' IS NOT NULL
-                GROUP BY event_data->>'campaign_id'
-            """, (start_time, end_time))
+                           SELECT event_data ->>'campaign_id' as campaign_id, COUNT (*) as count
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                             AND event_data->>'campaign_id' IS NOT NULL
+                           GROUP BY event_data->>'campaign_id'
+                           """, (start_time, end_time))
         else:
             # Default to event_type
             cursor.execute("""
-                SELECT event_type, COUNT(*) as count
-                FROM events
-                WHERE created_at >= %s AND created_at <= %s
-                GROUP BY event_type
-            """, (start_time, end_time))
+                           SELECT event_type, COUNT(*) as count
+                           FROM events
+                           WHERE created_at >= %s
+                             AND created_at <= %s
+                           GROUP BY event_type
+                           """, (start_time, end_time))
 
         result = {}
         for row in cursor.fetchall():

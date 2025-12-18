@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -13,9 +12,9 @@
 # Commercial licensing available upon request.
 """Тест автоматического удаления индексов."""
 
-
 from src.container import container
 from src.infrastructure.upholder.postgres_auto_upholder import UpholderConfig, PostgresAutoUpholder
+
 
 def test_index_deletion():
     print("🚀 Тестирование автоматического удаления индексов...")
@@ -57,6 +56,7 @@ def test_index_deletion():
         traceback.print_exc()
     finally:
         container.release_db_connection(conn)
+
 
 if __name__ == "__main__":
     test_index_deletion()

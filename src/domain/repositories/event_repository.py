@@ -14,8 +14,9 @@
 """Event repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import List, Optional, Dict
+
 from ..entities.event import Event
 
 
@@ -54,21 +55,21 @@ class EventRepository(ABC):
 
     @abstractmethod
     def get_events_in_timeframe(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        event_type: Optional[str] = None,
-        limit: int = 1000
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            event_type: Optional[str] = None,
+            limit: int = 1000
     ) -> List[Event]:
         """Get events within a time range."""
         pass
 
     @abstractmethod
     def get_event_counts(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        group_by: str = 'event_type'
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            group_by: str = 'event_type'
     ) -> Dict[str, int]:
         """Get event counts grouped by specified field."""
         pass

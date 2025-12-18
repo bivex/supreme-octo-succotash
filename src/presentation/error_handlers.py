@@ -43,9 +43,11 @@ def register_error_handlers(app):
     @app.errorhandler(HTTP_INTERNAL_SERVER_ERROR)
     def internal_error(error):
         app.logger.error(f"Internal server error: {error}")
-        return {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}, HTTP_INTERNAL_SERVER_ERROR
+        return {
+            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}, HTTP_INTERNAL_SERVER_ERROR
 
     @app.errorhandler(Exception)
     def handle_exception(error):
         app.logger.error(f"Unhandled exception: {error}")
-        return {"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}, HTTP_INTERNAL_SERVER_ERROR
+        return {
+            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}}, HTTP_INTERNAL_SERVER_ERROR

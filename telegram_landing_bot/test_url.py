@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,6 +15,7 @@ Test the corrected tracking URL
 """
 
 import requests
+
 
 def test_tracking_url():
     """Test the tracking URL with correct cid parameter"""
@@ -40,6 +40,7 @@ def test_tracking_url():
 
     except Exception as e:
         print(f'❌ Error: {e}')
+
 
 if __name__ == "__main__":
     test_tracking_url()

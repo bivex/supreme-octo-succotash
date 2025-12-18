@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,16 +14,16 @@
 Demonstrate proper index usage by directly interacting with repositories.
 """
 
-import sys
 import os
+import sys
 import time
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.container import Container
-from src.domain.value_objects import CampaignId
 from datetime import datetime
+
 
 class IndexUsageDemonstrator:
     """Demonstrate index usage by directly calling repository methods."""
@@ -40,17 +39,16 @@ class IndexUsageDemonstrator:
             cursor = conn.cursor()
 
             cursor.execute('''
-                SELECT
-                    schemaname,
-                    indexrelname,
-                    idx_scan,
-                    idx_tup_read,
-                    idx_tup_fetch,
-                    pg_size_pretty(pg_relation_size(indexrelid)) as size
-                FROM pg_stat_user_indexes
-                WHERE schemaname = 'public'
-                ORDER BY indexrelname
-            ''')
+                           SELECT schemaname,
+                                  indexrelname,
+                                  idx_scan,
+                                  idx_tup_read,
+                                  idx_tup_fetch,
+                                  pg_size_pretty(pg_relation_size(indexrelid)) as size
+                           FROM pg_stat_user_indexes
+                           WHERE schemaname = 'public'
+                           ORDER BY indexrelname
+                           ''')
 
             return {row[1]: row for row in cursor.fetchall()}  # index_name -> stats
         finally:
@@ -104,16 +102,16 @@ class IndexUsageDemonstrator:
                     # Insert some test clicks
                     for i in range(5):
                         cursor.execute("""
-                            INSERT INTO clicks (id, campaign_id, ip_address, user_agent, referrer, created_at)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, (
-                            f'test_click_{i:03d}',
-                            campaign_id,
-                            f'192.168.1.{i+10}',
-                            'Mozilla/5.0 Test Browser',
-                            f'https://test.com/campaign/{campaign_id}',
-                            datetime.now()
-                        ))
+                                       INSERT INTO clicks (id, campaign_id, ip_address, user_agent, referrer, created_at)
+                                       VALUES (%s, %s, %s, %s, %s, %s)
+                                       """, (
+                                           f'test_click_{i:03d}',
+                                           campaign_id,
+                                           f'192.168.1.{i + 10}',
+                                           'Mozilla/5.0 Test Browser',
+                                           f'https://test.com/campaign/{campaign_id}',
+                                           datetime.now()
+                                       ))
 
                     conn.commit()
                     print("✅ Created 5 test clicks")
@@ -121,7 +119,8 @@ class IndexUsageDemonstrator:
                     # Now test queries that should use indexes
                     cursor.execute("SELECT COUNT(*) FROM clicks WHERE campaign_id = %s", (campaign_id,))
                     campaign_clicks = cursor.fetchone()[0]
-                    print(f"✅ Found {campaign_clicks} clicks for campaign {campaign_id} (should use idx_clicks_campaign_id)")
+                    print(
+                        f"✅ Found {campaign_clicks} clicks for campaign {campaign_id} (should use idx_clicks_campaign_id)")
 
         finally:
             if conn:
@@ -153,15 +152,15 @@ class IndexUsageDemonstrator:
                     # Insert test analytics data
                     for i in range(3):
                         cursor.execute("""
-                            INSERT INTO analytics_cache (campaign_id, cache_key, data, created_at, expires_at)
-                            VALUES (%s, %s, %s, %s, %s)
-                        """, (
-                            campaign_id,
-                            f'test_metric_{i}',
-                            '{"clicks": 100, "conversions": 10}',
-                            datetime.now(),
-                            datetime.now()  # No expiration for test
-                        ))
+                                       INSERT INTO analytics_cache (campaign_id, cache_key, data, created_at, expires_at)
+                                       VALUES (%s, %s, %s, %s, %s)
+                                       """, (
+                                           campaign_id,
+                                           f'test_metric_{i}',
+                                           '{"clicks": 100, "conversions": 10}',
+                                           datetime.now(),
+                                           datetime.now()  # No expiration for test
+                                       ))
 
                     conn.commit()
                     print("✅ Created 3 test analytics entries")
@@ -169,11 +168,13 @@ class IndexUsageDemonstrator:
                     # Now test queries that should use analytics indexes
                     cursor.execute("SELECT COUNT(*) FROM analytics_cache WHERE campaign_id = %s", (campaign_id,))
                     campaign_analytics = cursor.fetchone()[0]
-                    print(f"✅ Found {campaign_analytics} analytics entries for campaign {campaign_id} (should use idx_analytics_campaign_id)")
+                    print(
+                        f"✅ Found {campaign_analytics} analytics entries for campaign {campaign_id} (should use idx_analytics_campaign_id)")
 
                     cursor.execute("SELECT * FROM analytics_cache WHERE cache_key = %s", ('test_metric_0',))
                     key_result = cursor.fetchone()
-                    print(f"✅ Found analytics entry by cache_key (should use idx_analytics_cache_key): {'Yes' if key_result else 'No'}")
+                    print(
+                        f"✅ Found analytics entry by cache_key (should use idx_analytics_cache_key): {'Yes' if key_result else 'No'}")
 
         finally:
             if conn:

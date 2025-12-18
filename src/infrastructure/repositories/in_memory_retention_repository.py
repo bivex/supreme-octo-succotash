@@ -13,11 +13,11 @@
 
 """In-memory retention repository implementation."""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from typing import Optional, List, Dict, Any
 
-from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
+from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment
 from ...domain.repositories.retention_repository import RetentionRepository
 
 
@@ -29,7 +29,6 @@ class InMemoryRetentionRepository(RetentionRepository):
         self._churn_predictions: Dict[str, ChurnPrediction] = {}
         self._engagement_profiles: Dict[str, UserEngagementProfile] = {}
         self._deleted_campaigns: set[str] = set()
-
 
     def save_retention_campaign(self, campaign: RetentionCampaign) -> None:
         """Save retention campaign."""
@@ -56,7 +55,7 @@ class InMemoryRetentionRepository(RetentionRepository):
                 if c.id not in self._deleted_campaigns and c.is_active]
 
     def update_campaign_metrics(self, campaign_id: str, sent_count: int,
-                               opened_count: int, clicked_count: int, converted_count: int) -> None:
+                                opened_count: int, clicked_count: int, converted_count: int) -> None:
         """Update campaign performance metrics."""
         if campaign_id in self._campaigns and campaign_id not in self._deleted_campaigns:
             campaign = self._campaigns[campaign_id]

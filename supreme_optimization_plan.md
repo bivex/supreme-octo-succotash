@@ -9,6 +9,7 @@
 ## 1. 🔗 **Оптимизация Connection Pooling**
 
 ### Текущая ситуация:
+
 ```python
 # src/container.py - текущее решение
 psycopg2.pool.SimpleConnectionPool(
@@ -21,6 +22,7 @@ psycopg2.pool.SimpleConnectionPool(
 ### Оптимизации:
 
 #### A. Умный Connection Pooler
+
 ```python
 # Новый файл: src/infrastructure/database/advanced_connection_pool.py
 import psycopg2
@@ -82,6 +84,7 @@ class AdvancedConnectionPool:
 ```
 
 #### B. Оптимизация настроек пула
+
 ```python
 # src/container.py - улучшенные настройки
 def get_db_connection_pool(self):
@@ -112,11 +115,13 @@ def get_db_connection_pool(self):
 ## 2. 🔄 **Prepared Statements Повсеместно**
 
 ### Текущая ситуация:
+
 Только базовые `cursor.execute()` без prepared statements.
 
 ### Оптимизация:
 
 #### A. Prepared Statement Manager
+
 ```python
 # Новый файл: src/infrastructure/database/prepared_statement_manager.py
 class PreparedStatementManager:
@@ -168,6 +173,7 @@ class PreparedStatementManager:
 ```
 
 #### B. Интеграция в репозитории
+
 ```python
 # src/infrastructure/repositories/postgres_click_repository.py
 class PostgresClickRepository(ClickRepository):
@@ -208,12 +214,14 @@ class PostgresClickRepository(ClickRepository):
 ## 3. 📊 **Read Replicas Поддержка**
 
 ### Архитектура:
+
 ```
 Master (Writes) → Replica 1 (Reads)
                   → Replica 2 (Reads)
 ```
 
 ### Реализация:
+
 ```python
 # Новый файл: src/infrastructure/database/read_replica_manager.py
 class ReadReplicaManager:
@@ -247,6 +255,7 @@ class ReadReplicaManager:
 ```
 
 #### Интеграция в Container:
+
 ```python
 # src/container.py
 def get_read_replica_manager(self):
@@ -273,6 +282,7 @@ def get_read_replica_manager(self):
 ## 4. 🚀 **Redis Caching Layer**
 
 ### Для горячих данных:
+
 ```python
 # Новый файл: src/infrastructure/cache/redis_cache.py
 import redis
@@ -324,6 +334,7 @@ class RedisCache:
 ```
 
 #### Интеграция в репозитории:
+
 ```python
 # src/infrastructure/repositories/postgres_campaign_repository.py
 def get_campaign(self, campaign_id: CampaignId) -> Optional[Campaign]:
@@ -347,6 +358,7 @@ def get_campaign(self, campaign_id: CampaignId) -> Optional[Campaign]:
 ## 5. 📈 **Performance Monitoring**
 
 ### Метрики сбора:
+
 ```python
 # Новый файл: src/infrastructure/monitoring/performance_monitor.py
 import time
@@ -442,6 +454,7 @@ class PerformanceMonitor:
 ## 6. ⚡ **Async Operations (Будущая оптимизация)**
 
 ### Переход на async PostgreSQL:
+
 ```python
 # requirements.txt добавить:
 # asyncpg==0.29.0
@@ -477,15 +490,18 @@ class AsyncPostgresRepository:
 ## 🎯 **Приоритетная очередность внедрения:**
 
 ### **Фаза 1 (Неделя 1-2):**
+
 1. ✅ **Advanced Connection Pooling** - +20-30% производительности
 2. ✅ **Prepared Statements** - +15-25% для повторяющихся запросов
 3. ✅ **Performance Monitoring** - видимость проблем
 
 ### **Фаза 2 (Неделя 3-4):**
+
 1. 🔄 **Redis Caching** - +50-80% для горячих данных
 2. 🔄 **Read Replicas Support** - готовность к масштабированию
 
 ### **Фаза 3 (Месяц 2):**
+
 1. 🚀 **Async Operations** - максимальная concurrency
 2. 🚀 **Advanced Query Optimization** - сложные запросы
 
@@ -493,13 +509,13 @@ class AsyncPostgresRepository:
 
 ## 📊 **Ожидаемые результаты:**
 
-| Оптимизация | Текущая производительность | После оптимизации | Улучшение |
-|-------------|---------------------------|-------------------|-----------|
-| **Connection Pooling** | Базовый SimpleConnectionPool | Advanced Pool с мониторингом | +25% |
-| **Query Performance** | Без prepared statements | Повсеместные prepared statements | +20% |
-| **Cache Hit Ratio** | 99.4% heap, 99.2% index | + Redis layer | +300% |
-| **Read Operations** | Только master | Read replicas | +200% |
-| **Monitoring** | Логи | Метрики + алерты | 100% visibility |
+| Оптимизация            | Текущая производительность   | После оптимизации                | Улучшение       |
+|------------------------|------------------------------|----------------------------------|-----------------|
+| **Connection Pooling** | Базовый SimpleConnectionPool | Advanced Pool с мониторингом     | +25%            |
+| **Query Performance**  | Без prepared statements      | Повсеместные prepared statements | +20%            |
+| **Cache Hit Ratio**    | 99.4% heap, 99.2% index      | + Redis layer                    | +300%           |
+| **Read Operations**    | Только master                | Read replicas                    | +200%           |
+| **Monitoring**         | Логи                         | Метрики + алерты                 | 100% visibility |
 
 **Supreme Octo Succotash готов к значительному улучшению производительности!** 🚀
 

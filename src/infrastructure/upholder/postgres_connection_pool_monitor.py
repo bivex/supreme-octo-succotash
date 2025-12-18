@@ -13,14 +13,13 @@
 
 """PostgreSQL connection pool monitoring and optimization for Auto Upholder."""
 
-from typing import Dict, List, Any, Optional
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Dict, List, Any
 
 from ..monitoring.adaptive_connection_pool_optimizer import (
     AdaptiveConnectionPoolOptimizer,
-    PoolOptimizationRecommendation,
-    PoolOptimizationAction
+    PoolOptimizationRecommendation
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ class PostgresConnectionPoolMonitor:
         def optimization_handler(recommendation: PoolOptimizationRecommendation) -> None:
             """Handle optimization recommendations."""
             logger.info(f"Connection Pool Optimization: {recommendation.action.value} "
-                       f"({recommendation.confidence_score:.1f}% confidence) - {recommendation.reason}")
+                        f"({recommendation.confidence_score:.1f}% confidence) - {recommendation.reason}")
 
         self.optimizer.add_alert_handler(pool_alert_handler)
         self.optimizer.add_optimization_handler(optimization_handler)

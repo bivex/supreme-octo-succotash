@@ -13,27 +13,28 @@
 
 """Gaming platform webhook handler for deposit tracking."""
 
-import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 from loguru import logger
-from ...domain.repositories.conversion_repository import ConversionRepository
+
+from ...domain.entities.conversion import Conversion
 from ...domain.repositories.click_repository import ClickRepository
+from ...domain.repositories.conversion_repository import ConversionRepository
 from ...domain.repositories.customer_ltv_repository import CustomerLtvRepository
 from ...domain.services.conversion.conversion_service import ConversionService
 from ...domain.services.gaming.gaming_webhook_service import GamingWebhookService
-from ...domain.entities.conversion import Conversion
 
 
 class GamingWebhookHandler:
     """Handler for processing gaming platform webhooks (deposits, registrations)."""
 
     def __init__(
-        self,
-        conversion_repository: ConversionRepository,
-        click_repository: ClickRepository,
-        customer_ltv_repository: CustomerLtvRepository,
-        conversion_service: ConversionService,
-        gaming_webhook_service: GamingWebhookService
+            self,
+            conversion_repository: ConversionRepository,
+            click_repository: ClickRepository,
+            customer_ltv_repository: CustomerLtvRepository,
+            conversion_service: ConversionService,
+            gaming_webhook_service: GamingWebhookService
     ):
         self.conversion_repository = conversion_repository
         self.click_repository = click_repository
@@ -52,7 +53,8 @@ class GamingWebhookHandler:
         # Log environment context
         import os
         import socket
-        logger.info(f"📊 Context: PID={os.getpid()}, Host={socket.gethostname()}, Env={os.getenv('ENVIRONMENT', 'unknown')}")
+        logger.info(
+            f"📊 Context: PID={os.getpid()}, Host={socket.gethostname()}, Env={os.getenv('ENVIRONMENT', 'unknown')}")
 
         try:
             logger.info(f"📝 Processing deposit webhook | TX:{transaction_id} | Data keys: {list(deposit_data.keys())}")
@@ -126,7 +128,8 @@ class GamingWebhookHandler:
             logger.info(f"🔧 Step 4: Creating deposit conversion | TX:{transaction_id} | Click:{click.id}")
             try:
                 conversion = self._create_deposit_conversion(deposit_data, click)
-                logger.info(f"✅ Created conversion | TX:{transaction_id} | Conv:{conversion.id} | Type:{conversion.conversion_type} | Value:{str(conversion.conversion_value)}")
+                logger.info(
+                    f"✅ Created conversion | TX:{transaction_id} | Conv:{conversion.id} | Type:{conversion.conversion_type} | Value:{str(conversion.conversion_value)}")
             except Exception as e:
                 logger.error(f"❌ ERROR in conversion creation step | TX:{transaction_id} | {e}", exc_info=True)
                 return {
@@ -142,7 +145,8 @@ class GamingWebhookHandler:
                 self.conversion_repository.save(conversion)
                 logger.info(f"✅ Saved conversion to database | TX:{transaction_id} | Conv:{conversion.id}")
             except Exception as e:
-                logger.error(f"❌ ERROR in database save step | TX:{transaction_id} | Conv:{conversion.id} | {e}", exc_info=True)
+                logger.error(f"❌ ERROR in database save step | TX:{transaction_id} | Conv:{conversion.id} | {e}",
+                             exc_info=True)
                 return {
                     "status": "error",
                     "message": f"Database save error: {str(e)}",
@@ -189,10 +193,12 @@ class GamingWebhookHandler:
                         try:
                             json.dumps({key: value}, default=str)
                         except Exception as field_e:
-                            logger.error(f"❌ Problematic field '{key}' | TX:{transaction_id} | Error: {field_e} | Value: {repr(str(value))}")
+                            logger.error(
+                                f"❌ Problematic field '{key}' | TX:{transaction_id} | Error: {field_e} | Value: {repr(str(value))}")
                     raise
 
-                logger.info(f"🎉 FINISH: Deposit webhook processing successful | TX:{transaction_id} | Conv:{conversion.id}")
+                logger.info(
+                    f"🎉 FINISH: Deposit webhook processing successful | TX:{transaction_id} | Conv:{conversion.id}")
                 return response_data
 
             except Exception as e:
@@ -205,7 +211,9 @@ class GamingWebhookHandler:
                 }
 
         except Exception as e:
-            logger.error(f"❌ CRITICAL ERROR: Unexpected error in deposit webhook processing | TX:{transaction_id} | {e}", exc_info=True)
+            logger.error(
+                f"❌ CRITICAL ERROR: Unexpected error in deposit webhook processing | TX:{transaction_id} | {e}",
+                exc_info=True)
             return {
                 "status": "error",
                 "message": f"Unexpected error: {str(e)}",
@@ -313,7 +321,8 @@ class GamingWebhookHandler:
                     'conversion_type': 'deposit',
                     'conversion_value': conversion_value,
                     'order_id': transaction_id,
-                    'campaign_id': int(click.campaign_id) if click.campaign_id and click.campaign_id.isdigit() else None,
+                    'campaign_id': int(
+                        click.campaign_id) if click.campaign_id and click.campaign_id.isdigit() else None,
                     'user_id': deposit_data.get('user_id'),
                     'metadata': metadata
                 }

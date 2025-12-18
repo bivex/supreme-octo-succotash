@@ -14,14 +14,14 @@
 """PostgreSQL analytics repository implementation."""
 
 import json
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta, date
+from typing import Optional, Dict, Any
 
-from ...domain.value_objects import Analytics
 from ...domain.repositories.analytics_repository import AnalyticsRepository
+from ...domain.repositories.campaign_repository import CampaignRepository
 from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.impression_repository import ImpressionRepository
-from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.value_objects import Analytics
 from ...domain.value_objects import Money
 
 
@@ -58,30 +58,83 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
 
             # Create analytics cache table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS analytics_cache (
-                    cache_key TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    start_date DATE NOT NULL,
-                    end_date DATE NOT NULL,
-                    granularity TEXT NOT NULL,
-                    impressions INTEGER DEFAULT 0,
-                    clicks INTEGER DEFAULT 0,
-                    unique_clicks INTEGER DEFAULT 0,
-                    conversions INTEGER DEFAULT 0,
-                    revenue_amount DECIMAL(10,2) DEFAULT 0.0,
-                    revenue_currency TEXT DEFAULT 'USD',
-                    cost_amount DECIMAL(10,2) DEFAULT 0.0,
-                    cost_currency TEXT DEFAULT 'USD',
-                    ctr DECIMAL(5,4) DEFAULT 0.0,
-                    cr DECIMAL(5,4) DEFAULT 0.0,
-                    epc_amount DECIMAL(10,2) DEFAULT 0.0,
-                    epc_currency TEXT DEFAULT 'USD',
-                    roi DECIMAL(10,4) DEFAULT 0.0,
-                    breakdowns JSONB,
-                    created_at TIMESTAMP NOT NULL,
-                    expires_at TIMESTAMP NOT NULL
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS analytics_cache
+                           (
+                               cache_key
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               campaign_id
+                               TEXT
+                               NOT
+                               NULL,
+                               start_date
+                               DATE
+                               NOT
+                               NULL,
+                               end_date
+                               DATE
+                               NOT
+                               NULL,
+                               granularity
+                               TEXT
+                               NOT
+                               NULL,
+                               impressions
+                               INTEGER
+                               DEFAULT
+                               0,
+                               clicks
+                               INTEGER
+                               DEFAULT
+                               0,
+                               unique_clicks
+                               INTEGER
+                               DEFAULT
+                               0,
+                               conversions
+                               INTEGER
+                               DEFAULT
+                               0,
+                               revenue_amount
+                               DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               revenue_currency TEXT DEFAULT 'USD',
+                               cost_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               cost_currency TEXT DEFAULT 'USD',
+                               ctr DECIMAL
+                           (
+                               5,
+                               4
+                           ) DEFAULT 0.0,
+                               cr DECIMAL
+                           (
+                               5,
+                               4
+                           ) DEFAULT 0.0,
+                               epc_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               epc_currency TEXT DEFAULT 'USD',
+                               roi DECIMAL
+                           (
+                               10,
+                               4
+                           ) DEFAULT 0.0,
+                               breakdowns JSONB,
+                               created_at TIMESTAMP NOT NULL,
+                               expires_at TIMESTAMP NOT NULL
+                               )
+                           """)
 
             # Create indexes for performance
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_campaign_id ON analytics_cache(campaign_id)")
@@ -93,7 +146,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
                 self._container.release_db_connection(conn)
 
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
-                              end_date: date, granularity: str = "day") -> Analytics:
+                               end_date: date, granularity: str = "day") -> Analytics:
         """Get analytics for a campaign within date range."""
         # Check cache first
         cached_analytics = self.get_cached_analytics(campaign_id, start_date, end_date)
@@ -175,7 +228,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
         return analytics
 
     def get_aggregated_metrics(self, campaign_id: str, start_date: date,
-                              end_date: date) -> Dict[str, Any]:
+                               end_date: date) -> Dict[str, Any]:
         """Get aggregated metrics for a campaign."""
         analytics = self.get_campaign_analytics(campaign_id, start_date, end_date)
 
@@ -203,41 +256,42 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
             expires_at = datetime.now() + timedelta(hours=1)
 
             cursor.execute("""
-                INSERT INTO analytics_cache
-                (cache_key, campaign_id, start_date, end_date, granularity,
-                 impressions, clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
-                 cost_amount, cost_currency, ctr, cr, epc_amount, epc_currency, roi,
-                 breakdowns, created_at, expires_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (cache_key) DO UPDATE SET
-                    impressions = EXCLUDED.impressions,
-                    clicks = EXCLUDED.clicks,
-                    unique_clicks = EXCLUDED.unique_clicks,
-                    conversions = EXCLUDED.conversions,
-                    revenue_amount = EXCLUDED.revenue_amount,
-                    revenue_currency = EXCLUDED.revenue_currency,
-                    cost_amount = EXCLUDED.cost_amount,
-                    cost_currency = EXCLUDED.cost_currency,
-                    ctr = EXCLUDED.ctr,
-                    cr = EXCLUDED.cr,
-                    epc_amount = EXCLUDED.epc_amount,
-                    epc_currency = EXCLUDED.epc_currency,
-                    roi = EXCLUDED.roi,
-                    breakdowns = EXCLUDED.breakdowns,
-                    expires_at = EXCLUDED.expires_at
-            """, (
-                cache_key, analytics.campaign_id, analytics.time_range['start_date'],
-                analytics.time_range['end_date'], analytics.time_range['granularity'],
-                analytics.clicks, analytics.unique_clicks, analytics.conversions,
-                analytics.revenue.amount, analytics.revenue.currency,
-                analytics.cost.amount, analytics.cost.currency,
-                analytics.ctr, analytics.cr,
-                analytics.epc.amount, analytics.epc.currency,
-                analytics.roi,
-                json.dumps(analytics.breakdowns),
-                datetime.now(),
-                expires_at
-            ))
+                           INSERT INTO analytics_cache
+                           (cache_key, campaign_id, start_date, end_date, granularity,
+                            impressions, clicks, unique_clicks, conversions, revenue_amount, revenue_currency,
+                            cost_amount, cost_currency, ctr, cr, epc_amount, epc_currency, roi,
+                            breakdowns, created_at, expires_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s) ON CONFLICT (cache_key) DO
+                           UPDATE SET
+                               impressions = EXCLUDED.impressions,
+                               clicks = EXCLUDED.clicks,
+                               unique_clicks = EXCLUDED.unique_clicks,
+                               conversions = EXCLUDED.conversions,
+                               revenue_amount = EXCLUDED.revenue_amount,
+                               revenue_currency = EXCLUDED.revenue_currency,
+                               cost_amount = EXCLUDED.cost_amount,
+                               cost_currency = EXCLUDED.cost_currency,
+                               ctr = EXCLUDED.ctr,
+                               cr = EXCLUDED.cr,
+                               epc_amount = EXCLUDED.epc_amount,
+                               epc_currency = EXCLUDED.epc_currency,
+                               roi = EXCLUDED.roi,
+                               breakdowns = EXCLUDED.breakdowns,
+                               expires_at = EXCLUDED.expires_at
+                           """, (
+                               cache_key, analytics.campaign_id, analytics.time_range['start_date'],
+                               analytics.time_range['end_date'], analytics.time_range['granularity'],
+                               analytics.clicks, analytics.unique_clicks, analytics.conversions,
+                               analytics.revenue.amount, analytics.revenue.currency,
+                               analytics.cost.amount, analytics.cost.currency,
+                               analytics.ctr, analytics.cr,
+                               analytics.epc.amount, analytics.epc.currency,
+                               analytics.roi,
+                               json.dumps(analytics.breakdowns),
+                               datetime.now(),
+                               expires_at
+                           ))
 
             conn.commit()
         finally:
@@ -245,7 +299,7 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
                 self._container.release_db_connection(conn)
 
     def get_cached_analytics(self, campaign_id: str, start_date: date,
-                           end_date: date) -> Optional[Analytics]:
+                             end_date: date) -> Optional[Analytics]:
         """Get cached analytics if available."""
         conn = None
         try:
@@ -256,9 +310,11 @@ class PostgresAnalyticsRepository(AnalyticsRepository):
             now = datetime.now()
 
             cursor.execute("""
-                SELECT * FROM analytics_cache
-                WHERE cache_key = %s AND expires_at > %s
-            """, (cache_key, now))
+                           SELECT *
+                           FROM analytics_cache
+                           WHERE cache_key = %s
+                             AND expires_at > %s
+                           """, (cache_key, now))
 
             row = cursor.fetchone()
             if not row:

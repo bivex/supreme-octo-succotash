@@ -14,7 +14,8 @@
 """Bulk click generation handler."""
 
 import uuid
-from typing import Dict, Any, List
+from typing import Dict, Any
+
 from loguru import logger
 
 

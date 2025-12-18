@@ -13,16 +13,18 @@
 
 """Optimized bulk operations using vectorization and threading."""
 
+import asyncio
+import logging
+import time
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import asyncio
-from dataclasses import dataclass
-import time
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class BulkOperationMetrics:
@@ -33,6 +35,7 @@ class BulkOperationMetrics:
     throughput: float  # records per second
     memory_usage: int  # bytes
     success_rate: float
+
 
 class PostgresBulkOptimizer:
     """High-performance bulk operations optimizer using vectorization."""
@@ -104,9 +107,9 @@ class PostgresBulkOptimizer:
         """Vectorized validation of click data."""
         # Vectorized null checks
         has_required_fields = (
-            df['campaign_id'].notna() &
-            df['click_id'].notna() &
-            df['timestamp'].notna()
+                df['campaign_id'].notna() &
+                df['click_id'].notna() &
+                df['timestamp'].notna()
         )
 
         # Vectorized timestamp validation
@@ -145,7 +148,8 @@ class PostgresBulkOptimizer:
         finally:
             self.connection_pool.putconn(conn)
 
-    async def parallel_bulk_operations(self, operations: List[Tuple[str, List[Dict]]]) -> Dict[str, BulkOperationMetrics]:
+    async def parallel_bulk_operations(self, operations: List[Tuple[str, List[Dict]]]) -> Dict[
+        str, BulkOperationMetrics]:
         """Execute multiple bulk operations in parallel using asyncio."""
         start_time = time.time()
 
@@ -235,10 +239,10 @@ class PostgresBulkOptimizer:
     def _vectorized_validate_conversions(self, df: pd.DataFrame) -> np.ndarray:
         """Vectorized validation for conversions."""
         has_required = (
-            df['click_id'].notna() &
-            df['conversion_type'].notna() &
-            df['timestamp'].notna() &
-            df['amount'].notna()
+                df['click_id'].notna() &
+                df['conversion_type'].notna() &
+                df['timestamp'].notna() &
+                df['amount'].notna()
         )
 
         # Vectorized amount validation

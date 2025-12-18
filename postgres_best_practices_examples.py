@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,11 +15,13 @@ PostgreSQL Best Practices Examples
 Demonstrating correct usage patterns for high performance
 """
 
-import psycopg2
-import time
 import csv
 import io
+import time
 from datetime import datetime, timedelta
+
+import psycopg2
+
 
 class PostgresBestPracticesDemo:
     def __init__(self):
@@ -67,7 +68,7 @@ class PostgresBestPracticesDemo:
         exec_time = time.time() - start_time
 
         print(f"✅ Executed {total_queries} prepared queries in {exec_time:.3f}s")
-        print(f"    Rate: {total_queries/exec_time:.0f} queries/sec")
+        print(f"    Rate: {total_queries / exec_time:.0f} queries/sec")
         # Clean up
         cursor.execute("DEALLOCATE get_campaign_events")
         conn.close()
@@ -82,17 +83,17 @@ class PostgresBestPracticesDemo:
 
         # Example query that might need optimization
         query = """
-            SELECT
-                c.id, c.name, c.status,
-                COUNT(e.id) as event_count,
-                MAX(e.created_at) as last_event
-            FROM campaigns c
-            LEFT JOIN events e ON c.id = e.click_id
-            WHERE c.status = 'active'
-            GROUP BY c.id, c.name, c.status
-            ORDER BY event_count DESC
-            LIMIT 10
-        """
+                SELECT c.id,
+                       c.name,
+                       c.status,
+                       COUNT(e.id)       as event_count,
+                       MAX(e.created_at) as last_event
+                FROM campaigns c
+                         LEFT JOIN events e ON c.id = e.click_id
+                WHERE c.status = 'active'
+                GROUP BY c.id, c.name, c.status
+                ORDER BY event_count DESC LIMIT 10 \
+                """
 
         print("Query:")
         print(query.strip())
@@ -117,19 +118,17 @@ class PostgresBestPracticesDemo:
 
         # Check current index usage
         cursor.execute("""
-            SELECT
-                schemaname,
-                relname as table_name,
-                indexrelname as index_name,
-                idx_scan,
-                idx_tup_read,
-                idx_tup_fetch,
-                pg_size_pretty(pg_relation_size(indexrelid)) as index_size
-            FROM pg_stat_user_indexes
-            WHERE schemaname = 'public'
-            ORDER BY idx_scan DESC
-            LIMIT 10
-        """)
+                       SELECT schemaname,
+                              relname                                      as table_name,
+                              indexrelname                                 as index_name,
+                              idx_scan,
+                              idx_tup_read,
+                              idx_tup_fetch,
+                              pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+                       FROM pg_stat_user_indexes
+                       WHERE schemaname = 'public'
+                       ORDER BY idx_scan DESC LIMIT 10
+                       """)
 
         print("Most used indexes:")
         print("Table".ljust(20), "Index".ljust(30), "Scans".ljust(8), "Size")
@@ -169,22 +168,41 @@ class PostgresBestPracticesDemo:
         # Create a partitioned table example (if not exists)
         try:
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS events_partitioned (
-                    id TEXT NOT NULL,
-                    click_id TEXT,
-                    event_type TEXT NOT NULL,
-                    event_data JSONB,
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-                ) PARTITION BY RANGE (created_at)
-            """)
+                           CREATE TABLE IF NOT EXISTS events_partitioned
+                           (
+                               id
+                               TEXT
+                               NOT
+                               NULL,
+                               click_id
+                               TEXT,
+                               event_type
+                               TEXT
+                               NOT
+                               NULL,
+                               event_data
+                               JSONB,
+                               created_at
+                               TIMESTAMP
+                               NOT
+                               NULL
+                               DEFAULT
+                               NOW
+                           (
+                           )
+                               ) PARTITION BY RANGE
+                           (
+                               created_at
+                           )
+                           """)
 
             # Create partitions for different time ranges
             current_date = datetime.now()
 
             for i in range(3):  # Create 3 monthly partitions
                 # Calculate proper date ranges
-                partition_start_date = current_date.replace(day=1) + timedelta(days=30*i)
-                partition_end_date = current_date.replace(day=1) + timedelta(days=30*(i+1))
+                partition_start_date = current_date.replace(day=1) + timedelta(days=30 * i)
+                partition_end_date = current_date.replace(day=1) + timedelta(days=30 * (i + 1))
 
                 partition_name = partition_start_date.strftime('y%Ym%m')
 
@@ -208,13 +226,12 @@ class PostgresBestPracticesDemo:
         # Show partition information (outside try block to avoid transaction issues)
         try:
             cursor.execute("""
-                SELECT
-                    tablename,
-                    pg_size_pretty(pg_relation_size(tablename::regclass)) as size
-                FROM pg_tables
-                WHERE tablename LIKE 'events_partitioned%'
-                ORDER BY tablename
-            """)
+                           SELECT tablename,
+                                  pg_size_pretty(pg_relation_size(tablename::regclass)) as size
+                           FROM pg_tables
+                           WHERE tablename LIKE 'events_partitioned%'
+                           ORDER BY tablename
+                           """)
 
             partitions = cursor.fetchall()
             if partitions:
@@ -265,28 +282,28 @@ class PostgresBestPracticesDemo:
 
         print("✅ Bulk loaded 1000 events using COPY")
         print(f"    Time: {copy_time:.2f}s")
-        print(f"    Rate: {1000/copy_time:.0f} rows/sec")
+        print(f"    Rate: {1000 / copy_time:.0f} rows/sec")
         # Compare with individual INSERTs
         print("\nComparing with individual INSERTs...")
 
         start_time = time.time()
         for i in range(100):  # Only 100 to keep demo reasonable
             cursor.execute("""
-                INSERT INTO events (id, event_type, event_data, created_at)
-                VALUES (%s, %s, %s, %s)
-            """, (
-                f'individual_event_{i}',
-                'test_event',
-                '{"method": "individual"}',
-                datetime.now()
-            ))
+                           INSERT INTO events (id, event_type, event_data, created_at)
+                           VALUES (%s, %s, %s, %s)
+                           """, (
+                               f'individual_event_{i}',
+                               'test_event',
+                               '{"method": "individual"}',
+                               datetime.now()
+                           ))
 
         conn.commit()
         insert_time = time.time() - start_time
 
         print(f"    Time: {insert_time:.2f}s")
-        print(f"    Rate: {100/insert_time:.0f} rows/sec")
-        print(f"    COPY is {insert_time/copy_time:.1f}x faster than individual INSERTs")
+        print(f"    Rate: {100 / insert_time:.0f} rows/sec")
+        print(f"    COPY is {insert_time / copy_time:.1f}x faster than individual INSERTs")
         # Cleanup test data
         cursor.execute("DELETE FROM events WHERE id LIKE 'bulk_event_%' OR id LIKE 'individual_event_%'")
         conn.commit()
@@ -330,7 +347,8 @@ class PostgresBestPracticesDemo:
         conn.close()
 
         print(f"✅ {operations} operations with connection reuse: {reuse_time:.3f}s")
-        print(f"    Rate: {operations/reuse_time:.0f} operations/sec")
+        print(f"    Rate: {operations / reuse_time:.0f} operations/sec")
+
     def run_all_demos(self):
         """Run all demonstration functions."""
         print("🚀 PostgreSQL Best Practices Demonstrations")
@@ -359,9 +377,11 @@ class PostgresBestPracticesDemo:
         print("• Implement connection pooling")
         print("• Continuously benchmark and iterate")
 
+
 def main():
     demo = PostgresBestPracticesDemo()
     demo.run_all_demos()
+
 
 if __name__ == "__main__":
     main()

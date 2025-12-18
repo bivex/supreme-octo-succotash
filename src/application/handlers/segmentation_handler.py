@@ -13,15 +13,16 @@
 
 """User segmentation handler."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Dict, Any
+
 from loguru import logger
 
-from ...domain.repositories.retention_repository import RetentionRepository
+from ...domain.entities.retention import UserSegment
 from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.conversion_repository import ConversionRepository
+from ...domain.repositories.retention_repository import RetentionRepository
 from ...domain.services.retention.retention_service import RetentionService
-from ...domain.entities.retention import UserSegment
 
 
 class SegmentationHandler:

@@ -13,10 +13,10 @@
 
 """Form processing domain service."""
 
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
 import hashlib
 import re
+from datetime import datetime
+from typing import List, Dict, Optional, Tuple
 
 from ...entities.form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatus, LeadSource
 
@@ -28,7 +28,7 @@ class FormService:
         self._validation_rules = self._create_default_validation_rules()
 
     def validate_form_submission(self, form_data: Dict,
-                                validation_rules: List[FormValidationRule]) -> Tuple[bool, List[str]]:
+                                 validation_rules: List[FormValidationRule]) -> Tuple[bool, List[str]]:
         """
         Validate form submission data against validation rules.
 
@@ -65,8 +65,8 @@ class FormService:
         return len(errors) == 0, errors
 
     def process_form_submission(self, form_data: Dict, campaign_id: Optional[str] = None,
-                              click_id: Optional[str] = None, ip_address: str = "",
-                              user_agent: str = "") -> FormSubmission:
+                                click_id: Optional[str] = None, ip_address: str = "",
+                                user_agent: str = "") -> FormSubmission:
         """
         Process form submission and create FormSubmission entity.
 
@@ -107,7 +107,7 @@ class FormService:
         return submission
 
     def create_or_update_lead(self, submission: FormSubmission,
-                             existing_leads: List[Lead]) -> Lead:
+                              existing_leads: List[Lead]) -> Lead:
         """
         Create new lead or update existing one based on form submission.
 

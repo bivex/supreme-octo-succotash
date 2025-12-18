@@ -14,8 +14,8 @@
 """Click validation handler."""
 
 import uuid
-import time
 from typing import Optional, Dict, Any
+
 from loguru import logger
 
 
@@ -29,7 +29,7 @@ class ClickValidationHandler:
         pass
 
     def validate_click(self, click_id: str, user_agent: Optional[str] = None,
-                      ip_address: Optional[str] = None, referrer: Optional[str] = None) -> Dict[str, Any]:
+                       ip_address: Optional[str] = None, referrer: Optional[str] = None) -> Dict[str, Any]:
         """Validate a click before redirect.
 
         Args:

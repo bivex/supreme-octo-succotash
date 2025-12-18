@@ -13,10 +13,11 @@
 
 """Webhook processing service."""
 
-import json
 import re
 from typing import Optional, Dict, Any
+
 from loguru import logger
+
 from ...entities.webhook import TelegramWebhook
 
 

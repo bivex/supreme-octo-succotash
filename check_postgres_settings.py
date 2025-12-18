@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,11 +14,11 @@
 Check PostgreSQL settings and database state.
 """
 
-import sys
-import os
 import logging
-from typing import List, Tuple, Optional
+import os
+import sys
 from contextlib import contextmanager
+from typing import List, Tuple, Optional
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -93,11 +92,12 @@ class PostgreSQLChecker:
         cursor = connection.cursor()
         try:
             cursor.execute("""
-                SELECT name, setting, unit
-                FROM pg_settings
-                WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size', 'shared_preload_libraries')
-                ORDER BY name
-            """)
+                           SELECT name, setting, unit
+                           FROM pg_settings
+                           WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size',
+                                          'shared_preload_libraries')
+                           ORDER BY name
+                           """)
             return cursor.fetchall()
         finally:
             cursor.close()
@@ -167,7 +167,8 @@ class PostgreSQLChecker:
             self.logger.error(f"Error during PostgreSQL analysis: {str(e)}")
             raise
 
-    def _provide_diagnosis(self, db_size: str, total_records: int, settings: List[Tuple[str, str, Optional[str]]]) -> None:
+    def _provide_diagnosis(self, db_size: str, total_records: int,
+                           settings: List[Tuple[str, str, Optional[str]]]) -> None:
         """Provide diagnosis and recommendations based on analysis."""
         self.logger.info("DIAGNOSIS:")
 

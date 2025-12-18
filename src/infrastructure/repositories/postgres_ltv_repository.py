@@ -1,8 +1,7 @@
 """PostgreSQL LTV repository implementation."""
 
-import psycopg2
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.ltv import Cohort, CustomerLTV, LTVSegment
 from ...domain.repositories.ltv_repository import LTVRepository
@@ -32,60 +31,138 @@ class PostgresLTVRepository(LTVRepository):
 
         # Create customer_ltv table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS customer_ltv (
-                customer_id TEXT PRIMARY KEY,
-                total_revenue DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                total_purchases INTEGER NOT NULL DEFAULT 0,
-                average_order_value DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                purchase_frequency DECIMAL(5,2) NOT NULL DEFAULT 0.0,
-                customer_lifetime_months INTEGER NOT NULL DEFAULT 0,
-                predicted_clv DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                actual_clv DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                segment TEXT NOT NULL DEFAULT 'unknown',
-                cohort_id TEXT,
-                first_purchase_date DATE,
-                last_purchase_date DATE,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS customer_ltv
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           total_revenue
+                           DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           total_purchases INTEGER NOT NULL DEFAULT 0,
+                           average_order_value DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           purchase_frequency DECIMAL
+                       (
+                           5,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           customer_lifetime_months INTEGER NOT NULL DEFAULT 0,
+                           predicted_clv DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           actual_clv DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           segment TEXT NOT NULL DEFAULT 'unknown',
+                           cohort_id TEXT,
+                           first_purchase_date DATE,
+                           last_purchase_date DATE,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create cohorts table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS cohorts (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                acquisition_date DATE NOT NULL,
-                customer_count INTEGER NOT NULL DEFAULT 0,
-                total_revenue DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                average_ltv DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                retention_rates JSONB DEFAULT '{}'::jsonb,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS cohorts
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           acquisition_date
+                           DATE
+                           NOT
+                           NULL,
+                           customer_count
+                           INTEGER
+                           NOT
+                           NULL
+                           DEFAULT
+                           0,
+                           total_revenue
+                           DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           average_ltv DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           retention_rates JSONB DEFAULT '{}'::jsonb,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create ltv_segments table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS ltv_segments (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                min_ltv DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                max_ltv DECIMAL(10,2),
-                customer_count INTEGER NOT NULL DEFAULT 0,
-                total_value DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                average_ltv DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-                retention_rate DECIMAL(5,2) NOT NULL DEFAULT 0.0,
-                description TEXT NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS ltv_segments
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           min_ltv
+                           DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           max_ltv DECIMAL
+                       (
+                           10,
+                           2
+                       ),
+                           customer_count INTEGER NOT NULL DEFAULT 0,
+                           total_value DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           average_ltv DECIMAL
+                       (
+                           10,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           retention_rate DECIMAL
+                       (
+                           5,
+                           2
+                       ) NOT NULL DEFAULT 0.0,
+                           description TEXT NOT NULL,
+                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           )
+                       """)
 
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_customer_ltv_segment ON customer_ltv(segment)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_customer_ltv_cohort ON customer_ltv(cohort_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_customer_ltv_dates ON customer_ltv(first_purchase_date, last_purchase_date)")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_customer_ltv_dates ON customer_ltv(first_purchase_date, last_purchase_date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_cohorts_acquisition ON cohorts(acquisition_date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ltv_segments_min_ltv ON ltv_segments(min_ltv)")
 
@@ -99,41 +176,41 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO customer_ltv
-            (customer_id, total_revenue, total_purchases, average_order_value,
-             purchase_frequency, customer_lifetime_months, predicted_clv, actual_clv,
-             segment, cohort_id, first_purchase_date, last_purchase_date,
-             created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (customer_id) DO UPDATE SET
-                total_revenue = EXCLUDED.total_revenue,
-                total_purchases = EXCLUDED.total_purchases,
-                average_order_value = EXCLUDED.average_order_value,
-                purchase_frequency = EXCLUDED.purchase_frequency,
-                customer_lifetime_months = EXCLUDED.customer_lifetime_months,
-                predicted_clv = EXCLUDED.predicted_clv,
-                actual_clv = EXCLUDED.actual_clv,
-                segment = EXCLUDED.segment,
-                cohort_id = EXCLUDED.cohort_id,
-                first_purchase_date = EXCLUDED.first_purchase_date,
-                last_purchase_date = EXCLUDED.last_purchase_date,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            customer_ltv.customer_id,
-            float(customer_ltv.total_revenue.amount),
-            customer_ltv.total_purchases,
-            float(customer_ltv.average_order_value.amount),
-            customer_ltv.purchase_frequency,
-            customer_ltv.customer_lifetime_months,
-            float(customer_ltv.predicted_clv.amount),
-            float(customer_ltv.actual_clv.amount),
-            customer_ltv.segment,
-            customer_ltv.cohort_id,
-            customer_ltv.first_purchase_date.date(),
-            customer_ltv.last_purchase_date.date(),
-            customer_ltv.created_at,
-            customer_ltv.updated_at
-        ))
+                       INSERT INTO customer_ltv
+                       (customer_id, total_revenue, total_purchases, average_order_value,
+                        purchase_frequency, customer_lifetime_months, predicted_clv, actual_clv,
+                        segment, cohort_id, first_purchase_date, last_purchase_date,
+                        created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (customer_id) DO
+                       UPDATE SET
+                           total_revenue = EXCLUDED.total_revenue,
+                           total_purchases = EXCLUDED.total_purchases,
+                           average_order_value = EXCLUDED.average_order_value,
+                           purchase_frequency = EXCLUDED.purchase_frequency,
+                           customer_lifetime_months = EXCLUDED.customer_lifetime_months,
+                           predicted_clv = EXCLUDED.predicted_clv,
+                           actual_clv = EXCLUDED.actual_clv,
+                           segment = EXCLUDED.segment,
+                           cohort_id = EXCLUDED.cohort_id,
+                           first_purchase_date = EXCLUDED.first_purchase_date,
+                           last_purchase_date = EXCLUDED.last_purchase_date,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           customer_ltv.customer_id,
+                           float(customer_ltv.total_revenue.amount),
+                           customer_ltv.total_purchases,
+                           float(customer_ltv.average_order_value.amount),
+                           customer_ltv.purchase_frequency,
+                           customer_ltv.customer_lifetime_months,
+                           float(customer_ltv.predicted_clv.amount),
+                           float(customer_ltv.actual_clv.amount),
+                           customer_ltv.segment,
+                           customer_ltv.cohort_id,
+                           customer_ltv.first_purchase_date.date(),
+                           customer_ltv.last_purchase_date.date(),
+                           customer_ltv.created_at,
+                           customer_ltv.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -158,11 +235,12 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM customer_ltv
-            WHERE segment = %s
-            ORDER BY predicted_clv DESC
-            LIMIT %s
-        """, (segment, limit))
+                       SELECT *
+                       FROM customer_ltv
+                       WHERE segment = %s
+                       ORDER BY predicted_clv DESC
+                           LIMIT %s
+                       """, (segment, limit))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -176,10 +254,11 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM customer_ltv
-            WHERE cohort_id = %s
-            ORDER BY predicted_clv DESC
-        """, (cohort_id,))
+                       SELECT *
+                       FROM customer_ltv
+                       WHERE cohort_id = %s
+                       ORDER BY predicted_clv DESC
+                       """, (cohort_id,))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -194,29 +273,29 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO cohorts
-            (id, name, acquisition_date, customer_count, total_revenue,
-             average_ltv, retention_rates, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                acquisition_date = EXCLUDED.acquisition_date,
-                customer_count = EXCLUDED.customer_count,
-                total_revenue = EXCLUDED.total_revenue,
-                average_ltv = EXCLUDED.average_ltv,
-                retention_rates = EXCLUDED.retention_rates,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            cohort.id,
-            cohort.name,
-            cohort.acquisition_date,
-            cohort.customer_count,
-            float(cohort.total_revenue.amount),
-            float(cohort.average_ltv.amount),
-            json.dumps(cohort.retention_rates),
-            cohort.created_at,
-            cohort.updated_at
-        ))
+                       INSERT INTO cohorts
+                       (id, name, acquisition_date, customer_count, total_revenue,
+                        average_ltv, retention_rates, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           name = EXCLUDED.name,
+                           acquisition_date = EXCLUDED.acquisition_date,
+                           customer_count = EXCLUDED.customer_count,
+                           total_revenue = EXCLUDED.total_revenue,
+                           average_ltv = EXCLUDED.average_ltv,
+                           retention_rates = EXCLUDED.retention_rates,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           cohort.id,
+                           cohort.name,
+                           cohort.acquisition_date,
+                           cohort.customer_count,
+                           float(cohort.total_revenue.amount),
+                           float(cohort.average_ltv.amount),
+                           json.dumps(cohort.retention_rates),
+                           cohort.created_at,
+                           cohort.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -241,10 +320,11 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM cohorts
-            ORDER BY acquisition_date DESC
-            LIMIT %s
-        """, (limit,))
+                       SELECT *
+                       FROM cohorts
+                       ORDER BY acquisition_date DESC
+                           LIMIT %s
+                       """, (limit,))
 
         rows = cursor.fetchall()
         cursor.close()
@@ -258,33 +338,33 @@ class PostgresLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO ltv_segments
-            (id, name, min_ltv, max_ltv, customer_count, total_value,
-             average_ltv, retention_rate, description, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                min_ltv = EXCLUDED.min_ltv,
-                max_ltv = EXCLUDED.max_ltv,
-                customer_count = EXCLUDED.customer_count,
-                total_value = EXCLUDED.total_value,
-                average_ltv = EXCLUDED.average_ltv,
-                retention_rate = EXCLUDED.retention_rate,
-                description = EXCLUDED.description,
-                updated_at = CURRENT_TIMESTAMP
-        """, (
-            segment.id,
-            segment.name,
-            float(segment.min_ltv.amount) if segment.min_ltv else 0.0,
-            float(segment.max_ltv.amount) if segment.max_ltv else None,
-            segment.customer_count,
-            float(segment.total_value.amount),
-            float(segment.average_ltv.amount),
-            segment.retention_rate,
-            segment.description,
-            segment.created_at,
-            segment.updated_at
-        ))
+                       INSERT INTO ltv_segments
+                       (id, name, min_ltv, max_ltv, customer_count, total_value,
+                        average_ltv, retention_rate, description, created_at, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO
+                       UPDATE SET
+                           name = EXCLUDED.name,
+                           min_ltv = EXCLUDED.min_ltv,
+                           max_ltv = EXCLUDED.max_ltv,
+                           customer_count = EXCLUDED.customer_count,
+                           total_value = EXCLUDED.total_value,
+                           average_ltv = EXCLUDED.average_ltv,
+                           retention_rate = EXCLUDED.retention_rate,
+                           description = EXCLUDED.description,
+                           updated_at = CURRENT_TIMESTAMP
+                       """, (
+                           segment.id,
+                           segment.name,
+                           float(segment.min_ltv.amount) if segment.min_ltv else 0.0,
+                           float(segment.max_ltv.amount) if segment.max_ltv else None,
+                           segment.customer_count,
+                           float(segment.total_value.amount),
+                           float(segment.average_ltv.amount),
+                           segment.retention_rate,
+                           segment.description,
+                           segment.created_at,
+                           segment.updated_at
+                       ))
 
         conn.commit()
         cursor.close()
@@ -323,15 +403,15 @@ class PostgresLTVRepository(LTVRepository):
 
         # Get total metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_customers,
-                SUM(predicted_clv) as total_predicted_clv,
-                AVG(predicted_clv) as avg_predicted_clv,
-                SUM(actual_clv) as total_actual_clv,
-                AVG(actual_clv) as avg_actual_clv
-            FROM customer_ltv
-            WHERE first_purchase_date >= %s AND first_purchase_date <= %s
-        """, (start_date.date(), end_date.date()))
+                       SELECT COUNT(*)           as total_customers,
+                              SUM(predicted_clv) as total_predicted_clv,
+                              AVG(predicted_clv) as avg_predicted_clv,
+                              SUM(actual_clv)    as total_actual_clv,
+                              AVG(actual_clv)    as avg_actual_clv
+                       FROM customer_ltv
+                       WHERE first_purchase_date >= %s
+                         AND first_purchase_date <= %s
+                       """, (start_date.date(), end_date.date()))
 
         row = cursor.fetchone()
 
@@ -349,12 +429,13 @@ class PostgresLTVRepository(LTVRepository):
 
         # Get segment distribution
         cursor.execute("""
-            SELECT segment, COUNT(*) as count, AVG(predicted_clv) as avg_clv
-            FROM customer_ltv
-            WHERE first_purchase_date >= %s AND first_purchase_date <= %s
-            GROUP BY segment
-            ORDER BY avg_clv DESC
-        """, (start_date.date(), end_date.date()))
+                       SELECT segment, COUNT(*) as count, AVG(predicted_clv) as avg_clv
+                       FROM customer_ltv
+                       WHERE first_purchase_date >= %s
+                         AND first_purchase_date <= %s
+                       GROUP BY segment
+                       ORDER BY avg_clv DESC
+                       """, (start_date.date(), end_date.date()))
 
         analytics['segment_distribution'] = [
             {'segment': row[0], 'count': row[1], 'avg_clv': float(row[2])}

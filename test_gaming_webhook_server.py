@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -22,10 +21,12 @@ How it works:
 """
 
 import asyncio
-import aiohttp
 import uuid
 from datetime import datetime
+
+import aiohttp
 from loguru import logger
+
 
 class GamingWebhookSimulator:
     """
@@ -85,6 +86,7 @@ class GamingWebhookSimulator:
         except Exception as e:
             logger.error(f"Failed to send registration webhook: {e}")
             return {"error": str(e)}
+
 
 async def simulate_gaming_activity():
     """
@@ -146,6 +148,7 @@ async def simulate_gaming_activity():
 
         logger.info("Gaming platform simulation completed.")
         logger.info(f"Summary: {len(users)} registrations, {len(depositing_users) * 2} deposits.")
+
 
 async def run_interactive_test():
     """
@@ -241,6 +244,7 @@ async def run_interactive_test():
             else:
                 print("Invalid choice. Try again.")
 
+
 def main():
     """
     Program entry point.
@@ -283,6 +287,7 @@ def main():
             print("  python test_gaming_webhook_server.py --auto --tracker-url http://localhost:3000")
 
     asyncio.run(run())
+
 
 if __name__ == "__main__":
     main()

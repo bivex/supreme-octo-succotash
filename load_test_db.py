@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,16 +15,14 @@ Comprehensive PostgreSQL load testing and performance analysis script.
 Tests database performance under various loads and provides optimization recommendations.
 """
 
-import psycopg2
-import time
-import threading
-import statistics
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
 import random
-import string
-import json
-import os
+import statistics
+import threading
+import time
+from datetime import datetime, timedelta
+
+import psycopg2
+
 
 class DatabaseLoadTester:
     def __init__(self):
@@ -39,7 +36,7 @@ class DatabaseLoadTester:
 
         # Test configuration
         self.test_duration = 60  # seconds per test
-        self.warmup_time = 10    # seconds
+        self.warmup_time = 10  # seconds
         self.concurrency_levels = [1, 2, 4, 8, 16, 32]
 
         # Test data
@@ -64,50 +61,48 @@ class DatabaseLoadTester:
             # Create test campaigns
             for i in range(100):
                 cursor.execute("""
-                    INSERT INTO campaigns (
-                        id, name, description, status, cost_model,
-                        payout_amount, payout_currency, safe_page_url, offer_page_url,
-                        daily_budget_amount, daily_budget_currency,
-                        total_budget_amount, total_budget_currency,
-                        start_date, end_date, created_at, updated_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    f'test_campaign_{i}',
-                    f'Test Campaign {i}',
-                    f'Description for test campaign {i}',
-                    'active',
-                    'CPA',
-                    15.0 + random.uniform(-5, 5), 'USD',
-                    f'https://example.com/safe{i}',
-                    f'https://example.com/offer{i}',
-                    200.0 + random.uniform(-50, 50), 'USD',
-                    5000.0 + random.uniform(-1000, 1000), 'USD',
-                    datetime.now(),
-                    datetime.now() + timedelta(days=30),
-                    datetime.now(),
-                    datetime.now()
-                ))
+                               INSERT INTO campaigns (id, name, description, status, cost_model,
+                                                      payout_amount, payout_currency, safe_page_url, offer_page_url,
+                                                      daily_budget_amount, daily_budget_currency,
+                                                      total_budget_amount, total_budget_currency,
+                                                      start_date, end_date, created_at, updated_at)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                               """, (
+                                   f'test_campaign_{i}',
+                                   f'Test Campaign {i}',
+                                   f'Description for test campaign {i}',
+                                   'active',
+                                   'CPA',
+                                   15.0 + random.uniform(-5, 5), 'USD',
+                                   f'https://example.com/safe{i}',
+                                   f'https://example.com/offer{i}',
+                                   200.0 + random.uniform(-50, 50), 'USD',
+                                   5000.0 + random.uniform(-1000, 1000), 'USD',
+                                   datetime.now(),
+                                   datetime.now() + timedelta(days=30),
+                                   datetime.now(),
+                                   datetime.now()
+                               ))
                 self.test_campaigns.append(f'test_campaign_{i}')
 
             # Create test clicks
             for i in range(1000):
                 campaign_id = random.choice(self.test_campaigns)
                 cursor.execute("""
-                    INSERT INTO clicks (
-                        id, campaign_id, user_id, ip_address, user_agent,
-                        created_at, is_valid, click_url, referer
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    f'test_click_{i}',
-                    campaign_id,
-                    f'user_{random.randint(1, 1000)}',
-                    f'192.168.1.{random.randint(1, 255)}',
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    datetime.now() - timedelta(minutes=random.randint(0, 1440)),
-                    True,
-                    f'https://example.com/click{i}',
-                    f'https://google.com/search?q=test{i}'
-                ))
+                               INSERT INTO clicks (id, campaign_id, user_id, ip_address, user_agent,
+                                                   created_at, is_valid, click_url, referer)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                               """, (
+                                   f'test_click_{i}',
+                                   campaign_id,
+                                   f'user_{random.randint(1, 1000)}',
+                                   f'192.168.1.{random.randint(1, 255)}',
+                                   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                   datetime.now() - timedelta(minutes=random.randint(0, 1440)),
+                                   True,
+                                   f'https://example.com/click{i}',
+                                   f'https://google.com/search?q=test{i}'
+                               ))
                 self.test_clicks.append(f'test_click_{i}')
 
             conn.commit()
@@ -165,8 +160,10 @@ class DatabaseLoadTester:
         results[thread_id] = {
             'queries': queries_executed,
             'avg_latency': statistics.mean(latencies) if latencies else 0,
-            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(latencies) if latencies else 0,
-            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(latencies) if latencies else 0
+            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(
+                latencies) if latencies else 0,
+            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(
+                latencies) if latencies else 0
         }
 
     def run_insert_test(self, thread_id, results, duration):
@@ -187,21 +184,20 @@ class DatabaseLoadTester:
                     click_id = f'load_test_click_{thread_id}_{int(time.time() * 1000000)}'
 
                     cursor.execute("""
-                        INSERT INTO clicks (
-                            id, campaign_id, user_id, ip_address, user_agent,
-                            created_at, is_valid, click_url, referer
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        click_id,
-                        campaign_id,
-                        f'user_{random.randint(1, 1000)}',
-                        f'192.168.1.{random.randint(1, 255)}',
-                        'Mozilla/5.0 Load Test',
-                        datetime.now(),
-                        True,
-                        f'https://example.com/click_load_{thread_id}',
-                        'https://loadtest.com'
-                    ))
+                                   INSERT INTO clicks (id, campaign_id, user_id, ip_address, user_agent,
+                                                       created_at, is_valid, click_url, referer)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                   """, (
+                                       click_id,
+                                       campaign_id,
+                                       f'user_{random.randint(1, 1000)}',
+                                       f'192.168.1.{random.randint(1, 255)}',
+                                       'Mozilla/5.0 Load Test',
+                                       datetime.now(),
+                                       True,
+                                       f'https://example.com/click_load_{thread_id}',
+                                       'https://loadtest.com'
+                                   ))
 
                     conn.commit()
                     queries_executed += 1
@@ -216,8 +212,10 @@ class DatabaseLoadTester:
         results[thread_id] = {
             'queries': queries_executed,
             'avg_latency': statistics.mean(latencies) if latencies else 0,
-            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(latencies) if latencies else 0,
-            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(latencies) if latencies else 0
+            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(
+                latencies) if latencies else 0,
+            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(
+                latencies) if latencies else 0
         }
 
     def run_mixed_test(self, thread_id, results, duration):
@@ -245,28 +243,28 @@ class DatabaseLoadTester:
                         click_id = f'mixed_test_click_{thread_id}_{int(time.time() * 1000000)}'
 
                         cursor.execute("""
-                            INSERT INTO clicks (
-                                id, campaign_id, user_id, ip_address, user_agent,
-                                created_at, is_valid, click_url, referer
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (
-                            click_id, campaign_id,
-                            f'user_{random.randint(1, 1000)}',
-                            f'192.168.1.{random.randint(1, 255)}',
-                            'Mozilla/5.0 Mixed Test',
-                            datetime.now(), True,
-                            f'https://example.com/click_mixed_{thread_id}',
-                            'https://mixedtest.com'
-                        ))
+                                       INSERT INTO clicks (id, campaign_id, user_id, ip_address, user_agent,
+                                                           created_at, is_valid, click_url, referer)
+                                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       """, (
+                                           click_id, campaign_id,
+                                           f'user_{random.randint(1, 1000)}',
+                                           f'192.168.1.{random.randint(1, 255)}',
+                                           'Mozilla/5.0 Mixed Test',
+                                           datetime.now(), True,
+                                           f'https://example.com/click_mixed_{thread_id}',
+                                           'https://mixedtest.com'
+                                       ))
                         conn.commit()
                     else:
                         # UPDATE
                         campaign_id = random.choice(self.test_campaigns)
                         cursor.execute("""
-                            UPDATE campaigns
-                            SET clicks_count = clicks_count + 1, updated_at = %s
-                            WHERE id = %s
-                        """, (datetime.now(), campaign_id))
+                                       UPDATE campaigns
+                                       SET clicks_count = clicks_count + 1,
+                                           updated_at   = %s
+                                       WHERE id = %s
+                                       """, (datetime.now(), campaign_id))
                         conn.commit()
 
                     queries_executed += 1
@@ -281,8 +279,10 @@ class DatabaseLoadTester:
         results[thread_id] = {
             'queries': queries_executed,
             'avg_latency': statistics.mean(latencies) if latencies else 0,
-            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(latencies) if latencies else 0,
-            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(latencies) if latencies else 0
+            'p95_latency': statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else max(
+                latencies) if latencies else 0,
+            'p99_latency': statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else max(
+                latencies) if latencies else 0
         }
 
     def run_load_test(self, test_type, concurrency, duration):
@@ -328,7 +328,7 @@ class DatabaseLoadTester:
             'duration': total_time
         }
 
-        print(f"  Result: {result['qps']:.1f} QPS, {result['avg_latency']*1000:.2f}ms avg latency")
+        print(f"  Result: {result['qps']:.1f} QPS, {result['avg_latency'] * 1000:.2f}ms avg latency")
         return test_result
 
     def run_comprehensive_test(self):
@@ -379,10 +379,11 @@ class DatabaseLoadTester:
             print("-" * 60)
 
             for result in test_results:
-                print(f"{result['concurrency']:<12} {result['qps']:<8.0f} {result['avg_latency']*1000:<12.1f} {result['p95_latency']*1000:<12.1f} {result['p99_latency']*1000:<12.1f}"))
+                print(
+                    f"{result['concurrency']:<12} {result['qps']:<8.0f} {result['avg_latency'] * 1000:<12.1f} {result['p95_latency'] * 1000:<12.1f} {result['p99_latency'] * 1000:<12.1f}"))
 
-        # Performance analysis
-        self.analyze_performance(results)
+                # Performance analysis
+                self.analyze_performance(results)
 
     def analyze_performance(self, results):
         """Analyze performance results and provide recommendations."""
@@ -403,9 +404,9 @@ class DatabaseLoadTester:
         print("\n⏱️  Latency Analysis:")
         for test_type, result in max_qps.items():
             print(f"  {test_type.upper()}:")
-            print(f"    Avg: {result['avg_latency']*1000:.1f}ms")
-            print(f"    P95: {result['p95_latency']*1000:.1f}ms")
-            print(f"    P99: {result['p99_latency']*1000:.1f}ms")
+            print(f"    Avg: {result['avg_latency'] * 1000:.1f}ms")
+            print(f"    P95: {result['p95_latency'] * 1000:.1f}ms")
+            print(f"    P99: {result['p99_latency'] * 1000:.1f}ms")
 
         # Check for bottlenecks
         print("\n🔍 Bottleneck Analysis:")
@@ -453,9 +454,11 @@ class DatabaseLoadTester:
 
         print("\n✅ Load testing completed successfully!")
 
+
 def main():
     tester = DatabaseLoadTester()
     tester.run_comprehensive_test()
+
 
 if __name__ == "__main__":
     main()

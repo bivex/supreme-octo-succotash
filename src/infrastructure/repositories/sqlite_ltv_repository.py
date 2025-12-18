@@ -14,8 +14,8 @@
 """SQLite LTV repository implementation."""
 
 import sqlite3
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.ltv import Cohort, CustomerLTV, LTVSegment
 from ...domain.repositories.ltv_repository import LTVRepository
@@ -43,55 +43,156 @@ class SQLiteLTVRepository(LTVRepository):
 
         # Create customer_ltv table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS customer_ltv (
-                customer_id TEXT PRIMARY KEY,
-                total_revenue REAL NOT NULL,
-                total_purchases INTEGER NOT NULL,
-                average_order_value REAL NOT NULL,
-                purchase_frequency REAL NOT NULL,
-                customer_lifetime_months INTEGER NOT NULL,
-                predicted_clv REAL NOT NULL,
-                actual_clv REAL NOT NULL,
-                segment TEXT NOT NULL,
-                cohort_id TEXT,
-                first_purchase_date TEXT NOT NULL,
-                last_purchase_date TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS customer_ltv
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           total_revenue
+                           REAL
+                           NOT
+                           NULL,
+                           total_purchases
+                           INTEGER
+                           NOT
+                           NULL,
+                           average_order_value
+                           REAL
+                           NOT
+                           NULL,
+                           purchase_frequency
+                           REAL
+                           NOT
+                           NULL,
+                           customer_lifetime_months
+                           INTEGER
+                           NOT
+                           NULL,
+                           predicted_clv
+                           REAL
+                           NOT
+                           NULL,
+                           actual_clv
+                           REAL
+                           NOT
+                           NULL,
+                           segment
+                           TEXT
+                           NOT
+                           NULL,
+                           cohort_id
+                           TEXT,
+                           first_purchase_date
+                           TEXT
+                           NOT
+                           NULL,
+                           last_purchase_date
+                           TEXT
+                           NOT
+                           NULL,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create cohorts table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS cohorts (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                acquisition_date TEXT NOT NULL,
-                customer_count INTEGER NOT NULL,
-                total_revenue REAL NOT NULL,
-                average_ltv REAL NOT NULL,
-                retention_rates TEXT NOT NULL,  -- JSON string
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS cohorts
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           acquisition_date
+                           TEXT
+                           NOT
+                           NULL,
+                           customer_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           total_revenue
+                           REAL
+                           NOT
+                           NULL,
+                           average_ltv
+                           REAL
+                           NOT
+                           NULL,
+                           retention_rates
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create ltv_segments table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS ltv_segments (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                min_ltv REAL NOT NULL,
-                max_ltv REAL,
-                customer_count INTEGER NOT NULL,
-                total_value REAL NOT NULL,
-                average_ltv REAL NOT NULL,
-                retention_rate REAL NOT NULL,
-                description TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS ltv_segments
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           min_ltv
+                           REAL
+                           NOT
+                           NULL,
+                           max_ltv
+                           REAL,
+                           customer_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           total_value
+                           REAL
+                           NOT
+                           NULL,
+                           average_ltv
+                           REAL
+                           NOT
+                           NULL,
+                           retention_rate
+                           REAL
+                           NOT
+                           NULL,
+                           description
+                           TEXT
+                           NOT
+                           NULL,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_customer_ltv_segment ON customer_ltv(segment)")
@@ -148,11 +249,11 @@ class SQLiteLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM customer_ltv
-            WHERE segment = ?
-            ORDER BY predicted_clv DESC
-            LIMIT ?
-        """, (segment, limit))
+                       SELECT *
+                       FROM customer_ltv
+                       WHERE segment = ?
+                       ORDER BY predicted_clv DESC LIMIT ?
+                       """, (segment, limit))
 
         return [self._row_to_customer_ltv(row) for row in cursor.fetchall()]
 
@@ -162,10 +263,11 @@ class SQLiteLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM customer_ltv
-            WHERE cohort_id = ?
-            ORDER BY predicted_clv DESC
-        """, (cohort_id,))
+                       SELECT *
+                       FROM customer_ltv
+                       WHERE cohort_id = ?
+                       ORDER BY predicted_clv DESC
+                       """, (cohort_id,))
 
         return [self._row_to_customer_ltv(row) for row in cursor.fetchall()]
 
@@ -210,10 +312,10 @@ class SQLiteLTVRepository(LTVRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM cohorts
-            ORDER BY acquisition_date DESC
-            LIMIT ?
-        """, (limit,))
+                       SELECT *
+                       FROM cohorts
+                       ORDER BY acquisition_date DESC LIMIT ?
+                       """, (limit,))
 
         return [self._row_to_cohort(row) for row in cursor.fetchall()]
 
@@ -269,15 +371,15 @@ class SQLiteLTVRepository(LTVRepository):
 
         # Get total metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_customers,
-                SUM(predicted_clv) as total_predicted_clv,
-                AVG(predicted_clv) as avg_predicted_clv,
-                SUM(actual_clv) as total_actual_clv,
-                AVG(actual_clv) as avg_actual_clv
-            FROM customer_ltv
-            WHERE first_purchase_date >= ? AND first_purchase_date <= ?
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT COUNT(*)           as total_customers,
+                              SUM(predicted_clv) as total_predicted_clv,
+                              AVG(predicted_clv) as avg_predicted_clv,
+                              SUM(actual_clv)    as total_actual_clv,
+                              AVG(actual_clv)    as avg_actual_clv
+                       FROM customer_ltv
+                       WHERE first_purchase_date >= ?
+                         AND first_purchase_date <= ?
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         row = cursor.fetchone()
         analytics = {
@@ -294,12 +396,12 @@ class SQLiteLTVRepository(LTVRepository):
 
         # Get segment distribution
         cursor.execute("""
-            SELECT segment, COUNT(*) as count, AVG(predicted_clv) as avg_clv
-            FROM customer_ltv
-            WHERE first_purchase_date >= ? AND first_purchase_date <= ?
-            GROUP BY segment
-            ORDER BY avg_clv DESC
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT segment, COUNT(*) as count, AVG(predicted_clv) as avg_clv
+                       FROM customer_ltv
+                       WHERE first_purchase_date >= ? AND first_purchase_date <= ?
+                       GROUP BY segment
+                       ORDER BY avg_clv DESC
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         analytics['segment_distribution'] = [
             {'segment': row[0], 'count': row[1], 'avg_clv': row[2]}

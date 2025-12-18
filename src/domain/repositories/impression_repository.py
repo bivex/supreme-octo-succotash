@@ -14,8 +14,8 @@
 """Impression repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List
 from datetime import date
+from typing import Optional, List
 
 from ..entities.impression import Impression
 from ..value_objects import ImpressionId
@@ -36,7 +36,7 @@ class ImpressionRepository(ABC):
 
     @abstractmethod
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Impression]:
+                            offset: int = 0) -> List[Impression]:
         """Find impressions by campaign ID."""
         pass
 
@@ -52,6 +52,6 @@ class ImpressionRepository(ABC):
 
     @abstractmethod
     def get_impressions_in_date_range(self, campaign_id: str,
-                                    start_date: date, end_date: date) -> List[Impression]:
+                                      start_date: date, end_date: date) -> List[Impression]:
         """Get impressions within date range for analytics."""
         pass

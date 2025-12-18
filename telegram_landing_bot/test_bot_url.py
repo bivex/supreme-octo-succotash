@@ -1,6 +1,7 @@
 import asyncio
 from tracking import init_tracking, get_tracking_manager
 
+
 async def test_bot_url_generation():
     await init_tracking()
     manager = get_tracking_manager()
@@ -21,6 +22,7 @@ async def test_bot_url_generation():
     print('Bot-generated short tracking URL:')
     print(result['tracking_url'])
     print(f'Click ID: {result["click_id"]}')
+
 
 if __name__ == '__main__':
     asyncio.run(test_bot_url_generation())

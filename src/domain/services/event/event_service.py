@@ -13,9 +13,11 @@
 
 """Event tracking service."""
 
+from datetime import datetime
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+
 from loguru import logger
+
 from ...entities.event import Event
 
 
@@ -112,7 +114,6 @@ class EventService:
     def _generate_session_id(self, event_data: Dict[str, Any]) -> str:
         """Generate session ID based on available data."""
         import hashlib
-        import uuid
 
         # Use IP + User Agent + timestamp for session identification
         components = [

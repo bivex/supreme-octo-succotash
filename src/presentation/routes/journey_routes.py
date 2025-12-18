@@ -14,7 +14,9 @@
 """Customer journey analysis routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.analyze_journey_handler import AnalyzeJourneyHandler
 
 
@@ -32,9 +34,10 @@ class JourneyRoutes:
 
     def _register_journey_funnel(self, app):
         """Register journey funnel analysis route."""
+
         def get_journey_funnel(res, req):
             """Get customer journey funnel analysis."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters
@@ -64,9 +67,10 @@ class JourneyRoutes:
 
     def _register_drop_off_analysis(self, app):
         """Register drop-off analysis route."""
+
         def get_drop_off_analysis(res, req):
             """Get customer journey drop-off analysis."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters
@@ -96,9 +100,10 @@ class JourneyRoutes:
 
     def _register_populate_journeys(self, app):
         """Register populate journeys route."""
+
         def populate_journeys(res, req):
             """Populate journey data from clicks and impressions."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 campaign_id_str = req.get_query('campaign_id')

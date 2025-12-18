@@ -13,8 +13,8 @@
 
 """PostgreSQL Customer LTV repository implementation."""
 
-import psycopg2
 from typing import Optional
+
 from ...domain.entities.customer_ltv import CustomerLtv
 from ...domain.repositories.customer_ltv_repository import CustomerLtvRepository
 
@@ -48,41 +48,40 @@ class PostgresCustomerLtvRepository(CustomerLtvRepository):
 
         try:
             cursor.execute("""
-                INSERT INTO customer_ltv (
-                    customer_id, total_revenue, total_purchases, average_order_value,
-                    purchase_frequency, customer_lifetime_months, predicted_clv,
-                    actual_clv, segment, cohort_id, first_purchase_date,
-                    last_purchase_date, created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (customer_id) DO UPDATE SET
-                    total_revenue = EXCLUDED.total_revenue,
-                    total_purchases = EXCLUDED.total_purchases,
-                    average_order_value = EXCLUDED.average_order_value,
-                    purchase_frequency = EXCLUDED.purchase_frequency,
-                    customer_lifetime_months = EXCLUDED.customer_lifetime_months,
-                    predicted_clv = EXCLUDED.predicted_clv,
-                    actual_clv = EXCLUDED.actual_clv,
-                    segment = EXCLUDED.segment,
-                    cohort_id = EXCLUDED.cohort_id,
-                    first_purchase_date = EXCLUDED.first_purchase_date,
-                    last_purchase_date = EXCLUDED.last_purchase_date,
-                    updated_at = EXCLUDED.updated_at
-            """, (
-                customer_ltv.customer_id,
-                customer_ltv.total_revenue,
-                customer_ltv.total_purchases,
-                customer_ltv.average_order_value,
-                customer_ltv.purchase_frequency,
-                customer_ltv.customer_lifetime_months,
-                customer_ltv.predicted_clv,
-                customer_ltv.actual_clv,
-                customer_ltv.segment,
-                customer_ltv.cohort_id,
-                customer_ltv.first_purchase_date,
-                customer_ltv.last_purchase_date,
-                customer_ltv.created_at,
-                customer_ltv.updated_at
-            ))
+                           INSERT INTO customer_ltv (customer_id, total_revenue, total_purchases, average_order_value,
+                                                     purchase_frequency, customer_lifetime_months, predicted_clv,
+                                                     actual_clv, segment, cohort_id, first_purchase_date,
+                                                     last_purchase_date, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (customer_id) DO
+                           UPDATE SET
+                               total_revenue = EXCLUDED.total_revenue,
+                               total_purchases = EXCLUDED.total_purchases,
+                               average_order_value = EXCLUDED.average_order_value,
+                               purchase_frequency = EXCLUDED.purchase_frequency,
+                               customer_lifetime_months = EXCLUDED.customer_lifetime_months,
+                               predicted_clv = EXCLUDED.predicted_clv,
+                               actual_clv = EXCLUDED.actual_clv,
+                               segment = EXCLUDED.segment,
+                               cohort_id = EXCLUDED.cohort_id,
+                               first_purchase_date = EXCLUDED.first_purchase_date,
+                               last_purchase_date = EXCLUDED.last_purchase_date,
+                               updated_at = EXCLUDED.updated_at
+                           """, (
+                               customer_ltv.customer_id,
+                               customer_ltv.total_revenue,
+                               customer_ltv.total_purchases,
+                               customer_ltv.average_order_value,
+                               customer_ltv.purchase_frequency,
+                               customer_ltv.customer_lifetime_months,
+                               customer_ltv.predicted_clv,
+                               customer_ltv.actual_clv,
+                               customer_ltv.segment,
+                               customer_ltv.cohort_id,
+                               customer_ltv.first_purchase_date,
+                               customer_ltv.last_purchase_date,
+                               customer_ltv.created_at,
+                               customer_ltv.updated_at
+                           ))
 
             conn.commit()
 
@@ -99,13 +98,23 @@ class PostgresCustomerLtvRepository(CustomerLtvRepository):
 
         try:
             cursor.execute("""
-                SELECT customer_id, total_revenue, total_purchases, average_order_value,
-                       purchase_frequency, customer_lifetime_months, predicted_clv,
-                       actual_clv, segment, cohort_id, first_purchase_date,
-                       last_purchase_date, created_at, updated_at
-                FROM customer_ltv
-                WHERE customer_id = %s
-            """, (customer_id,))
+                           SELECT customer_id,
+                                  total_revenue,
+                                  total_purchases,
+                                  average_order_value,
+                                  purchase_frequency,
+                                  customer_lifetime_months,
+                                  predicted_clv,
+                                  actual_clv,
+                                  segment,
+                                  cohort_id,
+                                  first_purchase_date,
+                                  last_purchase_date,
+                                  created_at,
+                                  updated_at
+                           FROM customer_ltv
+                           WHERE customer_id = %s
+                           """, (customer_id,))
 
             row = cursor.fetchone()
             if row:
@@ -137,15 +146,15 @@ class PostgresCustomerLtvRepository(CustomerLtvRepository):
 
         try:
             cursor.execute("""
-                UPDATE customer_ltv
-                SET total_revenue = total_revenue + %s,
-                    total_purchases = total_purchases + 1,
-                    average_order_value = (total_revenue + %s) / (total_purchases + 1),
-                    actual_clv = total_revenue + %s,
-                    last_purchase_date = CURRENT_DATE,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE customer_id = %s
-            """, (additional_revenue, additional_revenue, additional_revenue, customer_id))
+                           UPDATE customer_ltv
+                           SET total_revenue       = total_revenue + %s,
+                               total_purchases     = total_purchases + 1,
+                               average_order_value = (total_revenue + %s) / (total_purchases + 1),
+                               actual_clv          = total_revenue + %s,
+                               last_purchase_date  = CURRENT_DATE,
+                               updated_at          = CURRENT_TIMESTAMP
+                           WHERE customer_id = %s
+                           """, (additional_revenue, additional_revenue, additional_revenue, customer_id))
 
             conn.commit()
 

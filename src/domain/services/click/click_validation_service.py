@@ -14,11 +14,11 @@
 """Click validation service for fraud detection and bot filtering."""
 
 import re
-from typing import Optional, Tuple, List
 from ipaddress import ip_address
+from typing import Optional, Tuple, List
 
-from ...entities.click import Click
 from ...constants import BOT_DETECTION_PATTERNS
+from ...entities.click import Click
 
 
 class ClickValidationService:
@@ -33,7 +33,8 @@ class ClickValidationService:
         r'test\.',
     ]
 
-    def validate_click(self, click: Click, campaign_filters: Optional[dict] = None) -> Tuple[bool, Optional[str], float]:
+    def validate_click(self, click: Click, campaign_filters: Optional[dict] = None) -> Tuple[
+        bool, Optional[str], float]:
         """
         Validate a click for fraud and bot detection.
 
@@ -83,7 +84,8 @@ class ClickValidationService:
             fraud_score += 0.2
             reasons.append(referrer_reason)
 
-    def _check_campaign_filters(self, click: Click, campaign_filters: dict, fraud_score: float, reasons: List[str]) -> None:
+    def _check_campaign_filters(self, click: Click, campaign_filters: dict, fraud_score: float,
+                                reasons: List[str]) -> None:
         """Check campaign-specific filters."""
         filter_valid, filter_reason = self._apply_campaign_filters(click, campaign_filters)
         if not filter_valid:

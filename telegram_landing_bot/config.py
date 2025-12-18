@@ -26,6 +26,7 @@ DEFAULT_TRACKING_PARAMS = {
 
 import os
 from typing import Optional
+
 try:
     from pydantic_settings import BaseSettings
     from pydantic import Field
@@ -65,7 +66,6 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
-
 
 # Bot messages
 BOT_MESSAGES = {
@@ -108,7 +108,6 @@ Email: {email}
 Свяжитесь с клиентом как можно скорее!
 """
 }
-
 
 # API endpoints
 API_ENDPOINTS = {

@@ -13,9 +13,9 @@
 
 """Presentation DTOs."""
 
+from .analytics_dto import GetAnalyticsRequest, AnalyticsResponse
 from .campaign_dto import CreateCampaignRequest, CampaignResponse, CampaignSummaryResponse
 from .click_dto import TrackClickRequest, ClickResponse
-from .analytics_dto import GetAnalyticsRequest, AnalyticsResponse
 
 __all__ = [
     'CreateCampaignRequest',

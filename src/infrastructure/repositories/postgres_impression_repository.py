@@ -13,9 +13,8 @@
 
 """PostgreSQL impression repository implementation."""
 
-import psycopg2
+from datetime import date
 from typing import Optional, List
-from datetime import datetime, date
 
 from ...domain.entities.impression import Impression
 from ...domain.repositories.impression_repository import ImpressionRepository
@@ -48,32 +47,66 @@ class PostgresImpressionRepository(ImpressionRepository):
 
         # Create impressions table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS impressions (
-                id TEXT PRIMARY KEY,
-                campaign_id TEXT NOT NULL,
-                ip_address INET NOT NULL,
-                user_agent TEXT,
-                referrer TEXT,
-                is_valid BOOLEAN DEFAULT TRUE,
-                sub1 TEXT,
-                sub2 TEXT,
-                sub3 TEXT,
-                sub4 TEXT,
-                sub5 TEXT,
-                impression_id_param TEXT,
-                affiliate_sub TEXT,
-                affiliate_sub2 TEXT,
-                affiliate_sub3 TEXT,
-                affiliate_sub4 TEXT,
-                affiliate_sub5 TEXT,
-                landing_page_id INTEGER,
-                campaign_offer_id INTEGER,
-                traffic_source_id INTEGER,
-                fraud_score DECIMAL(3,2) DEFAULT 0.0,
-                fraud_reason TEXT,
-                created_at TIMESTAMP NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS impressions
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           campaign_id
+                           TEXT
+                           NOT
+                           NULL,
+                           ip_address
+                           INET
+                           NOT
+                           NULL,
+                           user_agent
+                           TEXT,
+                           referrer
+                           TEXT,
+                           is_valid
+                           BOOLEAN
+                           DEFAULT
+                           TRUE,
+                           sub1
+                           TEXT,
+                           sub2
+                           TEXT,
+                           sub3
+                           TEXT,
+                           sub4
+                           TEXT,
+                           sub5
+                           TEXT,
+                           impression_id_param
+                           TEXT,
+                           affiliate_sub
+                           TEXT,
+                           affiliate_sub2
+                           TEXT,
+                           affiliate_sub3
+                           TEXT,
+                           affiliate_sub4
+                           TEXT,
+                           affiliate_sub5
+                           TEXT,
+                           landing_page_id
+                           INTEGER,
+                           campaign_offer_id
+                           INTEGER,
+                           traffic_source_id
+                           INTEGER,
+                           fraud_score
+                           DECIMAL
+                       (
+                           3,
+                           2
+                       ) DEFAULT 0.0,
+                           fraud_reason TEXT,
+                           created_at TIMESTAMP NOT NULL
+                           )
+                       """)
 
         # Create indexes for performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_impressions_campaign_id ON impressions(campaign_id)")
@@ -150,42 +183,46 @@ class PostgresImpressionRepository(ImpressionRepository):
             row = self._impression_to_row(impression)
 
             cursor.execute("""
-                INSERT INTO impressions (
-                    id, campaign_id, ip_address, user_agent, referrer, is_valid,
-                    sub1, sub2, sub3, sub4, sub5, impression_id_param,
-                    affiliate_sub, affiliate_sub2, affiliate_sub3, affiliate_sub4, affiliate_sub5,
-                    landing_page_id, campaign_offer_id, traffic_source_id,
-                    fraud_score, fraud_reason, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    campaign_id = EXCLUDED.campaign_id,
-                    ip_address = EXCLUDED.ip_address,
-                    user_agent = EXCLUDED.user_agent,
-                    referrer = EXCLUDED.referrer,
-                    is_valid = EXCLUDED.is_valid,
-                    sub1 = EXCLUDED.sub1,
-                    sub2 = EXCLUDED.sub2,
-                    sub3 = EXCLUDED.sub3,
-                    sub4 = EXCLUDED.sub4,
-                    sub5 = EXCLUDED.sub5,
-                    impression_id_param = EXCLUDED.impression_id_param,
-                    affiliate_sub = EXCLUDED.affiliate_sub,
-                    affiliate_sub2 = EXCLUDED.affiliate_sub2,
-                    affiliate_sub3 = EXCLUDED.affiliate_sub3,
-                    affiliate_sub4 = EXCLUDED.affiliate_sub4,
-                    affiliate_sub5 = EXCLUDED.affiliate_sub5,
-                    landing_page_id = EXCLUDED.landing_page_id,
-                    campaign_offer_id = EXCLUDED.campaign_offer_id,
-                    traffic_source_id = EXCLUDED.traffic_source_id,
-                    fraud_score = EXCLUDED.fraud_score,
-                    fraud_reason = EXCLUDED.fraud_reason
-            """, (
-                row['id'], row['campaign_id'], row['ip_address'], row['user_agent'], row['referrer'], row['is_valid'],
-                row['sub1'], row['sub2'], row['sub3'], row['sub4'], row['sub5'], row['impression_id_param'],
-                row['affiliate_sub'], row['affiliate_sub2'], row['affiliate_sub3'], row['affiliate_sub4'], row['affiliate_sub5'],
-                row['landing_page_id'], row['campaign_offer_id'], row['traffic_source_id'],
-                row['fraud_score'], row['fraud_reason'], row['created_at']
-            ))
+                           INSERT INTO impressions (id, campaign_id, ip_address, user_agent, referrer, is_valid,
+                                                    sub1, sub2, sub3, sub4, sub5, impression_id_param,
+                                                    affiliate_sub, affiliate_sub2, affiliate_sub3, affiliate_sub4,
+                                                    affiliate_sub5,
+                                                    landing_page_id, campaign_offer_id, traffic_source_id,
+                                                    fraud_score, fraud_reason, created_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                   %s, %s) ON CONFLICT (id) DO
+                           UPDATE SET
+                               campaign_id = EXCLUDED.campaign_id,
+                               ip_address = EXCLUDED.ip_address,
+                               user_agent = EXCLUDED.user_agent,
+                               referrer = EXCLUDED.referrer,
+                               is_valid = EXCLUDED.is_valid,
+                               sub1 = EXCLUDED.sub1,
+                               sub2 = EXCLUDED.sub2,
+                               sub3 = EXCLUDED.sub3,
+                               sub4 = EXCLUDED.sub4,
+                               sub5 = EXCLUDED.sub5,
+                               impression_id_param = EXCLUDED.impression_id_param,
+                               affiliate_sub = EXCLUDED.affiliate_sub,
+                               affiliate_sub2 = EXCLUDED.affiliate_sub2,
+                               affiliate_sub3 = EXCLUDED.affiliate_sub3,
+                               affiliate_sub4 = EXCLUDED.affiliate_sub4,
+                               affiliate_sub5 = EXCLUDED.affiliate_sub5,
+                               landing_page_id = EXCLUDED.landing_page_id,
+                               campaign_offer_id = EXCLUDED.campaign_offer_id,
+                               traffic_source_id = EXCLUDED.traffic_source_id,
+                               fraud_score = EXCLUDED.fraud_score,
+                               fraud_reason = EXCLUDED.fraud_reason
+                           """, (
+                               row['id'], row['campaign_id'], row['ip_address'], row['user_agent'], row['referrer'],
+                               row['is_valid'],
+                               row['sub1'], row['sub2'], row['sub3'], row['sub4'], row['sub5'],
+                               row['impression_id_param'],
+                               row['affiliate_sub'], row['affiliate_sub2'], row['affiliate_sub3'],
+                               row['affiliate_sub4'], row['affiliate_sub5'],
+                               row['landing_page_id'], row['campaign_offer_id'], row['traffic_source_id'],
+                               row['fraud_score'], row['fraud_reason'], row['created_at']
+                           ))
 
             conn.commit()
         finally:
@@ -210,7 +247,7 @@ class PostgresImpressionRepository(ImpressionRepository):
                 self._container.release_db_connection(conn)
 
     def find_by_campaign_id(self, campaign_id: str, limit: int = 100,
-                           offset: int = 0) -> List[Impression]:
+                            offset: int = 0) -> List[Impression]:
         """Find impressions by campaign ID."""
         conn = None
         try:
@@ -218,11 +255,13 @@ class PostgresImpressionRepository(ImpressionRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM impressions
-                WHERE campaign_id = %s
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-            """, (campaign_id, limit, offset))
+                           SELECT *
+                           FROM impressions
+                           WHERE campaign_id = %s
+                           ORDER BY created_at DESC
+                               LIMIT %s
+                           OFFSET %s
+                           """, (campaign_id, limit, offset))
 
             rows = cursor.fetchall()
             return [self._row_to_impression(row) for row in rows]
@@ -250,7 +289,7 @@ class PostgresImpressionRepository(ImpressionRepository):
                 self._container.release_db_connection(conn)
 
     def get_impressions_in_date_range(self, campaign_id: str,
-                                    start_date: date, end_date: date) -> List[Impression]:
+                                      start_date: date, end_date: date) -> List[Impression]:
         """Get impressions within date range for analytics."""
         conn = None
         try:
@@ -258,12 +297,13 @@ class PostgresImpressionRepository(ImpressionRepository):
             cursor = conn.cursor()
 
             cursor.execute("""
-                SELECT * FROM impressions
-                WHERE campaign_id = %s
-                AND DATE(created_at) >= %s
-                AND DATE(created_at) <= %s
-                ORDER BY created_at DESC
-            """, (campaign_id, start_date, end_date))
+                           SELECT *
+                           FROM impressions
+                           WHERE campaign_id = %s
+                             AND DATE (created_at) >= %s
+                             AND DATE (created_at) <= %s
+                           ORDER BY created_at DESC
+                           """, (campaign_id, start_date, end_date))
 
             rows = cursor.fetchall()
             return [self._row_to_impression(row) for row in rows]

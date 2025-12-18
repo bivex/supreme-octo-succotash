@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional
+
 from ..entities.customer_ltv import CustomerLtv
 
 

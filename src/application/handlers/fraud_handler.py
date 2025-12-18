@@ -13,9 +13,8 @@
 
 """Fraud detection handler."""
 
-import uuid
-import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
+
 from loguru import logger
 
 
@@ -29,7 +28,7 @@ class FraudHandler:
         self._rules = []  # Empty until repository is implemented
 
     def list_rules(self, page: int = 1, page_size: int = 20,
-                  rule_type: Optional[str] = None, active_only: bool = False) -> Dict[str, Any]:
+                   rule_type: Optional[str] = None, active_only: bool = False) -> Dict[str, Any]:
         """List fraud detection rules with pagination and filtering.
 
         Args:
@@ -42,7 +41,8 @@ class FraudHandler:
             Dict containing rules list and pagination info
         """
         try:
-            logger.info(f"Listing fraud rules: page={page}, size={page_size}, type={rule_type}, active_only={active_only}")
+            logger.info(
+                f"Listing fraud rules: page={page}, size={page_size}, type={rule_type}, active_only={active_only}")
 
             # TODO: Implement real fraud rule repository
             # For now, return empty results

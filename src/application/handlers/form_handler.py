@@ -13,8 +13,9 @@
 
 """Form processing handler."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
+
 from loguru import logger
 
 from ...domain.repositories.form_repository import FormRepository
@@ -29,8 +30,8 @@ class FormHandler:
         self._form_service = FormService()
 
     def submit_form(self, form_data: Dict[str, Any], campaign_id: Optional[str] = None,
-                   click_id: Optional[str] = None, ip_address: str = "",
-                   user_agent: str = "") -> Dict[str, Any]:
+                    click_id: Optional[str] = None, ip_address: str = "",
+                    user_agent: str = "") -> Dict[str, Any]:
         """
         Process form submission.
 
@@ -190,7 +191,7 @@ class FormHandler:
             }
 
     def get_form_analytics(self, start_date: Optional[datetime] = None,
-                          end_date: Optional[datetime] = None) -> Dict[str, Any]:
+                           end_date: Optional[datetime] = None) -> Dict[str, Any]:
         """
         Get form submission analytics.
 
@@ -229,7 +230,8 @@ class FormHandler:
                 "conversion_rates": funnel.get('conversion_rates', {})
             }
 
-            logger.info(f"Form analytics generated for {result['date_range']['start']} to {result['date_range']['end']}")
+            logger.info(
+                f"Form analytics generated for {result['date_range']['start']} to {result['date_range']['end']}")
 
             return result
 

@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -13,11 +12,12 @@
 # Commercial licensing available upon request.
 """Load test script for Intel Advisor threading analysis."""
 
-import requests
-import threading
-import time
 import random
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import requests
+
 
 def make_request(endpoint: str, method: str = "GET", data: dict = None):
     """Make a single request to the application."""
@@ -31,6 +31,7 @@ def make_request(endpoint: str, method: str = "GET", data: dict = None):
     except Exception as e:
         print(f"Request error: {e}")
         return None
+
 
 def run_load_test(duration_seconds: int = 60, concurrent_users: int = 10):
     """Run load test to generate threading activity."""
@@ -72,6 +73,7 @@ def run_load_test(duration_seconds: int = 60, concurrent_users: int = 10):
 
     total_time = time.time() - start_time
     print(".2f"".2f")
+
 
 if __name__ == "__main__":
     print("🎯 Advisor Load Test - Run this while Intel Advisor collects threading data")

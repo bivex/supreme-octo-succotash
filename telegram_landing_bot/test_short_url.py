@@ -2,6 +2,7 @@ import asyncio
 from tracking import init_tracking, get_tracking_manager
 from config import settings
 
+
 async def test_short_url():
     print(f"Settings campaign_id: {settings.campaign_id}")
     await init_tracking()
@@ -23,6 +24,7 @@ async def test_short_url():
     print('Generated short tracking URL:')
     print(result['tracking_url'])
     print(f'Click ID: {result["click_id"]}')
+
 
 if __name__ == '__main__':
     asyncio.run(test_short_url())

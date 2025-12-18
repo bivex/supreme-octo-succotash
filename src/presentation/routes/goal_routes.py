@@ -14,7 +14,9 @@
 """Goal management HTTP routes."""
 
 import json
+
 from loguru import logger
+
 from ...application.handlers.manage_goal_handler import ManageGoalHandler
 
 
@@ -37,9 +39,10 @@ class GoalRoutes:
 
     def _register_create_goal(self, app):
         """Register create goal route."""
+
         def create_goal(res, req):
             """Create a new conversion goal."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:
@@ -115,9 +118,10 @@ class GoalRoutes:
 
     def _register_get_goal(self, app):
         """Register get goal route."""
+
         def get_goal(res, req):
             """Get a specific goal."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 goal_id = req.get_parameter(0)
@@ -151,9 +155,10 @@ class GoalRoutes:
 
     def _register_list_goals(self, app):
         """Register list goals route."""
+
         def list_goals(res, req):
             """List goals with optional filtering."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters
@@ -192,9 +197,10 @@ class GoalRoutes:
 
     def _register_update_goal(self, app):
         """Register update goal route."""
+
         def update_goal(res, req):
             """Update an existing goal."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:
@@ -270,9 +276,10 @@ class GoalRoutes:
 
     def _register_delete_goal(self, app):
         """Register delete goal route."""
+
         def delete_goal(res, req):
             """Delete a goal."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 goal_id = req.get_parameter(0)
@@ -306,9 +313,10 @@ class GoalRoutes:
 
     def _register_get_templates(self, app):
         """Register get goal templates route."""
+
         def get_templates(res, req):
             """Get predefined goal templates."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get templates
@@ -340,9 +348,10 @@ class GoalRoutes:
 
     def _register_duplicate_goal(self, app):
         """Register duplicate goal route."""
+
         def duplicate_goal(res, req):
             """Duplicate an existing goal."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
             import json
 
             try:
@@ -411,6 +420,7 @@ class GoalRoutes:
 
     def _register_get_goal_performance(self, app):
         """Register get goal performance route."""
+
         def get_goal_performance(res, req):
             """Get performance metrics for a specific goal."""
             from ...presentation.middleware.security_middleware import validate_request, add_security_headers

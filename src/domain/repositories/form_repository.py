@@ -14,8 +14,8 @@
 """Form repository interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 
 from ..entities.form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatus, LeadSource
 
@@ -110,6 +110,6 @@ class FormRepository(ABC):
 
     @abstractmethod
     def check_duplicate_submission(self, form_data: Dict[str, Any],
-                                 ip_address: str, time_window_hours: int = 24) -> bool:
+                                   ip_address: str, time_window_hours: int = 24) -> bool:
         """Check if submission is duplicate within time window."""
         pass

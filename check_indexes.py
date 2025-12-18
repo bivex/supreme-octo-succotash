@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,11 +14,11 @@
 Check indexes in the system.
 """
 
-import sys
-import os
 import logging
-from typing import List, Tuple, Optional
+import os
+import sys
 from contextlib import contextmanager
+from typing import List, Tuple, Optional
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -63,17 +62,16 @@ class IndexChecker:
         cursor = connection.cursor()
         try:
             cursor.execute('''
-                SELECT
-                    schemaname,
-                    indexrelname,
-                    idx_scan,
-                    idx_tup_read,
-                    idx_tup_fetch,
-                    pg_size_pretty(pg_relation_size(indexrelid)) as size
-                FROM pg_stat_user_indexes
-                WHERE schemaname = 'public'
-                ORDER BY indexrelname
-            ''')
+                           SELECT schemaname,
+                                  indexrelname,
+                                  idx_scan,
+                                  idx_tup_read,
+                                  idx_tup_fetch,
+                                  pg_size_pretty(pg_relation_size(indexrelid)) as size
+                           FROM pg_stat_user_indexes
+                           WHERE schemaname = 'public'
+                           ORDER BY indexrelname
+                           ''')
             return cursor.fetchall()
         finally:
             cursor.close()
@@ -83,18 +81,19 @@ class IndexChecker:
         cursor = connection.cursor()
         try:
             cursor.execute('''
-                SELECT
-                    ui.schemaname,
-                    ui.indexrelname,
-                    ui.idx_scan,
-                    pg_size_pretty(pg_relation_size(ui.indexrelid)) as size,
+                           SELECT ui.schemaname,
+                                  ui.indexrelname,
+                                  ui.idx_scan,
+                                  pg_size_pretty(pg_relation_size(ui.indexrelid)) as size,
                     CASE WHEN i.indisprimary THEN 'PRIMARY KEY'
                          WHEN i.indisunique THEN 'UNIQUE'
-                         ELSE 'REGULAR' END as index_type
+                         ELSE 'REGULAR'
+                           END as index_type
                 FROM pg_stat_user_indexes ui
                 JOIN pg_index i ON ui.indexrelid = i.indexrelid
-                WHERE ui.indexrelname = %s
-            ''', (index_name,))
+                WHERE ui.indexrelname =
+                           %s
+                           ''', (index_name,))
             return cursor.fetchone()
         finally:
             cursor.close()

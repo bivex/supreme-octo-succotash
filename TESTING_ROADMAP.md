@@ -1,23 +1,26 @@
 # Testing Roadmap & Next Steps
 
 ## ✅ COMPLETED: Campaign Business Logic Migration
+
 - **Status**: ✅ FULLY COMPLETE
 - **Coverage**: 9/9 tests passing (100%)
 - **Features**:
-  - CRUD operations (Create, Read, Update, Delete)
-  - Campaign pause/resume actions
-  - Analytics with Money object serialization
-  - Landing pages with pagination
-  - Offers with pagination
-  - Global exception handling
-  - JSON serialization fixes
-  - Hot reload functionality
+    - CRUD operations (Create, Read, Update, Delete)
+    - Campaign pause/resume actions
+    - Analytics with Money object serialization
+    - Landing pages with pagination
+    - Offers with pagination
+    - Global exception handling
+    - JSON serialization fixes
+    - Hot reload functionality
 
 ## 🔄 NEXT: Remaining Partially Implemented Endpoints
+
 **Status**: 🔄 READY FOR TESTING
 **Endpoints to test**: 5 remaining
 
 ### 1. Telegram Webhook (`POST /webhooks/telegram`)
+
 ```bash
 # Test command
 curl -X POST http://localhost:5000/v1/webhooks/telegram \
@@ -27,6 +30,7 @@ curl -X POST http://localhost:5000/v1/webhooks/telegram \
 ```
 
 ### 2. Event Tracking (`POST /events/track`)
+
 ```bash
 curl -X POST http://localhost:5000/v1/events/track \
   -H "Authorization: Bearer test_jwt_token_12345" \
@@ -35,6 +39,7 @@ curl -X POST http://localhost:5000/v1/events/track \
 ```
 
 ### 3. Conversion Tracking (`POST /conversions/track`)
+
 ```bash
 curl -X POST http://localhost:5000/v1/conversions/track \
   -H "Authorization: Bearer test_jwt_token_12345" \
@@ -43,6 +48,7 @@ curl -X POST http://localhost:5000/v1/conversions/track \
 ```
 
 ### 4. Postback Sending (`POST /postbacks/send`)
+
 ```bash
 curl -X POST http://localhost:5000/v1/postbacks/send \
   -H "Authorization: Bearer test_jwt_token_12345" \
@@ -51,6 +57,7 @@ curl -X POST http://localhost:5000/v1/postbacks/send \
 ```
 
 ### 5. Goal Creation (`POST /goals`)
+
 ```bash
 curl -X POST http://localhost:5000/v1/goals \
   -H "Authorization: Bearer test_jwt_token_12345" \
@@ -61,12 +68,14 @@ curl -X POST http://localhost:5000/v1/goals \
 ## 🚀 PHASE 2: Integration & Performance Testing
 
 ### Integration Tests
+
 ```bash
 # Create comprehensive integration test suite
 pytest tests/integration/ -v --cov=src --cov-report=html
 ```
 
 ### Load Testing
+
 ```bash
 # Performance testing with locust or artillery
 locust -f tests/load/locustfile.py --host=http://localhost:5000
@@ -76,6 +85,7 @@ artillery run tests/load/artillery-config.yml
 ```
 
 ### Database Stress Testing
+
 ```bash
 # Test database performance under load
 python scripts/stress_test_db.py
@@ -84,6 +94,7 @@ python scripts/stress_test_db.py
 ## 📚 PHASE 3: Documentation & Deployment
 
 ### API Documentation
+
 ```bash
 # Generate OpenAPI/Swagger docs
 python scripts/generate_openapi.py
@@ -93,6 +104,7 @@ mkdocs serve
 ```
 
 ### Docker & Deployment
+
 ```bash
 # Build Docker image
 docker build -t affiliate-api .
@@ -107,18 +119,21 @@ ansible-playbook deploy.yml
 ## 🔧 PHASE 4: Advanced Features
 
 ### Monitoring & Observability
+
 - **Prometheus metrics** integration
 - **ELK stack** for centralized logging
 - **Health checks** for all services
 - **Distributed tracing** with Jaeger
 
 ### Security Enhancements
+
 - **Rate limiting** improvements
 - **API key rotation** system
 - **Audit logging** for all operations
 - **Input validation** middleware
 
 ### Business Intelligence
+
 - **Real-time dashboards** with Grafana
 - **Advanced analytics** with ClickHouse
 - **A/B testing** framework

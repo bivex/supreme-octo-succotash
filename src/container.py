@@ -13,13 +13,47 @@
 
 """Dependency injection container and composition root."""
 
-import psycopg2.pool
-import threading
 import asyncio
+import threading
 import time
 
 from loguru import logger
 
+# Application handlers
+from .application.handlers import (
+    CreateCampaignHandler, UpdateCampaignHandler, PauseCampaignHandler, ResumeCampaignHandler,
+    CreateLandingPageHandler, CreateOfferHandler,
+    TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, GamingWebhookHandler,
+    SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler,
+    BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler,
+    LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
+)
+# Application queries
+from .application.queries import (
+    GetCampaignHandler,
+    GetCampaignAnalyticsHandler,
+    GetCampaignLandingPagesHandler,
+    GetCampaignOffersHandler
+)
+# Domain services
+from .domain.services import (
+    ClickValidationService,
+    CampaignValidationService,
+    CampaignPerformanceService,
+    CampaignLifecycleService
+)
+from .domain.services.click import ClickGenerationService
+from .domain.services.conversion import ConversionService
+from .domain.services.event import EventService
+from .domain.services.gaming import GamingWebhookService
+from .domain.services.goal import GoalService
+from .domain.services.journey import JourneyService
+from .domain.services.postback import PostbackService
+from .domain.services.webhook import WebhookService
+from .infrastructure.async_io_processor import AsyncIOProcessor
+from .infrastructure.database.advanced_connection_pool import AdvancedConnectionPool
+from .infrastructure.external import MockIpGeolocationService
+from .infrastructure.monitoring.vectorized_cache_monitor import VectorizedCacheMonitor
 # Infrastructure
 from .infrastructure.repositories import (
     SQLiteCampaignRepository,
@@ -52,47 +86,10 @@ from .infrastructure.repositories import (
 )
 from .infrastructure.repositories.optimized_analytics_repository import OptimizedAnalyticsRepository
 from .infrastructure.upholder.postgres_bulk_optimizer import PostgresBulkOptimizer
-from .infrastructure.monitoring.vectorized_cache_monitor import VectorizedCacheMonitor
-from .infrastructure.async_io_processor import AsyncIOProcessor
-from .infrastructure.database.advanced_connection_pool import AdvancedConnectionPool
-from .infrastructure.external import MockIpGeolocationService
-
-# Domain services
-from .domain.services import (
-    ClickValidationService,
-    CampaignValidationService,
-    CampaignPerformanceService,
-    CampaignLifecycleService
-)
-from .domain.services.webhook import WebhookService
-from .domain.services.event import EventService
-from .domain.services.conversion import ConversionService
-from .domain.services.gaming import GamingWebhookService
-from .domain.services.postback import PostbackService
-from .domain.services.click import ClickGenerationService
-from .domain.services.goal import GoalService
-from .domain.services.journey import JourneyService
-
-# Application handlers
-from .application.handlers import (
-    CreateCampaignHandler, UpdateCampaignHandler, PauseCampaignHandler, ResumeCampaignHandler,
-    CreateLandingPageHandler, CreateOfferHandler,
-    TrackClickHandler, ProcessWebhookHandler, TrackEventHandler, TrackConversionHandler, GamingWebhookHandler,
-    SendPostbackHandler, GenerateClickHandler, ManageGoalHandler, AnalyzeJourneyHandler,
-    BulkClickHandler, ClickValidationHandler, FraudHandler, SystemHandler, AnalyticsHandler,
-    LTVHandler, RetentionHandler, FormHandler, CohortAnalysisHandler, SegmentationHandler
-)
-
-# Application queries
-from .application.queries import (
-    GetCampaignHandler,
-    GetCampaignAnalyticsHandler,
-    GetCampaignLandingPagesHandler,
-    GetCampaignOffersHandler
-)
-
 # Presentation
-from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes, GamingWebhookRoutes
+from .presentation.routes import CampaignRoutes, ClickRoutes, WebhookRoutes, EventRoutes, ConversionRoutes, \
+    PostbackRoutes, ClickGenerationRoutes, GoalRoutes, JourneyRoutes, LtvRoutes, FormRoutes, RetentionRoutes, \
+    BulkOperationsRoutes, FraudRoutes, SystemRoutes, AnalyticsRoutes, GamingWebhookRoutes
 
 
 class Container:
@@ -111,23 +108,26 @@ class Container:
                 start = time.time()
                 logger.info("🔌 DB pool: creating AdvancedConnectionPool (localhost:5432)...")
                 try:
-                    self._singletons['db_connection_pool'] = await loop.run_in_executor(None, lambda: AdvancedConnectionPool(
-                        minconn=5,          # Увеличено для лучшей производительности
-                        maxconn=100,        # Temporarily increased to debug connection leaks
-                        host="localhost",
-                        port=5432,
-                        database="supreme_octosuccotash_db",
-                        user="app_user",
-                        password="app_password",
-                        client_encoding='utf8',
-                        # Оптимизации соединения для лучшей производительности
-                        connect_timeout=10,
-                        keepalives=1,
-                        keepalives_idle=30,
-                        keepalives_interval=10,
-                        keepalives_count=5,
-                        tcp_user_timeout=60000,
-                    ))
+                    self._singletons['db_connection_pool'] = await loop.run_in_executor(None,
+                                                                                        lambda: AdvancedConnectionPool(
+                                                                                            minconn=5,
+                                                                                            # Увеличено для лучшей производительности
+                                                                                            maxconn=100,
+                                                                                            # Temporarily increased to debug connection leaks
+                                                                                            host="localhost",
+                                                                                            port=5432,
+                                                                                            database="supreme_octosuccotash_db",
+                                                                                            user="app_user",
+                                                                                            password="app_password",
+                                                                                            client_encoding='utf8',
+                                                                                            # Оптимизации соединения для лучшей производительности
+                                                                                            connect_timeout=10,
+                                                                                            keepalives=1,
+                                                                                            keepalives_idle=30,
+                                                                                            keepalives_interval=10,
+                                                                                            keepalives_count=5,
+                                                                                            tcp_user_timeout=60000,
+                                                                                        ))
                     duration = time.time() - start
                     logger.info(f"✅ DB pool ready in {duration:.3f}s")
 
@@ -178,6 +178,7 @@ class Container:
                 except TypeError:
                     return 0
             return 0
+
         return {
             'minconn': getattr(pool, '_minconn', 'unknown'),
             'maxconn': getattr(pool, '_maxconn', 'unknown'),
@@ -550,6 +551,7 @@ class Container:
                 click_repository=await self.get_click_repository()
             )
         return self._singletons['gaming_webhook_service']
+
     async def get_track_conversion_handler(self):
         """Get track conversion handler."""
         if 'track_conversion_handler' not in self._singletons:
@@ -587,6 +589,7 @@ class Container:
                 gaming_webhook_handler=await self.get_gaming_webhook_handler(),
             )
         return self._singletons['gaming_webhook_routes']
+
     async def get_postback_repository(self):
         """Get postback repository."""
         if 'postback_repository' not in self._singletons:
@@ -764,6 +767,7 @@ class Container:
         if 'postgres_customer_ltv_repository' not in self._singletons:
             self._singletons['postgres_customer_ltv_repository'] = PostgresCustomerLtvRepository(container=self)
         return self._singletons['postgres_customer_ltv_repository']
+
     async def get_postgres_retention_repository(self):
         """Get PostgreSQL retention repository."""
         if 'postgres_retention_repository' not in self._singletons:
@@ -795,7 +799,8 @@ class Container:
             logger.info("🗂️ Creating PostgresPreClickDataRepository...")
             logger.info(f"🔍 Repository class: {PostgresPreClickDataRepository}")
             logger.info(f"🔍 Repository module: {PostgresPreClickDataRepository.__module__}")
-            logger.info(f"🔍 Repository file: {PostgresPreClickDataRepository.__module__.__file__ if hasattr(PostgresPreClickDataRepository.__module__, '__file__') else 'N/A'}")
+            logger.info(
+                f"🔍 Repository file: {PostgresPreClickDataRepository.__module__.__file__ if hasattr(PostgresPreClickDataRepository.__module__, '__file__') else 'N/A'}")
             repo = PostgresPreClickDataRepository(container=self)
             logger.info(f"🔍 Created repo instance: {type(repo)}, id: {id(repo)}")
             # Kick off async DB initialization
@@ -949,6 +954,7 @@ class Container:
             from ..presentation.routes.auth_routes import AuthRoutes
             self._singletons['auth_routes'] = AuthRoutes()
         return self._singletons['auth_routes']
+
     async def get_system_routes(self):
         """Get system routes."""
         if 'system_routes' not in self._singletons:
@@ -1037,4 +1043,5 @@ class Container:
 
 # Global container instance
 from .config.settings import settings
+
 container = Container(settings)

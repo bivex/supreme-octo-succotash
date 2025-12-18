@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -15,10 +14,10 @@
 Initialize all database tables for the application.
 """
 
-import sys
-import os
 import logging
-from typing import List, Callable
+import os
+import sys
+from typing import List
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))

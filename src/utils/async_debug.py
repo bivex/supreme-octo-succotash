@@ -1,14 +1,17 @@
 """Async debugging utilities using async-trace."""
 
+import asyncio
 import logging
 import time
 from typing import Dict, Any, Optional
-import asyncio
+
 logger = logging.getLogger(__name__)
 
 # Check if async-trace is available
 try:
-    from async_trace import print_trace, collect_async_trace, save_trace_to_json, save_trace_to_html, save_trace, log_trace_to_file
+    from async_trace import print_trace, collect_async_trace, save_trace_to_json, save_trace_to_html, save_trace, \
+        log_trace_to_file
+
     ASYNC_TRACE_AVAILABLE = True
 except ImportError:
     ASYNC_TRACE_AVAILABLE = False
@@ -18,6 +21,7 @@ except ImportError:
     save_trace_to_html = None
     save_trace = None
     log_trace_to_file = None
+
 
 def debug_async_trace(message: str = "Async call stack:") -> None:
     """Print current async call stack for debugging."""
@@ -39,6 +43,7 @@ def debug_async_trace(message: str = "Async call stack:") -> None:
     except Exception as e:
         logger.error(f"Error getting async trace: {e}")
 
+
 def get_async_trace_data() -> Optional[Dict[str, Any]]:
     """Get structured async trace data."""
     if not ASYNC_TRACE_AVAILABLE:
@@ -51,9 +56,9 @@ def get_async_trace_data() -> Optional[Dict[str, Any]]:
         logger.error(f"Error collecting async trace: {e}")
         return None
 
+
 def log_task_info() -> None:
     """Log information about current asyncio tasks."""
-    import asyncio
 
     if not ASYNC_TRACE_AVAILABLE:
         logger.warning("⚠️  async-trace not available for detailed task info")
@@ -79,28 +84,34 @@ def log_task_info() -> None:
     except Exception as e:
         logger.error(f"Error logging task info: {e}")
 
+
 # Convenience functions for common debugging scenarios
 def debug_before_await(operation: str) -> None:
     """Log before an async operation."""
     logger.debug(f"⏳ Starting async operation: {operation}")
     debug_async_trace(f"Before {operation}")
 
+
 def debug_after_await(operation: str) -> None:
     """Log after an async operation."""
     logger.debug(f"✅ Completed async operation: {operation}")
     debug_async_trace(f"After {operation}")
 
+
 def debug_database_call(query_type: str = "query") -> None:
     """Debug database operations."""
     debug_async_trace(f"Database {query_type} call stack")
+
 
 def debug_http_request(endpoint: str = "unknown") -> None:
     """Debug HTTP request handling."""
     debug_async_trace(f"HTTP request to {endpoint}")
 
+
 def debug_task_creation() -> None:
     """Debug when tasks are being created."""
     debug_async_trace("Task creation point")
+
 
 def save_trace_to_file(filename: str = None, format: str = "json") -> Optional[str]:
     """Save current async trace to file for later analysis.
@@ -131,6 +142,7 @@ def save_trace_to_file(filename: str = None, format: str = "json") -> Optional[s
         logger.error(f"❌ Error saving async trace: {e}")
         return None
 
+
 def log_trace_to_continuous_file(filename: str = "async_trace_continuous.jsonl") -> Optional[str]:
     """Append current trace to continuous log file for monitoring.
 
@@ -151,6 +163,7 @@ def log_trace_to_continuous_file(filename: str = "async_trace_continuous.jsonl")
     except Exception as e:
         logger.error(f"❌ Error logging trace to file: {e}")
         return None
+
 
 def save_debug_snapshot(reason: str = "debug") -> Optional[str]:
     """Save a debug snapshot of current async state (HTML) with threads/loop info if available."""

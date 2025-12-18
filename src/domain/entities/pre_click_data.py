@@ -16,6 +16,7 @@ from typing import Dict, Any, Optional
 
 from ..value_objects import ClickId, CampaignId
 
+
 @dataclass
 class PreClickData:
     """Entity to store all tracking parameters before a click is processed."""

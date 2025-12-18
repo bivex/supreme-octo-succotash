@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,6 +15,7 @@ Analyze PostgreSQL query plans to understand index usage.
 """
 
 import psycopg2
+
 
 def analyze_query_plans():
     """Analyze query execution plans."""
@@ -85,12 +85,12 @@ def analyze_query_plans():
         # Check if indexes exist
         print("\n📊 Index Existence Check:")
         cur.execute("""
-            SELECT schemaname, tablename, indexname, indexdef
-            FROM pg_indexes
-            WHERE schemaname = 'public'
-            AND indexname LIKE 'idx_%'
-            ORDER BY indexname
-        """)
+                    SELECT schemaname, tablename, indexname, indexdef
+                    FROM pg_indexes
+                    WHERE schemaname = 'public'
+                      AND indexname LIKE 'idx_%'
+                    ORDER BY indexname
+                    """)
 
         indexes = cur.fetchall()
         for schema, table, index, definition in indexes:
@@ -99,6 +99,7 @@ def analyze_query_plans():
     finally:
         cur.close()
         conn.close()
+
 
 if __name__ == "__main__":
     analyze_query_plans()

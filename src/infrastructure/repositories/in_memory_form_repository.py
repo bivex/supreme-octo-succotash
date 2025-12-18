@@ -13,9 +13,9 @@
 
 """In-memory form repository implementation."""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Any
 
 from ...domain.entities.form import Lead, FormSubmission, LeadScore, FormValidationRule, LeadStatus, LeadSource
 from ...domain.repositories.form_repository import FormRepository
@@ -31,7 +31,6 @@ class InMemoryFormRepository(FormRepository):
         self._scores: Dict[str, LeadScore] = {}
         self._validation_rules: Dict[str, List[FormValidationRule]] = {}
         self._deleted_leads: set[str] = set()
-
 
     def save_form_submission(self, submission: FormSubmission) -> None:
         """Save form submission."""
@@ -94,8 +93,8 @@ class InMemoryFormRepository(FormRepository):
         hot_leads = []
         for lead in self._leads.values():
             if (lead.id not in self._deleted_leads and
-                lead.lead_score and
-                lead.lead_score.total_score >= score_threshold):
+                    lead.lead_score and
+                    lead.lead_score.total_score >= score_threshold):
                 hot_leads.append(lead)
 
         return sorted(hot_leads, key=lambda x: x.lead_score.total_score, reverse=True)[:limit]
@@ -185,8 +184,10 @@ class InMemoryFormRepository(FormRepository):
         duplicate_submissions = len([s for s in relevant_submissions if s.is_duplicate])
 
         # Conversion metrics
-        total_leads = len(set(s.form_data.get('email', '').lower() for s in relevant_submissions if s.form_data.get('email')))
-        converted_leads = len([l for l in self._leads.values() if l.converted_at and start_date <= l.converted_at <= end_date])
+        total_leads = len(
+            set(s.form_data.get('email', '').lower() for s in relevant_submissions if s.form_data.get('email')))
+        converted_leads = len(
+            [l for l in self._leads.values() if l.converted_at and start_date <= l.converted_at <= end_date])
 
         return {
             'date_range': {
@@ -238,7 +239,7 @@ class InMemoryFormRepository(FormRepository):
         }
 
     def check_duplicate_submission(self, form_data: Dict[str, Any],
-                                 ip_address: str, time_window_hours: int = 24) -> bool:
+                                   ip_address: str, time_window_hours: int = 24) -> bool:
         """Check if submission is duplicate within time window."""
         cutoff_time = datetime.now() - timedelta(hours=time_window_hours)
 
@@ -249,8 +250,8 @@ class InMemoryFormRepository(FormRepository):
 
         for submission in self._submissions.values():
             if (submission.ip_address == ip_address and
-                submission.form_data.get('email', '').lower().strip() == email and
-                submission.submitted_at >= cutoff_time):
+                    submission.form_data.get('email', '').lower().strip() == email and
+                    submission.submitted_at >= cutoff_time):
                 return True
 
         return False
@@ -281,6 +282,7 @@ class InMemoryFormRepository(FormRepository):
             'contacted_to_qualified': status_counts.get('qualified', 0) / max(status_counts.get('contacted', 0), 1),
             'qualified_to_proposal': status_counts.get('proposal', 0) / max(status_counts.get('qualified', 0), 1),
             'proposal_to_negotiation': status_counts.get('negotiation', 0) / max(status_counts.get('proposal', 0), 1),
-            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(status_counts.get('negotiation', 0), 1),
+            'negotiation_to_closed': (status_counts.get('closed_won', 0) + status_counts.get('closed_lost', 0)) / max(
+                status_counts.get('negotiation', 0), 1),
             'overall_win_rate': status_counts.get('closed_won', 0) / max(total_new, 1)
         }

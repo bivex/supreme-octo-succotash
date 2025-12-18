@@ -13,12 +13,11 @@
 
 """PostgreSQL query analyzer with automatic EXPLAIN ANALYZE and optimization recommendations."""
 
-import psycopg2
-import re
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
 import logging
+import re
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +247,7 @@ class PostgresQueryAnalyzer:
             score += 3
         elif exec_time > 1000:  # 1 second
             score += 2
-        elif exec_time > 100:   # 100ms
+        elif exec_time > 100:  # 100ms
             score += 1
 
         if score >= 5:
@@ -271,10 +270,11 @@ class PostgresQueryAnalyzer:
                     cursor = conn.cursor()
                     # Check available columns in pg_stat_statements and adapt query
                     cursor.execute("""
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_name = 'pg_stat_statements' AND table_schema = 'public'
-                    """)
+                                   SELECT column_name
+                                   FROM information_schema.columns
+                                   WHERE table_name = 'pg_stat_statements'
+                                     AND table_schema = 'public'
+                                   """)
                     available_columns = {row[0] for row in cursor.fetchall()}
 
                     # Build query based on available columns
@@ -337,10 +337,11 @@ class PostgresQueryAnalyzer:
                 with self.connection.cursor() as cursor:
                     # Check available columns in pg_stat_statements and adapt query
                     cursor.execute("""
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_name = 'pg_stat_statements' AND table_schema = 'public'
-                    """)
+                                   SELECT column_name
+                                   FROM information_schema.columns
+                                   WHERE table_name = 'pg_stat_statements'
+                                     AND table_schema = 'public'
+                                   """)
                     available_columns = {row[0] for row in cursor.fetchall()}
 
                     # Build query based on available columns
@@ -420,7 +421,8 @@ class QueryOptimizationMonitor:
 
             if analysis.severity in ['high', 'critical']:
                 optimizations.append({
-                    'query': query_info['query'][:200] + '...' if len(query_info['query']) > 200 else query_info['query'],
+                    'query': query_info['query'][:200] + '...' if len(query_info['query']) > 200 else query_info[
+                        'query'],
                     'calls': query_info['calls'],
                     'mean_time': query_info['mean_time'],
                     'severity': analysis.severity,

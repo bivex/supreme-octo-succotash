@@ -23,7 +23,8 @@ from ...value_objects import CampaignStatus
 class CampaignLifecycleService:
     """Domain service for campaign lifecycle management."""
 
-    def should_pause_campaign(self, campaign: Campaign, current_time: Optional[datetime] = None) -> tuple[bool, Optional[str]]:
+    def should_pause_campaign(self, campaign: Campaign, current_time: Optional[datetime] = None) -> tuple[
+        bool, Optional[str]]:
         """
         Determine if campaign should be paused based on business rules.
 

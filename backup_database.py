@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -16,13 +15,13 @@ Database backup script for PostgreSQL.
 Creates compressed backups of the supreme_octosuccotash_db database.
 """
 
-import os
-import subprocess
 import datetime
 import gzip
-import shutil
-from pathlib import Path
 import logging
+import os
+import shutil
+import subprocess
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,6 +39,7 @@ DB_CONFIG = {
 # Backup directory
 BACKUP_DIR = Path('database_backups')
 BACKUP_DIR.mkdir(exist_ok=True)
+
 
 class DatabaseBackup:
     """Handles PostgreSQL database backups."""
@@ -97,7 +97,7 @@ class DatabaseBackup:
             )
 
             logger.info(f"Backup created successfully: {backup_path}")
-            logger.info(f"Backup size: {backup_path.stat().st_size / (1024*1024):.2f} MB")
+            logger.info(f"Backup size: {backup_path.stat().st_size / (1024 * 1024):.2f} MB")
 
             # Optionally compress further with gzip
             if compress:
@@ -112,7 +112,7 @@ class DatabaseBackup:
                 backup_path.unlink()
                 backup_path = compressed_path
 
-                logger.info(f"Compressed backup size: {backup_path.stat().st_size / (1024*1024):.2f} MB")
+                logger.info(f"Compressed backup size: {backup_path.stat().st_size / (1024 * 1024):.2f} MB")
 
             return str(backup_path)
 
@@ -162,6 +162,7 @@ class DatabaseBackup:
 
         return removed_count
 
+
 def main():
     """Main function to run the backup."""
     import argparse
@@ -198,6 +199,7 @@ def main():
     compress = not args.no_compress
     backup_path = backup_manager.create_backup(compress=compress)
     print(f"Backup completed: {backup_path}")
+
 
 if __name__ == '__main__':
     main()

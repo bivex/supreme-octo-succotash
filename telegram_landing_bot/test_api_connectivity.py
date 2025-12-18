@@ -1,4 +1,3 @@
-
 # Copyright (c) 2025 Bivex
 #
 # Author: Bivex
@@ -19,6 +18,7 @@ import os
 import sys
 import json
 from tracking import TrackingManager
+
 
 @pytest.mark.asyncio
 async def test_api_connectivity():
@@ -71,6 +71,7 @@ async def test_api_connectivity():
         except Exception as e:
             print(f"ERROR: Exception during API call: {e}")
             return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(test_api_connectivity())

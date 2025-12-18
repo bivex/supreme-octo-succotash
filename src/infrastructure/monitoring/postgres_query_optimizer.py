@@ -13,12 +13,11 @@
 
 """PostgreSQL query optimizer using pg_stat_statements for automatic optimization recommendations."""
 
-import psycopg2
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
 import logging
 import re
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,7 @@ class PostgresQueryOptimizer:
             self.connection.putconn(conn)
 
     def analyze_slow_queries(self, min_avg_time: float = 100,
-                           min_calls: int = 10) -> List[QueryPerformanceIssue]:
+                             min_calls: int = 10) -> List[QueryPerformanceIssue]:
         """Analyze slow queries and identify performance issues."""
         import time
         print("DEBUG: analyze_slow_queries() called")
@@ -95,31 +94,25 @@ class PostgresQueryOptimizer:
             conn, cursor = self._get_cursor()
             cursor_time = time.time() - cursor_start
             print("DEBUG: Got database cursor")
-            logger.info(".3f")       
+            logger.info(".3f")
             try:
                 # Get slow queries from pg_stat_statements
                 logger.info("🐌 Executing slow queries analysis query")
                 query_start = time.time()
                 try:
                     cursor.execute("""
-                        SELECT
-                            queryid,
-                            query,
-                            calls,
-                            total_time,
-                            mean_time,
-                            rows,
-                            shared_blks_hit,
-                            shared_blks_read,
-                            temp_blks_read,
-                            temp_blks_written
-                        FROM pg_stat_statements
-                        WHERE mean_time >= %s
-                        AND calls >= %s
-                        AND query NOT LIKE '%%pg_stat%%'
-                        ORDER BY mean_time DESC
-                        LIMIT 50
-                    """, (min_avg_time, min_calls))
+                                   SELECT queryid,
+                                          query,
+                                          calls,
+                                          total_time,
+                                          mean_time, rows, shared_blks_hit, shared_blks_read, temp_blks_read, temp_blks_written
+                                   FROM pg_stat_statements
+                                   WHERE mean_time >= %s
+                                     AND calls >= %s
+                                     AND query NOT LIKE '%%pg_stat%%'
+                                   ORDER BY mean_time DESC
+                                       LIMIT 50
+                                   """, (min_avg_time, min_calls))
                 except Exception as e:
                     logger.warning(f"pg_stat_statements query failed: {e}, using fallback")
                     # Close current cursor and get a new connection to avoid aborted transaction
@@ -129,14 +122,12 @@ class PostgresQueryOptimizer:
                     try:
                         # Fallback query with basic columns
                         cursor.execute("""
-                            SELECT
-                                query,
-                                calls
-                            FROM pg_stat_statements
-                            WHERE calls >= %s
-                            ORDER BY calls DESC
-                            LIMIT 20
-                        """, (min_calls,))
+                                       SELECT query,
+                                              calls
+                                       FROM pg_stat_statements
+                                       WHERE calls >= %s
+                                       ORDER BY calls DESC LIMIT 20
+                                       """, (min_calls,))
                     except Exception as fallback_error:
                         logger.error(f"Fallback query failed: {fallback_error}")
                         self._close_cursor(conn, cursor)
@@ -196,7 +187,8 @@ class PostgresQueryOptimizer:
             'total_time': total_time,
             'mean_time': mean_time,
             'rows': rows,
-            'cache_hit_ratio': (shared_blks_hit / (shared_blks_hit + shared_blks_read)) * 100 if (shared_blks_hit + shared_blks_read) > 0 else 100,
+            'cache_hit_ratio': (shared_blks_hit / (shared_blks_hit + shared_blks_read)) * 100 if (
+                                                                                                             shared_blks_hit + shared_blks_read) > 0 else 100,
             'temp_blocks_read': temp_blks_read,
             'temp_blocks_written': temp_blks_written
         }
@@ -235,9 +227,9 @@ class PostgresQueryOptimizer:
         # Look for patterns that often cause sequential scans
         problematic_patterns = [
             r'select\s+.*\s+from\s+\w+\s+where\s+\w+\s+like\s+',  # LIKE without index
-            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+or\s+',     # OR conditions
-            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+not\s+',    # NOT conditions
-            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+in\s+\(',   # Large IN clauses
+            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+or\s+',  # OR conditions
+            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+not\s+',  # NOT conditions
+            r'select\s+.*\s+from\s+\w+\s+where\s+.*\s+in\s+\(',  # Large IN clauses
         ]
 
         for pattern in problematic_patterns:
@@ -400,11 +392,11 @@ class PostgresQueryOptimizer:
             conn, cursor = self._get_cursor()
             try:
                 cursor.execute("""
-                    SELECT indexdef
-                    FROM pg_indexes
-                    WHERE tablename = %s
-                    AND schemaname = 'public'
-                """, (table,))
+                               SELECT indexdef
+                               FROM pg_indexes
+                               WHERE tablename = %s
+                                 AND schemaname = 'public'
+                               """, (table,))
 
                 for row in cursor.fetchall():
                     index_def = row[0].lower()
@@ -437,7 +429,8 @@ class PostgresQueryOptimizer:
                             action_type='create_index',
                             description=f"Create missing index for slow query",
                             sql_commands=[rec],
-                            rollback_commands=[f"DROP INDEX IF EXISTS {rec.split('(')[1].split(')')[0].replace(',', '_').strip()}_idx"],
+                            rollback_commands=[
+                                f"DROP INDEX IF EXISTS {rec.split('(')[1].split(')')[0].replace(',', '_').strip()}_idx"],
                             estimated_benefit=issue.estimated_impact,
                             risk_level='low'
                         ))

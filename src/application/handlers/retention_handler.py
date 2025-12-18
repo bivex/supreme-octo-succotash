@@ -13,13 +13,14 @@
 
 """Retention campaign handler."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Dict, Any, Optional
+
 from loguru import logger
 
-from ...domain.repositories.retention_repository import RetentionRepository
 from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.conversion_repository import ConversionRepository
+from ...domain.repositories.retention_repository import RetentionRepository
 from ...domain.services.retention.retention_service import RetentionService
 
 
@@ -208,7 +209,7 @@ class RetentionHandler:
             }
 
     def get_retention_analytics(self, start_date: Optional[datetime] = None,
-                               end_date: Optional[datetime] = None) -> Dict[str, Any]:
+                                end_date: Optional[datetime] = None) -> Dict[str, Any]:
         """
         Get retention analytics data.
 
@@ -243,7 +244,8 @@ class RetentionHandler:
                 "high_risk_customers_count": len(self._retention_repository.get_high_risk_customers(limit=1000))
             }
 
-            logger.info(f"Retention analytics generated for {result['date_range']['start']} to {result['date_range']['end']}")
+            logger.info(
+                f"Retention analytics generated for {result['date_range']['start']} to {result['date_range']['end']}")
 
             return result
 

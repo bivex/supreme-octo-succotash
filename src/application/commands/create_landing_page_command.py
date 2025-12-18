@@ -14,7 +14,6 @@
 """Create landing page command."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ...domain.value_objects import Url
 

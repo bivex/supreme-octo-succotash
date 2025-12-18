@@ -13,8 +13,9 @@
 
 """Customer journey service."""
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+
 from ...entities.journey import CustomerJourney
 
 
@@ -54,7 +55,8 @@ class JourneyService:
 
     def create_journey_from_impression(self, impression_data: Dict[str, Any]) -> CustomerJourney:
         """Create a customer journey from impression data."""
-        user_id = impression_data.get('user_id') or impression_data.get('impression_id') or str(impression_data.get('id', 'unknown'))
+        user_id = impression_data.get('user_id') or impression_data.get('impression_id') or str(
+            impression_data.get('id', 'unknown'))
 
         initial_touchpoint = {
             'type': 'impression',
@@ -121,8 +123,10 @@ class JourneyService:
         if total_users > 0:
             conversion_rates = {
                 'awareness_to_interest': funnel['interest'] / total_users if funnel['awareness'] > 0 else 0,
-                'interest_to_consideration': funnel['consideration'] / funnel['interest'] if funnel['interest'] > 0 else 0,
-                'consideration_to_purchase': funnel['purchase'] / funnel['consideration'] if funnel['consideration'] > 0 else 0,
+                'interest_to_consideration': funnel['consideration'] / funnel['interest'] if funnel[
+                                                                                                 'interest'] > 0 else 0,
+                'consideration_to_purchase': funnel['purchase'] / funnel['consideration'] if funnel[
+                                                                                                 'consideration'] > 0 else 0,
             }
 
         return {
@@ -139,7 +143,7 @@ class JourneyService:
         journeys = [
             j for j in self._journeys.values()
             if j.journey_start >= cutoff_date and
-            (campaign_id is None or j.campaign_id == campaign_id)
+               (campaign_id is None or j.campaign_id == campaign_id)
         ]
 
         # Simple drop-off analysis

@@ -136,7 +136,7 @@ class Campaign:
         self.updated_at = datetime.now(timezone.utc)
 
     def update_performance(self, impressions_increment: int = 0, clicks_increment: int = 0,
-                          conversions_increment: int = 0, spent_increment: Optional[Money] = None) -> None:
+                           conversions_increment: int = 0, spent_increment: Optional[Money] = None) -> None:
         """Update campaign performance metrics."""
         self.impressions_count += impressions_increment
         self.clicks_count += clicks_increment

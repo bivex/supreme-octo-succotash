@@ -13,9 +13,9 @@
 
 """Analytics handler."""
 
-import time
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from typing import Dict, Any
+
 from loguru import logger
 
 
@@ -58,7 +58,8 @@ class AnalyticsHandler:
                     for campaign in campaigns[:3]:  # Top 3 campaigns
                         # In real implementation, would get real-time metrics for each campaign
                         campaign_clicks = campaign.clicks_count if hasattr(campaign, 'clicks_count') else 0
-                        campaign_conversions = campaign.conversions_count if hasattr(campaign, 'conversions_count') else 0
+                        campaign_conversions = campaign.conversions_count if hasattr(campaign,
+                                                                                     'conversions_count') else 0
 
                         top_campaigns.append({
                             "campaignId": str(campaign.id),
@@ -98,7 +99,8 @@ class AnalyticsHandler:
                 "blockedClicks": blocked_clicks  # Would need fraud monitoring
             }
 
-            logger.info(f"Real-time analytics generated: {total_clicks} clicks, {total_conversions} conversions, ${total_revenue} revenue")
+            logger.info(
+                f"Real-time analytics generated: {total_clicks} clicks, {total_conversions} conversions, ${total_revenue} revenue")
 
             return result
 

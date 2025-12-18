@@ -14,11 +14,11 @@
 """SQLite retention repository implementation."""
 
 import sqlite3
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from collections import defaultdict
+from typing import Optional, List, Dict, Any
 
-from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, RetentionCampaignStatus
+from ...domain.entities.retention import RetentionCampaign, ChurnPrediction, UserEngagementProfile, UserSegment, \
+    RetentionCampaignStatus
 from ...domain.repositories.retention_repository import RetentionRepository
 
 
@@ -44,58 +44,166 @@ class SQLiteRetentionRepository(RetentionRepository):
 
         # Create retention_campaigns table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS retention_campaigns (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT NOT NULL,
-                target_segment TEXT NOT NULL,
-                status TEXT NOT NULL,
-                triggers TEXT NOT NULL,  -- JSON string
-                message_template TEXT NOT NULL,
-                target_user_count INTEGER NOT NULL,
-                sent_count INTEGER NOT NULL,
-                opened_count INTEGER NOT NULL,
-                clicked_count INTEGER NOT NULL,
-                converted_count INTEGER NOT NULL,
-                budget REAL,
-                start_date TEXT NOT NULL,
-                end_date TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS retention_campaigns
+                       (
+                           id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           name
+                           TEXT
+                           NOT
+                           NULL,
+                           description
+                           TEXT
+                           NOT
+                           NULL,
+                           target_segment
+                           TEXT
+                           NOT
+                           NULL,
+                           status
+                           TEXT
+                           NOT
+                           NULL,
+                           triggers
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           message_template
+                           TEXT
+                           NOT
+                           NULL,
+                           target_user_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           sent_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           opened_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           clicked_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           converted_count
+                           INTEGER
+                           NOT
+                           NULL,
+                           budget
+                           REAL,
+                           start_date
+                           TEXT
+                           NOT
+                           NULL,
+                           end_date
+                           TEXT,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create churn_predictions table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS churn_predictions (
-                customer_id TEXT PRIMARY KEY,
-                churn_probability REAL NOT NULL,
-                risk_level TEXT NOT NULL,
-                predicted_churn_date TEXT,
-                reasons TEXT NOT NULL,  -- JSON string
-                last_activity_date TEXT NOT NULL,
-                engagement_score REAL NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS churn_predictions
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           churn_probability
+                           REAL
+                           NOT
+                           NULL,
+                           risk_level
+                           TEXT
+                           NOT
+                           NULL,
+                           predicted_churn_date
+                           TEXT,
+                           reasons
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           last_activity_date
+                           TEXT
+                           NOT
+                           NULL,
+                           engagement_score
+                           REAL
+                           NOT
+                           NULL,
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create user_engagement_profiles table
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_engagement_profiles (
-                customer_id TEXT PRIMARY KEY,
-                total_sessions INTEGER NOT NULL,
-                total_clicks INTEGER NOT NULL,
-                total_conversions INTEGER NOT NULL,
-                avg_session_duration REAL NOT NULL,
-                last_session_date TEXT NOT NULL,
-                engagement_score REAL NOT NULL,
-                segment TEXT NOT NULL,
-                interests TEXT NOT NULL,  -- JSON string
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
+                       CREATE TABLE IF NOT EXISTS user_engagement_profiles
+                       (
+                           customer_id
+                           TEXT
+                           PRIMARY
+                           KEY,
+                           total_sessions
+                           INTEGER
+                           NOT
+                           NULL,
+                           total_clicks
+                           INTEGER
+                           NOT
+                           NULL,
+                           total_conversions
+                           INTEGER
+                           NOT
+                           NULL,
+                           avg_session_duration
+                           REAL
+                           NOT
+                           NULL,
+                           last_session_date
+                           TEXT
+                           NOT
+                           NULL,
+                           engagement_score
+                           REAL
+                           NOT
+                           NULL,
+                           segment
+                           TEXT
+                           NOT
+                           NULL,
+                           interests
+                           TEXT
+                           NOT
+                           NULL, -- JSON string
+                           created_at
+                           TEXT
+                           NOT
+                           NULL,
+                           updated_at
+                           TEXT
+                           NOT
+                           NULL
+                       )
+                       """)
 
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaigns_status ON retention_campaigns(status)")
@@ -126,7 +234,8 @@ class SQLiteRetentionRepository(RetentionRepository):
             campaign.description,
             campaign.target_segment.value,
             campaign.status.value,
-            json.dumps([{"id": t.id, "type": t.type, "value": t.value, "operator": t.operator} for t in campaign.triggers]),
+            json.dumps(
+                [{"id": t.id, "type": t.type, "value": t.value, "operator": t.operator} for t in campaign.triggers]),
             campaign.message_template,
             campaign.target_user_count,
             campaign.sent_count,
@@ -177,24 +286,32 @@ class SQLiteRetentionRepository(RetentionRepository):
 
         now = datetime.now().isoformat()
         cursor.execute("""
-            SELECT * FROM retention_campaigns
-            WHERE status = ? AND start_date <= ? AND (end_date IS NULL OR end_date >= ?)
-            ORDER BY created_at DESC
-        """, (RetentionCampaignStatus.ACTIVE.value, now, now))
+                       SELECT *
+                       FROM retention_campaigns
+                       WHERE status = ?
+                         AND start_date <= ?
+                         AND (end_date IS NULL OR end_date >= ?)
+                       ORDER BY created_at DESC
+                       """, (RetentionCampaignStatus.ACTIVE.value, now, now))
 
         return [self._row_to_campaign(row) for row in cursor.fetchall()]
 
     def update_campaign_metrics(self, campaign_id: str, sent_count: int,
-                               opened_count: int, clicked_count: int, converted_count: int) -> None:
+                                opened_count: int, clicked_count: int, converted_count: int) -> None:
         """Update campaign performance metrics."""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
-            UPDATE retention_campaigns
-            SET sent_count = ?, opened_count = ?, clicked_count = ?, converted_count = ?, updated_at = ?
-            WHERE id = ?
-        """, (sent_count, opened_count, clicked_count, converted_count, datetime.now().isoformat(), campaign_id))
+                       UPDATE retention_campaigns
+                       SET sent_count      = ?,
+                           opened_count    = ?,
+                           clicked_count   = ?,
+                           converted_count = ?,
+                           updated_at      = ?
+                       WHERE id = ?
+                       """, (sent_count, opened_count, clicked_count, converted_count, datetime.now().isoformat(),
+                             campaign_id))
 
         conn.commit()
 
@@ -239,11 +356,11 @@ class SQLiteRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM churn_predictions
-            WHERE risk_level = 'high'
-            ORDER BY churn_probability DESC
-            LIMIT ?
-        """, (limit,))
+                       SELECT *
+                       FROM churn_predictions
+                       WHERE risk_level = 'high'
+                       ORDER BY churn_probability DESC LIMIT ?
+                       """, (limit,))
 
         return [self._row_to_churn_prediction(row) for row in cursor.fetchall()]
 
@@ -290,11 +407,11 @@ class SQLiteRetentionRepository(RetentionRepository):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM user_engagement_profiles
-            WHERE segment = ?
-            ORDER BY engagement_score DESC
-            LIMIT ?
-        """, (segment.value, limit))
+                       SELECT *
+                       FROM user_engagement_profiles
+                       WHERE segment = ?
+                       ORDER BY engagement_score DESC LIMIT ?
+                       """, (segment.value, limit))
 
         return [self._row_to_engagement_profile(row) for row in cursor.fetchall()]
 
@@ -305,24 +422,26 @@ class SQLiteRetentionRepository(RetentionRepository):
 
         # Get campaign metrics
         cursor.execute("""
-            SELECT
-                COUNT(*) as total_campaigns,
-                SUM(sent_count) as total_sent,
-                SUM(opened_count) as total_opened,
-                SUM(clicked_count) as total_clicked,
-                SUM(converted_count) as total_converted
-            FROM retention_campaigns
-            WHERE created_at >= ? AND created_at <= ?
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT COUNT(*)             as total_campaigns,
+                              SUM(sent_count)      as total_sent,
+                              SUM(opened_count)    as total_opened,
+                              SUM(clicked_count)   as total_clicked,
+                              SUM(converted_count) as total_converted
+                       FROM retention_campaigns
+                       WHERE created_at >= ?
+                         AND created_at <= ?
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         campaign_row = cursor.fetchone()
 
         # Get active campaigns
         cursor.execute("""
-            SELECT COUNT(*) as active_campaigns
-            FROM retention_campaigns
-            WHERE status = ? AND created_at >= ? AND created_at <= ?
-        """, (RetentionCampaignStatus.ACTIVE.value, start_date.isoformat(), end_date.isoformat()))
+                       SELECT COUNT(*) as active_campaigns
+                       FROM retention_campaigns
+                       WHERE status = ?
+                         AND created_at >= ?
+                         AND created_at <= ?
+                       """, (RetentionCampaignStatus.ACTIVE.value, start_date.isoformat(), end_date.isoformat()))
 
         active_row = cursor.fetchone()
 
@@ -334,21 +453,21 @@ class SQLiteRetentionRepository(RetentionRepository):
 
         # Get churn risk distribution
         cursor.execute("""
-            SELECT risk_level, COUNT(*) as count
-            FROM churn_predictions
-            WHERE created_at >= ? AND created_at <= ?
-            GROUP BY risk_level
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT risk_level, COUNT(*) as count
+                       FROM churn_predictions
+                       WHERE created_at >= ? AND created_at <= ?
+                       GROUP BY risk_level
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         risk_distribution = {row[0]: row[1] for row in cursor.fetchall()}
 
         # Get segment distribution
         cursor.execute("""
-            SELECT segment, COUNT(*) as count
-            FROM user_engagement_profiles
-            WHERE created_at >= ? AND created_at <= ?
-            GROUP BY segment
-        """, (start_date.isoformat(), end_date.isoformat()))
+                       SELECT segment, COUNT(*) as count
+                       FROM user_engagement_profiles
+                       WHERE created_at >= ? AND created_at <= ?
+                       GROUP BY segment
+                       """, (start_date.isoformat(), end_date.isoformat()))
 
         segment_distribution = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -446,7 +565,8 @@ class SQLiteRetentionRepository(RetentionRepository):
             customer_id=row["customer_id"],
             churn_probability=row["churn_probability"],
             risk_level=row["risk_level"],
-            predicted_churn_date=datetime.fromisoformat(row["predicted_churn_date"]) if row["predicted_churn_date"] else None,
+            predicted_churn_date=datetime.fromisoformat(row["predicted_churn_date"]) if row[
+                "predicted_churn_date"] else None,
             reasons=json.loads(row["reasons"]),
             last_activity_date=datetime.fromisoformat(row["last_activity_date"]),
             engagement_score=row["engagement_score"],

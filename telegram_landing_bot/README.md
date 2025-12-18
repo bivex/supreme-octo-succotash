@@ -167,11 +167,13 @@ python bot.py --mode webhook --webhook-url https://YOUR_TUNNEL_URL/webhook --por
 ```
 
 **Example:**
+
 ```bash
 python bot.py --mode webhook --webhook-url https://abc123def456.lhr.life/webhook --port 3000
 ```
 
 The bot will automatically:
+
 - Set up the webhook with Telegram
 - Start the FastAPI server on port 3000
 - Handle incoming updates through the tunnel
@@ -307,6 +309,7 @@ await tracking_manager.track_event(
 ### Network restrictions
 
 If direct SSH tunnels don't work:
+
 1. Try different tunnel service (localhost.run, pinggy, localtunnel)
 2. Use VPN or proxy for SSH connection
 3. Check if your network filters SSH traffic (port 22)
@@ -341,6 +344,7 @@ MIT License - see LICENSE file
 ## Support
 
 For problems:
+
 1. Check logs in `logs/bot.log`
 2. Create issue on GitHub
 3. Write in Telegram: [@your_support_bot]

@@ -14,6 +14,7 @@
 """Form integration routes."""
 
 import json
+
 from loguru import logger
 
 
@@ -32,9 +33,10 @@ class FormRoutes:
 
     def _register_form_submit(self, app):
         """Register form submission route."""
+
         def submit_form(res, req):
             """Handle form submission."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse request body
@@ -102,9 +104,10 @@ class FormRoutes:
 
     def _register_lead_details(self, app):
         """Register lead details route."""
+
         def get_lead_details(res, req):
             """Get detailed information about a lead."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Get lead_id from URL path
@@ -139,9 +142,10 @@ class FormRoutes:
 
     def _register_form_analytics(self, app):
         """Register form analytics route."""
+
         def get_form_analytics(res, req):
             """Get form submission analytics."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters for date range
@@ -183,9 +187,10 @@ class FormRoutes:
 
     def _register_hot_leads(self, app):
         """Register hot leads route."""
+
         def get_hot_leads(res, req):
             """Get hot leads above score threshold."""
-            from ...presentation.middleware.security_middleware import validate_request, add_security_headers
+            from ...presentation.middleware.security_middleware import add_security_headers
 
             try:
                 # Parse query parameters

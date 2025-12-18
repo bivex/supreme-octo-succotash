@@ -13,21 +13,22 @@
 
 """Goal management handler."""
 
-import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
+
 from loguru import logger
+
+from ...domain.entities.goal import Goal
 from ...domain.repositories.goal_repository import GoalRepository
 from ...domain.services.goal.goal_service import GoalService
-from ...domain.entities.goal import Goal
 
 
 class ManageGoalHandler:
     """Handler for managing conversion goals."""
 
     def __init__(
-        self,
-        goal_repository: GoalRepository,
-        goal_service: GoalService
+            self,
+            goal_repository: GoalRepository,
+            goal_service: GoalService
     ):
         self.goal_repository = goal_repository
         self.goal_service = goal_service
@@ -94,7 +95,8 @@ class ManageGoalHandler:
                 goals = self.goal_repository.get_by_campaign_id(campaign_id, active_only)
             else:
                 # Getting all goals without campaign filter is not supported yet
-                raise ValueError("Listing all goals without campaign filter is not supported. Please provide a campaign_id parameter.")
+                raise ValueError(
+                    "Listing all goals without campaign filter is not supported. Please provide a campaign_id parameter.")
 
             return {
                 "status": "success",

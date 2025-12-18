@@ -13,20 +13,22 @@
 
 """Optimized analytics repository with vectorized operations."""
 
-import pandas as pd
-import numpy as np
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta, date
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, date
+from typing import Optional, Dict, Any, List
 
-from ...domain.value_objects import Analytics, Money
+import numpy as np
+import pandas as pd
+
 from ...domain.repositories.analytics_repository import AnalyticsRepository
-from ...domain.repositories.click_repository import ClickRepository
 from ...domain.repositories.campaign_repository import CampaignRepository
+from ...domain.repositories.click_repository import ClickRepository
+from ...domain.value_objects import Analytics, Money
 
 logger = logging.getLogger(__name__)
+
 
 class OptimizedAnalyticsRepository(AnalyticsRepository):
     """High-performance analytics repository using vectorized operations."""
@@ -45,7 +47,7 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
         self.executor = ThreadPoolExecutor(max_workers=2)
 
     def get_campaign_analytics(self, campaign_id: str, start_date: date,
-                              end_date: date, granularity: str = "day") -> Analytics:
+                               end_date: date, granularity: str = "day") -> Analytics:
         """Get analytics for a campaign within date range using vectorized operations."""
         # Check cache first
         cached_analytics = self.get_cached_analytics(campaign_id, start_date, end_date)
@@ -69,7 +71,7 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
         return analytics
 
     def _vectorized_analytics_processing(self, clicks: List, campaign_id: str,
-                                       start_date: date, end_date: date) -> Analytics:
+                                         start_date: date, end_date: date) -> Analytics:
         """Process analytics using vectorized operations."""
         try:
             # Convert clicks to DataFrame for vectorized processing
@@ -174,7 +176,7 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
             return {}
 
     def _fallback_analytics_processing(self, clicks: List, campaign_id: str,
-                                     start_date: date, end_date: date) -> Analytics:
+                                       start_date: date, end_date: date) -> Analytics:
         """Fallback to original analytics processing."""
         # Original implementation as fallback
         valid_clicks = [c for c in clicks if c.is_valid]
@@ -228,8 +230,9 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
         )
 
     async def get_bulk_campaign_analytics(self, campaign_ids: List[str],
-                                        start_date: date, end_date: date) -> Dict[str, Analytics]:
+                                          start_date: date, end_date: date) -> Dict[str, Analytics]:
         """Get analytics for multiple campaigns concurrently."""
+
         async def process_campaign(campaign_id: str) -> tuple[str, Analytics]:
             """Process single campaign analytics."""
             loop = asyncio.get_event_loop()
@@ -260,12 +263,11 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
             conn = self._get_connection()
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT
-                        COUNT(*) as total_queries,
-                        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as recent_queries
-                    FROM analytics_cache
-                    WHERE created_at > NOW() - INTERVAL '24 hours'
-                """)
+                               SELECT COUNT(*) as total_queries,
+                                      COUNT(*)    FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as recent_queries
+                               FROM analytics_cache
+                               WHERE created_at > NOW() - INTERVAL '24 hours'
+                               """)
                 result = cursor.fetchone()
                 if result and result[0] > 0:
                     return result[1] / result[0]
@@ -291,34 +293,88 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
 
             # Create analytics cache table with improved schema
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS analytics_cache (
-                    cache_key TEXT PRIMARY KEY,
-                    campaign_id TEXT NOT NULL,
-                    start_date DATE NOT NULL,
-                    end_date DATE NOT NULL,
-                    granularity TEXT NOT NULL,
-                    clicks INTEGER DEFAULT 0,
-                    unique_clicks INTEGER DEFAULT 0,
-                    conversions INTEGER DEFAULT 0,
-                    revenue_amount DECIMAL(10,2) DEFAULT 0.0,
-                    revenue_currency TEXT DEFAULT 'USD',
-                    cost_amount DECIMAL(10,2) DEFAULT 0.0,
-                    cost_currency TEXT DEFAULT 'USD',
-                    ctr DECIMAL(5,4) DEFAULT 0.0,
-                    cr DECIMAL(5,4) DEFAULT 0.0,
-                    epc_amount DECIMAL(10,2) DEFAULT 0.0,
-                    epc_currency TEXT DEFAULT 'USD',
-                    roi DECIMAL(10,4) DEFAULT 0.0,
-                    breakdowns JSONB,
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    expires_at TIMESTAMP NOT NULL
-                )
-            """)
+                           CREATE TABLE IF NOT EXISTS analytics_cache
+                           (
+                               cache_key
+                               TEXT
+                               PRIMARY
+                               KEY,
+                               campaign_id
+                               TEXT
+                               NOT
+                               NULL,
+                               start_date
+                               DATE
+                               NOT
+                               NULL,
+                               end_date
+                               DATE
+                               NOT
+                               NULL,
+                               granularity
+                               TEXT
+                               NOT
+                               NULL,
+                               clicks
+                               INTEGER
+                               DEFAULT
+                               0,
+                               unique_clicks
+                               INTEGER
+                               DEFAULT
+                               0,
+                               conversions
+                               INTEGER
+                               DEFAULT
+                               0,
+                               revenue_amount
+                               DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               revenue_currency TEXT DEFAULT 'USD',
+                               cost_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               cost_currency TEXT DEFAULT 'USD',
+                               ctr DECIMAL
+                           (
+                               5,
+                               4
+                           ) DEFAULT 0.0,
+                               cr DECIMAL
+                           (
+                               5,
+                               4
+                           ) DEFAULT 0.0,
+                               epc_amount DECIMAL
+                           (
+                               10,
+                               2
+                           ) DEFAULT 0.0,
+                               epc_currency TEXT DEFAULT 'USD',
+                               roi DECIMAL
+                           (
+                               10,
+                               4
+                           ) DEFAULT 0.0,
+                               breakdowns JSONB,
+                               created_at TIMESTAMP NOT NULL DEFAULT NOW
+                           (
+                           ),
+                               expires_at TIMESTAMP NOT NULL
+                               )
+                           """)
 
             # Create optimized indexes
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_campaign_dates ON analytics_cache(campaign_id, start_date, end_date)")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_analytics_campaign_dates ON analytics_cache(campaign_id, start_date, end_date)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_analytics_expires ON analytics_cache(expires_at)")
-            cursor.execute("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_cache_key ON analytics_cache(cache_key)")
+            cursor.execute(
+                "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_cache_key ON analytics_cache(cache_key)")
 
             conn.commit()
         finally:
@@ -333,14 +389,23 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
 
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT clicks, unique_clicks, conversions,
-                           revenue_amount, revenue_currency,
-                           cost_amount, cost_currency,
-                           ctr, cr, epc_amount, epc_currency, roi,
-                           breakdowns
-                    FROM analytics_cache
-                    WHERE cache_key = %s AND expires_at > NOW()
-                """, (cache_key,))
+                               SELECT clicks,
+                                      unique_clicks,
+                                      conversions,
+                                      revenue_amount,
+                                      revenue_currency,
+                                      cost_amount,
+                                      cost_currency,
+                                      ctr,
+                                      cr,
+                                      epc_amount,
+                                      epc_currency,
+                                      roi,
+                                      breakdowns
+                               FROM analytics_cache
+                               WHERE cache_key = %s
+                                 AND expires_at > NOW()
+                               """, (cache_key,))
 
                 result = cursor.fetchone()
                 if result:
@@ -367,7 +432,7 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
         return None
 
     def _cache_analytics_result(self, campaign_id: str, start_date: date, end_date: date,
-                               granularity: str, analytics: Analytics) -> None:
+                                granularity: str, analytics: Analytics) -> None:
         """Cache analytics result with optimized insertion."""
         try:
             conn = self._get_connection()
@@ -376,44 +441,38 @@ class OptimizedAnalyticsRepository(AnalyticsRepository):
 
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO analytics_cache (
-                        cache_key, campaign_id, start_date, end_date, granularity,
-                        clicks, unique_clicks, conversions,
-                        revenue_amount, revenue_currency,
-                        cost_amount, cost_currency,
-                        ctr, cr, epc_amount, epc_currency, roi,
-                        breakdowns, expires_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (cache_key) DO UPDATE SET
-                        clicks = EXCLUDED.clicks,
-                        conversions = EXCLUDED.conversions,
-                        revenue_amount = EXCLUDED.revenue_amount,
-                        cost_amount = EXCLUDED.cost_amount,
-                        ctr = EXCLUDED.ctr,
-                        cr = EXCLUDED.cr,
-                        epc_amount = EXCLUDED.epc_amount,
-                        roi = EXCLUDED.roi,
-                        breakdowns = EXCLUDED.breakdowns,
-                        created_at = NOW(),
-                        expires_at = EXCLUDED.expires_at
-                """, (
-                    cache_key, campaign_id, start_date, end_date, granularity,
-                    analytics.clicks, analytics.unique_clicks, analytics.conversions,
-                    analytics.revenue.amount, analytics.revenue.currency,
-                    analytics.cost.amount, analytics.cost.currency,
-                    analytics.ctr, analytics.cr,
-                    analytics.epc.amount, analytics.epc.currency,
-                    analytics.roi, analytics.breakdowns, expires_at
-                ))
+                               INSERT INTO analytics_cache (cache_key, campaign_id, start_date, end_date, granularity,
+                                                            clicks, unique_clicks, conversions,
+                                                            revenue_amount, revenue_currency,
+                                                            cost_amount, cost_currency,
+                                                            ctr, cr, epc_amount, epc_currency, roi,
+                                                            breakdowns, expires_at)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                       %s) ON CONFLICT (cache_key) DO
+                               UPDATE SET
+                                   clicks = EXCLUDED.clicks,
+                                   conversions = EXCLUDED.conversions,
+                                   revenue_amount = EXCLUDED.revenue_amount,
+                                   cost_amount = EXCLUDED.cost_amount,
+                                   ctr = EXCLUDED.ctr,
+                                   cr = EXCLUDED.cr,
+                                   epc_amount = EXCLUDED.epc_amount,
+                                   roi = EXCLUDED.roi,
+                                   breakdowns = EXCLUDED.breakdowns,
+                                   created_at = NOW(),
+                                   expires_at = EXCLUDED.expires_at
+                               """, (
+                                   cache_key, campaign_id, start_date, end_date, granularity,
+                                   analytics.clicks, analytics.unique_clicks, analytics.conversions,
+                                   analytics.revenue.amount, analytics.revenue.currency,
+                                   analytics.cost.amount, analytics.cost.currency,
+                                   analytics.ctr, analytics.cr,
+                                   analytics.epc.amount, analytics.epc.currency,
+                                   analytics.roi, analytics.breakdowns, expires_at
+                               ))
 
             conn.commit()
 
         except Exception as e:
             logger.error(f"Cache storage failed: {e}")
             # Don't fail the main operation if caching fails
-
-
-
-
-
-
