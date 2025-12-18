@@ -10,7 +10,6 @@
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
-
 import base64
 import hashlib
 import zlib
@@ -84,7 +83,6 @@ class URLShortener:
         self.sub_value_map: Dict[int, str] = {}
         self.reverse_sub_value_map: Dict[str, int] = {}
         self.next_sub_id: int = 1
-
         # Storage settings
         self.storage_file = storage_file
         self.autosave = autosave
@@ -817,7 +815,7 @@ def shorten_url(original_url: str) -> tuple[str, dict]:
     return short_url, url_params.to_dict()
 
 
-def expand_url(short_url: str) -> tuple[Union[str, None], Union[dict, None]]:
+def expand_url(short_url: str) -> tuple[str | None, dict | None]:
     """
     Legacy interface compatibility - decodes and reconstructs URL
     """

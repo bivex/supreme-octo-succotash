@@ -10,7 +10,6 @@
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
-
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional

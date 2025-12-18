@@ -10,7 +10,6 @@
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
-
 import base64
 import zlib
 

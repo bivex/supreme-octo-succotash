@@ -1,16 +1,3 @@
-# Copyright (c) 2025 Bivex
-#
-# Author: Bivex
-# Available for contact via email: support@b-b.top
-# For up-to-date contact information:
-# https://github.com/bivex
-#
-# Created: 2025-12-18T12:28:31
-# Last Updated: 2025-12-18T12:28:31
-#
-# Licensed under the MIT License.
-# Commercial licensing available upon request.
-
 import psycopg2
 import json
 import psycopg2.extras
@@ -29,8 +16,6 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
     """PostgreSQL implementation of PreClickDataRepository."""
 
     def __init__(self, container):
-        logger.info(f"🟢 PostgresPreClickDataRepository.__init__ called - NEW CODE LOADED v2")
-        logger.info(f"🔍 __init__ called from file: {__file__}")
         self._container = container
         self._db_initialized_event = asyncio.Event()  # Use asyncio.Event for lazy async initialization
 
@@ -43,40 +28,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
         # Ensure pool is initialized in the async context, then get sync connection in executor
         await self._container.get_db_connection_pool()
         pool = self._container.get_db_connection_pool_sync()
-
-        # Log pool state before attempting to get connection
-        try:
-            logger.debug(f"🔍 Attempting to get connection from pool (id: {id(pool)})")
-            logger.debug(f"🔍 Pool type: {type(pool._pool).__name__}")
-            logger.debug(f"🔍 Pool config: minconn={pool._pool.minconn}, maxconn={pool._pool.maxconn}")
-
-            # Get pool stats safely
-            try:
-                stats = pool.get_stats()
-                logger.debug(f"🔍 Pool stats BEFORE getconn: {stats}")
-            except Exception as stats_error:
-                logger.warning(f"Could not get pool stats: {stats_error}")
-
-            # Attempt to get connection - DIRECT CALL
-            conn = pool.getconn()
-            logger.debug(f"✅ Successfully got connection from pool: {conn}")
-            return conn
-
-        except Exception as e:
-            logger.error(f"❌ FAILED to get connection from pool!")
-            logger.error(f"❌ Exception type: {type(e).__name__}")
-            logger.error(f"❌ Exception message: {str(e)}")
-            logger.error(f"❌ Pool instance id: {id(pool)}")
-            logger.error(f"❌ Pool._pool type: {type(pool._pool).__name__}")
-
-            # Try to get final stats
-            try:
-                final_stats = pool.get_stats()
-                logger.error(f"❌ Pool stats AFTER failure: {final_stats}")
-            except Exception as final_stats_error:
-                logger.error(f"❌ Could not get final pool stats: {final_stats_error}")
-
-            raise
+        return await loop.run_in_executor(None, pool.getconn)
 
     async def _initialize_db(self) -> None:
         """Initialize database schema (runs once in background)."""
@@ -122,17 +74,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                pool = self._container.get_db_connection_pool_sync()
-                if pool:
-                    logger.debug(f"Returning connection {conn} to pool")
-                    pool.putconn(conn)
-                else:
-                    logger.error("Cannot return connection: pool is None")
-                    try:
-                        logger.warning(f"Closing orphaned connection {conn}")
-                        conn.close()
-                    except Exception as e:
-                        logger.error(f"Error closing orphaned connection: {e}")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
 
     def _row_to_pre_click_data(self, row: Dict[str, Any]) -> PreClickData:
         """Convert database row to PreClickData entity."""
@@ -146,7 +88,6 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
 
     async def save(self, pre_click_data: PreClickData) -> None:
         """Saves pre-click data."""
-        logger.info(f"🟢 save() method called for click_id: {pre_click_data.click_id.value} - NEW CODE LOADED")
         await self._db_initialized_event.wait()  # Wait for DB to be initialized
         conn = None
         try:
@@ -179,17 +120,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                pool = self._container.get_db_connection_pool_sync()
-                if pool:
-                    logger.debug(f"Returning connection {conn} to pool")
-                    pool.putconn(conn)
-                else:
-                    logger.error("Cannot return connection: pool is None")
-                    try:
-                        logger.warning(f"Closing orphaned connection {conn}")
-                        conn.close()
-                    except Exception as e:
-                        logger.error(f"Error closing orphaned connection: {e}")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
 
     async def find_by_click_id(self, click_id: ClickId) -> Optional[PreClickData]:
         """Finds pre-click data by click ID."""
@@ -214,17 +145,7 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                pool = self._container.get_db_connection_pool_sync()
-                if pool:
-                    logger.debug(f"Returning connection {conn} to pool")
-                    pool.putconn(conn)
-                else:
-                    logger.error("Cannot return connection: pool is None")
-                    try:
-                        logger.warning(f"Closing orphaned connection {conn}")
-                        conn.close()
-                    except Exception as e:
-                        logger.error(f"Error closing orphaned connection: {e}")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))
 
     async def delete_by_click_id(self, click_id: ClickId) -> None:
         """Deletes pre-click data by click ID."""
@@ -245,14 +166,4 @@ class PostgresPreClickDataRepository(PreClickDataRepository):
             raise
         finally:
             if conn:
-                pool = self._container.get_db_connection_pool_sync()
-                if pool:
-                    logger.debug(f"Returning connection {conn} to pool")
-                    pool.putconn(conn)
-                else:
-                    logger.error("Cannot return connection: pool is None")
-                    try:
-                        logger.warning(f"Closing orphaned connection {conn}")
-                        conn.close()
-                    except Exception as e:
-                        logger.error(f"Error closing orphaned connection: {e}")
+                await asyncio.get_event_loop().run_in_executor(None, functools.partial(self._container.release_db_connection, conn))

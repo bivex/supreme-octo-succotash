@@ -6,11 +6,10 @@
 # https://github.com/bivex
 #
 # Created: 2025-12-18T12:12:16
-# Last Updated: 2025-12-18T12:28:34
+# Last Updated: 2025-12-18T12:45:18
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
-
 from shared_url_shortener import URLShortener, URLParams, EncodingStrategy
 import zlib
 import base64

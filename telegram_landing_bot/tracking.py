@@ -6,7 +6,7 @@
 # https://github.com/bivex
 #
 # Created: 2025-12-18T12:12:47
-# Last Updated: 2025-12-18T12:28:32
+# Last Updated: 2025-12-18T12:42:43
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
@@ -31,6 +31,19 @@ from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 import aiohttp
 from loguru import logger
 
+# Cache functions removed - now using Supreme API for URL generation
+# Import config directly
+
+# Default tracking parameters (inline to avoid import issues)
+DEFAULT_TRACKING_PARAMS = {
+    "sub1": "telegram_bot",
+    "sub2": "local_landing",
+    "sub3": "supreme_company",
+    "sub4": "direct_message",
+    "sub5": "premium_offer"
+}
+
+# Note: Now using Advertising Platform API instead of direct URL shortener calls
 
 class TrackingManager:
     """Tracking manager for Advertising Platform API integration"""

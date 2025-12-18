@@ -50,7 +50,6 @@ try:
     logger.info("Registered psycopg2 adapter for CampaignId")
 except ImportError:
     logger.warning("psycopg2 not available for adapter registration")
-
 from src.config.settings import load_settings
 settings = load_settings()
 from src.container import container

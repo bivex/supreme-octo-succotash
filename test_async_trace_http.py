@@ -1,28 +1,14 @@
-
-# Copyright (c) 2025 Bivex
-#
-# Author: Bivex
-# Available for contact via email: support@b-b.top
-# For up-to-date contact information:
-# https://github.com/bivex
-#
-# Created: 2025-12-18T12:11:50
-# Last Updated: 2025-12-18T12:28:32
-#
-# Licensed under the MIT License.
-# Commercial licensing available upon request.
+#!/usr/bin/env python3
 """
 Test script to demonstrate async-trace in action with HTTP requests.
 This script makes HTTP requests to the server to show the full async call stack.
 """
 
 import asyncio
-import pytest
 import aiohttp
 import time
 import sys
 
-@pytest.mark.asyncio
 async def test_campaign_creation():
     """Test creating a campaign to see the async trace in action."""
     print("🌐 Testing campaign creation with async-trace...")
@@ -56,7 +42,6 @@ async def test_campaign_creation():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
 
-@pytest.mark.asyncio
 async def test_campaign_offer_creation():
     """Test creating an offer for a campaign."""
     print("\n🎯 Testing campaign offer creation...")
@@ -101,7 +86,6 @@ async def test_campaign_offer_creation():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
 
-@pytest.mark.asyncio
 async def test_multiple_requests():
     """Test multiple concurrent requests to see task traces."""
     print("\n🔄 Testing multiple concurrent requests...")

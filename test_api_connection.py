@@ -1,25 +1,10 @@
-# Copyright (c) 2025 Bivex
-#
-# Author: Bivex
-# Available for contact via email: support@b-b.top
-# For up-to-date contact information:
-# https://github.com/bivex
-#
-# Created: 2025-12-18T12:11:51
-# Last Updated: 2025-12-18T12:28:32
-#
-# Licensed under the MIT License.
-# Commercial licensing available upon request.
-
 import asyncio
-import pytest
 import aiohttp
 import json
 import time
 import uuid
 from loguru import logger
 
-@pytest.mark.asyncio
 async def test_generate_tracking_url():
     api_base_url = "http://localhost:5000"
     url = f"{api_base_url}/clicks/generate"

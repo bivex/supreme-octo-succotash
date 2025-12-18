@@ -6,7 +6,7 @@
 # https://github.com/bivex
 #
 # Created: 2025-12-18T12:12:57
-# Last Updated: 2025-12-18T12:28:33
+# Last Updated: 2025-12-18T12:45:09
 #
 # Licensed under the MIT License.
 # Commercial licensing available upon request.
@@ -138,7 +138,6 @@ class Container:
                     monitor.start_monitoring()
                     self._singletons['connection_monitor'] = monitor
                     logger.info("🔍 Connection monitor initialized and started")
-
                 except Exception:
                     duration = time.time() - start
                     logger.exception(f"❌ DB pool creation failed after {duration:.3f}s")
@@ -179,7 +178,6 @@ class Container:
                 except TypeError:
                     return 0
             return 0
-
         return {
             'minconn': getattr(pool, '_minconn', 'unknown'),
             'maxconn': getattr(pool, '_maxconn', 'unknown'),
@@ -552,7 +550,6 @@ class Container:
                 click_repository=await self.get_click_repository()
             )
         return self._singletons['gaming_webhook_service']
-
     async def get_track_conversion_handler(self):
         """Get track conversion handler."""
         if 'track_conversion_handler' not in self._singletons:
@@ -590,7 +587,6 @@ class Container:
                 gaming_webhook_handler=await self.get_gaming_webhook_handler(),
             )
         return self._singletons['gaming_webhook_routes']
-
     async def get_postback_repository(self):
         """Get postback repository."""
         if 'postback_repository' not in self._singletons:
@@ -768,7 +764,6 @@ class Container:
         if 'postgres_customer_ltv_repository' not in self._singletons:
             self._singletons['postgres_customer_ltv_repository'] = PostgresCustomerLtvRepository(container=self)
         return self._singletons['postgres_customer_ltv_repository']
-
     async def get_postgres_retention_repository(self):
         """Get PostgreSQL retention repository."""
         if 'postgres_retention_repository' not in self._singletons:
@@ -954,7 +949,6 @@ class Container:
             from ..presentation.routes.auth_routes import AuthRoutes
             self._singletons['auth_routes'] = AuthRoutes()
         return self._singletons['auth_routes']
-
     async def get_system_routes(self):
         """Get system routes."""
         if 'system_routes' not in self._singletons:

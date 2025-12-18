@@ -42,7 +42,6 @@ class ClickRoutes:
     def register(self, app):
         """Register routes with socketify app."""
         logger.info(f"🔧 ClickRoutes.register() called with app: {type(app)}")
-
         async def track_click(res, req):
             """Handle click tracking and redirection."""
             logger.info("🔥 TRACK_CLICK HANDLER CALLED")
@@ -615,6 +614,31 @@ class ClickRoutes:
         logger.info("🔧 Registered GET /mock-offer")
 
         logger.info("✅ Click routes registration completed")
+
+    def _safe_int_convert(self, value) -> Optional[int]:
+        """Safely convert value to int, handling various formats."""
+        if not value:
+            return None
+
+        # Handle string values
+        if isinstance(value, str):
+            # Remove common prefixes like 'lp_', 'offer_', etc.
+            clean_value = value.strip()
+            if clean_value.startswith(('lp_', 'offer_', 'ts_')):
+                clean_value = clean_value.split('_', 1)[1] if '_' in clean_value else clean_value
+
+            try:
+                return int(clean_value)
+            except (ValueError, TypeError):
+                logger.warning(f"Could not convert '{value}' to int")
+                return None
+
+        # Handle numeric values
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            logger.warning(f"Could not convert '{value}' (type: {type(value)}) to int")
+            return None
 
     def _safe_int_convert(self, value) -> Optional[int]:
         """Safely convert value to int, handling various formats."""
